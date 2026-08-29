@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftRight, CheckCircle2, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeftRight, CheckCircle2, Loader2, AlertCircle, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -35,22 +36,14 @@ export default function NewAllocationPage() {
         setPosList(posData);
         setPosId(posData[0].id);
       } else {
-        setPosList([
-          { id: '1', nom: 'POS Cocody St Jean', ville: 'Abidjan', statut: 'actif', created_at: '', updated_at: '' },
-          { id: '2', nom: 'POS Yopougon Maroc', ville: 'Abidjan', statut: 'actif', created_at: '', updated_at: '' },
-        ]);
-        setPosId('1');
+        setPosList([]);
       }
 
       if (ticketData && ticketData.length > 0) {
         setTicketTypes(ticketData);
         setTicketTypeId(ticketData[0].id);
       } else {
-        setTicketTypes([
-          { id: '1', nom: 'Pass 1 Heure', duree_heures: 1, prix: 200, actif: true, created_at: '' },
-          { id: '4', nom: 'Pass 24 Heures Journée', duree_heures: 24, prix: 1000, actif: true, created_at: '' },
-        ]);
-        setTicketTypeId('4');
+        setTicketTypes([]);
       }
       setLoading(false);
     }
@@ -64,7 +57,6 @@ export default function NewAllocationPage() {
 
     setSubmitting(true);
 
-    // Save allocation into Supabase DB
     await supabase.from('ticket_allocations').insert({
       pos_id: posId,
       ticket_type_id: ticketTypeId,
@@ -86,19 +78,43 @@ export default function NewAllocationPage() {
           <ArrowLeftRight className="w-6 h-6 text-amber-500" />
           Allocation de Tickets aux Points de Vente
         </h1>
-        <p className="text-xs text-slate-500">Stockage en temps réel dans la table PostgreSQL ticket_allocations.</p>
+        <p className="text-xs text-slate-500">Distribuez du stock de tickets à un point de vente de votre réseau.</p>
       </div>
 
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-          Chargement des références depuis Supabase...
+          Chargement des références...
         </div>
+      ) : posList.length === 0 || ticketTypes.length === 0 ? (
+        <Card className="p-8 text-center space-y-4">
+          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Référentiel incomplet</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Pour effectuer une allocation de stock, vous devez d'abord avoir configuré au moins un <strong>Point de Vente</strong> et un <strong>Type de Ticket</strong>.
+          </p>
+          <div className="flex justify-center gap-3 pt-2">
+            {posList.length === 0 && (
+              <Link href="/pos">
+                <Button size="sm" variant="secondary" className="gap-2 font-bold">
+                  <Plus className="w-4 h-4" /> Créer un POS
+                </Button>
+              </Link>
+            )}
+            {ticketTypes.length === 0 && (
+              <Link href="/tickets">
+                <Button size="sm" className="gap-2 font-bold">
+                  <Plus className="w-4 h-4" /> Créer un Ticket
+                </Button>
+              </Link>
+            )}
+          </div>
+        </Card>
       ) : submitted ? (
         <Card className="p-8 text-center space-y-3 border-emerald-500">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Allocation Enregistrée dans Supabase !</h3>
-          <p className="text-xs text-slate-500">Le stock du point de vente a été mis à jour instantanément.</p>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Allocation Enregistrée !</h3>
+          <p className="text-xs text-slate-500">Le stock du point de vente a été mis à jour instantanément dans la base de données.</p>
         </Card>
       ) : (
         <Card>
@@ -113,7 +129,7 @@ export default function NewAllocationPage() {
                 className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
               >
                 {posList.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nom}</option>
+                  <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
                 ))}
               </select>
             </div>
@@ -152,7 +168,7 @@ export default function NewAllocationPage() {
             <div className="pt-2 flex justify-end gap-3">
               <Button type="button" variant="ghost" onClick={() => router.back()}>Annuler</Button>
               <Button type="submit" variant="secondary" className="px-6 font-bold" isLoading={submitting}>
-                Valider l'Allocation dans Supabase
+                Valider l'Allocation
               </Button>
             </div>
           </form>

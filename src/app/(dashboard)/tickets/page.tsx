@@ -25,19 +25,8 @@ export default function TicketTypesPage() {
 
   const loadTickets = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('ticket_types').select('*').order('prix', { ascending: true });
-    
-    if (data && data.length > 0) {
-      setTickets(data);
-    } else if (!error) {
-      setTickets([
-        { id: '1', nom: 'Pass 1 Heure', duree_heures: 1, prix: 200, actif: true, created_at: new Date().toISOString() },
-        { id: '2', nom: 'Pass 2 Heures', duree_heures: 2, prix: 350, actif: true, created_at: new Date().toISOString() },
-        { id: '3', nom: 'Pass 5 Heures', duree_heures: 5, prix: 500, actif: true, created_at: new Date().toISOString() },
-        { id: '4', nom: 'Pass 24 Heures Journée', duree_heures: 24, prix: 1000, actif: true, created_at: new Date().toISOString() },
-        { id: '5', nom: 'Pass 7 Jours Semaine', duree_heures: 168, prix: 4500, actif: true, created_at: new Date().toISOString() },
-      ]);
-    }
+    const { data } = await supabase.from('ticket_types').select('*').order('prix', { ascending: true });
+    setTickets(data || []);
     setLoading(false);
   };
 
@@ -67,12 +56,7 @@ export default function TicketTypesPage() {
     if (!error && data) {
       setTickets([...tickets, data]);
     } else {
-      const localTicket: TicketType = {
-        id: Date.now().toString(),
-        ...newTicketData,
-        created_at: new Date().toISOString(),
-      };
-      setTickets([...tickets, localTicket]);
+      await loadTickets();
     }
 
     setNom('');
@@ -85,7 +69,7 @@ export default function TicketTypesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Types de Tickets Wi-Fi</h1>
-          <p className="text-xs text-slate-500">Grille tarifaire stockée sur la base de données Supabase.</p>
+          <p className="text-xs text-slate-500">Configurez les forfaits et la grille tarifaire de vos tickets.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-semibold">
           <Plus className="w-4 h-4" />
@@ -96,8 +80,21 @@ export default function TicketTypesPage() {
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-          Chargement des tarifs depuis Supabase...
+          Chargement des forfaits...
         </div>
+      ) : tickets.length === 0 ? (
+        <Card className="p-12 text-center space-y-3">
+          <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
+            <Ticket className="w-7 h-7" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun type de ticket</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Créez votre premier forfait (ex: Pass 1h, Pass 24h) pour commencer la distribution.
+          </p>
+          <Button onClick={() => setIsModalOpen(true)} variant="secondary" className="font-bold gap-2">
+            <Plus className="w-4 h-4" /> Créer un premier ticket
+          </Button>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tickets.map((t) => (
@@ -131,7 +128,7 @@ export default function TicketTypesPage() {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Type de Ticket (Supabase DB)">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Type de Ticket">
         <form onSubmit={handleCreate} className="space-y-4">
           <Input label="Nom du Pass" placeholder="ex: Pass 12h Découverte" value={nom} onChange={(e) => setNom(e.target.value)} required />
           <Input label="Durée (en heures)" type="number" placeholder="12" value={duree} onChange={(e) => setDuree(e.target.value)} required />

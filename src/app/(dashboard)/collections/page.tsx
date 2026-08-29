@@ -18,19 +18,12 @@ export default function CollectionsPage() {
   useEffect(() => {
     async function loadCollections() {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('collections')
         .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
         .order('created_at', { ascending: false });
 
-      if (data && data.length > 0) {
-        setCollections(data);
-      } else if (!error) {
-        setCollections([
-          { id: '1', pos_id: '1', collecteur_id: '1', pos: { id: '1', nom: 'POS Cocody St Jean', ville: 'Abidjan', statut: 'actif', created_at: '', updated_at: '' }, collecteur: { id: '1', nom: 'Kouassi Jean', email: 'jean@optiwifi.ci', role: 'collecteur', created_at: '', updated_at: '' }, montant_attendu: 450000, montant_collecte: 450000, difference: 0, statut: 'validee', created_at: new Date().toISOString() },
-          { id: '2', pos_id: '2', collecteur_id: '2', pos: { id: '2', nom: 'POS Yopougon Maroc', ville: 'Abidjan', statut: 'actif', created_at: '', updated_at: '' }, collecteur: { id: '2', nom: 'Diallo Oumar', email: 'oumar@optiwifi.ci', role: 'collecteur', created_at: '', updated_at: '' }, montant_attendu: 650000, montant_collecte: 620000, difference: -30000, statut: 'validee', created_at: new Date().toISOString() },
-        ]);
-      }
+      setCollections(data || []);
       setLoading(false);
     }
     loadCollections();
@@ -41,7 +34,7 @@ export default function CollectionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Encaissements & Collectes</h1>
-          <p className="text-xs text-slate-500">Historique synchronisé avec la base de données Supabase.</p>
+          <p className="text-xs text-slate-500">Historique complet de vos levées de caisses.</p>
         </div>
         <Link href="/collections/new">
           <Button variant="secondary" className="gap-2 font-bold">
@@ -54,8 +47,23 @@ export default function CollectionsPage() {
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-          Chargement des collectes depuis Supabase...
+          Chargement des collectes...
         </div>
+      ) : collections.length === 0 ? (
+        <Card className="p-12 text-center space-y-3">
+          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+            <Receipt className="w-7 h-7" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement pour le moment</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Vous n'avez enregistré aucune collecte de caisse. Lancez votre première levée de fonds.
+          </p>
+          <Link href="/collections/new" className="inline-block pt-2">
+            <Button variant="secondary" className="font-bold gap-2">
+              <Plus className="w-4 h-4" /> Démarrer une collecte
+            </Button>
+          </Link>
+        </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <div className="overflow-x-auto">

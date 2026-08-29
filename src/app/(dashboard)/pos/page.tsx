@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Store, Plus, Search, MapPin, UserCheck, Loader2 } from 'lucide-react';
+import { Store, Plus, Search, MapPin, UserCheck, Loader2, Inbox } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -30,7 +30,7 @@ export default function PosPage() {
   const loadData = async () => {
     setLoading(true);
     // 1. Fetch POS from Supabase DB
-    const { data: posData, error: posError } = await supabase
+    const { data: posData } = await supabase
       .from('points_of_sale')
       .select('*, collecteur:profiles(*)');
 
@@ -41,17 +41,7 @@ export default function PosPage() {
       .eq('role', 'collecteur');
 
     if (colData) setCollectors(colData);
-
-    if (posData && posData.length > 0) {
-      setPosList(posData);
-    } else if (!posError) {
-      // Demo initial data if table empty
-      setPosList([
-        { id: '1', nom: 'POS Cocody St Jean', adresse: 'Rue des Jardins', ville: 'Abidjan', statut: 'actif', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: '2', nom: 'POS Yopougon Maroc', adresse: 'Carrefour Bel Air', ville: 'Abidjan', statut: 'actif', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: '3', nom: 'POS Marcory Zone 4', adresse: 'Bd de Marseille', ville: 'Abidjan', statut: 'inactif', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      ]);
-    }
+    setPosList(posData || []);
     setLoading(false);
   };
 
@@ -78,7 +68,6 @@ export default function PosPage() {
       collecteur_id: collecteurId || null,
     };
 
-    // Store directly in Supabase PostgreSQL
     const { data, error } = await supabase
       .from('points_of_sale')
       .insert(newPosData)
@@ -88,14 +77,7 @@ export default function PosPage() {
     if (!error && data) {
       setPosList([data, ...posList]);
     } else {
-      // Fallback local append
-      const localPos: PointOfSale = {
-        id: Date.now().toString(),
-        ...newPosData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setPosList([localPos, ...posList]);
+      await loadData();
     }
 
     setNom('');
@@ -111,7 +93,7 @@ export default function PosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Points de Vente (POS)</h1>
-          <p className="text-xs text-slate-500">Données synchronisées directement avec la base de données Supabase.</p>
+          <p className="text-xs text-slate-500">Gérez le réseau de distribution et l'attribution des collecteurs.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-semibold">
           <Plus className="w-4 h-4" />
@@ -133,12 +115,25 @@ export default function PosPage() {
         </div>
       </Card>
 
-      {/* Grid POS Cards */}
+      {/* Grid POS Cards or Empty State */}
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-          Chargement des points de vente depuis Supabase...
+          Chargement des points de vente...
         </div>
+      ) : filteredPos.length === 0 ? (
+        <Card className="p-12 text-center space-y-3">
+          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+            <Store className="w-7 h-7" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun point de vente trouvé</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Vous n'avez pas encore configuré de point de vente. Ajoutez votre premier emplacement pour démarrer les encaissements.
+          </p>
+          <Button onClick={() => setIsModalOpen(true)} variant="secondary" className="font-bold gap-2">
+            <Plus className="w-4 h-4" /> Ajouter mon premier POS
+          </Button>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPos.map((pos) => (
@@ -174,7 +169,7 @@ export default function PosPage() {
       )}
 
       {/* Add POS Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Point de Vente (Stocké sur Supabase)">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Point de Vente">
         <form onSubmit={handleCreate} className="space-y-4">
           <Input label="Nom du POS" placeholder="ex: POS Cocody St Jean" value={nom} onChange={(e) => setNom(e.target.value)} required />
           <Input label="Adresse / Emplacement" placeholder="ex: Rue des Jardins" value={adresse} onChange={(e) => setAdresse(e.target.value)} />
@@ -198,7 +193,7 @@ export default function PosPage() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Annuler</Button>
-            <Button type="submit" isLoading={creating}>Enregistrer dans Supabase</Button>
+            <Button type="submit" isLoading={creating}>Enregistrer le POS</Button>
           </div>
         </form>
       </Modal>

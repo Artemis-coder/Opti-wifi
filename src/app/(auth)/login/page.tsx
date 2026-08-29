@@ -38,13 +38,13 @@ export default function LoginPage() {
     });
 
     if (authError) {
-      setError(authError.message || 'Identifiants invalides.');
+      setError(authError.message || 'Email ou mot de passe incorrect.');
       setLoading(false);
       return;
     }
 
     if (data.user) {
-      // Fetch user profile from Supabase
+      // Fetch user profile from Supabase DB
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -54,7 +54,6 @@ export default function LoginPage() {
       if (profile) {
         setUser(profile);
       } else {
-        // Fallback profile
         const newProfile = {
           id: data.user.id,
           nom: data.user.email?.split('@')[0] || 'Utilisateur',
@@ -86,7 +85,6 @@ export default function LoginPage() {
     setError('');
     setSuccessMsg('');
 
-    // Sign up with Supabase Auth with production redirect URL
     const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
 
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -102,7 +100,6 @@ export default function LoginPage() {
     });
 
     if (signUpError) {
-      // If user already exists or email provider is disabled in Supabase console, fallback to active session
       if (
         signUpError.message?.toLowerCase().includes('already registered') ||
         signUpError.code === 'email_provider_disabled' ||
@@ -123,7 +120,7 @@ export default function LoginPage() {
         };
 
         setUser(userProfile);
-        setSuccessMsg('Session activée ! Redirection vers le tableau de bord...');
+        setSuccessMsg('Session activée ! Redirection vers votre espace...');
         setTimeout(() => router.push('/dashboard'), 500);
         return;
       }
@@ -142,40 +139,26 @@ export default function LoginPage() {
         updated_at: new Date().toISOString(),
       };
 
-      // Try upserting profile in Supabase DB
       try {
         await supabase.from('profiles').upsert(userProfile);
       } catch (err) {
         console.warn('Profile upsert warning:', err);
       }
 
-      // Try automatic sign in with password
       await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      // Always set user in global store and redirect immediately to dashboard
       setUser({
         ...userProfile,
         created_at: new Date().toISOString(),
       });
 
-      setSuccessMsg('Compte créé et validé ! Redirection vers le tableau de bord...');
+      setSuccessMsg('Votre compte a été créé avec succès ! Redirection vers votre espace...');
       setTimeout(() => {
         router.push('/dashboard');
       }, 500);
-    }
-  };
-
-  const handleDemoLogin = (demoRole: 'admin' | 'collector') => {
-    setMode('login');
-    if (demoRole === 'admin') {
-      setEmail('admin@optiwifi.ci');
-      setPassword('admin123456');
-    } else {
-      setEmail('collecteur@optiwifi.ci');
-      setPassword('collecteur123456');
     }
   };
 
@@ -196,7 +179,7 @@ export default function LoginPage() {
             Opti<span className="text-amber-500">Wifi</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Gestion centralisée des tickets & encaissements Wi-Fi
+            Plateforme de Gestion des Tickets & Encaissements Wi-Fi
           </p>
         </div>
 
@@ -260,7 +243,7 @@ export default function LoginPage() {
             />
 
             <Button type="submit" className="w-full h-11 text-sm font-bold" isLoading={loading}>
-              Se connecter à l'espace
+              Se connecter à mon espace
             </Button>
           </form>
         ) : (
@@ -277,13 +260,13 @@ export default function LoginPage() {
             <Input
               label="Adresse Email"
               type="email"
-              placeholder="nom@exemple.ci"
+              placeholder="votre.email@exemple.ci"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
             <Input
-              label="Mot de Passe (6+ car.)"
+              label="Mot de Passe (6+ caractères)"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -293,7 +276,7 @@ export default function LoginPage() {
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Type de Rôle / Accès
+                Rôle / Type de Compte
               </label>
               <select
                 value={role}
@@ -306,33 +289,10 @@ export default function LoginPage() {
             </div>
 
             <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading}>
-              Créer mon Compte OptiWifi
+              Créer mon Compte
             </Button>
           </form>
         )}
-
-        {/* Demo Buttons */}
-        <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-          <p className="text-[11px] text-center font-medium text-slate-500 uppercase tracking-wider">
-            Remplissage Rapide DÉMO
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('admin')}
-              className="py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              👑 Démo Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('collector')}
-              className="py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              💼 Démo Collecteur
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
