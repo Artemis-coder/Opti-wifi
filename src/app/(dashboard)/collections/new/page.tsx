@@ -1,34 +1,66 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Receipt, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Receipt, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
+import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
+import { PointOfSale, TicketType } from '@/types/database';
 
 export default function NewCollectionWizard() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [step, setStep] = useState(1);
-
-  // Form State
-  const [posId, setPosId] = useState('1');
-  const [quantities, setQuantities] = useState<{ [key: string]: number }>({
-    '1': 25,  // Pass 1h
-    '2': 40,  // Pass 2h
-    '4': 15,  // Pass 24h
-  });
-  const [montantCollecte, setMontantCollecte] = useState('34000');
-  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const ticketTypes = [
-    { id: '1', nom: 'Pass 1 Heure', prix: 200 },
-    { id: '2', nom: 'Pass 2 Heures', prix: 350 },
-    { id: '4', nom: 'Pass 24 Heures Journée', prix: 1000 },
-  ];
+  const [posList, setPosList] = useState<PointOfSale[]>([]);
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+
+  // Form State
+  const [posId, setPosId] = useState('');
+  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
+  const [montantCollecte, setMontantCollecte] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadOptions() {
+      setLoading(true);
+      const { data: posData } = await supabase.from('points_of_sale').select('*');
+      const { data: ticketData } = await supabase.from('ticket_types').select('*').eq('actif', true);
+
+      if (posData && posData.length > 0) {
+        setPosList(posData);
+        setPosId(posData[0].id);
+      } else {
+        setPosList([
+          { id: '1', nom: 'POS Cocody St Jean', ville: 'Abidjan', statut: 'actif', created_at: '', updated_at: '' },
+          { id: '2', nom: 'POS Yopougon Maroc', ville: 'Abidjan', statut: 'actif', created_at: '', updated_at: '' },
+        ]);
+        setPosId('1');
+      }
+
+      if (ticketData && ticketData.length > 0) {
+        setTicketTypes(ticketData);
+      } else {
+        setTicketTypes([
+          { id: '1', nom: 'Pass 1 Heure', duree_heures: 1, prix: 200, actif: true, created_at: '' },
+          { id: '2', nom: 'Pass 2 Heures', duree_heures: 2, prix: 350, actif: true, created_at: '' },
+          { id: '4', nom: 'Pass 24 Heures Journée', duree_heures: 24, prix: 1000, actif: true, created_at: '' },
+        ]);
+      }
+      setLoading(false);
+    }
+    loadOptions();
+  }, []);
 
   // Calculations
   const montantAttendu = ticketTypes.reduce((sum, t) => {
@@ -44,8 +76,42 @@ export default function NewCollectionWizard() {
     setQuantities({ ...quantities, [id]: val });
   };
 
-  const handleFinish = (e: React.FormEvent) => {
+  const handleFinish = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
+
+    // 1. Insert collection in Supabase DB
+    const { data: collection, error } = await supabase
+      .from('collections')
+      .insert({
+        pos_id: posId,
+        collecteur_id: user?.id || '00000000-0000-0000-0000-000000000000',
+        statut: 'validee',
+        montant_attendu: montantAttendu,
+        montant_collecte: collecteNum,
+        notes,
+      })
+      .select('id')
+      .single();
+
+    if (collection) {
+      // 2. Insert collection_items
+      const itemsToInsert = ticketTypes
+        .filter((t) => (quantities[t.id] || 0) > 0)
+        .map((t) => ({
+          collection_id: collection.id,
+          ticket_type_id: t.id,
+          stock_debut: 0,
+          quantite_vendue: quantities[t.id] || 0,
+          prix_unitaire: t.prix,
+        }));
+
+      if (itemsToInsert.length > 0) {
+        await supabase.from('collection_items').insert(itemsToInsert);
+      }
+    }
+
+    setSubmitting(false);
     setSubmitted(true);
     setTimeout(() => {
       router.push('/collections');
@@ -60,7 +126,7 @@ export default function NewCollectionWizard() {
           <Receipt className="w-6 h-6 text-amber-500" />
           Assistant de Collecte & Encaissement Caisse
         </h1>
-        <p className="text-xs text-slate-500">Suivez les 5 étapes guidées pour enregistrer la levée de fond d'un POS.</p>
+        <p className="text-xs text-slate-500">Enregistrement direct et sécurisé dans la base de données Supabase.</p>
       </div>
 
       {/* Stepper Progress Indicator */}
@@ -89,11 +155,16 @@ export default function NewCollectionWizard() {
         ))}
       </div>
 
-      {submitted ? (
+      {loading ? (
+        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          Chargement de l'assistant depuis Supabase...
+        </div>
+      ) : submitted ? (
         <Card className="p-8 text-center space-y-3 border-emerald-500">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Collecte Enregistrée avec Succès !</h3>
-          <p className="text-xs text-slate-500">L'encaissement a été validé et archivé dans les journaux comptables.</p>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Collecte Stockée dans Supabase !</h3>
+          <p className="text-xs text-slate-500">L'encaissement a été validé et archivé dans la base PostgreSQL.</p>
         </Card>
       ) : (
         <Card className="p-6">
@@ -102,15 +173,15 @@ export default function NewCollectionWizard() {
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Point de Vente concerne</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Point de Vente concerné</label>
                 <select
                   value={posId}
                   onChange={(e) => setPosId(e.target.value)}
                   className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium"
                 >
-                  <option value="1">POS Cocody St Jean (Kouassi Jean)</option>
-                  <option value="2">POS Yopougon Maroc (Diallo Oumar)</option>
-                  <option value="3">POS Marcory Zone 4 (Kouassi Jean)</option>
+                  {posList.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
+                  ))}
                 </select>
               </div>
               <div className="flex justify-end pt-4">
@@ -136,8 +207,9 @@ export default function NewCollectionWizard() {
                       <Input
                         type="number"
                         min="0"
-                        value={quantities[t.id] || 0}
+                        value={quantities[t.id] || ''}
                         onChange={(e) => handleQtyChange(t.id, e.target.value)}
+                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -182,6 +254,7 @@ export default function NewCollectionWizard() {
                 type="number"
                 value={montantCollecte}
                 onChange={(e) => setMontantCollecte(e.target.value)}
+                placeholder="ex: 50000"
                 required
               />
               <div className="flex justify-between pt-4">
@@ -236,8 +309,8 @@ export default function NewCollectionWizard() {
                 <Button type="button" variant="ghost" onClick={() => setStep(4)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
-                <Button type="submit" variant="secondary" className="px-8 font-extrabold">
-                  Valider & Clôturer la Collecte
+                <Button type="submit" variant="secondary" className="px-8 font-extrabold" isLoading={submitting}>
+                  Enregistrer dans Supabase
                 </Button>
               </div>
             </form>

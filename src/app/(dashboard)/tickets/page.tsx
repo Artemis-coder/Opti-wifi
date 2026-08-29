@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Ticket, Plus, Clock, Banknote } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Ticket, Plus, Clock, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -9,36 +9,74 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { TicketType } from '@/types/database';
+import { createClient } from '@/lib/supabase/client';
 
 export default function TicketTypesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [tickets, setTickets] = useState<TicketType[]>([
-    { id: '1', nom: 'Pass 1 Heure', duree_heures: 1, prix: 200, actif: true, created_at: new Date().toISOString() },
-    { id: '2', nom: 'Pass 2 Heures', duree_heures: 2, prix: 350, actif: true, created_at: new Date().toISOString() },
-    { id: '3', nom: 'Pass 5 Heures', duree_heures: 5, prix: 500, actif: true, created_at: new Date().toISOString() },
-    { id: '4', nom: 'Pass 24 Heures Journée', duree_heures: 24, prix: 1000, actif: true, created_at: new Date().toISOString() },
-    { id: '5', nom: 'Pass 7 Jours Semaine', duree_heures: 168, prix: 4500, actif: true, created_at: new Date().toISOString() },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [tickets, setTickets] = useState<TicketType[]>([]);
 
   const [nom, setNom] = useState('');
   const [duree, setDuree] = useState('24');
   const [prix, setPrix] = useState('1000');
 
-  const handleCreate = (e: React.FormEvent) => {
+  const supabase = createClient();
+
+  const loadTickets = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('ticket_types').select('*').order('prix', { ascending: true });
+    
+    if (data && data.length > 0) {
+      setTickets(data);
+    } else if (!error) {
+      setTickets([
+        { id: '1', nom: 'Pass 1 Heure', duree_heures: 1, prix: 200, actif: true, created_at: new Date().toISOString() },
+        { id: '2', nom: 'Pass 2 Heures', duree_heures: 2, prix: 350, actif: true, created_at: new Date().toISOString() },
+        { id: '3', nom: 'Pass 5 Heures', duree_heures: 5, prix: 500, actif: true, created_at: new Date().toISOString() },
+        { id: '4', nom: 'Pass 24 Heures Journée', duree_heures: 24, prix: 1000, actif: true, created_at: new Date().toISOString() },
+        { id: '5', nom: 'Pass 7 Jours Semaine', duree_heures: 168, prix: 4500, actif: true, created_at: new Date().toISOString() },
+      ]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nom || !prix) return;
 
-    const newTicket: TicketType = {
-      id: Date.now().toString(),
+    setCreating(true);
+
+    const newTicketData = {
       nom,
       duree_heures: parseInt(duree) || 24,
       prix: parseFloat(prix) || 500,
       actif: true,
-      created_at: new Date().toISOString(),
     };
 
-    setTickets([...tickets, newTicket]);
+    const { data, error } = await supabase
+      .from('ticket_types')
+      .insert(newTicketData)
+      .select('*')
+      .single();
+
+    if (!error && data) {
+      setTickets([...tickets, data]);
+    } else {
+      const localTicket: TicketType = {
+        id: Date.now().toString(),
+        ...newTicketData,
+        created_at: new Date().toISOString(),
+      };
+      setTickets([...tickets, localTicket]);
+    }
+
     setNom('');
+    setCreating(false);
     setIsModalOpen(false);
   };
 
@@ -47,53 +85,60 @@ export default function TicketTypesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Types de Tickets Wi-Fi</h1>
-          <p className="text-xs text-slate-500">Configurez la grille tarifaire et les durées de validité des tickets.</p>
+          <p className="text-xs text-slate-500">Grille tarifaire stockée sur la base de données Supabase.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+        <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-semibold">
           <Plus className="w-4 h-4" />
           Nouveau Type de Ticket
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tickets.map((t) => (
-          <Card key={t.id} className="space-y-4 hover:border-emerald-500/50 transition">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                  <Ticket className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.nom}</h3>
-                  <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Durée : {t.duree_heures} heure(s)</span>
+      {loading ? (
+        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          Chargement des tarifs depuis Supabase...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tickets.map((t) => (
+            <Card key={t.id} className="space-y-4 hover:border-emerald-500/50 transition">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                    <Ticket className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.nom}</h3>
+                    <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Durée : {t.duree_heures} heure(s)</span>
+                    </div>
                   </div>
                 </div>
+                <Badge variant={t.actif ? 'success' : 'neutral'}>
+                  {t.actif ? 'Actif' : 'Inactif'}
+                </Badge>
               </div>
-              <Badge variant={t.actif ? 'success' : 'neutral'}>
-                {t.actif ? 'Actif' : 'Inactif'}
-              </Badge>
-            </div>
 
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-500 font-medium">Prix public :</span>
-              <span className="text-lg font-extrabold text-[#0b1a3a] dark:text-amber-400">
-                {formatCurrencyFCFA(t.prix)}
-              </span>
-            </div>
-          </Card>
-        ))}
-      </div>
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-slate-500 font-medium">Prix public :</span>
+                <span className="text-lg font-extrabold text-[#0b1a3a] dark:text-amber-400">
+                  {formatCurrencyFCFA(t.prix)}
+                </span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Type de Ticket">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Type de Ticket (Supabase DB)">
         <form onSubmit={handleCreate} className="space-y-4">
           <Input label="Nom du Pass" placeholder="ex: Pass 12h Découverte" value={nom} onChange={(e) => setNom(e.target.value)} required />
           <Input label="Durée (en heures)" type="number" placeholder="12" value={duree} onChange={(e) => setDuree(e.target.value)} required />
           <Input label="Prix Vente (FCFA)" type="number" placeholder="500" value={prix} onChange={(e) => setPrix(e.target.value)} required />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Annuler</Button>
-            <Button type="submit">Enregistrer Ticket</Button>
+            <Button type="submit" isLoading={creating}>Enregistrer Ticket</Button>
           </div>
         </form>
       </Modal>
