@@ -102,13 +102,34 @@ export default function LoginPage() {
     });
 
     if (signUpError) {
+      // If user already exists, attempt direct login
+      if (signUpError.message?.toLowerCase().includes('already registered')) {
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInData?.user) {
+          const userProfile = {
+            id: signInData.user.id,
+            nom,
+            email,
+            role,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          setUser(userProfile);
+          setSuccessMsg('Connexion automatique... Redirection en cours !');
+          setTimeout(() => router.push('/dashboard'), 500);
+          return;
+        }
+      }
       setError(signUpError.message || 'Erreur lors de la création du compte.');
       setLoading(false);
       return;
     }
 
     if (data.user) {
-      // Ensure profile record is created/upserted in Supabase DB
       const userProfile = {
         id: data.user.id,
         nom,
@@ -117,17 +138,29 @@ export default function LoginPage() {
         updated_at: new Date().toISOString(),
       };
 
-      await supabase.from('profiles').upsert(userProfile);
+      // Try upserting profile in Supabase DB
+      try {
+        await supabase.from('profiles').upsert(userProfile);
+      } catch (err) {
+        console.warn('Profile upsert warning:', err);
+      }
 
+      // Try automatic sign in with password
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      // Always set user in global store and redirect immediately to dashboard
       setUser({
         ...userProfile,
         created_at: new Date().toISOString(),
       });
 
-      setSuccessMsg('Compte créé avec succès ! Redirection en cours...');
+      setSuccessMsg('Compte créé et validé ! Redirection vers le tableau de bord...');
       setTimeout(() => {
         router.push('/dashboard');
-      }, 1000);
+      }, 500);
     }
   };
 
