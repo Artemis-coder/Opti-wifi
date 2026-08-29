@@ -1,0 +1,69 @@
+{
+  "common": {
+    "appName": "OptiWifi",
+    "dashboard": "Tableau de Bord",
+    "pos": "Points de Vente",
+    "tickets": "Types de Tickets",
+    "allocations": "Allocations",
+    "collections": "Collectes",
+    "reports": "Rapports",
+    "users": "Utilisateurs",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "email": "Adresse Email",
+    "password": "Mot de Passe",
+    "role": "Rôle",
+    "actions": "Actions",
+    "status": "Statut",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "add": "Ajouter",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher...",
+    "filter": "Filtrer",
+    "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "total": "Total",
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "auth": {
+    "welcomeTitle": "Bienvenue sur OptiWifi",
+    "welcomeSubtitle": "Gestion centralisée de vente de tickets Wi-Fi",
+    "loginButton": "Se connecter",
+    "invalidCredentials": "Email ou mot de passe incorrect."
+  },
+  "dashboard": {
+    "title": "Vue d'Ensemble des Performances",
+    "ticketsSold": "Tickets Vendus",
+    "revenue": "Chiffre d'Affaires",
+    "toCollect": "À Collecter",
+    "collected": "Total Collecté",
+    "discrepancy": "Écart Global",
+    "activePos": "POS Actifs",
+    "recentCollections": "Dernières Collectes",
+    "salesOverview": "Évolution des Ventes"
+  },
+  "pos": {
+    "title": "Gestion des Points de Vente",
+    "name": "Nom du POS",
+    "address": "Adresse",
+    "city": "Ville",
+    "collector": "Collecteur Attribué",
+    "addPos": "Nouveau Point de Vente"
+  },
+  "collections": {
+    "title": "Encaissements & Collectes",
+    "newCollection": "Nouvelle Collecte",
+    "step1": "1. Sélection du Point de Vente",
+    "step2": "2. Saisie des Quantités Vendues",
+    "step3": "3. Calcul du Montant Attendu",
+    "step4": "4. Saisie du Montant Collecté",
+    "step5": "5. Confirmation & Validation",
+    "expectedAmount": "Montant Attendu",
+    "collectedAmount": "Montant Collecté",
+    "diff": "Écart (Différence)"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "common": {
+    "appName": "OptiWifi",
+    "dashboard": "Dashboard",
+    "pos": "Points of Sale",
+    "tickets": "Ticket Types",
+    "allocations": "Allocations",
+    "collections": "Collections",
+    "reports": "Reports",
+    "users": "Users",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "email": "Email Address",
+    "password": "Password",
+    "role": "Role",
+    "actions": "Actions",
+    "status": "Status",
+    "save": "Save",
+    "cancel": "Cancel",
+    "add": "Add",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search...",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "total": "Total",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "auth": {
+    "welcomeTitle": "Welcome to OptiWifi",
+    "welcomeSubtitle": "Centralized Wi-Fi ticket sales management",
+    "loginButton": "Sign In",
+    "invalidCredentials": "Invalid email or password."
+  },
+  "dashboard": {
+    "title": "Performance Overview",
+    "ticketsSold": "Tickets Sold",
+    "revenue": "Total Revenue",
+    "toCollect": "Amount to Collect",
+    "collected": "Total Collected",
+    "discrepancy": "Global Discrepancy",
+    "activePos": "Active POS",
+    "recentCollections": "Recent Collections",
+    "salesOverview": "Sales Overview"
+  },
+  "pos": {
+    "title": "Points of Sale Management",
+    "name": "POS Name",
+    "address": "Address",
+    "city": "City",
+    "collector": "Assigned Collector",
+    "addPos": "New Point of Sale"
+  },
+  "collections": {
+    "title": "Collections & Encashment",
+    "newCollection": "New Collection",
+    "step1": "1. Select Point of Sale",
+    "step2": "2. Enter Sold Quantities",
+    "step3": "3. Calculated Expected Amount",
+    "step4": "4. Enter Collected Amount",
+    "step5": "5. Confirmation & Validation",
+    "expectedAmount": "Expected Amount",
+    "collectedAmount": "Collected Amount",
+    "diff": "Discrepancy"
+  }
+}

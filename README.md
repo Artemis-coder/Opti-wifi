@@ -1,55 +1,36 @@
-# Opti Wifi
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A **React + Vite** based Wi‑Fi management SaaS prototype.
+## Getting Started
 
-## Features
-- State‑of‑the‑art UI built with TailwindCSS and modern React patterns.
-- Uses **Neon** managed PostgreSQL as the backend database.
-- Includes a `.env` file (ignored by git) with the `DATABASE_URL` for connecting to Neon.
-- Basic scripts for development, building and previewing.
+First, run the development server:
 
-## Prerequisites
-- Node.js (>=18)
-- pnpm / yarn / npm (any package manager works)
-- A Neon account and a project. You will need the connection string.
-
-## Setup
 ```bash
-# Clone the repo (if you haven't already)
-git clone https://github.com/Artemis-coder/Opti-Wifi.git
-cd Opti-Wifi
-
-# Install dependencies
-npm install   # or pnpm install / yarn install
-
-# Create a .env file (it is already ignored by .gitignore)
-# Replace the placeholder with your Neon connection string
-echo "DATABASE_URL=postgres://<USER>:<PASSWORD>@<HOST>.neon.tech/<DB>?sslmode=require&channel_binding=require" > .env
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## Development
-```bash
-npm run dev   # Starts Vite dev server
-```
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Build
-```bash
-npm run build   # Produces production assets in the `dist/` folder
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Preview
-```bash
-npm run preview   # Serves the built assets locally
-```
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Database Schema
-The database schema is defined in `neon-schema.sql`. After creating the Neon database, you can apply the schema with:
-```bash
-psql $DATABASE_URL < neon-schema.sql
-```
+## Learn More
 
-## Contributing
-Feel free to open issues or submit pull requests. Ensure your changes are tested locally and follow the existing code style.
+To learn more about Next.js, take a look at the following resources:
 
----
-*Generated automatically by the AI assistant.*
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
