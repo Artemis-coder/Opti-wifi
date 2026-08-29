@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput } from '@/tw';
 import { cn } from './Button';
-import { TextInputProps } from 'react-native';
 
-interface InputProps extends TextInputProps {
+interface InputProps {
   label?: string;
   error?: string;
   helperText?: string;
   className?: string;
+  [key: string]: any; // Allow other props like onChange, value, etc.
 }
 
 export const Input = React.forwardRef<any, InputProps>(

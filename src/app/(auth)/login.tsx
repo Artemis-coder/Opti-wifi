@@ -3,26 +3,27 @@ import { View, Text } from '@/tw';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { useAuthStore } from '@/store/authStore';
-import { router } from 'expo-router';
+import { useNavigate } from 'react-router-dom';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
+  const navigate = useNavigate();
 
   const handleLogin = () => {
     setLoading(true);
     // Simulation d'un appel réseau
     setTimeout(() => {
       setLoading(false);
-      login({
-        id: '1',
-        firstName: 'Admin',
-        lastName: 'System',
-        role: 'ADMIN',
-      });
-      router.replace('/(tabs)');
+login({
+         id: '1',
+         firstName: 'Admin',
+         lastName: 'System',
+         role: 'ADMIN',
+       });
+       router.navigate('/(tabs)', { replace: true });
     }, 1000);
   };
 

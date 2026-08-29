@@ -4,12 +4,11 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useDataStore, TicketType, CollectionItem, SaleItem } from '@/store/dataStore';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { ArrowLeft, Plus, ShoppingCart, ShieldAlert, X } from 'lucide-react-native';
-import { Modal } from 'react-native';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, ShoppingCart, ShieldAlert, X } from 'lucide-react';
 
 export default function PointOfSaleDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>();
   const { 
     pointsOfSale, 
     ticketTypes, 
@@ -46,7 +45,7 @@ export default function PointOfSaleDetailScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-gray-50">
         <Text className="text-gray-500 font-poppins-medium">Point de vente introuvable</Text>
-        <Button label="Retour" onPress={() => router.back()} className="mt-4" />
+        <Button label="Retour" onPress={() => navigate(-1)} className="mt-4" />
       </View>
     );
   }
@@ -196,15 +195,6 @@ export default function PointOfSaleDetailScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <Stack.Screen options={{ 
-        title: pos.name,
-        headerShown: true,
-        headerLeft: () => (
-          <Pressable onPress={() => router.back()} className="mr-4">
-            <ArrowLeft size={24} color="#111827" />
-          </Pressable>
-        )
-      }} />
 
       <ScrollView className="flex-1 px-4 py-6" contentContainerClassName="pb-10">
         
@@ -304,9 +294,9 @@ export default function PointOfSaleDetailScreen() {
       </ScrollView>
 
       {/* Distribution Modal */}
-      <Modal visible={isDistributeOpen} animationType="slide" transparent>
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="bg-white rounded-t-3xl p-6 gap-4">
+      {isDistributeOpen && (
+        <View className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <View className="bg-white rounded-2xl p-6 gap-4 w-full mx-4 max-h-[80vh] overflow-y-auto">
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-xl font-poppins-bold text-gray-900 font-bold">Distribuer des tickets</Text>
               <Pressable onPress={() => setIsDistributeOpen(false)}>
@@ -344,12 +334,12 @@ export default function PointOfSaleDetailScreen() {
             />
           </View>
         </View>
-      </Modal>
+      )}
 
       {/* Vente Modal */}
-      <Modal visible={isSaleOpen} animationType="slide" transparent>
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="bg-white rounded-t-3xl p-6 gap-4">
+      {isSaleOpen && (
+        <View className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <View className="bg-white rounded-2xl p-6 gap-4 w-full mx-4 max-h-[80vh] overflow-y-auto">
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-xl font-poppins-bold text-gray-900 font-bold">Enregistrer une vente</Text>
               <Pressable onPress={() => setIsSaleOpen(false)}>
@@ -383,12 +373,12 @@ export default function PointOfSaleDetailScreen() {
             />
           </View>
         </View>
-      </Modal>
+      )}
 
       {/* Collecte Modal */}
-      <Modal visible={isCollectOpen} animationType="slide" transparent>
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="bg-white rounded-t-3xl p-6 gap-4">
+      {isCollectOpen && (
+        <View className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <View className="bg-white rounded-2xl p-6 gap-4 w-full mx-4 max-h-[80vh] overflow-y-auto">
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-xl font-poppins-bold text-gray-900 font-bold">Effectuer une collecte</Text>
               <Pressable onPress={() => setIsCollectOpen(false)}>
@@ -460,7 +450,7 @@ export default function PointOfSaleDetailScreen() {
             />
           </View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }

@@ -4,14 +4,14 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useDataStore, TicketType } from '@/store/dataStore';
-import { Stack, router } from 'expo-router';
-import { ArrowLeft, Plus, X, Pencil } from 'lucide-react-native';
-import { Modal } from 'react-native';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, X, Pencil } from 'lucide-react';
 
 export default function TicketsScreen() {
   const { ticketTypes, addTicketType, updateTicketType } = useDataStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<TicketType | null>(null);
+  const navigate = useNavigate();
 
   // Form Fields
   const [name, setName] = useState('');
@@ -62,15 +62,13 @@ export default function TicketsScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <Stack.Screen options={{ 
-        title: 'Types de Tickets',
-        headerShown: true,
-        headerLeft: () => (
-          <Pressable onPress={() => router.back()} className="mr-4">
-            <ArrowLeft size={24} color="#111827" />
-          </Pressable>
-        )
-      }} />
+      {/* Header */}
+      <View className="bg-white border-b border-gray-100 p-4 flex-row items-center">
+        <Pressable onPress={() => navigate(-1)} className="mr-4">
+          <ArrowLeft size={24} color="#111827" />
+        </Pressable>
+        <Text className="text-lg font-[Poppins_600SemiBold] text-gray-900">Types de Tickets</Text>
+      </View>
 
       <ScrollView className="flex-1 p-4" contentContainerClassName="pb-10">
         <View className="flex-row justify-between items-center mb-4">
@@ -103,9 +101,9 @@ export default function TicketsScreen() {
       </ScrollView>
 
       {/* Add / Edit Ticket Modal */}
-      <Modal visible={isModalOpen} animationType="slide" transparent>
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="bg-white rounded-t-3xl p-6 gap-4">
+      {isModalOpen && (
+        <View className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <View className="bg-white rounded-2xl p-6 gap-4 w-full mx-4 max-h-[80vh] overflow-y-auto">
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-xl font-[Poppins_700Bold] text-gray-900 font-bold">
                 {editingTicket ? 'Modifier le ticket' : 'Nouveau type de ticket'}
@@ -162,7 +160,7 @@ export default function TicketsScreen() {
             />
           </View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }

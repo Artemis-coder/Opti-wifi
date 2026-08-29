@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from '@/tw';
 import { Card } from '@/components/Card';
 import { useDataStore } from '@/store/dataStore';
-import { Stack, router } from 'expo-router';
-import { ArrowLeft, ArrowUpRight, ArrowDownLeft, Landmark, Filter } from 'lucide-react-native';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowUpRight, ArrowDownLeft, Landmark, Filter } from 'lucide-react';
 
 export default function HistoriqueScreen() {
   const { distributions, sales, collections, pointsOfSale, ticketTypes } = useDataStore();
   const [filter, setFilter] = useState<'all' | 'distribution' | 'sale' | 'collection'>('all');
+  const navigate = useNavigate();
 
   const getPOSName = (posId: string) => {
     return pointsOfSale.find(p => p.id === posId)?.name || 'Point de vente inconnu';
@@ -42,15 +43,13 @@ export default function HistoriqueScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <Stack.Screen options={{ 
-        title: 'Historique Général',
-        headerShown: true,
-        headerLeft: () => (
-          <Pressable onPress={() => router.back()} className="mr-4">
-            <ArrowLeft size={24} color="#111827" />
-          </Pressable>
-        )
-      }} />
+      {/* Header */}
+      <View className="bg-white border-b border-gray-100 p-4 flex-row items-center">
+        <Pressable onPress={() => navigate(-1)} className="mr-4">
+          <ArrowLeft size={24} color="#111827" />
+        </Pressable>
+        <Text className="text-lg font-[Poppins_600SemiBold] text-gray-900">Historique Général</Text>
+      </View>
 
       {/* Filter Tabs */}
       <View className="flex-row bg-white border-b border-gray-100 p-3 gap-2 overflow-x-scroll">

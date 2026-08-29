@@ -4,14 +4,14 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useDataStore } from '@/store/dataStore';
-import { router } from 'expo-router';
-import { Plus, Search, User, MapPin, Ticket, Landmark, ChevronRight, X } from 'lucide-react-native';
-import { Modal } from 'react-native';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search, User, MapPin, Ticket, Landmark, ChevronRight, X } from 'lucide-react';
 
 export default function PointsDeVenteScreen() {
   const { pointsOfSale, addPointOfSale, getStock, sales, collections, ticketTypes } = useDataStore();
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Form fields
   const [name, setName] = useState('');
@@ -96,7 +96,7 @@ export default function PointsDeVenteScreen() {
             return (
               <Pressable 
                 key={pos.id} 
-                onPress={() => router.push(`/points-de-vente/${pos.id}`)}
+                onPress={() => navigate(`/points-de-vente/${pos.id}`)}
                 className="mb-4"
               >
                 <Card className="flex-row justify-between items-center p-5">
@@ -142,9 +142,9 @@ export default function PointsDeVenteScreen() {
       </ScrollView>
 
       {/* Add POS Modal */}
-      <Modal visible={isModalOpen} animationType="slide" transparent>
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="bg-white rounded-t-3xl p-6 gap-4">
+      {isModalOpen && (
+        <View className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <View className="bg-white rounded-2xl p-6 gap-4 w-full mx-4 max-h-[80vh] overflow-y-auto">
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-xl font-poppins-bold text-gray-900 font-bold">Nouveau point de vente</Text>
               <Pressable onPress={() => setIsModalOpen(false)}>
@@ -185,7 +185,7 @@ export default function PointsDeVenteScreen() {
             />
           </View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }

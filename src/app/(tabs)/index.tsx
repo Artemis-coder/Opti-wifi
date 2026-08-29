@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable } from '@/tw';
 import { Card } from '@/components/Card';
 import { useDataStore } from '@/store/dataStore';
 import { useAuthStore } from '@/store/authStore';
-import { TrendingUp, ShoppingBag, Landmark, Ticket, Store, ShieldAlert } from 'lucide-react-native';
+import { TrendingUp, ShoppingBag, Landmark, Ticket, Store, ShieldAlert } from 'lucide-react';
 
 export default function DashboardScreen() {
   const user = useAuthStore((state) => state.user);

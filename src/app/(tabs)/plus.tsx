@@ -2,15 +2,15 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable } from '@/tw';
 import { Card } from '@/components/Card';
 import { useAuthStore } from '@/store/authStore';
-import { router } from 'expo-router';
-import { Ticket, History, LogOut, ChevronRight, Settings, Info } from 'lucide-react-native';
+import { useNavigate } from 'react-router-dom';
+import { Ticket, History, LogOut, ChevronRight, Settings, Info } from 'lucide-react';
 
 export default function PlusScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   const handleLogout = () => {
     logout();
-    router.replace('/(auth)/login');
+    navigate('/(auth)/login');
   };
 
   const menuItems = [
@@ -18,13 +18,13 @@ export default function PlusScreen() {
       title: 'Gestion des Tickets',
       description: 'Configurer les grilles tarifaires et durées.',
       icon: <Ticket size={22} color="#2563EB" />,
-      onPress: () => router.push('/tickets'),
+      onPress: () => navigate('/tickets'),
     },
     {
       title: 'Historique Général',
       description: 'Consulter toutes les opérations passées.',
       icon: <History size={22} color="#4F46E5" />,
-      onPress: () => router.push('/historique'),
+      onPress: () => navigate('/historique'),
     },
   ];
 

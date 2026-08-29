@@ -1,5 +1,5 @@
-import { Redirect } from 'expo-router';
+import { Navigate } from 'react-router-dom';
 
 export default function Index() {
-  return <Redirect href="/(auth)/login" />;
+  return <Navigate to="/login" replace />;
 }

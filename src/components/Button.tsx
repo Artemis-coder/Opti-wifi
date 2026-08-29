@@ -1,6 +1,5 @@
 import React from 'react';
 import { Pressable, Text, useCSSVariable } from '@/tw';
-import { ActivityIndicator, PressableProps } from 'react-native';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
