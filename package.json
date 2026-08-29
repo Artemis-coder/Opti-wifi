@@ -2,28 +2,33 @@
   "name": "opti-wifi",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server/src/index.js"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@tanstack/react-query": "^5.102.8",
+    "axios": "^1.7.2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.371.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.23.1",
-    "lucide-react": "^0.371.0",
-    "zustand": "^5.0.15",
-    "@tanstack/react-query": "^5.102.8",
-    "clsx": "^2.1.1",
-    "axios": "^1.7.2"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react-swc": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.38",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.3.3",
     "vite": "^5.4.1",
-    "@vitejs/plugin-react": "^5.0.4",
-    "vite-plugin-pwa": "^0.20.5",
-    "tailwindcss": "^4.3.3",
-    "postcss": "^8.4.38",
-    "autoprefixer": "^10.4.20"
+    "vite-plugin-pwa": "^0.20.5"
   }
 }
