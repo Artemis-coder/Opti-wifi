@@ -1,22 +1,29 @@
 {
-  "name": "temp",
+  "name": "opti-wifi",
   "version": "1.0.0",
-  "main": "index.ts",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
-    "expo": "~57.0.18",
-    "expo-status-bar": "~57.0.1",
-    "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.23.1",
+    "lucide-react": "^0.371.0",
+    "zustand": "^5.0.15",
+    "@tanstack/react-query": "^5.102.8",
+    "clsx": "^2.1.1",
+    "axios": "^1.7.2"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
-  },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "private": true
+    "typescript": "^5.3.3",
+    "vite": "^5.4.1",
+    "@vitejs/plugin-react": "^5.0.4",
+    "vite-plugin-pwa": "^0.20.5",
+    "tailwindcss": "^4.3.3",
+    "postcss": "^8.4.38",
+    "autoprefixer": "^10.4.20"
+  }
 }
