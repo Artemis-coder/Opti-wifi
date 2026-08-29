@@ -155,3 +155,13 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- Seed initial ticket types
+INSERT INTO ticket_types (nom, duree_heures, prix, actif) VALUES
+  ('Pass 1 Heure', 1, 200, true),
+  ('Pass 2 Heures', 2, 350, true),
+  ('Pass 5 Heures', 5, 500, true),
+  ('Pass 24 Heures Journée', 24, 1000, true),
+  ('Pass 7 Jours Semaine', 168, 4500, true)
+ON CONFLICT DO NOTHING;
+
+
