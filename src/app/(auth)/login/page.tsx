@@ -87,78 +87,79 @@ export default function LoginPage() {
 
     const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
 
+    // ÉTAPE 1 : Création du compte Supabase Auth
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          nom,
-          role,
-        },
+        data: { nom, role }, // Transmis au trigger handle_new_user
       },
     });
 
     if (signUpError) {
+      // Cas spécial : email déjà inscrit ou provider désactivé → tentative de login
       if (
         signUpError.message?.toLowerCase().includes('already registered') ||
         signUpError.code === 'email_provider_disabled' ||
         signUpError.message?.toLowerCase().includes('disabled')
       ) {
-        const { data: signInData } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        const userProfile = {
-          id: signInData?.user?.id || crypto.randomUUID(),
-          nom,
-          email,
-          role,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        setUser(userProfile);
-        setSuccessMsg('Session activée ! Redirection vers votre espace...');
-        setTimeout(() => router.push('/dashboard'), 500);
-        return;
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInData?.user) {
+          const { data: existingProfile } = await supabase
+            .from('profiles').select('*').eq('id', signInData.user.id).single();
+          setUser(existingProfile ?? { id: signInData.user.id, nom, email, role, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+          setSuccessMsg('Connexion réussie ! Redirection...');
+          setTimeout(() => router.push('/dashboard'), 500);
+          return;
+        }
       }
-
       setError(signUpError.message || 'Erreur lors de la création du compte.');
       setLoading(false);
       return;
     }
 
     if (data.user) {
-      const userProfile = {
+      // ÉTAPE 2 : Connexion immédiate pour établir la session JWT
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError || !signInData?.session) {
+        setError('Compte créé. Veuillez vous connecter avec vos identifiants.');
+        setLoading(false);
+        return;
+      }
+
+      // ÉTAPE 3 : Upsert du profil avec les vraies données du formulaire
+      // (maintenant que la session JWT est active, la politique RLS "auth.uid() = id" passe)
+      const profileData = {
         id: data.user.id,
-        nom,
-        email,
-        role,
+        nom: nom.trim(),
+        email: email.trim().toLowerCase(),
+        role: role,
         updated_at: new Date().toISOString(),
       };
 
-      try {
-        await supabase.from('profiles').upsert(userProfile);
-      } catch (err) {
-        console.warn('Profile upsert warning:', err);
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(profileData, { onConflict: 'id' });
+
+      if (profileError) {
+        console.warn('Profile upsert warning:', profileError.message);
       }
 
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // ÉTAPE 4 : Lire le profil final depuis la BD (source de vérité)
+      const { data: savedProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
 
-      setUser({
-        ...userProfile,
-        created_at: new Date().toISOString(),
-      });
+      const finalProfile = savedProfile ?? { ...profileData, created_at: new Date().toISOString() };
 
-      setSuccessMsg('Votre compte a été créé avec succès ! Redirection vers votre espace...');
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 500);
+      // ÉTAPE 5 : Stocker en mémoire et rediriger
+      setUser(finalProfile);
+      setSuccessMsg('✅ Compte créé avec succès ! Redirection vers votre espace...');
+      setTimeout(() => router.push('/dashboard'), 800);
     }
   };
 
