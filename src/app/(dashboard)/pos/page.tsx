@@ -15,6 +15,7 @@ export default function PosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const [posList, setPosList] = useState<PointOfSale[]>([]);
   const [collectors, setCollectors] = useState<Profile[]>([]);
@@ -59,6 +60,7 @@ export default function PosPage() {
     if (!nom) return;
 
     setCreating(true);
+    setFormError('');
 
     const newPosData = {
       nom,
@@ -74,16 +76,24 @@ export default function PosPage() {
       .select('*, collecteur:profiles(*)')
       .single();
 
-    if (!error && data) {
+    setCreating(false);
+
+    if (error) {
+      // Show exact Supabase error so user/dev can debug
+      console.error('POS insert error:', error);
+      setFormError(`Erreur d'enregistrement : ${error.message} (code: ${error.code})`);
+      return;
+    }
+
+    if (data) {
       setPosList([data, ...posList]);
-    } else {
-      await loadData();
     }
 
     setNom('');
     setAdresse('');
+    setVille('Abidjan');
     setCollecteurId('');
-    setCreating(false);
+    setFormError('');
     setIsModalOpen(false);
   };
 
@@ -169,8 +179,13 @@ export default function PosPage() {
       )}
 
       {/* Add POS Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Point de Vente">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setFormError(''); }} title="Créer un Point de Vente">
         <form onSubmit={handleCreate} className="space-y-4">
+          {formError && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+              {formError}
+            </div>
+          )}
           <Input label="Nom du POS" placeholder="ex: POS Cocody St Jean" value={nom} onChange={(e) => setNom(e.target.value)} required />
           <Input label="Adresse / Emplacement" placeholder="ex: Rue des Jardins" value={adresse} onChange={(e) => setAdresse(e.target.value)} />
           <Input label="Ville" placeholder="Abidjan" value={ville} onChange={(e) => setVille(e.target.value)} required />
@@ -192,7 +207,7 @@ export default function PosPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Annuler</Button>
+            <Button type="button" variant="ghost" onClick={() => { setIsModalOpen(false); setFormError(''); }}>Annuler</Button>
             <Button type="submit" isLoading={creating}>Enregistrer le POS</Button>
           </div>
         </form>
