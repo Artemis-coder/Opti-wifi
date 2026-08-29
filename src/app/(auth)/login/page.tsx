@@ -86,11 +86,14 @@ export default function LoginPage() {
     setError('');
     setSuccessMsg('');
 
-    // Sign up with Supabase Auth
+    // Sign up with Supabase Auth with production redirect URL
+    const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: redirectUrl,
         data: {
           nom,
           role,
