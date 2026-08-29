@@ -14,7 +14,8 @@ import {
   Users, 
   Settings,
   X,
-  LogOut
+  LogOut,
+  User as UserIcon
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
@@ -104,11 +105,14 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
 
       {/* Role Badge Footer & Mobile Logout */}
       <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
-        <div className="flex items-center justify-between text-xs text-slate-400">
-          <span>Rôle connecté :</span>
-          <span className="font-semibold px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider text-[10px]">
-            {user?.role || 'collecteur'}
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs border border-amber-500/30">
+            <UserIcon className="w-4 h-4" />
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-xs font-bold text-white truncate">{user?.nom || 'Compte Utilisateur'}</p>
+            <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">{user?.role || 'Collecteur'}</p>
+          </div>
         </div>
 
         {onCloseMobile && (
@@ -126,20 +130,18 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
 
   return (
     <>
-      {/* Desktop Sidebar (hidden on mobile) */}
+      {/* Desktop Sidebar */}
       <div className="hidden lg:block sticky top-0 h-screen shrink-0">
         {content}
       </div>
 
-      {/* Mobile Drawer (visible when open) */}
+      {/* Mobile Drawer */}
       {isMobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
             onClick={onCloseMobile}
           />
-          {/* Sliding Panel */}
           <div className="relative z-10 w-64 max-w-[80vw] h-full animate-in slide-in-from-left duration-200">
             {content}
           </div>
