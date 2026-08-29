@@ -1,79 +1,71 @@
-import {
-  useCssElement,
-  useNativeVariable as useFunctionalVariable,
-} from "react-native-css";
+import React from 'react';
 
-import { Link as RouterLink } from "expo-router";
-import Animated from "react-native-reanimated";
-import React from "react";
-import {
-  View as RNView,
-  Text as RNText,
-  Pressable as RNPressable,
-  ScrollView as RNScrollView,
-  TouchableHighlight as RNTouchableHighlight,
-  TextInput as RNTextInput,
-  StyleSheet,
-} from "react-native";
+// CSS Variable hook - simplified for web
+export const useCSSVariable = (variable: string) => {
+  return `var(${variable})`;
+};
 
-// CSS Variable hook
-export const useCSSVariable =
-  process.env.EXPO_OS !== "web"
-    ? useFunctionalVariable
-    : (variable: string) => `var(${variable})`;
+// CSS-enabled components - using HTML elements for web
+export const View = ({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={className} {...props}>
+    {children}
+  </div>
+);
+
+export const Text = ({ children, className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
+  <span className={className} {...props}>
+    {children}
+  </span>
+);
+
+export const Pressable = ({ children, className, onPress, disabled = false, ...props }: { 
+  children?: React.ReactNode; 
+  className?: string; 
+  onPress?: () => void;
+  disabled?: boolean;
+  [key: string]: any;
+}) => {
+  const handleClick = () => {
+    if (!disabled && onPress) {
+      onPress();
+    }
+  };
+  
+  return (
+    <button 
+      className={className}
+      onClick={handleClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+export const TextInput = ({ children, className, ...props }: React.HTMLAttributes<HTMLInputElement>) => (
+  <input className={className} {...props} />
+);
+
+export const ScrollView = ({ children, className, style, ...props }: { 
+  children?: React.ReactNode; 
+  className?: string;
+  style?: React.CSSProperties;
+  [key: string]: any;
+}) => (
+  <div 
+    className={className}
+    style={{ overflow: 'auto', ...(style || {}) }}
+    {...props}
+  >
+    {children}
+  </div>
+);
 
 // Generic CSS Wrapper Helper
 const wrapCss = (component: any, options: any = { className: "style" }) => {
-  const Wrapped = React.forwardRef<any, any>((props, ref) => {
-    return useCssElement(component, { ...props, ref } as any, options);
-  });
-  return Wrapped as any;
+  // For web, just return the component as-is since we're already using HTML elements
+  return component;
 };
 
-// CSS-enabled Link
-export const Link = wrapCss(RouterLink);
-
-// View
-export const View = wrapCss(RNView);
-
-// Text
-export const Text = wrapCss(RNText);
-
-// ScrollView
-export const ScrollView = wrapCss(RNScrollView, {
-  className: "style",
-  contentContainerClassName: "contentContainerStyle",
-});
-
-// Pressable
-export const Pressable = wrapCss(RNPressable);
-
-// TextInput
-export const TextInput = wrapCss(RNTextInput);
-
-// AnimatedScrollView
-export const AnimatedScrollView = wrapCss(Animated.ScrollView, {
-  className: "style",
-  contentClassName: "contentContainerStyle",
-  contentContainerClassName: "contentContainerStyle",
-});
-
-// TouchableHighlight with underlayColor extraction
-function XXTouchableHighlight(
-  props: any
-) {
-  const styleObj = StyleSheet.flatten(props.style) as any;
-  const underlayColor = props.underlayColor || (styleObj ? styleObj.underlayColor : undefined);
-  const cleanStyle = styleObj ? { ...styleObj } : {};
-  delete cleanStyle.underlayColor;
-  
-  return (
-    <RNTouchableHighlight
-      underlayColor={underlayColor}
-      {...props}
-      style={cleanStyle}
-    />
-  );
-}
-
-export const TouchableHighlight = wrapCss(XXTouchableHighlight);
+export const Link = wrapCss('a');

@@ -1,18 +1,19 @@
-import { useCssElement } from "react-native-css";
-import React from "react";
-import { Image as RNImage, ImageProps as RNImageProps } from "expo-image";
+import React from 'react';
 
-export type ImageProps = RNImageProps & { className?: string };
+export type ImageProps = React.ImgHTMLAttributes<HTMLImageElement> & { 
+  className?: string; 
+};
 
-export const Image = React.forwardRef<RNImage, ImageProps>((props, ref) => {
-  // Remap objectFit style to contentFit property if needed
-  const { style, ...rest } = props;
+export const Image = React.forwardRef<HTMLImageElement, ImageProps>((props, ref) => {
+  const { className, ...rest } = props;
   
-  return useCssElement(
-    RNImage,
-    { ...rest, style, ref } as any,
-    { className: "style" }
+  return (
+    <img 
+      className={className} 
+      ref={ref} 
+      {...rest} 
+    />
   );
 });
 
-Image.displayName = "CSS(Image)";
+Image.displayName = 'Image';
