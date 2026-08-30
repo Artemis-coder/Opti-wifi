@@ -16,6 +16,7 @@ import {
   X,
   LogOut,
   User as UserIcon,
+  MapPin
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
@@ -43,6 +44,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['administrateur', 'collecteur'] },
+    { label: 'Espaces Wi-Fi', href: '/spaces', icon: MapPin, roles: ['administrateur'] },
     { label: 'Points de Vente', href: '/pos', icon: Store, roles: ['administrateur', 'collecteur'] },
     { label: 'Types de Tickets', href: '/tickets', icon: Ticket, roles: ['administrateur'] },
     { label: 'Allocations', href: '/allocations/new', icon: ArrowLeftRight, roles: ['administrateur'] },
