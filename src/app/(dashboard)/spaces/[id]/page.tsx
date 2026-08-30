@@ -6,8 +6,8 @@ import { useParams } from 'next/navigation';
 import {
   MapPin,
   Store,
-  UserCheck,
   Edit,
+  Trash2,
   ArrowLeft,
   Package,
   ShoppingCart,
@@ -17,35 +17,31 @@ import {
   Info,
   Clock,
   Ticket,
-  Unlink,
+  Banknote,
+  Inbox,
+  ArrowDownRight,
+  ArrowLeftRight,
+  PlusCircle,
   Link2,
-  Trash2,
+  Unlink,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem, WifiSpace } from '@/types/database';
 import { toast } from 'sonner';
+import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/format';
+import {
+  PointOfSale,
+  TicketType,
+  TicketAllocation,
+  Collection,
+  CollectionItem,
+  WifiSpace,
+} from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 
-interface SpaceAllocationSummary {
-  ticketType: TicketType;
-  alloue: number;
-  vendu: number;
-  restant: number;
-  ca: number;
-  ecarts: number;
-}
-
-interface SpaceCollectionSummary {
-  totalExpected: number;
-  totalCollected: number;
-  totalDifference: number;
-}
-
-export default function SpaceDetailPage() {
+export default function SpaceDashboardPage() {
   const params = useParams();
   const spaceId = params?.id as string;
 
@@ -53,45 +49,117 @@ export default function SpaceDetailPage() {
   const [space, setSpace] = useState<WifiSpace | null>(null);
   const [linkedPos, setLinkedPos] = useState<PointOfSale[]>([]);
   const [unlinkedPos, setUnlinkedPos] = useState<PointOfSale[]>([]);
-  const [allPos, setAllPos] = useState<PointOfSale[]>([]);
+  const [spaces, setSpaces] = useState<WifiSpace[]>([]);
+  const [recentCollections, setRecentCollections] = useState<Collection[]>([]);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [allocations, setAllocations] = useState<TicketAllocation[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [managePosSpaceId, setManagePosSpaceId] = useState<string | null>(null);
 
+  // KPIs
+  const [ticketsSoldTotal, setTicketsSoldTotal] = useState(0);
+  const [chiffreAffairesTotal, setChiffreAffairesTotal] = useState(0);
+  const [montantCollecteTotal, setMontantCollecteTotal] = useState(0);
+  const [ecartTotal, setEcartTotal] = useState(0);
+  const [ticketsAllouesTotal, setTicketsAllouesTotal] = useState(0);
+
   const { user } = useAuthStore();
   const supabase = createClient();
 
   useEffect(() => {
-    async function loadData() {
+    async function loadSpaceData() {
       if (!spaceId) return;
       setLoading(true);
 
-      const [spaceRes, posRes, ticketRes, allocRes, colRes] = await Promise.all([
+      const [
+        spaceRes,
+        posRes,
+        spacesRes,
+        ticketRes,
+        allocRes,
+        colRes,
+      ] = await Promise.all([
         supabase.from('wifi_spaces').select('*').eq('id', spaceId).single(),
-        supabase.from('points_of_sale').select('*'),
+        supabase.from('points_of_sale').select(
+          '*, collecteur:profiles(*), space:wifi_spaces(*)'
+        ),
+        supabase.from('wifi_spaces').select('*').order('nom'),
         supabase.from('ticket_types').select('*'),
         supabase.from('ticket_allocations').select('*, ticket_type:ticket_types(*)'),
-        supabase.from('collections').select('*, items:collection_items(*)'),
+        supabase
+          .from('collections')
+          .select('*, items:collection_items(*), pos:points_of_sale(*), collecteur:profiles(*)')
+          .order('created_at', { ascending: false }),
       ]);
 
       if (spaceRes.data) setSpace(spaceRes.data);
-      if (posRes.data) setAllPos(posRes.data);
+      if (spacesRes.data) setSpaces(spacesRes.data);
+      if (posRes.data) {
+        setLinkedPos(posRes.data.filter((p: PointOfSale) => p.space_id === spaceId));
+        setUnlinkedPos(
+          posRes.data.filter(
+            (p: PointOfSale) => p.space_id !== spaceId && p.space_id !== undefined && p.space_id !== null
+          )
+        );
+      }
       if (ticketRes.data) setTicketTypes(ticketRes.data);
       if (allocRes.data) setAllocations(allocRes.data);
       if (colRes.data) setCollections(colRes.data);
 
-      // Filter linked/unlinked POS
-      if (posRes.data) {
-        setLinkedPos(posRes.data.filter((p) => p.space_id === spaceId));
-        setUnlinkedPos(posRes.data.filter((p) => p.space_id !== spaceId && p.space_id !== null));
+      // Compute KPIs
+      const allItems: CollectionItem[] = [];
+      if (colRes.data) {
+        colRes.data.forEach((c: Collection) => {
+          if (c.items) allItems.push(...c.items);
+        });
       }
+
+      const soldTotal = allItems.reduce(
+        (acc, curr) => acc + (curr.quantite_vendue || 0),
+        0
+      );
+      setTicketsSoldTotal(soldTotal);
+
+      const linkedPosIds = linkedPos.map((p) => p.id);
+      // Wait, linkedPos is set above with setLinkedPos but we need it here
+      // Actually let's compute from posRes data directly
+
+      const actualLinkedPosIds = (posRes.data || [])
+        .filter((p: PointOfSale) => p.space_id === spaceId)
+        .map((p: PointOfSale) => p.id);
+
+      const spaceAllocations = (allocRes.data || []).filter((a: TicketAllocation) =>
+        actualLinkedPosIds.includes(a.pos_id)
+      );
+      const spaceCollections = (colRes.data || []).filter((c: Collection) =>
+        actualLinkedPosIds.includes(c.pos_id)
+      );
+
+      let totalExpected = 0;
+      let totalCollected = 0;
+      let totalDiff = 0;
+      spaceCollections.forEach((c) => {
+        totalExpected += Number(c.montant_attendu || 0);
+        totalCollected += Number(c.montant_collecte || 0);
+        totalDiff += Number(c.difference || 0);
+      });
+      setChiffreAffairesTotal(totalExpected);
+      setMontantCollecteTotal(totalCollected);
+      setEcartTotal(totalDiff);
+
+      const totalAllocated = spaceAllocations.reduce(
+        (acc, curr) => acc + (curr.quantite || 0),
+        0
+      );
+      setTicketsAllouesTotal(totalAllocated);
+
+      setRecentCollections(spaceCollections.slice(0, 5));
 
       setLoading(false);
     }
 
-    loadData();
+    loadSpaceData();
   }, [spaceId, supabase]);
 
   const handleSpaceUpdated = (updated: WifiSpace) => {
@@ -101,46 +169,53 @@ export default function SpaceDetailPage() {
   const handleDeleteSpace = async () => {
     if (!space) return;
 
-    // First detach all linked POS
+    const message =
+      linkedPos.length > 0
+        ? `Supprimer cet espace détachera ${linkedPos.length} point(s) de vente. Continuer ?`
+        : 'Supprimer cet espace ?';
+    if (!window.confirm(message)) return;
+
     if (linkedPos.length > 0) {
       await supabase
         .from('points_of_sale')
         .update({ space_id: null })
-        .in('id', linkedPos.map((p) => p.id));
-      setAllPos((prev) =>
-        prev.map((p) =>
-          linkedPos.some((lp) => lp.id === p.id)
-            ? { ...p, space_id: undefined }
-            : p
-        )
-      );
+        .eq('space_id', spaceId);
       setLinkedPos([]);
-      setUnlinkedPos([...unlinkedPos, ...linkedPos]);
+      setUnlinkedPos((prev) => [...prev, ...linkedPos]);
     }
 
-    const { error } = await supabase.from('wifi_spaces').delete().eq('id', spaceId);
+    const { error } = await supabase
+      .from('wifi_spaces')
+      .delete()
+      .eq('id', spaceId);
     if (!error) {
-      // Redirect to spaces list
-      // In a real app, we'd use router.push, but we'll rely on toast and manual navigation for now
-      alert('Espace supprimé avec succès');
+      toast.success('Espace supprimé avec succès');
+      window.location.href = '/spaces';
     } else {
       toast.error('Erreur lors de la suppression de l\'espace');
     }
   };
 
   const handleLinkPos = async (posId: string) => {
+    const { data: posData, error: fetchError } = await supabase
+      .from('points_of_sale')
+      .select('*')
+      .eq('id', posId)
+      .single();
+    if (fetchError || !posData) {
+      toast.error('Erreur lors de la récupération du POS');
+      return;
+    }
+
     const { error } = await supabase
       .from('points_of_sale')
       .update({ space_id: spaceId })
       .eq('id', posId);
     if (!error) {
-      setAllPos((prev) =>
-        prev.map((p) =>
-          p.id === posId ? { ...p, space_id: spaceId } : p
-        )
-      );
-      setLinkedPos((prev) => [...prev, allPos.find((p) => p.id === posId)!]);
+      const updatedPos = { ...posData, space_id: spaceId } as PointOfSale;
+      setLinkedPos((prev) => [...prev, updatedPos]);
       setUnlinkedPos((prev) => prev.filter((p) => p.id !== posId));
+      toast.success('POS rattaché à l\'espace');
     } else {
       toast.error('Erreur lors du rattachement du POS');
     }
@@ -152,104 +227,23 @@ export default function SpaceDetailPage() {
       .update({ space_id: null })
       .eq('id', posId);
     if (!error) {
-      setAllPos((prev) =>
-        prev.map((p) =>
-          p.id === posId ? { ...p, space_id: undefined } : p
-        )
-      );
-      setLinkedPos((prev) => prev.filter((p) => p.id !== posId));
-      setUnlinkedPos((prev) => [...prev, allPos.find((p) => p.id === posId)!]);
+      const pos = linkedPos.find((p) => p.id === posId);
+      if (pos) {
+        const updatedPos = { ...pos, space_id: undefined };
+        setLinkedPos((prev) => prev.filter((p) => p.id !== posId));
+        setUnlinkedPos((prev) => [...prev, updatedPos]);
+      }
+      toast.success('POS détaché de l\'espace');
     } else {
       toast.error('Erreur lors du détachement du POS');
     }
   };
 
-  // Compute aggregated KPIs for all linked POS
-  const linkedPosIds = linkedPos.map((p) => p.id);
-
-  // Filter data for linked POS only
-  const spaceAllocations = allocations.filter((alloc) =>
-    linkedPosIds.includes(alloc.pos_id)
-  );
-
-  const spaceCollections = collections.filter((col) =>
-    linkedPosIds.includes(col.pos_id)
-  );
-
-  const spaceAllItems: CollectionItem[] = [];
-  spaceCollections.forEach((c) => {
-    if (c.items) spaceAllItems.push(...c.items);
-  });
-
-  const computeSpaceAllocationSummary = (): SpaceAllocationSummary[] => {
-    if (!ticketTypes.length) return [];
-
-    const summaryByTypeId = new Map<string, SpaceAllocationSummary>();
-
-    ticketTypes.forEach((tt) => {
-      summaryByTypeId.set(tt.id, {
-        ticketType: tt,
-        alloue: 0,
-        vendu: 0,
-        restant: 0,
-        ca: 0,
-        ecarts: 0,
-      });
-    });
-
-    spaceAllocations.forEach((alloc) => {
-      const tt = alloc.ticket_type;
-      if (!tt) return;
-      const s = summaryByTypeId.get(tt.id);
-      if (s) {
-        s.alloue += alloc.quantite;
-      }
-    });
-
-    spaceAllItems.forEach((item) => {
-      const tt = item.ticket_type;
-      const typeId = item.ticket_type_id;
-      const s = summaryByTypeId.get(typeId) || (tt ? summaryByTypeId.get(tt.id) : null);
-      if (s) {
-        s.vendu += item.quantite_vendue;
-        s.ca += Number(item.montant_total || 0);
-        const expected = item.quantite_vendue * (tt ? tt.prix : s.ticketType.prix);
-        s.ecarts += Number(item.montant_total || 0) - expected;
-      }
-    });
-
-    summaryByTypeId.forEach((s) => {
-      s.restant = s.alloue - s.vendu;
-    });
-
-    return Array.from(summaryByTypeId.values()).filter(
-      (s) => s.alloue > 0 || s.vendu > 0
-    );
-  };
-
-  const allocationSummary = computeSpaceAllocationSummary();
-
-  const totalAlloue = allocationSummary.reduce((sum, s) => sum + s.alloue, 0);
-  const totalVendu = allocationSummary.reduce((sum, s) => sum + s.vendu, 0);
-  const totalRestant = allocationSummary.reduce((sum, s) => sum + s.restant, 0);
-  const totalCA = allocationSummary.reduce((sum, s) => sum + s.ca, 0);
-  const totalEcarts = allocationSummary.reduce((sum, s) => sum + s.ecarts, 0);
-
-  const totalExpected = spaceCollections.reduce(
-    (sum, c) => sum + Number(c.montant_attendu || 0),
-    0
-  );
-  const totalCollected = spaceCollections.reduce(
-    (sum, c) => sum + Number(c.montant_collecte || 0),
-    0
-  );
-  const totalDifference = totalCollected - totalExpected;
-
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
         <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-        Chargement de l'espace...
+        Chargement du tableau de bord...
       </div>
     );
   }
@@ -275,35 +269,35 @@ export default function SpaceDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link href="/spaces">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="w-4 h-4" /> Retour
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <MapPin className="w-6 h-6 text-blue-600" />
-            {space.nom}
-          </h1>
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#0b1a3a] to-[#162e63] p-6 rounded-2xl text-white shadow-lg border border-slate-800">
+        <div>
+          <div className="flex items-center gap-3">
+            <MapPin className="w-6 h-6 text-amber-400" />
+            <h1 className="text-2xl font-bold">{space.nom}</h1>
+          </div>
+          {space.description && (
+            <p className="text-sm text-slate-300 mt-1">{space.description}</p>
+          )}
+          {(space.adresse || space.ville) && (
+            <div className="flex items-center gap-1 text-sm text-slate-400 mt-1">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>{[space.adresse, space.ville].filter(Boolean).join(', ')}</span>
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2 mt-4 md:mt-0">
           {user?.role === 'administrateur' && (
             <>
               <Button
-                onClick={() => setManagePosSpaceId(spaceId)}
-                className="gap-2 font-semibold"
+                onClick={() => setIsEditModalOpen(true)}
+                className="gap-2 font-semibold bg-amber-500 text-slate-900 hover:bg-amber-400"
               >
-                <Link2 className="w-4 h-4" />
-                Rattacher des POS
-              </Button>
-              <Button onClick={() => setIsEditModalOpen(true)} className="gap-2 font-semibold">
-                <Edit className="w-4 h-4" /> Modifier l'espace
+                <Edit className="w-4 h-4" /> Modifier
               </Button>
               <Button
                 onClick={handleDeleteSpace}
-                className="gap-2 font-semibold text-red-600 hover:text-red-700"
+                className="gap-2 font-semibold bg-red-600 hover:bg-red-700 text-white"
               >
                 <Trash2 className="w-4 h-4" /> Supprimer
               </Button>
@@ -312,458 +306,447 @@ export default function SpaceDetailPage() {
         </div>
       </div>
 
-      {/* Space Info Card */}
-      <Card className="p-6 space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-blue-900/10 text-blue-900 dark:text-amber-400 border border-blue-900/20">
-              <MapPin className="w-6 h-6" />
+      {/* Linked POS Summary */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
+              <Store className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {space.nom}
-              </h2>
-              {space.description && (
-                <p className="text-xs text-slate-500 mt-1">{space.description}</p>
-              )}
-              <div className="flex items-center gap-1 text-sm text-slate-500 mt-2">
-                <MapPin className="w-4 h-4" />
-                <span>
-                  {[space.adresse, space.ville]
-                    .filter(Boolean)
-                    .join(', ') || 'Non spécifiée'}
-                </span>
-              </div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                Points de Vente rattachés à cet espace
+              </p>
+              <p className="text-xs text-slate-500">
+                {linkedPos.length} POS ({linkedPos.filter((p) => p.statut === 'actif').length} actif)
+              </p>
             </div>
           </div>
-          <Badge
-            variant={
-              space.statut === 'actif'
-                ? 'success'
-                : space.statut === 'suspendu'
-                ? 'danger'
-                : 'neutral'
-            }
-          >
-            {space.statut}
-          </Badge>
+          {user?.role === 'administrateur' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setManagePosSpaceId(spaceId)}
+              className="gap-1 text-xs font-semibold text-blue-600"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              Gérer les POS
+            </Button>
+          )}
         </div>
+      </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-          <div className="flex items-center gap-2 text-sm">
-            <MapPin className="w-4 h-4 text-amber-500" />
-            <span className="text-slate-500">Points de vente liés :</span>
-            <strong className="text-xl font-extrabold text-slate-900 dark:text-white">
-              {linkedPos.length}
-            </strong>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-500">Créé le :</span>
-            <span className="text-slate-800 dark:text-slate-200">
-              {formatDateFR(space.created_at)}
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Tickets Alloués */}
+        <Card className="border-l-4 border-l-purple-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Tickets Alloués
             </span>
+            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <Package className="w-5 h-5" />
+            </div>
           </div>
-        </div>
-      </Card>
-
-      {/* KPI Cards */}
-      <Card className="border-l-4 border-l-amber-500">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Tickets Alloués
-          </span>
-          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <Package className="w-5 h-5" />
+          <div className="mt-3">
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {formatNumber(ticketsAllouesTotal)}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Stock distribué aux POS de cet espace
+            </p>
           </div>
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-            {totalAlloue}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Stock total alloué à tous les POS de cet espace
-          </p>
-        </div>
-      </Card>
+        </Card>
 
-      <Card className="border-l-4 border-l-blue-900">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Tickets Vendus
-          </span>
-          <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
-            <ShoppingCart className="w-5 h-5" />
+        {/* Tickets Vendus */}
+        <Card className="border-l-4 border-l-amber-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Tickets Vendus
+            </span>
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <Ticket className="w-5 h-5" />
+            </div>
           </div>
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-            {totalVendu}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Nombre total de pass écoulés dans l'espace
-          </p>
-        </div>
-      </Card>
-
-      <Card className="border-l-4 border-l-emerald-500">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Tickets Restants
-          </span>
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <Package className="w-5 h-5" />
+          <div className="mt-3">
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {formatNumber(ticketsSoldTotal)}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Nombre total de pass écoulés
+            </p>
           </div>
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-            {totalRestant}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Stock non encore vendu dans l'espace
-          </p>
-        </div>
-      </Card>
+        </Card>
 
-      <Card className="border-l-4 border-l-amber-500">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Chiffre d&apos;Affaires
-          </span>
-          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <BarChart3 className="w-5 h-5" />
+        {/* Chiffre d'Affaires */}
+        <Card className="border-l-4 border-l-blue-900">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Chiffre d'Affaires
+            </span>
+            <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
+              <Banknote className="w-5 h-5" />
+            </div>
           </div>
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-            {formatCurrencyFCFA(totalCA)}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">
-            CA total depuis les collectes de l'espace
-          </p>
-        </div>
-      </Card>
+          <div className="mt-3">
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {formatCurrencyFCFA(chiffreAffairesTotal)}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Montant théorique attendu
+            </p>
+          </div>
+        </Card>
 
-      {/* Linked POS List */}
-      {linkedPos.length > 0 && (
-        <Card className="p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Store className="w-5 h-5 text-blue-600" />
-              Points de vente liés à cet espace ({linkedPos.length})
+        {/* Montant Encaissé */}
+        <Card className="border-l-4 border-l-emerald-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Total Encaissé
+            </span>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Receipt className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {formatCurrencyFCFA(montantCollecteTotal)}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Total espèces perçues
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Main Content Grid: Recent Encaissements & Raccourcis */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Derniers Encaissements */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Derniers Encaissements (Espace)
             </h2>
+            <Link
+              href="/collections"
+              className="text-xs font-semibold text-amber-600 hover:text-amber-700"
+            >
+              Voir tout →
+            </Link>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-3">Point de Vente</th>
-                  <th className="px-4 py-3">Ville</th>
-                  <th className="px-4 py-3 text-right">Statut</th>
-                  <th className="px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {linkedPos.map((pos) => (
-                  <tr key={pos.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Store className="w-3.5 h-3.5" />
-                        <span className="font-semibold text-slate-900 dark:text-white">
-                          {pos.nom}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">{pos.ville}</td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        variant={
-                          pos.statut === 'actif'
-                            ? 'success'
-                            : pos.statut === 'suspendu'
-                            ? 'danger'
-                            : 'neutral'
-                        }
+          {loading ? (
+            <Card className="p-8 text-center text-slate-500">
+              <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
+              <p className="text-xs font-medium mt-2">
+                Chargement des encaissements...
+              </p>
+            </Card>
+          ) : recentCollections.length === 0 ? (
+            <Card className="p-8 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                <Inbox className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                Aucun encaissement enregistré
+              </h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Aucune collecte n'a été effectuée pour les points de vente
+                rattachés à cet espace.
+              </p>
+              <Link href="/collections/new" className="inline-block pt-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="font-bold gap-2"
+                >
+                  <PlusCircle className="w-4 h-4" /> Effectuer une collecte
+                </Button>
+              </Link>
+            </Card>
+          ) : (
+            <Card className="p-0 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-3">Point de Vente</th>
+                      <th className="px-4 py-3">Collecteur</th>
+                      <th className="px-4 py-3">Montant Encaissé</th>
+                      <th className="px-4 py-3">Statut</th>
+                      <th className="px-4 py-3">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                    {recentCollections.map((col) => (
+                      <tr
+                        key={col.id}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
                       >
-                        {pos.statut}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      {user?.role === 'administrateur' && (
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
+                          {col.pos?.nom || 'POS'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                          {col.collecteur?.nom || 'Collecteur'}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
+                          {formatCurrencyFCFA(col.montant_collecte)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant={
+                              col.statut === 'validee'
+                                ? 'success'
+                                : 'warning'
+                            }
+                          >
+                            {col.statut === 'validee'
+                              ? 'Validée'
+                              : 'Brouillon'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500">
+                          {formatDateFR(col.created_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* Right Column: Raccourcis Métier */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            Raccourcis Métier (Espace)
+          </h2>
+
+          <Card className="grid grid-cols-1 gap-3">
+            {user?.role === 'administrateur' && (
+              <Link
+                href="/allocations/new"
+                className="flex items-center justify-between p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 hover:scale-[1.01] transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-purple-600 text-white">
+                    <ArrowLeftRight className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                      Allouer des Tickets
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Distribuer du stock aux POS
+                    </p>
+                  </div>
+                </div>
+                <span className="text-purple-600 font-bold">→</span>
+              </Link>
+            )}
+
+            <Link
+              href="/collections/new"
+              className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 hover:scale-[1.01] transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500 text-slate-950">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
+                    Nouvelle Collecte
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Saisir un encaissement de caisse
+                  </p>
+                </div>
+              </div>
+              <span className="text-amber-600 font-bold">→</span>
+            </Link>
+
+            <Link
+              href="/pos"
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-900 text-white">
+                  <Store className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
+                    Points de Vente
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Gérer le réseau de distribution
+                  </p>
+                </div>
+              </div>
+              <span className="text-slate-400 font-bold">→</span>
+            </Link>
+
+            <Link
+              href="/tickets"
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-600 text-white">
+                  <Ticket className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
+                    Types de Tickets
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Consulter et modifier les tarifs
+                  </p>
+                </div>
+              </div>
+              <span className="text-slate-400 font-bold">→</span>
+            </Link>
+          </Card>
+
+          {/* KPI Summary Card */}
+          <Card className="border-l-4 border-l-red-500">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Écart / Différence
+              </span>
+              <div className="p-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400">
+                <ArrowDownRight className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <p
+                className={`text-2xl font-extrabold ${
+                  ecartTotal < 0
+                    ? 'text-red-600'
+                    : 'text-emerald-600'
+                }`}
+              >
+                {formatCurrencyFCFA(ecartTotal)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Écart entre attendu et encaissé
+              </p>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Manage POS Modal */}
+      {managePosSpaceId === spaceId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Gérer les Points de Vente
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setManagePosSpaceId(null)}
+                >
+                  ✕
+                </Button>
+              </div>
+
+              {/* Linked POS */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  POS liés à cet espace ({linkedPos.length})
+                </h3>
+                {linkedPos.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4 text-center">
+                    Aucun POS n'est rattaché à cet espace.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {linkedPos.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Store className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              {p.nom}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              {p.ville}
+                            </p>
+                          </div>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleUnlinkPos(pos.id)}
+                          onClick={() => handleUnlinkPos(p.id)}
                           className="gap-1 text-xs text-red-600 hover:text-red-700"
                         >
-                          <Unlink className="w-3 h-3" /> Détacher
+                          <Unlink className="w-3.5 h-3.5" /> Détacher
                         </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                <tr className="border-t-2 border-slate-200 dark:border-slate-700 font-bold">
-                  <td className="px-4 py-3 text-slate-900 dark:text-white">Total</td>
-                  <td className="px-4 py-3">{linkedPos.length}</td>
-                  <td className="px-4 py-3"></td>
-                  <td className="px-4 py-3"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-
-      {/* Unlinked POS List (for linking) */}
-      {managePosSpaceId === spaceId && unlinkedPos.length > 0 && (
-        <Card className="p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-blue-600" />
-              Points de vente disponibles à rattacher ({unlinkedPos.length})
-            </h2>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-3">Point de Vente</th>
-                  <th className="px-4 py-3">Ville</th>
-                  <th className="px-4 py-3 text-right">Statut</th>
-                  <th className="px-4 py-3">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {unlinkedPos.map((pos) => (
-                  <tr key={pos.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Store className="w-3.5 h-3.5" />
-                        <span className="font-semibold text-slate-900 dark:text-white">
-                          {pos.nom}
-                        </span>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">{pos.ville}</td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        variant={
-                          pos.statut === 'actif'
-                            ? 'success'
-                            : pos.statut === 'suspendu'
-                            ? 'danger'
-                            : 'neutral'
-                        }
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Unlinked POS */}
+              <div className="mt-6 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  POS disponibles ({unlinkedPos.length})
+                </h3>
+                {unlinkedPos.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4 text-center">
+                    Tous les POS sont déjà rattachés à un espace.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {unlinkedPos.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800"
                       >
-                        {pos.statut}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleLinkPos(pos.id)}
-                        className="gap-1 text-[11px] py-1 px-2 h-7"
-                      >
-                        Rattacher
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setManagePosSpaceId(null)}
-              className="gap-2 font-semibold"
-            >
-              Fermer la liste
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* Allocation Summary Table (for the space) */}
-      {allocationSummary.length > 0 && (
-        <Card className="p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Package className="w-5 h-5 text-amber-500" />
-              Suivi des Allocations de Tickets (Espace)
-            </h2>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-3">Type de Ticket</th>
-                  <th className="px-4 py-3 text-right">Alloués</th>
-                  <th className="px-4 py-3 text-right">Vendus</th>
-                  <th className="px-4 py-3 text-right">Restants</th>
-                  <th className="px-4 py-3 text-right">CA (FCFA)</th>
-                  <th className="px-4 py-3 text-right">Écarts</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {allocationSummary.map((s) => (
-                  <tr key={s.ticketType.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-600 dark:text-emerald-400">
-                          <Ticket className="w-4 h-4" />
-                        </span>
-                        <span className="font-semibold text-slate-900 dark:text-white">
-                          {s.ticketType.nom}
-                        </span>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Store className="w-4 h-4 text-blue-600 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              {p.nom}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              {p.ville}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleLinkPos(p.id)}
+                          className="gap-1 text-xs py-1 px-2 h-7"
+                        >
+                          <Link2 className="w-3 h-3" /> Rattacher
+                        </Button>
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        {formatCurrencyFCFA(s.ticketType.prix)} / unité
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
-                      {s.alloue}
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
-                      {s.vendu}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={`${s.restant > 0 ? 'text-emerald-600' : s.restant < 0 ? 'text-red-600' : 'text-slate-500'}`}>
-                        {s.restant > 0 ? s.restant : '0'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
-                      {formatCurrencyFCFA(s.ca)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {s.ecarts === 0 ? (
-                        <span className="text-emerald-600 flex items-center justify-end gap-1">
-                          <Info className="w-3.5 h-3.5" /> Conforme
-                        </span>
-                      ) : (
-                        <span className={s.ecarts < 0 ? 'text-red-600' : 'text-emerald-600'}>
-                          {formatCurrencyFCFA(s.ecarts)}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                <tr className="border-t-2 border-slate-200 dark:border-slate-700 font-bold">
-                  <td className="px-4 py-3 text-slate-900 dark:text-white">Totaux</td>
-                  <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
-                    {totalAlloue}
-                  </td>
-                  <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
-                    {totalVendu}
-                  </td>
-                  <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
-                    {totalRestant}
-                  </td>
-                  <td className="px-4 py-3 text-right text-amber-600">
-                    {formatCurrencyFCFA(totalCA)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {totalEcarts === 0 ? (
-                      <span className="text-emerald-600">Conforme</span>
-                    ) : (
-                      <span className={totalEcarts < 0 ? 'text-red-600' : 'text-emerald-600'}>
-                        {formatCurrencyFCFA(totalEcarts)}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
+                    ))}
+                  </div>
+                )}
+              </div>
 
-      {/* Collections Summary (for the space) */}
-      <Card className="p-0 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-blue-600" />
-            Historique des Collectes (Espace)
-          </h2>
+              <div className="flex justify-end pt-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setManagePosSpaceId(null)}
+                >
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
-
-        {collections.length === 0 ? (
-          <div className="p-8 text-center space-y-3">
-            <Receipt className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Aucune collecte enregistrée
-            </h3>
-            <p className="text-xs text-slate-500">
-              Aucune collecte de caisse n'a été effectuée pour les points de vente de cet espace.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Montant Attendu</th>
-                  <th className="px-4 py-3">Montant Encaissé</th>
-                  <th className="px-4 py-3">Écart</th>
-                  <th className="px-4 py-3">Statut</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {spaceCollections.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                      {formatDateFR(c.created_at)}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{formatCurrencyFCFA(Number(c.montant_attendu))}</td>
-                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                      {formatCurrencyFCFA(Number(c.montant_collecte))}
-                    </td>
-                    <td className="px-4 py-3">
-                      {Number(c.difference) === 0 ? (
-                        <span className="text-emerald-600 font-bold flex items-center gap-1">Conforme</span>
-                      ) : (
-                        <span className={Number(c.difference) < 0 ? 'text-red-600' : 'text-emerald-600'}>
-                          {formatCurrencyFCFA(Number(c.difference))}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={c.statut === 'validee' ? 'success' : c.statut === 'annulee' ? 'danger' : 'warning'}>
-                        {c.statut === 'validee' ? 'Validée' : c.statut === 'annulee' ? 'Annulée' : 'Brouillon'}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-                <tr className="border-t-2 border-slate-200 dark:border-slate-700 font-bold">
-                  <td className="px-4 py-3 text-slate-900 dark:text-white">Totaux</td>
-                  <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
-                    {formatCurrencyFCFA(totalExpected)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
-                    {formatCurrencyFCFA(totalCollected)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {totalDifference === 0 ? (
-                      <span className="text-emerald-600">Conforme</span>
-                    ) : (
-                      <span className={totalDifference < 0 ? 'text-red-600' : 'text-emerald-600'}>
-                        {formatCurrencyFCFA(Math.abs(totalDifference))} {totalDifference < 0 ? '(-)' : '(+)'}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      )}
 
       {/* Edit Space Modal */}
       {isEditModalOpen && space && (
@@ -784,10 +767,15 @@ export default function SpaceDetailPage() {
                     .from('wifi_spaces')
                     .update({
                       nom: nomVal,
-                      description: form.description.value.trim() || undefined,
-                      adresse: form.adresse.value.trim() || undefined,
+                      description:
+                        form.description.value.trim() || undefined,
+                      adresse:
+                        form.adresse.value.trim() || undefined,
                       ville: form.ville.value.trim() || undefined,
-                      statut: form.statut.value as 'actif' | 'inactif' | 'suspendu',
+                      statut: form.statut.value as
+                        | 'actif'
+                        | 'inactif'
+                        | 'suspendu',
                       updated_at: new Date().toISOString(),
                     })
                     .eq('id', space.id);
@@ -857,7 +845,11 @@ export default function SpaceDetailPage() {
                   </select>
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
-                  <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
                     Annuler
                   </Button>
                   <Button type="submit" variant="secondary">
