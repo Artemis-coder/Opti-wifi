@@ -120,8 +120,8 @@ const addLine = () => {
     setSubmitted(true);
     toast.success('Allocation enregistrée avec succès');
     setTimeout(() => {
-      router.push('/allocations/new');
-    }, 1500);
+      router.push('/allocations');
+    }, 1200);
   };
 
   return (
