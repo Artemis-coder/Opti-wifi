@@ -150,12 +150,12 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
 
       {/* Mobile Drawer */}
       {isMobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
           <div
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
             onClick={onCloseMobile}
           />
-          <div className="relative z-10 w-full h-[85vh] max-h-[85vh] mt-auto animate-in slide-in-from-bottom duration-200 rounded-t-2xl overflow-hidden flex flex-col">
+          <div className="relative z-10 w-screen h-[85vh] max-h-[85vh] mt-auto animate-in slide-in-from-bottom duration-200 rounded-t-2xl overflow-hidden flex flex-col">
             {/* Drag Handle & Close Button */}
             <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
               <div className="flex-1 flex justify-center">
