@@ -74,7 +74,8 @@ export default function PosDetailPage() {
       const { data: allocData } = await supabase
         .from('ticket_allocations')
         .select('*, ticket_type:ticket_types(*)')
-        .eq('pos_id', posId);
+        .eq('pos_id', posId)
+        .order('created_at', { ascending: false });
       setAllocations(allocData || []);
 
       const { data: colItemsData } = await supabase
@@ -384,6 +385,53 @@ export default function PosDetailPage() {
                     )}
                   </td>
                 </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Allocation History */}
+      <Card className="p-0 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Clock className="w-5 h-5 text-amber-500" />
+            Historique des Allocations
+          </h2>
+        </div>
+
+        {allocations.length === 0 ? (
+          <div className="p-8 text-center space-y-3">
+            <Clock className="w-10 h-10 text-slate-300 mx-auto" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune allocation enregistrée</h3>
+            <p className="text-xs text-slate-500">
+              Aucune allocation de tickets n&apos;a été effectuée pour ce point de vente.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                <tr>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Type de Ticket</th>
+                  <th className="px-4 py-3 text-right">Quantité Allouée</th>
+                  <th className="px-4 py-3">Notes / Référence</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                {allocations.map((a) => (
+                  <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                      {formatDateFR(a.created_at)}
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
+                      {a.ticket_type?.nom || 'Type inconnu'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{a.quantite}</td>
+                    <td className="px-4 py-3 text-slate-500">{a.notes || '—'}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
