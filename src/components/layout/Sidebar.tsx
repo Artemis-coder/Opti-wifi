@@ -47,7 +47,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
     { label: 'Espaces Wi-Fi', href: '/spaces', icon: MapPin, roles: ['administrateur'] },
     { label: 'Points de Vente', href: '/pos', icon: Store, roles: ['administrateur', 'collecteur'] },
     { label: 'Types de Tickets', href: '/tickets', icon: Ticket, roles: ['administrateur'] },
-    { label: 'Allocations', href: '/allocations/new', icon: ArrowLeftRight, roles: ['administrateur'] },
+    { label: 'Allocations', href: '/allocations', icon: ArrowLeftRight, roles: ['administrateur'] },
     { label: 'Collectes & Caisses', href: '/collections', icon: Receipt, roles: ['administrateur', 'collecteur'] },
     { label: 'Rapports & Exports', href: '/reports', icon: FileSpreadsheet, roles: ['administrateur'] },
     { label: 'Utilisateurs', href: '/users', icon: Users, roles: ['administrateur'] },
