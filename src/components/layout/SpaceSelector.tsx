@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ExternalLink } from 'lucide-react';
+import { ChevronDown, ExternalLink, MapPin } from 'lucide-react';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { createClient } from '@/lib/supabase/client';
 
 export function SpaceSelector() {
   const { currentSpaceId, spaces, setCurrentSpaceId, setSpaces } = useSpaceStore();
   const supabase = createClient();
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     async function loadSpaces() {
@@ -42,21 +43,37 @@ export function SpaceSelector() {
         )}
       </div>
       <div className="relative">
-        <select
-          value={currentSpaceId || ''}
-          onChange={(e) => setCurrentSpaceId(e.target.value)}
-          className="w-full h-9 pl-3 pr-8 bg-slate-900/50 border border-slate-700 rounded-lg text-xs font-medium text-white appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500"
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full h-9 pl-3 pr-8 bg-slate-900/50 border border-slate-700 rounded-lg text-xs font-medium text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-amber-500"
         >
-          {spaces.length === 0 && (
-            <option value="">Aucun espace</option>
-          )}
-          {spaces.map((space) => (
-            <option key={space.id} value={space.id}>
-              {space.nom}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="absolute right-2 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
+          <span className={isOpen ? 'text-white' : 'text-slate-400'}>
+            {selectedSpace?.nom || 'Aucun espace'}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {isOpen && (
+          <div className="absolute z-50 w-full mt-1 bg-slate-900/95 border border-slate-700 rounded-lg max-h-60 overflow-y-auto backdrop-blur-sm">
+            {spaces.map((space) => {
+              const isSelected = space.id === currentSpaceId;
+              return (
+                <button
+                  key={space.id}
+                  onClick={() => {
+                    setCurrentSpaceId(space.id);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-left text-xs hover:bg-slate-800/60 transition ${
+                    isSelected ? 'bg-amber-500/10 text-amber-400 font-medium' : 'text-slate-300'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span className="truncate">{space.nom}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
       {selectedSpace && (
         <p className="text-[10px] text-slate-400 mt-1 truncate">

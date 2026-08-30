@@ -410,9 +410,9 @@ export default function SpaceDashboardPage() {
            </div>
          </Card>
 
-         {/* Écart / Différence */}
-         <Card className="border-l-4 border-l-red-500">
-           <div className="flex items-center justify-between">
+{/* Écart / Différence */}
+          <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
+            <div className="flex items-center justify-between">
              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                Écart / Différence
              </span>
