@@ -39,6 +39,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'optiwifi-auth-storage',
       storage: createJSONStorage(() => customStorage),
+      partialize: (state) => ({ user: state.user }),
+      onRehydrateStorage: () => (state) => {
+        state?.setIsLoading(false);
+      },
     }
   )
 );
