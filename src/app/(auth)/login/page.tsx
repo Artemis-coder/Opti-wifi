@@ -216,7 +216,7 @@ export default function LoginPage() {
     }
   };
 
-  const showTabs = mode !== 'recovery';
+  const showTabs = mode === 'login' || mode === 'register';
 
   return (
     <div className="min-h-screen bg-[#0b1a3a] flex items-center justify-center p-4 relative overflow-hidden">
@@ -311,7 +311,7 @@ export default function LoginPage() {
         {mode === 'recovery' && (
           <form onSubmit={handlePasswordUpdate} className="space-y-4">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white text-center">
-              Réinitialiser le mot de passe
+              Réinitialiser mon mot de passe
             </h2>
             <p className="text-xs text-slate-500 text-center">
               Définissez un nouveau mot de passe pour votre compte.
