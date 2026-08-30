@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,9 +12,46 @@ import { UserRole } from '@/types/database';
 
 type Mode = 'login' | 'register' | 'recovery';
 
+function RecoveryHandler({
+  onModeChange,
+  onRecoveryReady,
+}: {
+  onModeChange: (mode: Mode) => void;
+  onRecoveryReady: (ready: boolean) => void;
+}) {
+  const supabase = createClient();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    async function handleRecovery() {
+      const type = searchParams.get('type');
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+
+      if (type === 'recovery' && accessToken && refreshToken) {
+        onModeChange('recovery');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (sessionError) {
+          console.error('Recovery session error:', sessionError);
+        } else {
+          onRecoveryReady(true);
+        }
+      }
+    }
+
+    handleRecovery();
+  }, [searchParams, supabase.auth, onModeChange, onRecoveryReady]);
+
+  return null;
+}
+
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('login');
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -29,31 +67,6 @@ export default function LoginPage() {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const supabase = createClient();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    async function handleRecovery() {
-      const type = searchParams.get('type');
-      const accessToken = searchParams.get('access_token');
-      const refreshToken = searchParams.get('refresh_token');
-
-      if (type === 'recovery' && accessToken && refreshToken) {
-        setMode('recovery');
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (sessionError) {
-          setError('Lien de réinitialisation invalide ou expiré.');
-        } else {
-          setRecoveryReady(true);
-        }
-      }
-    }
-
-    handleRecovery();
-  }, [searchParams, supabase.auth]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +248,14 @@ export default function LoginPage() {
             Plateforme de Gestion des Tickets & Encaissements Wi-Fi
           </p>
         </div>
+
+        <Suspense fallback={null}>
+          <RecoveryHandler
+            initialMode={mode}
+            onModeChange={setMode}
+            onRecoveryReady={setRecoveryReady}
+          />
+        </Suspense>
 
         {showTabs && (
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
