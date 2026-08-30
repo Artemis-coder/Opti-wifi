@@ -27,7 +27,6 @@ export default function NewAllocationPage() {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 
   const [posId, setPosId] = useState('');
-  const [dateAllocation, setDateAllocation] = useState(() => new Date().toISOString().split('T')[0]);
   const [lines, setLines] = useState<AllocationLine[]>([{ ticketTypeId: '', quantite: 0 }]);
   const [notes, setNotes] = useState('');
 
@@ -105,7 +104,6 @@ const addLine = () => {
       quantite: l.quantite,
       notes,
       space_id: selectedPos?.space_id || null,
-      date_allocation: dateAllocation || new Date().toISOString().split('T')[0],
     }));
 
     const { error } = await supabase.from('ticket_allocations').insert(itemsToInsert);
@@ -188,17 +186,6 @@ const addLine = () => {
                 </select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Date d&apos;Allocation
-                </label>
-                <Input
-                  type="date"
-                  value={dateAllocation}
-                  onChange={(e) => setDateAllocation(e.target.value)}
-                />
-              </div>
-
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -278,11 +265,6 @@ const addLine = () => {
                   <p className="text-[11px] text-slate-500 font-semibold uppercase">Point de Vente</p>
                   <p className="text-sm font-bold text-slate-900 dark:text-white">{selectedPos?.nom || '—'}</p>
                   <p className="text-xs text-slate-500">{selectedPos?.ville || ''}</p>
-                </div>
-
-                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                  <p className="text-[11px] text-slate-500 font-semibold uppercase">Date d&apos;Allocation</p>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">{dateAllocation}</p>
                 </div>
 
                 <div className="space-y-2">
