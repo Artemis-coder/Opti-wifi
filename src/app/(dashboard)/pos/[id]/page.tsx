@@ -253,6 +253,17 @@ export default function PosDetailPage() {
             <span className="text-slate-500">Créé le :</span>
             <span className="text-slate-800 dark:text-slate-200">{formatDateFR(pos.created_at)}</span>
           </div>
+          <div className="flex items-center gap-2 text-sm md:col-span-2">
+            <MapPin className="w-4 h-4 text-amber-500" />
+            <span className="text-slate-500">Espace Wi-Fi :</span>
+            {pos.space_id ? (
+              <Link href="/spaces" className="font-semibold text-amber-600 hover:text-amber-700 hover:underline">
+                {pos.space?.nom || spaces.find((s) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
+              </Link>
+            ) : (
+              <strong className="text-slate-500 italic">Non rattaché à un espace</strong>
+            )}
+          </div>
         </div>
       </Card>
 
