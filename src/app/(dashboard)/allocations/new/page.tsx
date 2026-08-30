@@ -6,6 +6,7 @@ import { ArrowLeftRight, CheckCircle2, Loader2, AlertCircle, Plus, Trash2, Recei
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -83,27 +84,39 @@ const addLine = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!posId || lines.length === 0) return;
+    if (!posId) {
+      toast.error('Veuillez sélectionner un point de vente.');
+      return;
+    }
+
+    const validLines = lines.filter((l) => l.ticketTypeId && l.quantite > 0);
+    if (validLines.length === 0) {
+      toast.error('Veuillez sélectionner au moins un type de ticket avec une quantité supérieure à 0.');
+      return;
+    }
 
     setSubmitting(true);
 
-    const itemsToInsert = lines
-      .filter((l) => l.ticketTypeId && l.quantite > 0)
-      .map((l) => ({
-        pos_id: posId,
-        ticket_type_id: l.ticketTypeId,
-        quantite: l.quantite,
-        notes,
-        space_id: selectedPos?.space_id || null,
-        date_allocation: dateAllocation || new Date().toISOString().split('T')[0],
-      }));
+    const itemsToInsert = validLines.map((l) => ({
+      pos_id: posId,
+      ticket_type_id: l.ticketTypeId,
+      quantite: l.quantite,
+      notes,
+      space_id: selectedPos?.space_id || null,
+      date_allocation: dateAllocation || new Date().toISOString().split('T')[0],
+    }));
 
-    if (itemsToInsert.length > 0) {
-      await supabase.from('ticket_allocations').insert(itemsToInsert);
+    const { error } = await supabase.from('ticket_allocations').insert(itemsToInsert);
+
+    if (error) {
+      toast.error(`Erreur: ${error.message}`);
+      setSubmitting(false);
+      return;
     }
 
     setSubmitting(false);
     setSubmitted(true);
+    toast.success('Allocation enregistrée avec succès');
     setTimeout(() => {
       router.push('/allocations/new');
     }, 1500);
