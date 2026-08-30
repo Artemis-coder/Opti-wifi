@@ -1,33 +1,59 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { UserRole } from '@/types/database';
 
+type Mode = 'login' | 'register' | 'recovery';
+
 export default function LoginPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<Mode>('login');
   
-  // Form fields
-  const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [nom, setNom] = useState('');
   const [role, setRole] = useState<UserRole>('administrateur');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [resetMode, setResetMode] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
+  const [recoveryReady, setRecoveryReady] = useState(false);
 
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const supabase = createClient();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    async function handleRecovery() {
+      const type = searchParams.get('type');
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+
+      if (type === 'recovery' && accessToken && refreshToken) {
+        setMode('recovery');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (sessionError) {
+          setError('Lien de réinitialisation invalide ou expiré.');
+        } else {
+          setRecoveryReady(true);
+        }
+      }
+    }
+
+    handleRecovery();
+  }, [searchParams, supabase.auth]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,24 +97,36 @@ export default function LoginPage() {
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail) return;
-    setResetLoading(true);
+    if (newPassword.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas.');
+      return;
+    }
+
+    setLoading(true);
     setError('');
     setSuccessMsg('');
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/login`,
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
     });
 
-    if (resetError) {
-      setError(resetError.message || 'Erreur lors de l\'envoi du lien de réinitialisation.');
+    if (updateError) {
+      setError(updateError.message || 'Erreur lors de la mise à jour du mot de passe.');
     } else {
-      setSuccessMsg('Lien de réinitialisation envoyé ! Vérifiez votre email.');
-      setResetEmail('');
+      await supabase.auth.signOut();
+      setSuccessMsg('Mot de passe mis à jour avec succès ! Vous pouvez vous connecter.');
+      setMode('login');
+      setNewPassword('');
+      setConfirmPassword('');
+      setRecoveryReady(false);
     }
-    setResetLoading(false);
+    setLoading(false);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -109,18 +147,16 @@ export default function LoginPage() {
 
     const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
 
-    // ÉTAPE 1 : Création du compte Supabase Auth
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { nom, role }, // Transmis au trigger handle_new_user
+        data: { nom, role },
       },
     });
 
     if (signUpError) {
-      // Cas spécial : email déjà inscrit ou provider désactivé → tentative de login
       if (
         signUpError.message?.toLowerCase().includes('already registered') ||
         signUpError.code === 'email_provider_disabled' ||
@@ -142,7 +178,6 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      // ÉTAPE 2 : Connexion immédiate pour établir la session JWT
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
       if (signInError || !signInData?.session) {
@@ -151,8 +186,6 @@ export default function LoginPage() {
         return;
       }
 
-      // ÉTAPE 3 : Upsert du profil avec les vraies données du formulaire
-      // (maintenant que la session JWT est active, la politique RLS "auth.uid() = id" passe)
       const profileData = {
         id: data.user.id,
         nom: nom.trim(),
@@ -169,7 +202,6 @@ export default function LoginPage() {
         console.warn('Profile upsert warning:', profileError.message);
       }
 
-      // ÉTAPE 4 : Lire le profil final depuis la BD (source de vérité)
       const { data: savedProfile } = await supabase
         .from('profiles')
         .select('*')
@@ -178,22 +210,20 @@ export default function LoginPage() {
 
       const finalProfile = savedProfile ?? { ...profileData, created_at: new Date().toISOString() };
 
-      // ÉTAPE 5 : Stocker en mémoire et rediriger
       setUser(finalProfile);
       setSuccessMsg('✅ Compte créé avec succès ! Redirection vers votre espace...');
       setTimeout(() => router.push('/dashboard'), 800);
     }
   };
 
+  const showTabs = mode !== 'recovery';
+
   return (
     <div className="min-h-screen bg-[#0b1a3a] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Glow */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
 
       <div className="w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/20 p-8 space-y-6 relative z-10">
-        
-        {/* Header Logo & Title */}
         <div className="text-center space-y-2">
           <div className="w-16 h-16 rounded-2xl mx-auto overflow-hidden relative shadow-lg border border-amber-500/30 flex items-center justify-center bg-[#0b1a3a]">
             <Image src="/assets/logo.jpg" alt="OptiWifi" width={64} height={64} className="object-cover" />
@@ -206,33 +236,33 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Mode Switcher Tabs */}
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-          <button
-            type="button"
-            onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
-              mode === 'login'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Se Connecter
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('register'); setError(''); setSuccessMsg(''); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
-              mode === 'register'
-                ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Créer un Compte
-          </button>
-        </div>
+        {showTabs && (
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
+                mode === 'login'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Se Connecter
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('register'); setError(''); setSuccessMsg(''); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
+                mode === 'register'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Créer un Compte
+            </button>
+          </div>
+        )}
 
-        {/* Feedback Messages */}
         {error && (
           <div className="p-3 rounded-lg bg-red-50 text-red-700 text-xs border border-red-200 font-medium">
             {error}
@@ -245,8 +275,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* LOGIN FORM */}
-        {mode === 'login' && !resetMode ? (
+        {mode === 'login' && !recoveryReady && (
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
               label="Adresse Email"
@@ -265,48 +294,53 @@ export default function LoginPage() {
               required
             />
 
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => { setResetMode(true); setError(''); setSuccessMsg(''); }}
-                className="text-xs text-amber-600 hover:text-amber-700 font-semibold"
-              >
-                Mot de passe oublié ?
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => { setMode('recovery'); setError(''); setSuccessMsg(''); }}
+              className="text-xs text-amber-600 hover:text-amber-700 font-semibold"
+            >
+              Mot de passe oublié ?
+            </button>
 
             <Button type="submit" className="w-full h-11 text-sm font-bold" isLoading={loading}>
               Se connecter à mon espace
             </Button>
           </form>
-        ) : mode === 'login' && resetMode ? (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <p className="text-xs text-slate-500">
-              Entrez votre adresse email pour recevoir un lien de réinitialisation de mot de passe.
+        )}
+
+        {mode === 'recovery' && (
+          <form onSubmit={handlePasswordUpdate} className="space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white text-center">
+              Réinitialiser le mot de passe
+            </h2>
+            <p className="text-xs text-slate-500 text-center">
+              Définissez un nouveau mot de passe pour votre compte.
             </p>
+
             <Input
-              label="Adresse Email"
-              type="email"
-              placeholder="votre.email@exemple.ci"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
+              label="Nouveau mot de passe"
+              type="password"
+              placeholder="••••••••"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
+            <Input
+              label="Confirmer le mot de passe"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
 
-            <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={resetLoading}>
-              Envoyer le lien de réinitialisation
+            <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading}>
+              Mettre à jour le mot de passe
             </Button>
-
-            <button
-              type="button"
-              onClick={() => { setResetMode(false); setError(''); setSuccessMsg(''); }}
-              className="w-full text-xs text-slate-500 hover:text-slate-700 font-semibold"
-            >
-              Retour à la connexion
-            </button>
           </form>
-        ) : (
-          /* REGISTER FORM */
+        )}
+
+        {mode === 'register' && (
           <form onSubmit={handleRegister} className="space-y-4">
             <Input
               label="Nom Complet"
