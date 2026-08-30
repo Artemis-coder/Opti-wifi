@@ -12,11 +12,13 @@ import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { PointOfSale, TicketType, CollectionItem } from '@/types/database';
 
 export default function NewCollectionWizard() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { currentSpaceId } = useSpaceStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +43,11 @@ export default function NewCollectionWizard() {
   useEffect(() => {
     async function loadOptions() {
       setLoading(true);
-      const { data: posData } = await supabase.from('points_of_sale').select('*');
+      let query = supabase.from('points_of_sale').select('*');
+      if (currentSpaceId) {
+        query = query.eq('space_id', currentSpaceId);
+      }
+      const { data: posData } = await query;
 
       if (posData && posData.length > 0) {
         setPosList(posData);
@@ -52,7 +58,7 @@ export default function NewCollectionWizard() {
       setLoading(false);
     }
     loadOptions();
-  }, [supabase]);
+  }, [currentSpaceId, supabase]);
 
   const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPosId(e.target.value);
@@ -64,10 +70,22 @@ export default function NewCollectionWizard() {
       if (!posId) return;
       setLoadingAllocations(true);
 
-      const { data: allocData } = await supabase
+      let allocQuery = supabase
         .from('ticket_allocations')
         .select('*, ticket_type:ticket_types(*)')
         .eq('pos_id', posId);
+
+      let collectionsQuery = supabase
+        .from('collections')
+        .select('*, items:collection_items(*)')
+        .eq('pos_id', posId);
+
+      if (currentSpaceId) {
+        allocQuery = allocQuery.eq('space_id', currentSpaceId);
+        collectionsQuery = collectionsQuery.eq('space_id', currentSpaceId);
+      }
+
+      const { data: allocData } = await allocQuery;
 
       const allocMap: Record<string, number> = {};
       const ticketMap: Record<string, TicketType> = {};
@@ -87,10 +105,7 @@ export default function NewCollectionWizard() {
       const tickets = Object.entries(ticketMap).map(([id, ticket]) => ({ ...ticket, id }));
       setAllocatedTickets(tickets);
 
-      const { data: collectionsData } = await supabase
-        .from('collections')
-        .select('*, items:collection_items(*)')
-        .eq('pos_id', posId);
+      const { data: collectionsData } = await collectionsQuery;
 
       const soldMap: Record<string, number> = {};
       if (collectionsData) {
@@ -115,7 +130,7 @@ export default function NewCollectionWizard() {
     }
 
     loadAllocations();
-  }, [posId, supabase]);
+  }, [posId, currentSpaceId, supabase]);
 
   const montantAttendu = allocatedTickets.reduce((sum, t) => {
     const q = quantities[t.id] || 0;
@@ -149,6 +164,7 @@ export default function NewCollectionWizard() {
       .insert({
         pos_id: posId,
         collecteur_id: user?.id || '00000000-0000-0000-0000-000000000000',
+        space_id: currentSpaceId || null,
         statut: 'validee',
         montant_attendu: montantAttendu,
         montant_collecte: collecteNum,
@@ -168,6 +184,7 @@ export default function NewCollectionWizard() {
           stock_debut: 0,
           quantite_vendue: quantities[t.id] || 0,
           prix_unitaire: t.prix,
+          space_id: currentSpaceId || null,
         }));
 
       if (itemsToInsert.length > 0) {

@@ -7,9 +7,10 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from './edit-pos-modal';
-import { PointOfSale, Profile, PosStatus } from '@/types/database';
+import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 
 export default function PosPage() {
   const [search, setSearch] = useState('');
@@ -20,8 +21,10 @@ export default function PosPage() {
   const [collectors, setCollectors] = useState<Profile[]>([]);
   const [editingPos, setEditingPos] = useState<PointOfSale | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [spaces, setSpaces] = useState<WifiSpace[]>([]);
 
   const { user } = useAuthStore();
+  const { currentSpaceId } = useSpaceStore();
   const isAdmin = user?.role === 'administrateur';
 
   const supabase = createClient();
@@ -29,23 +32,27 @@ export default function PosPage() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      // 1. Fetch POS from Supabase DB
-      const { data: posData } = await supabase
-        .from('points_of_sale')
-        .select('*, collecteur:profiles(*)');
+      let query = supabase.from('points_of_sale').select('*, collecteur:profiles(*)');
+      if (currentSpaceId) {
+        query = query.eq('space_id', currentSpaceId);
+      }
 
-      // 2. Fetch Collectors for assignment dropdown
+      const { data: posData } = await query;
+
       const { data: colData } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'collecteur');
 
+      const { data: spacesData } = await supabase.from('wifi_spaces').select('*');
+
       if (colData) setCollectors(colData);
+      if (spacesData) setSpaces(spacesData);
       setPosList(posData || []);
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, [currentSpaceId, supabase]);
 
   const filteredPos = posList.filter((p) =>
     p.nom.toLowerCase().includes(search.toLowerCase()) ||
@@ -234,6 +241,7 @@ export default function PosPage() {
         }}
         pos={editingPos}
         collectors={collectors}
+        spaces={spaces}
         onSuccess={(updated) => {
           if (editingPos) {
             setPosList(posList.map((p) => (p.id === updated.id ? updated : p)));

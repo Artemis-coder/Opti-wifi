@@ -19,11 +19,13 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/format';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { createClient } from '@/lib/supabase/client';
 import { Collection } from '@/types/database';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { currentSpaceId } = useSpaceStore();
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
 
@@ -42,14 +44,22 @@ export default function DashboardPage() {
       setLoading(true);
 
       // 1. Fetch POS count
-      const { data: posData } = await supabase.from('points_of_sale').select('id', { count: 'exact' });
+      let posQuery = supabase.from('points_of_sale').select('id', { count: 'exact' });
+      if (currentSpaceId) {
+        posQuery = posQuery.eq('space_id', currentSpaceId);
+      }
+      const { data: posData } = await posQuery;
       setPosActifsCount(posData?.length || 0);
 
       // 2. Fetch recent collections & items
-      const { data: colData } = await supabase
+      let colQuery = supabase
         .from('collections')
         .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
         .order('created_at', { ascending: false });
+      if (currentSpaceId) {
+        colQuery = colQuery.eq('space_id', currentSpaceId);
+      }
+      const { data: colData } = await colQuery;
 
       if (colData && colData.length > 0) {
         setCollections(colData);
@@ -75,7 +85,11 @@ export default function DashboardPage() {
       }
 
       // 3. Fetch tickets sold count from collection_items
-      const { data: itemsData } = await supabase.from('collection_items').select('quantite_vendue');
+      let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
+      if (currentSpaceId) {
+        itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
+      }
+      const { data: itemsData } = await itemsQuery;
       if (itemsData && itemsData.length > 0) {
         const totalSold = itemsData.reduce((acc, curr) => acc + (curr.quantite_vendue || 0), 0);
         setTicketsSoldTotal(totalSold);
@@ -84,7 +98,11 @@ export default function DashboardPage() {
       }
 
       // 4. Fetch total allocated tickets from ticket_allocations
-      const { data: allocData } = await supabase.from('ticket_allocations').select('quantite');
+      let allocQuery = supabase.from('ticket_allocations').select('quantite');
+      if (currentSpaceId) {
+        allocQuery = allocQuery.eq('space_id', currentSpaceId);
+      }
+      const { data: allocData } = await allocQuery;
       if (allocData && allocData.length > 0) {
         const totalAllocated = allocData.reduce((acc, curr) => acc + (curr.quantite || 0), 0);
         setTicketsAllouesTotal(totalAllocated);
@@ -96,7 +114,7 @@ export default function DashboardPage() {
     }
 
     loadDashboardData();
-  }, []);
+  }, [currentSpaceId, supabase]);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">

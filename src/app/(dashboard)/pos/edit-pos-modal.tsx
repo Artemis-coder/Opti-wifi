@@ -5,23 +5,27 @@ import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PointOfSale, Profile, PosStatus } from '@/types/database';
+import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 
 interface EditPosModalProps {
   isOpen: boolean;
   onClose: () => void;
   pos: PointOfSale | null;
   collectors: Profile[];
+  spaces: WifiSpace[];
   onSuccess: (updated: PointOfSale) => void;
 }
 
-export function EditPosModal({ isOpen, onClose, pos, collectors, onSuccess }: EditPosModalProps) {
+export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSuccess }: EditPosModalProps) {
+  const { currentSpaceId } = useSpaceStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nom, setNom] = useState(pos?.nom || '');
   const [adresse, setAdresse] = useState(pos?.adresse || '');
   const [ville, setVille] = useState(pos?.ville || 'Abidjan');
   const [collecteurId, setCollecteurId] = useState(pos?.collecteur_id || '');
+  const [spaceId, setSpaceId] = useState(pos?.space_id || currentSpaceId || '');
   const [statut, setStatut] = useState<PosStatus>(pos?.statut || 'actif');
 
   const supabase = createClient();
@@ -40,6 +44,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, onSuccess }: Ed
       adresse: adresse.trim() || null,
       ville: ville.trim(),
       collecteur_id: collecteurId || null,
+      space_id: spaceId || null,
       statut,
       updated_at: new Date().toISOString(),
     };
@@ -108,6 +113,24 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, onSuccess }: Ed
           onChange={(e) => setVille(e.target.value)}
           required
         />
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            Espace Wi-Fi
+          </label>
+          <select
+            value={spaceId}
+            onChange={(e) => setSpaceId(e.target.value)}
+            className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
+          >
+            <option value="">Aucun espace</option>
+            {spaces.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nom}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">

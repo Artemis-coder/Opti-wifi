@@ -8,26 +8,33 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { Collection } from '@/types/database';
 
 export default function CollectionsPage() {
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
   const supabase = createClient();
+  const { currentSpaceId } = useSpaceStore();
 
   useEffect(() => {
     async function loadCollections() {
       setLoading(true);
-      const { data } = await supabase
+      let query = supabase
         .from('collections')
         .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
         .order('created_at', { ascending: false });
 
+      if (currentSpaceId) {
+        query = query.eq('space_id', currentSpaceId);
+      }
+
+      const { data } = await query;
       setCollections(data || []);
       setLoading(false);
     }
     loadCollections();
-  }, []);
+  }, [currentSpaceId, supabase]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

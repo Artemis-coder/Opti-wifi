@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { PointOfSale, TicketType } from '@/types/database';
 
 interface AllocationLine {
@@ -31,12 +32,21 @@ export default function NewAllocationPage() {
   const [notes, setNotes] = useState('');
 
   const supabase = createClient();
+  const { currentSpaceId } = useSpaceStore();
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      const { data: posData } = await supabase.from('points_of_sale').select('*');
-      const { data: ticketData } = await supabase.from('ticket_types').select('*');
+      let posQuery = supabase.from('points_of_sale').select('*');
+      let ticketQuery = supabase.from('ticket_types').select('*');
+
+      if (currentSpaceId) {
+        posQuery = posQuery.eq('space_id', currentSpaceId);
+        ticketQuery = ticketQuery.eq('space_id', currentSpaceId);
+      }
+
+      const { data: posData } = await posQuery;
+      const { data: ticketData } = await ticketQuery;
 
       if (posData && posData.length > 0) {
         setPosList(posData);
@@ -55,9 +65,30 @@ export default function NewAllocationPage() {
     }
 
     loadData();
-  }, []);
+  }, [currentSpaceId, supabase]);
 
   const selectedPos = posList.find((p) => p.id === posId);
+
+  const addLine = () => {
+    setLines([...lines, { ticketTypeId: ticketTypes[0]?.id || '', quantite: 0 }]);
+  };
+
+  const removeLine = (index: number) => {
+    setLines(lines.filter((_, i) => i !== index));
+  };
+
+  const updateLine = (index: number, field: keyof AllocationLine, value: string | number) => {
+    const updated = [...lines];
+    updated[index] = { ...updated[index], [field]: value };
+    setLines(updated);
+  };
+
+  const totalTickets = lines.reduce((sum, l) => sum + (l.quantite || 0), 0);
+
+  const totalMontant = lines.reduce((sum, l) => {
+    const ticket = ticketTypes.find((t) => t.id === l.ticketTypeId);
+    return sum + (ticket ? ticket.prix * (l.quantite || 0) : 0);
+  }, 0);
 
   const addLine = () => {
     setLines([...lines, { ticketTypeId: ticketTypes[0]?.id || '', quantite: 0 }]);
@@ -93,6 +124,7 @@ export default function NewAllocationPage() {
         ticket_type_id: l.ticketTypeId,
         quantite: l.quantite,
         notes,
+        space_id: selectedPos?.space_id || currentSpaceId || null,
         date_allocation: dateAllocation || new Date().toISOString().split('T')[0],
       }));
 

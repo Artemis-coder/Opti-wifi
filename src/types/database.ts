@@ -2,6 +2,17 @@ export type UserRole = 'administrateur' | 'collecteur';
 export type PosStatus = 'actif' | 'inactif' | 'suspendu';
 export type CollectionStatus = 'brouillon' | 'validee' | 'annulee';
 
+export interface WifiSpace {
+  id: string;
+  nom: string;
+  description?: string;
+  adresse?: string;
+  ville?: string;
+  statut: 'actif' | 'inactif' | 'suspendu';
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Profile {
   id: string;
   nom: string;
@@ -20,9 +31,11 @@ export interface PointOfSale {
   ville: string;
   statut: PosStatus;
   collecteur_id?: string;
+  space_id?: string;
   created_at: string;
   updated_at: string;
   collecteur?: Profile;
+  space?: WifiSpace;
 }
 
 export interface TicketType {
@@ -31,6 +44,7 @@ export interface TicketType {
   duree_heures: number;
   prix: number;
   actif: boolean;
+  space_id?: string;
   created_at: string;
 }
 
@@ -41,6 +55,7 @@ export interface TicketAllocation {
   quantite: number;
   alloue_par?: string;
   notes?: string;
+  space_id?: string;
   created_at: string;
   pos?: PointOfSale;
   ticket_type?: TicketType;
@@ -50,6 +65,7 @@ export interface Collection {
   id: string;
   pos_id: string;
   collecteur_id: string;
+  space_id?: string;
   statut: CollectionStatus;
   montant_attendu: number;
   montant_collecte: number;
@@ -71,6 +87,7 @@ export interface CollectionItem {
   quantite_vendue: number;
   prix_unitaire: number;
   montant_total: number;
+  space_id?: string;
   ticket_type?: TicketType;
 }
 

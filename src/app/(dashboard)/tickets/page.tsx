@@ -12,6 +12,7 @@ import { EditTicketModal } from './edit-ticket-modal';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { TicketType } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 
 export default function TicketTypesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,18 +25,23 @@ export default function TicketTypesPage() {
   const [prix, setPrix] = useState('1000');
 
   const supabase = createClient();
+  const { currentSpaceId } = useSpaceStore();
 
   const [editingTicket, setEditingTicket] = useState<TicketType | null>(null);
 
   useEffect(() => {
     async function loadTickets() {
       setLoading(true);
-      const { data } = await supabase.from('ticket_types').select('*').order('prix', { ascending: true });
+      let query = supabase.from('ticket_types').select('*').order('prix', { ascending: true });
+      if (currentSpaceId) {
+        query = query.eq('space_id', currentSpaceId);
+      }
+      const { data } = await query;
       setTickets(data || []);
       setLoading(false);
     }
     loadTickets();
-  }, []);
+  }, [currentSpaceId, supabase]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { Collection, PointOfSale } from '@/types/database';
 
 export default function ReportsPage() {
@@ -20,10 +21,24 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState('');
 
   const supabase = createClient();
+  const { currentSpaceId } = useSpaceStore();
 
   useEffect(() => {
     async function loadData() {
-      const { data: posData } = await supabase.from('points_of_sale').select('*');
+      let posQuery = supabase.from('points_of_sale').select('*');
+      let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
+      let collectionsQuery = supabase
+        .from('collections')
+        .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
+        .order('created_at', { ascending: false });
+
+      if (currentSpaceId) {
+        posQuery = posQuery.eq('space_id', currentSpaceId);
+        itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
+        collectionsQuery = collectionsQuery.eq('space_id', currentSpaceId);
+      }
+
+      const { data: posData } = await posQuery;
       setPosList(posData || []);
       setPosCount(posData?.length || 0);
 
@@ -33,23 +48,18 @@ export default function ReportsPage() {
         .eq('role', 'collecteur');
       setCollectorsCount(collectors || 0);
 
-      const { data: itemsData } = await supabase.from('collection_items').select('quantite_vendue');
+      const { data: itemsData } = await itemsQuery;
       const sold = itemsData?.reduce((acc, curr) => acc + (curr.quantite_vendue || 0), 0) || 0;
       setTicketsSold(sold);
 
-      let query = supabase
-        .from('collections')
-        .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
-        .order('created_at', { ascending: false });
+      if (startDate) collectionsQuery = collectionsQuery.gte('date_collecte', startDate);
+      if (endDate) collectionsQuery = collectionsQuery.lte('date_collecte', endDate);
 
-      if (startDate) query = query.gte('date_collecte', startDate);
-      if (endDate) query = query.lte('date_collecte', endDate);
-
-      const { data: colData } = await query;
+      const { data: colData } = await collectionsQuery;
       setCollections(colData || []);
     }
     loadData();
-  }, [startDate, endDate, supabase]);
+  }, [startDate, endDate, currentSpaceId, supabase]);
 
   const downloadCSV = (filename: string, content: string) => {
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
