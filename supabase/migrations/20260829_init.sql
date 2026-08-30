@@ -165,6 +165,11 @@ CREATE POLICY "Admins voient les logs" ON audit_logs FOR ALL USING (is_admin());
   CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Désactiver RLS pour cette transaction : le trigger s'exécute dans le
+  -- contexte de GoTrue (sans JWT), donc auth.uid() = NULL et les politiques
+  -- RLS échouent. SET LOCAL row_security = off contourne ce problème.
+  SET LOCAL row_security = 'off';
+
   INSERT INTO public.profiles (id, nom, email, role, telephone)
   VALUES (
     NEW.id,
@@ -191,7 +196,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TRIGGER on_auth_user_created
+  CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 

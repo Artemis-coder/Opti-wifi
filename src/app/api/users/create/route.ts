@@ -35,6 +35,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
+      console.error('Auth createUser error:', JSON.stringify(authError, null, 2));
+      if (authError.message?.includes('Database error creating new user')) {
+        return NextResponse.json(
+          {
+            error:
+              'Impossible de créer l\'utilisateur. Le trigger Supabase handle_new_user est probablement cassé. ' +
+              'Exécutez le script SQL supabase/fix_trigger_telephone.sql dans le SQL Editor de Supabase, puis redémarrez le serveur.',
+          },
+          { status: 500 }
+        );
+      }
       return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 
