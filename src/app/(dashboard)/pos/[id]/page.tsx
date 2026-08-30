@@ -165,6 +165,7 @@ export default function PosDetailPage() {
   const totalExpected = collections.reduce((sum, c) => sum + Number(c.montant_attendu || 0), 0);
   const totalCollected = collections.reduce((sum, c) => sum + Number(c.montant_collecte || 0), 0);
   const totalDifference = totalCollected - totalExpected;
+  const totalCommission = collections.reduce((sum, c) => sum + Number(c.commission || 0), 0);
 
   const getAllocatorName = (allouePar?: string) => {
     if (!allouePar) return 'Système';
@@ -278,7 +279,7 @@ export default function PosDetailPage() {
       </Card>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Alloués</span>
@@ -330,6 +331,21 @@ export default function PosDetailPage() {
               {formatCurrencyFCFA(totalCA)}
             </p>
             <p className="text-xs text-slate-500 mt-1">CA total depuis les collectes</p>
+          </div>
+        </Card>
+
+        <Card className="border-l-4 border-l-amber-500 col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Commission Totale</span>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Receipt className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {formatCurrencyFCFA(totalCommission)}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">Total commissions versées</p>
           </div>
         </Card>
       </div>
