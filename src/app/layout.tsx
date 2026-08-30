@@ -17,7 +17,9 @@ export const metadata: Metadata = {
   title: "Opti Wi-Fi",
   description: "Gestion de points de vente, allocations de tickets et encaissements",
   icons: {
-    icon: "/assets/logo.jpg",
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 

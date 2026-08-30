@@ -75,6 +75,11 @@ export default function NewAllocationPage() {
 
   const totalTickets = lines.reduce((sum, l) => sum + (l.quantite || 0), 0);
 
+  const totalMontant = lines.reduce((sum, l) => {
+    const ticket = ticketTypes.find((t) => t.id === l.ticketTypeId);
+    return sum + (ticket ? ticket.prix * (l.quantite || 0) : 0);
+  }, 0);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!posId || lines.length === 0) return;
@@ -283,10 +288,14 @@ export default function NewAllocationPage() {
                   })}
                 </div>
 
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-500 uppercase">Total Tickets</span>
                     <span className="text-lg font-extrabold text-amber-600">{totalTickets}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-500 uppercase">Montant Total</span>
+                    <span className="text-lg font-extrabold text-slate-900 dark:text-white">{formatCurrencyFCFA(totalMontant)}</span>
                   </div>
                 </div>
               </div>
