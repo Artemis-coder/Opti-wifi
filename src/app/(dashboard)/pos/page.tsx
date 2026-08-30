@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Store, Plus, Search, MapPin, UserCheck, Loader2, Edit } from 'lucide-react';
+import { Store, Plus, Search, MapPin, UserCheck, Loader2, Edit, Power, PowerOff } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from './edit-pos-modal';
-import { PointOfSale, Profile } from '@/types/database';
+import { PointOfSale, Profile, PosStatus } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function PosPage() {
   const [search, setSearch] = useState('');
@@ -18,6 +19,10 @@ export default function PosPage() {
   const [posList, setPosList] = useState<PointOfSale[]>([]);
   const [collectors, setCollectors] = useState<Profile[]>([]);
   const [editingPos, setEditingPos] = useState<PointOfSale | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'administrateur';
 
   const supabase = createClient();
 
@@ -47,6 +52,25 @@ export default function PosPage() {
     p.ville.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalPos = posList.length;
+  const activePos = posList.filter((p) => p.statut === 'actif').length;
+  const inactivePos = posList.filter((p) => p.statut === 'inactif' || p.statut === 'suspendu').length;
+
+  const handleToggleStatus = async (pos: PointOfSale) => {
+    if (!isAdmin) return;
+    const newStatus: PosStatus = pos.statut === 'actif' ? 'suspendu' : 'actif';
+    setTogglingId(pos.id);
+    const { error } = await supabase
+      .from('points_of_sale')
+      .update({ statut: newStatus })
+      .eq('id', pos.id);
+
+    if (!error) {
+      setPosList((prev) => prev.map((p) => (p.id === pos.id ? { ...p, statut: newStatus } : p)));
+    }
+    setTogglingId(null);
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -59,6 +83,39 @@ export default function PosPage() {
           <Plus className="w-4 h-4" />
           Ajouter un POS
         </Button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="border-l-4 border-l-amber-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total POS</span>
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
+              <Store className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{totalPos}</p>
+        </Card>
+
+        <Card className="border-l-4 border-l-emerald-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Actifs</span>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
+              <Power className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{activePos}</p>
+        </Card>
+
+        <Card className="border-l-4 border-l-red-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Désactivés</span>
+            <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
+              <PowerOff className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{inactivePos}</p>
+        </Card>
       </div>
 
       {/* Filter Bar */}
@@ -116,6 +173,28 @@ export default function PosPage() {
                     <Badge variant={pos.statut === 'actif' ? 'success' : 'neutral'}>
                       {pos.statut}
                     </Badge>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleToggleStatus(pos);
+                        }}
+                        disabled={togglingId === pos.id}
+                        title={pos.statut === 'actif' ? 'Désactiver le POS' : 'Activer le POS'}
+                      >
+                        {togglingId === pos.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : pos.statut === 'actif' ? (
+                          <PowerOff className="w-3.5 h-3.5" />
+                        ) : (
+                          <Power className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
