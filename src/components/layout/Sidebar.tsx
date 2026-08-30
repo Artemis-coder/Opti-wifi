@@ -23,7 +23,6 @@ import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
-import { SpaceSelector } from './SpaceSelector';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -81,8 +80,6 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
           </button>
         )}
       </div>
-
-      <SpaceSelector />
 
       {/* Nav List */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
