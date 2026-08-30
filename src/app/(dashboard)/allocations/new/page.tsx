@@ -69,43 +69,22 @@ export default function NewAllocationPage() {
 
   const selectedPos = posList.find((p) => p.id === posId);
 
-  const addLine = () => {
+const addLine = () => {
     setLines([...lines, { ticketTypeId: ticketTypes[0]?.id || '', quantite: 0 }]);
   };
-
+  
   const removeLine = (index: number) => {
     setLines(lines.filter((_, i) => i !== index));
   };
-
+  
   const updateLine = (index: number, field: keyof AllocationLine, value: string | number) => {
     const updated = [...lines];
     updated[index] = { ...updated[index], [field]: value };
     setLines(updated);
   };
-
+  
   const totalTickets = lines.reduce((sum, l) => sum + (l.quantite || 0), 0);
-
-  const totalMontant = lines.reduce((sum, l) => {
-    const ticket = ticketTypes.find((t) => t.id === l.ticketTypeId);
-    return sum + (ticket ? ticket.prix * (l.quantite || 0) : 0);
-  }, 0);
-
-  const addLine = () => {
-    setLines([...lines, { ticketTypeId: ticketTypes[0]?.id || '', quantite: 0 }]);
-  };
-
-  const removeLine = (index: number) => {
-    setLines(lines.filter((_, i) => i !== index));
-  };
-
-  const updateLine = (index: number, field: keyof AllocationLine, value: string | number) => {
-    const updated = [...lines];
-    updated[index] = { ...updated[index], [field]: value };
-    setLines(updated);
-  };
-
-  const totalTickets = lines.reduce((sum, l) => sum + (l.quantite || 0), 0);
-
+  
   const totalMontant = lines.reduce((sum, l) => {
     const ticket = ticketTypes.find((t) => t.id === l.ticketTypeId);
     return sum + (ticket ? ticket.prix * (l.quantite || 0) : 0);
