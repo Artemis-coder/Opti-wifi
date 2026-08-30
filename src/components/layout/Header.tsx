@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { LogOut, User as UserIcon, Menu } from 'lucide-react';
+import React from 'react';
+import { LogOut, Menu } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -11,27 +11,9 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenMobileMenu }: HeaderProps) {
-  const { user, setUser, logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
   const supabase = createClient();
-
-  useEffect(() => {
-    async function syncSessionProfile() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile) {
-          setUser(profile);
-        }
-      }
-    }
-    syncSessionProfile();
-  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
