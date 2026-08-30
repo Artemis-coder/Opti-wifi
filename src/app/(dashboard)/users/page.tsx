@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Mail, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -13,11 +14,14 @@ import { createClient } from '@/lib/supabase/client';
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [users, setUsers] = useState<Profile[]>([]);
 
   const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('collecteur');
+  const [telephone, setTelephone] = useState('');
+  const [motDePasse, setMotDePasse] = useState('');
 
   const supabase = createClient();
 
@@ -33,27 +37,36 @@ export default function UsersPage() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nom || !email) return;
-
-    const newProfile = {
-      id: crypto.randomUUID(),
-      nom,
-      email,
-      role,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await supabase.from('profiles').insert(newProfile);
-
-    if (!error) {
-      setUsers([{ ...newProfile, created_at: new Date().toISOString() }, ...users]);
-    } else {
-      setUsers([{ ...newProfile, created_at: new Date().toISOString() }, ...users]);
+    if (!nom || !email || !motDePasse) {
+      toast.error('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+    if (motDePasse.length < 6) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
     }
 
-    setNom('');
-    setEmail('');
-    setIsModalOpen(false);
+    setIsSubmitting(true);
+
+    const res = await fetch('/api/users/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom, email, role, telephone, mot_de_passe: motDePasse }),
+    });
+
+    const result = await res.json();
+    setIsSubmitting(false);
+
+    if (res.ok && result.success) {
+      setUsers([result.profile, ...users]);
+      toast.success('Utilisateur créé avec succès.');
+      setNom('');
+      setEmail('');
+      setTelephone('');
+      setMotDePasse('');
+      setIsModalOpen(false);
+    } else {
+      toast.error(result.error || 'Erreur lors de la création de l\'utilisateur.');    }
   };
 
   return (
@@ -61,7 +74,7 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gestion des Utilisateurs</h1>
-          <p className="text-xs text-slate-500">Profils et rôles d'accès à la plateforme.</p>
+          <p className="text-xs text-slate-500">Profils et rôles d&apos;accès à la plateforme.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-semibold">
           <Plus className="w-4 h-4" /> Créer un Utilisateur
@@ -101,6 +114,9 @@ export default function UsersPage() {
                       <Mail className="w-3 h-3" />
                       <span>{u.email}</span>
                     </div>
+                    {u.telephone && (
+                      <p className="text-xs text-slate-500 mt-0.5">{u.telephone}</p>
+                    )}
                   </div>
                 </div>
                 <Badge variant={u.role === 'administrateur' ? 'warning' : 'info'}>
@@ -116,6 +132,8 @@ export default function UsersPage() {
         <form onSubmit={handleAddUser} className="space-y-4">
           <Input label="Nom Complet" placeholder="ex: Konan Philippe" value={nom} onChange={(e) => setNom(e.target.value)} required />
           <Input label="Adresse Email" type="email" placeholder="agent@optiwifi.ci" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Input label="Téléphone" type="tel" placeholder="ex: +225 07 07 07 07" value={telephone} onChange={(e) => setTelephone(e.target.value)} />
+          <Input label="Mot de Passe" type="password" placeholder="•••••••• (6+ caractères)" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} required />
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Rôle</label>
             <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm">
@@ -124,8 +142,10 @@ export default function UsersPage() {
             </select>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Annuler</Button>
-            <Button type="submit">Créer le Compte</Button>
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Annuler</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Création...' : 'Créer le Compte'}
+            </Button>
           </div>
         </form>
       </Modal>

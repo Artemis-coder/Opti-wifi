@@ -162,10 +162,10 @@ CREATE POLICY "Admins voient les logs" ON audit_logs FOR ALL USING (is_admin());
 -- ETAPE 12 : Trigger auto-creation du profil a l'inscription
 -- Ce trigger est CRITIQUE : il insert le nom, email et role
 -- saisis dans le formulaire d'inscription directement dans profiles
-CREATE OR REPLACE FUNCTION public.handle_new_user()
+  CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, nom, email, role)
+  INSERT INTO public.profiles (id, nom, email, role, telephone)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'nom', split_part(NEW.email, '@', 1)),
@@ -177,13 +177,15 @@ BEGIN
         ELSE NULL
       END,
       'collecteur'::user_role
-    )
+    ),
+    NEW.raw_user_meta_data->>'telephone'
   )
   ON CONFLICT (id) DO UPDATE
     SET
       nom = EXCLUDED.nom,
       email = EXCLUDED.email,
       role = EXCLUDED.role,
+      telephone = EXCLUDED.telephone,
       updated_at = NOW();
   RETURN NEW;
 END;
