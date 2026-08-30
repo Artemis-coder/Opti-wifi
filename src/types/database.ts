@@ -8,6 +8,7 @@ export interface Profile {
   email: string;
   role: UserRole;
   telephone?: string;
+  devise?: string;
   created_at: string;
   updated_at: string;
 }
@@ -53,6 +54,8 @@ export interface Collection {
   montant_attendu: number;
   montant_collecte: number;
   difference: number;
+  commission: number;
+  date_collecte?: string;
   notes?: string;
   created_at: string;
   pos?: PointOfSale;

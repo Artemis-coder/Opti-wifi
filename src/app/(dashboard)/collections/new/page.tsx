@@ -32,6 +32,8 @@ export default function NewCollectionWizard() {
   const [posId, setPosId] = useState('');
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
   const [montantCollecte, setMontantCollecte] = useState('');
+  const [commission, setCommission] = useState('');
+  const [dateCollecte, setDateCollecte] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
 
   const supabase = createClient();
@@ -150,6 +152,8 @@ export default function NewCollectionWizard() {
         statut: 'validee',
         montant_attendu: montantAttendu,
         montant_collecte: collecteNum,
+        commission: parseFloat(commission) || 0,
+        date_collecte: dateCollecte || new Date().toISOString().split('T')[0],
         notes,
       })
       .select('id')
@@ -185,7 +189,7 @@ export default function NewCollectionWizard() {
           <Receipt className="w-6 h-6 text-amber-500" />
           Assistant de Collecte & Encaissement Caisse
         </h1>
-        <p className="text-xs text-slate-500">Enregistrement direct et sécurisé dans la base de données Supabase.</p>
+        <p className="text-xs text-slate-500">Enregistrement direct et sécurisé dans la base de données.</p>
       </div>
 
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -216,13 +220,13 @@ export default function NewCollectionWizard() {
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-          Chargement de l&apos;assistant depuis Supabase...
+          Chargement de l&apos;assistant...
         </div>
       ) : submitted ? (
         <Card className="p-8 text-center space-y-3 border-emerald-500">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Collecte Stockée dans Supabase !</h3>
-          <p className="text-xs text-slate-500">L&apos;encaissement a été validé et archivé dans la base PostgreSQL.</p>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Collecte Enregistrée !</h3>
+          <p className="text-xs text-slate-500">L&apos;encaissement a été validé et archivé dans la base de données.</p>
         </Card>
       ) : (
         <Card className="p-6">
@@ -345,6 +349,21 @@ export default function NewCollectionWizard() {
                 placeholder="ex: 50000"
                 required
               />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Commission versée au POS (FCFA)"
+                  type="number"
+                  value={commission}
+                  onChange={(e) => setCommission(e.target.value)}
+                  placeholder="ex: 2000"
+                />
+                <Input
+                  label="Date de collecte"
+                  type="date"
+                  value={dateCollecte}
+                  onChange={(e) => setDateCollecte(e.target.value)}
+                />
+              </div>
               <div className="flex justify-between pt-4">
                 <Button variant="ghost" onClick={() => setStep(3)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Retour
@@ -397,7 +416,7 @@ export default function NewCollectionWizard() {
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
                 <Button type="submit" variant="secondary" className="px-8 font-extrabold" isLoading={submitting}>
-                  Enregistrer dans Supabase
+                  Enregistrer
                 </Button>
               </div>
             </form>

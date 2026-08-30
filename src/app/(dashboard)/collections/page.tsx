@@ -56,7 +56,7 @@ export default function CollectionsPage() {
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement pour le moment</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Vous n'avez enregistré aucune collecte de caisse. Lancez votre première levée de fonds.
+             Vous n&apos;avez enregistré aucune collecte de caisse. Lancez votre première levée de fonds.
           </p>
           <Link href="/collections/new" className="inline-block pt-2">
             <Button variant="secondary" className="font-bold gap-2">
@@ -74,6 +74,7 @@ export default function CollectionsPage() {
                   <th className="px-4 py-3">Collecteur</th>
                   <th className="px-4 py-3">Montant Attendu</th>
                   <th className="px-4 py-3">Montant Encaissé</th>
+                  <th className="px-4 py-3">Commission</th>
                   <th className="px-4 py-3">Écart (Diff)</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3">Date</th>
@@ -86,6 +87,7 @@ export default function CollectionsPage() {
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{c.collecteur?.nom || 'Collecteur'}</td>
                     <td className="px-4 py-3 font-medium text-slate-600">{formatCurrencyFCFA(c.montant_attendu)}</td>
                     <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(c.montant_collecte)}</td>
+                    <td className="px-4 py-3 font-medium text-slate-600">{formatCurrencyFCFA(Number(c.commission || 0))}</td>
                     <td className="px-4 py-3">
                       {c.difference === 0 ? (
                         <span className="text-emerald-600 font-bold flex items-center gap-1">
@@ -102,7 +104,9 @@ export default function CollectionsPage() {
                         {c.statut === 'validee' ? 'Validée' : 'Brouillon'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{formatDateFR(c.created_at)}</td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
