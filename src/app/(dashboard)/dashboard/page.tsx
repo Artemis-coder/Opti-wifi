@@ -128,7 +128,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* KPI 1: Tickets Vendus */}
         <Card className="border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between">
@@ -194,7 +194,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* KPI 4: Écart Global */}
-        <Card className="border-l-4 border-l-red-500">
+        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Écart / Différence</span>
             <div className="p-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400">
