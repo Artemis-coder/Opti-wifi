@@ -122,7 +122,7 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#0b1a3a] to-[#162e63] p-6 rounded-2xl text-white shadow-lg border border-slate-800">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            👑 Espace Administrateur
+            Bienvenue dans votre espace, {user?.nom || 'Utilisateur'} 👋
           </h1>
         </div>
       </div>

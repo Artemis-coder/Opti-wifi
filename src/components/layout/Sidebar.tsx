@@ -64,7 +64,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
             <Image src="/assets/logo.jpg" alt="OptiWifi Logo" width={36} height={36} className="object-cover" />
           </div>
           <div>
-            <h1 className="font-bold text-lg leading-tight tracking-wide text-white">Opti<span className="text-amber-400">Wifi</span></h1>
+            <h1 className="font-bold text-lg leading-tight tracking-wide text-white">👑 Espace Administrateur</h1>
             <p className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Gestion Tickets</p>
           </div>
         </div>
