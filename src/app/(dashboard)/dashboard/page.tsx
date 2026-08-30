@@ -213,71 +213,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Main Content Grid: Recent Activity & Quick Actions */}
+      {/* Main Content Grid: Quick Actions & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Recent Collections */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Derniers Encaissements</h2>
-            <Link href="/collections" className="text-xs font-semibold text-amber-600 hover:text-amber-700">
-              Voir tout →
-            </Link>
-          </div>
-
-          {loading ? (
-            <Card className="p-8 text-center text-slate-500">
-              <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
-              <p className="text-xs font-medium mt-2">Chargement des encaissements...</p>
-            </Card>
-          ) : collections.length === 0 ? (
-            <Card className="p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
-                <Inbox className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement enregistré</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Vous n&apos;avez pas encore effectué d&apos;encaissement de caisse. Commencez par créer un point de vente ou enregistrer votre première collecte.
-              </p>
-              <Link href="/collections/new" className="inline-block pt-2">
-                <Button variant="secondary" size="sm" className="font-bold gap-2">
-                  <PlusCircle className="w-4 h-4" /> Effectuer une collecte
-                </Button>
-              </Link>
-            </Card>
-          ) : (
-            <Card className="p-0 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                    <tr>
-                      <th className="px-4 py-3">Point de Vente</th>
-                      <th className="px-4 py-3">Collecteur</th>
-                      <th className="px-4 py-3">Montant Encaissé</th>
-                      <th className="px-4 py-3">Statut</th>
-                      <th className="px-4 py-3">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                    {collections.slice(0, 5).map((col) => (
-                      <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{col.pos?.nom || 'POS'}</td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{col.collecteur?.nom || 'Collecteur'}</td>
-                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(col.montant_collecte)}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant={col.statut === 'validee' ? 'success' : 'warning'}>
-                            {col.statut === 'validee' ? 'Validée' : 'Brouillon'}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-slate-500">{formatDateFR(col.created_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          )}
-        </div>
-
         {/* Right Column: Quick Links & Actions */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Raccourcis Métier</h2>
@@ -349,6 +286,69 @@ export default function DashboardPage() {
               <span className="text-slate-400 font-bold">→</span>
             </Link>
           </Card>
+        </div>
+
+        {/* Left Column: Recent Collections */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Derniers Encaissements</h2>
+            <Link href="/collections" className="text-xs font-semibold text-amber-600 hover:text-amber-700">
+              Voir tout →
+            </Link>
+          </div>
+
+          {loading ? (
+            <Card className="p-8 text-center text-slate-500">
+              <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
+              <p className="text-xs font-medium mt-2">Chargement des encaissements...</p>
+            </Card>
+          ) : collections.length === 0 ? (
+            <Card className="p-8 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                <Inbox className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement enregistré</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Vous n&apos;avez pas encore effectué d&apos;encaissement de caisse. Commencez par créer un point de vente ou enregistrer votre première collecte.
+              </p>
+              <Link href="/collections/new" className="inline-block pt-2">
+                <Button variant="secondary" size="sm" className="font-bold gap-2">
+                  <PlusCircle className="w-4 h-4" /> Effectuer une collecte
+                </Button>
+              </Link>
+            </Card>
+          ) : (
+            <Card className="p-0 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-3">Point de Vente</th>
+                      <th className="px-4 py-3">Collecteur</th>
+                      <th className="px-4 py-3">Montant Encaissé</th>
+                      <th className="px-4 py-3">Statut</th>
+                      <th className="px-4 py-3">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                    {collections.slice(0, 5).map((col) => (
+                      <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{col.pos?.nom || 'POS'}</td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{col.collecteur?.nom || 'Collecteur'}</td>
+                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(col.montant_collecte)}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant={col.statut === 'validee' ? 'success' : 'warning'}>
+                            {col.statut === 'validee' ? 'Validée' : 'Brouillon'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500">{formatDateFR(col.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>
