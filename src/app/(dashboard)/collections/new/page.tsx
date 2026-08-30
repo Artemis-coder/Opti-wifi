@@ -2,15 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Receipt, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Receipt, CheckCircle2, ArrowRight, ArrowLeft, Loader2, Package } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { PointOfSale, TicketType } from '@/types/database';
+import { PointOfSale, TicketType, CollectionItem } from '@/types/database';
 
 export default function NewCollectionWizard() {
   const router = useRouter();
@@ -21,9 +23,12 @@ export default function NewCollectionWizard() {
   const [submitted, setSubmitted] = useState(false);
 
   const [posList, setPosList] = useState<PointOfSale[]>([]);
-  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+  const [allocatedTickets, setAllocatedTickets] = useState<TicketType[]>([]);
+  const [allocationMap, setAllocationMap] = useState<Record<string, number>>({});
+  const [availableQtyMap, setAvailableQtyMap] = useState<Record<string, number>>({});
+  const [alreadySoldMap, setAlreadySoldMap] = useState<Record<string, number>>({});
+  const [loadingAllocations, setLoadingAllocations] = useState(false);
 
-  // Form State
   const [posId, setPosId] = useState('');
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
   const [montantCollecte, setMontantCollecte] = useState('');
@@ -35,35 +40,82 @@ export default function NewCollectionWizard() {
     async function loadOptions() {
       setLoading(true);
       const { data: posData } = await supabase.from('points_of_sale').select('*');
-      const { data: ticketData } = await supabase.from('ticket_types').select('*').eq('actif', true);
 
       if (posData && posData.length > 0) {
         setPosList(posData);
         setPosId(posData[0].id);
       } else {
-        setPosList([
-          { id: '1', nom: 'POS Cocody St Jean', ville: 'Abidjan', statut: 'actif', created_at: '', updated_at: '' },
-          { id: '2', nom: 'POS Yopougon Maroc', ville: 'Abidjan', statut: 'actif', created_at: '', updated_at: '' },
-        ]);
-        setPosId('1');
-      }
-
-      if (ticketData && ticketData.length > 0) {
-        setTicketTypes(ticketData);
-      } else {
-        setTicketTypes([
-          { id: '1', nom: 'Pass 1 Heure', duree_heures: 1, prix: 200, actif: true, created_at: '' },
-          { id: '2', nom: 'Pass 2 Heures', duree_heures: 2, prix: 350, actif: true, created_at: '' },
-          { id: '4', nom: 'Pass 24 Heures Journée', duree_heures: 24, prix: 1000, actif: true, created_at: '' },
-        ]);
+        setPosList([]);
       }
       setLoading(false);
     }
     loadOptions();
-  }, []);
+  }, [supabase]);
 
-  // Calculations
-  const montantAttendu = ticketTypes.reduce((sum, t) => {
+  const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPosId(e.target.value);
+    setQuantities({});
+  };
+
+  useEffect(() => {
+    async function loadAllocations() {
+      if (!posId) return;
+      setLoadingAllocations(true);
+
+      const { data: allocData } = await supabase
+        .from('ticket_allocations')
+        .select('*, ticket_type:ticket_types(*)')
+        .eq('pos_id', posId);
+
+      const allocMap: Record<string, number> = {};
+      const ticketMap: Record<string, TicketType> = {};
+
+      if (allocData) {
+        allocData.forEach((alloc) => {
+          const typeId = alloc.ticket_type_id;
+          allocMap[typeId] = (allocMap[typeId] || 0) + alloc.quantite;
+          if (alloc.ticket_type) {
+            ticketMap[typeId] = alloc.ticket_type;
+          }
+        });
+      }
+
+      setAllocationMap(allocMap);
+
+      const tickets = Object.entries(ticketMap).map(([id, ticket]) => ({ ...ticket, id }));
+      setAllocatedTickets(tickets);
+
+      const { data: collectionsData } = await supabase
+        .from('collections')
+        .select('*, items:collection_items(*)')
+        .eq('pos_id', posId);
+
+      const soldMap: Record<string, number> = {};
+      if (collectionsData) {
+        collectionsData.forEach((c) => {
+          if (c.items) {
+            c.items!.forEach((item: CollectionItem) => {
+              soldMap[item.ticket_type_id] = (soldMap[item.ticket_type_id] || 0) + item.quantite_vendue;
+            });
+          }
+        });
+      }
+
+      setAlreadySoldMap(soldMap);
+
+      const availMap: Record<string, number> = {};
+      Object.keys(allocMap).forEach((typeId) => {
+        availMap[typeId] = (allocMap[typeId] || 0) - (soldMap[typeId] || 0);
+      });
+      setAvailableQtyMap(availMap);
+
+      setLoadingAllocations(false);
+    }
+
+    loadAllocations();
+  }, [posId, supabase]);
+
+  const montantAttendu = allocatedTickets.reduce((sum, t) => {
     const q = quantities[t.id] || 0;
     return sum + q * t.prix;
   }, 0);
@@ -80,8 +132,17 @@ export default function NewCollectionWizard() {
     e.preventDefault();
     setSubmitting(true);
 
-    // 1. Insert collection in Supabase DB
-    const { data: collection, error } = await supabase
+    for (const t of allocatedTickets) {
+      const entered = quantities[t.id] || 0;
+      const available = availableQtyMap[t.id] || 0;
+      if (entered > available) {
+        toast.error(`Quantité invalide pour ${t.nom}: ${entered} > ${available} disponible(s)`);
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    const { data: collection } = await supabase
       .from('collections')
       .insert({
         pos_id: posId,
@@ -95,8 +156,7 @@ export default function NewCollectionWizard() {
       .single();
 
     if (collection) {
-      // 2. Insert collection_items
-      const itemsToInsert = ticketTypes
+      const itemsToInsert = allocatedTickets
         .filter((t) => (quantities[t.id] || 0) > 0)
         .map((t) => ({
           collection_id: collection.id,
@@ -120,7 +180,6 @@ export default function NewCollectionWizard() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Wizard Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <Receipt className="w-6 h-6 text-amber-500" />
@@ -129,7 +188,6 @@ export default function NewCollectionWizard() {
         <p className="text-xs text-slate-500">Enregistrement direct et sécurisé dans la base de données Supabase.</p>
       </div>
 
-      {/* Stepper Progress Indicator */}
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
         {[1, 2, 3, 4, 5].map((s) => (
           <div key={s} className="flex items-center gap-2">
@@ -158,17 +216,16 @@ export default function NewCollectionWizard() {
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-          Chargement de l'assistant depuis Supabase...
+          Chargement de l&apos;assistant depuis Supabase...
         </div>
       ) : submitted ? (
         <Card className="p-8 text-center space-y-3 border-emerald-500">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
           <h3 className="text-xl font-bold text-slate-900 dark:text-white">Collecte Stockée dans Supabase !</h3>
-          <p className="text-xs text-slate-500">L'encaissement a été validé et archivé dans la base PostgreSQL.</p>
+          <p className="text-xs text-slate-500">L&apos;encaissement a été validé et archivé dans la base PostgreSQL.</p>
         </Card>
       ) : (
         <Card className="p-6">
-          {/* STEP 1 */}
           {step === 1 && (
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
@@ -176,7 +233,7 @@ export default function NewCollectionWizard() {
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Point de Vente concerné</label>
                 <select
                   value={posId}
-                  onChange={(e) => setPosId(e.target.value)}
+                  onChange={handlePosChange}
                   className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium"
                 >
                   {posList.map((p) => (
@@ -192,29 +249,62 @@ export default function NewCollectionWizard() {
             </div>
           )}
 
-          {/* STEP 2 */}
           {step === 2 && (
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 2 : Saisie des Quantités Vendues</h3>
-              <div className="space-y-3">
-                {ticketTypes.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">{t.nom}</p>
-                      <p className="text-xs text-slate-500">Prix unitaire : {formatCurrencyFCFA(t.prix)}</p>
-                    </div>
-                    <div className="w-28">
-                      <Input
-                        type="number"
-                        min="0"
-                        value={quantities[t.id] || ''}
-                        onChange={(e) => handleQtyChange(t.id, e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+
+              {loadingAllocations ? (
+                <div className="py-8 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
+                  <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                  Chargement des allocations...
+                </div>
+              ) : allocatedTickets.filter((t) => (availableQtyMap[t.id] || 0) > 0).length === 0 ? (
+                <div className="py-8 text-center space-y-3">
+                  <Package className="w-10 h-10 text-slate-300 mx-auto" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun ticket alloué à ce POS</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Aucun ticket n&apos;a été alloué à ce point de vente. Rendez-vous sur la page des allocations pour distribuer du stock.
+                  </p>
+                  <Link href="/allocations/new">
+                    <Button variant="secondary" size="sm" className="gap-2 font-bold">
+                      <Package className="w-4 h-4" /> Allouer des Tickets
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {allocatedTickets.map((t) => {
+                    const allocated = allocationMap[t.id] || 0;
+                    const sold = alreadySoldMap[t.id] || 0;
+                    const available = availableQtyMap[t.id] || 0;
+
+                    if (available <= 0) return null;
+
+                    return (
+                      <div key={t.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">{t.nom}</p>
+                          <p className="text-xs text-slate-500">Prix unitaire : {formatCurrencyFCFA(t.prix)}</p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Alloué: {allocated} — Déjà vendu: {sold} — Restant: {Math.max(0, available)}
+                          </p>
+                        </div>
+                        <div className="w-28">
+                          <Input
+                            type="number"
+                            min="0"
+                            max={Math.max(0, available)}
+                            value={quantities[t.id] || ''}
+                            onChange={(e) => handleQtyChange(t.id, e.target.value)}
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="flex justify-between pt-4">
                 <Button variant="ghost" onClick={() => setStep(1)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Retour
@@ -226,7 +316,6 @@ export default function NewCollectionWizard() {
             </div>
           )}
 
-          {/* STEP 3 */}
           {step === 3 && (
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 3 : Calcul Automatique du Montant Attendu</h3>
@@ -245,7 +334,6 @@ export default function NewCollectionWizard() {
             </div>
           )}
 
-          {/* STEP 4 */}
           {step === 4 && (
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 4 : Saisie du Montant Réellement Encaissé</h3>
@@ -262,17 +350,16 @@ export default function NewCollectionWizard() {
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
                 <Button onClick={() => setStep(5)} className="gap-2">
-                  Vérifier l'Écart <ArrowRight className="w-4 h-4" />
+                  Vérifier l&apos;Écart <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
             </div>
           )}
 
-          {/* STEP 5 */}
           {step === 5 && (
             <form onSubmit={handleFinish} className="space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 5 : Bilan & Validation Finale</h3>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
                   <p className="text-[11px] text-slate-500 font-semibold uppercase">Attendu</p>
@@ -285,8 +372,8 @@ export default function NewCollectionWizard() {
               </div>
 
               <div className={`p-4 rounded-xl border flex items-center justify-between ${
-                difference === 0 
-                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200' 
+                difference === 0
+                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
                   : 'bg-red-50 text-red-900 border-red-200'
               }`}>
                 <div>
