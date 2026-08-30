@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { 
   Ticket, 
   Banknote, 
-  ArrowUpRight, 
   ArrowDownRight, 
   Store, 
   Receipt, 
   PlusCircle, 
   ArrowLeftRight,
   Loader2,
-  Inbox
+  Inbox,
+  Package,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [montantCollecteTotal, setMontantCollecteTotal] = useState(0);
   const [ecartTotal, setEcartTotal] = useState(0);
   const [posActifsCount, setPosActifsCount] = useState(0);
+  const [ticketsAllouesTotal, setTicketsAllouesTotal] = useState(0);
 
   const supabase = createClient();
 
@@ -80,6 +81,15 @@ export default function DashboardPage() {
         setTicketsSoldTotal(totalSold);
       } else {
         setTicketsSoldTotal(0);
+      }
+
+      // 4. Fetch total allocated tickets from ticket_allocations
+      const { data: allocData } = await supabase.from('ticket_allocations').select('quantite');
+      if (allocData && allocData.length > 0) {
+        const totalAllocated = allocData.reduce((acc, curr) => acc + (curr.quantite || 0), 0);
+        setTicketsAllouesTotal(totalAllocated);
+      } else {
+        setTicketsAllouesTotal(0);
       }
 
       setLoading(false);
@@ -136,10 +146,26 @@ export default function DashboardPage() {
           </div>
         </Card>
 
+        {/* KPI 1b: Tickets Alloués */}
+        <Card className="border-l-4 border-l-purple-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Alloués</span>
+            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <Package className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {formatNumber(ticketsAllouesTotal)}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">Stock total distribué aux POS</p>
+          </div>
+        </Card>
+
         {/* KPI 2: Chiffre d'Affaires */}
         <Card className="border-l-4 border-l-blue-900">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chiffre d'Affaires</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chiffre d&apos;Affaires</span>
             <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
               <Banknote className="w-5 h-5" />
             </div>
@@ -211,7 +237,7 @@ export default function DashboardPage() {
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement enregistré</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Vous n'avez pas encore effectué d'encaissement de caisse. Commencez par créer un point de vente ou enregistrer votre première collecte.
+                Vous n&apos;avez pas encore effectué d&apos;encaissement de caisse. Commencez par créer un point de vente ou enregistrer votre première collecte.
               </p>
               <Link href="/collections/new" className="inline-block pt-2">
                 <Button variant="secondary" size="sm" className="font-bold gap-2">

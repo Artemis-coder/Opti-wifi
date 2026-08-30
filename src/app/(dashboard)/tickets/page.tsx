@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Ticket, Plus, Clock, Loader2 } from 'lucide-react';
+import { Ticket, Plus, Clock, Loader2, Edit, PauseCircle, PlayCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import { EditTicketModal } from './edit-ticket-modal';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { TicketType } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
@@ -23,14 +25,15 @@ export default function TicketTypesPage() {
 
   const supabase = createClient();
 
-  const loadTickets = async () => {
-    setLoading(true);
-    const { data } = await supabase.from('ticket_types').select('*').order('prix', { ascending: true });
-    setTickets(data || []);
-    setLoading(false);
-  };
+  const [editingTicket, setEditingTicket] = useState<TicketType | null>(null);
 
   useEffect(() => {
+    async function loadTickets() {
+      setLoading(true);
+      const { data } = await supabase.from('ticket_types').select('*').order('prix', { ascending: true });
+      setTickets(data || []);
+      setLoading(false);
+    }
     loadTickets();
   }, []);
 
@@ -55,13 +58,33 @@ export default function TicketTypesPage() {
 
     if (!error && data) {
       setTickets([...tickets, data]);
-    } else {
-      await loadTickets();
+      toast.success('Type de ticket créé.');
+    } else if (error) {
+      toast.error(`Erreur: ${error.message}`);
     }
 
     setNom('');
     setCreating(false);
     setIsModalOpen(false);
+  };
+
+  const handleToggleActif = async (ticket: TicketType) => {
+    const newActif = !ticket.actif;
+    const { error } = await supabase
+      .from('ticket_types')
+      .update({ actif: newActif })
+      .eq('id', ticket.id);
+
+    if (error) {
+      toast.error(`Erreur: ${error.message}`);
+    } else {
+      toast.success(newActif ? 'Ticket activé.' : 'Ticket désactivé.');
+      setTickets(tickets.map((t) => t.id === ticket.id ? { ...t, actif: newActif } : t));
+    }
+  };
+
+  const handleTicketUpdated = (updated: TicketType) => {
+    setTickets(tickets.map((t) => (t.id === updated.id ? updated : t)));
   };
 
   return (
@@ -119,9 +142,33 @@ export default function TicketTypesPage() {
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-medium">Prix public :</span>
-                <span className="text-lg font-extrabold text-[#0b1a3a] dark:text-amber-400">
-                  {formatCurrencyFCFA(t.prix)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-extrabold text-[#0b1a3a] dark:text-amber-400">
+                    {formatCurrencyFCFA(t.prix)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="p-1.5 h-7 w-7"
+                    onClick={() => setEditingTicket(t)}
+                    title="Modifier"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="p-1.5 h-7 w-7"
+                    onClick={() => handleToggleActif(t)}
+                    title={t.actif ? 'Désactiver' : 'Activer'}
+                  >
+                    {t.actif ? (
+                      <PauseCircle className="w-3.5 h-3.5 text-slate-600" />
+                    ) : (
+                      <PlayCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
@@ -139,6 +186,14 @@ export default function TicketTypesPage() {
           </div>
         </form>
       </Modal>
+
+      <EditTicketModal
+        key={`edit-ticket-${editingTicket?.id || 'null'}`}
+        isOpen={!!editingTicket}
+        onClose={() => setEditingTicket(null)}
+        ticket={editingTicket}
+        onSuccess={handleTicketUpdated}
+      />
     </div>
   );
 }
