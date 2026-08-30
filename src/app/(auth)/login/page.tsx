@@ -251,7 +251,6 @@ export default function LoginPage() {
 
         <Suspense fallback={null}>
           <RecoveryHandler
-            initialMode={mode}
             onModeChange={setMode}
             onRecoveryReady={setRecoveryReady}
           />
@@ -358,6 +357,14 @@ export default function LoginPage() {
             <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading}>
               Mettre à jour le mot de passe
             </Button>
+
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); setNewPassword(''); setConfirmPassword(''); setRecoveryReady(false); }}
+              className="w-full text-xs text-slate-500 hover:text-slate-700 font-semibold"
+            >
+              Retour à la page de connexion
+            </button>
           </form>
         )}
 

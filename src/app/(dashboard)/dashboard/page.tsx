@@ -108,12 +108,6 @@ export default function DashboardPage() {
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/collections/new">
-            <Button variant="secondary" size="md" className="gap-2 font-bold">
-              <PlusCircle className="w-4 h-4" />
-              Nouvelle Collecte
-            </Button>
-          </Link>
           {user?.role === 'administrateur' && (
             <Link href="/allocations/new">
               <Button variant="outline" size="md" className="gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20 font-semibold">
@@ -312,6 +306,24 @@ export default function DashboardPage() {
               </div>
               <span className="text-slate-400 font-bold">→</span>
             </Link>
+
+            {user?.role === 'administrateur' && (
+              <Link
+                href="/allocations/new"
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-purple-600 text-white">
+                    <ArrowLeftRight className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">Allouer des Tickets</p>
+                    <p className="text-xs text-slate-500">Distribuer du stock aux POS</p>
+                  </div>
+                </div>
+                <span className="text-slate-400 font-bold">→</span>
+              </Link>
+            )}
 
             <Link
               href="/tickets"
