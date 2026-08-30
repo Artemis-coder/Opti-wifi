@@ -10,7 +10,6 @@ import { EditPosModal } from './edit-pos-modal';
 import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { useSpaceStore } from '@/lib/stores/spaceStore';
 
 export default function PosPage() {
   const [search, setSearch] = useState('');
@@ -24,35 +23,29 @@ export default function PosPage() {
   const [spaces, setSpaces] = useState<WifiSpace[]>([]);
 
   const { user } = useAuthStore();
-  const { currentSpaceId } = useSpaceStore();
   const isAdmin = user?.role === 'administrateur';
 
   const supabase = createClient();
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      let query = supabase.from('points_of_sale').select('*, collecteur:profiles(*)');
-      if (currentSpaceId) {
-        query = query.eq('space_id', currentSpaceId);
-      }
+async function loadData() {
+    setLoading(true);
+    const { data: posData } = await supabase.from('points_of_sale').select('*, collecteur:profiles(*)');
 
-      const { data: posData } = await query;
+    const { data: colData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'collecteur');
 
-      const { data: colData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'collecteur');
+    const { data: spacesData } = await supabase.from('wifi_spaces').select('*');
 
-      const { data: spacesData } = await supabase.from('wifi_spaces').select('*');
-
-      if (colData) setCollectors(colData);
-      if (spacesData) setSpaces(spacesData);
-      setPosList(posData || []);
-      setLoading(false);
-    }
+    if (colData) setCollectors(colData);
+    if (spacesData) setSpaces(spacesData);
+    setPosList(posData || []);
+    setLoading(false);
+  }
     loadData();
-  }, [currentSpaceId, supabase]);
+  }, [supabase]);
 
   const filteredPos = posList.filter((p) =>
     p.nom.toLowerCase().includes(search.toLowerCase()) ||
