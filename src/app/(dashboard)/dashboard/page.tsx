@@ -107,16 +107,6 @@ export default function DashboardPage() {
             Bienvenue dans votre espace, {user?.nom || 'Utilisateur'} 👋
           </h1>
         </div>
-        <div className="flex items-center gap-3">
-          {user?.role === 'administrateur' && (
-            <Link href="/allocations/new">
-              <Button variant="outline" size="md" className="gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20 font-semibold">
-                <ArrowLeftRight className="w-4 h-4" />
-                Allouer Tickets
-              </Button>
-            </Link>
-          )}
-        </div>
       </div>
 
       {/* KPI Cards Grid */}
@@ -274,10 +264,28 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Raccourcis Métier</h2>
           
-          <Card className="space-y-3">
+          <Card className="grid grid-cols-1 auto-rows-fr gap-3">
+            {user?.role === 'administrateur' && (
+              <Link
+                href="/allocations/new"
+                className="flex items-center justify-between p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 hover:scale-[1.01] transition h-full"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-purple-600 text-white">
+                    <ArrowLeftRight className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">Allouer des Tickets</p>
+                    <p className="text-xs text-slate-500">Distribuer du stock aux POS</p>
+                  </div>
+                </div>
+                <span className="text-purple-600 font-bold">→</span>
+              </Link>
+            )}
+
             <Link
               href="/collections/new"
-              className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 hover:scale-[1.01] transition"
+              className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 hover:scale-[1.01] transition h-full"
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-amber-500 text-slate-950">
@@ -293,7 +301,7 @@ export default function DashboardPage() {
 
             <Link
               href="/pos"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition h-full"
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-blue-900 text-white">
@@ -307,27 +315,9 @@ export default function DashboardPage() {
               <span className="text-slate-400 font-bold">→</span>
             </Link>
 
-            {user?.role === 'administrateur' && (
-              <Link
-                href="/allocations/new"
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-600 text-white">
-                    <ArrowLeftRight className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Allouer des Tickets</p>
-                    <p className="text-xs text-slate-500">Distribuer du stock aux POS</p>
-                  </div>
-                </div>
-                <span className="text-slate-400 font-bold">→</span>
-              </Link>
-            )}
-
             <Link
               href="/tickets"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition h-full"
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-emerald-600 text-white">
