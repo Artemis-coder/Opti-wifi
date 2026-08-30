@@ -127,6 +127,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Profiles
 CREATE POLICY "Utilisateur voit son profil" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Utilisateur modifie son profil" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Utilisateur cree son profil" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Admins gerent tous les profils" ON profiles FOR ALL USING (is_admin());
 
 -- Points de Vente
@@ -162,41 +163,51 @@ CREATE POLICY "Admins voient les logs" ON audit_logs FOR ALL USING (is_admin());
 -- ETAPE 12 : Trigger auto-creation du profil a l'inscription
 -- Ce trigger est CRITIQUE : il insert le nom, email et role
 -- saisis dans le formulaire d'inscription directement dans profiles
-  CREATE OR REPLACE FUNCTION public.handle_new_user()
+CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Désactiver RLS pour cette transaction : le trigger s'exécute dans le
   -- contexte de GoTrue (sans JWT), donc auth.uid() = NULL et les politiques
   -- RLS échouent. SET LOCAL row_security = off contourne ce problème.
-  SET LOCAL row_security = 'off';
+  BEGIN
+    SET LOCAL row_security = 'off';
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
 
-  INSERT INTO public.profiles (id, nom, email, role, telephone)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'nom', split_part(NEW.email, '@', 1)),
-    NEW.email,
-    COALESCE(
-      CASE
-        WHEN NEW.raw_user_meta_data->>'role' IN ('administrateur','collecteur')
-        THEN (NEW.raw_user_meta_data->>'role')::user_role
-        ELSE NULL
-      END,
-      'collecteur'::user_role
-    ),
-    NEW.raw_user_meta_data->>'telephone'
-  )
-  ON CONFLICT (id) DO UPDATE
-    SET
-      nom = EXCLUDED.nom,
-      email = EXCLUDED.email,
-      role = EXCLUDED.role,
-      telephone = EXCLUDED.telephone,
-      updated_at = NOW();
+  -- Tenter de créer/mettre à jour le profil (ne bloque jamais l'inscription)
+  BEGIN
+    INSERT INTO public.profiles (id, nom, email, role, telephone)
+    VALUES (
+      NEW.id,
+      COALESCE(NEW.raw_user_meta_data->>'nom', split_part(NEW.email, '@', 1)),
+      NEW.email,
+      COALESCE(
+        CASE
+          WHEN NEW.raw_user_meta_data->>'role' IN ('administrateur','collecteur')
+          THEN (NEW.raw_user_meta_data->>'role')::user_role
+          ELSE NULL
+        END,
+        'collecteur'::user_role
+      ),
+      NEW.raw_user_meta_data->>'telephone'
+    )
+    ON CONFLICT (id) DO UPDATE
+      SET
+        nom = EXCLUDED.nom,
+        email = EXCLUDED.email,
+        role = EXCLUDED.role,
+        telephone = EXCLUDED.telephone,
+        updated_at = NOW();
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-  CREATE TRIGGER on_auth_user_created
+CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
