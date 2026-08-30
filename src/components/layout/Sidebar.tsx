@@ -61,7 +61,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const filteredNav = navItems.filter((item) => !user?.role || item.roles.includes(user.role));
 
   const content = (
-    <aside className="w-64 bg-[#0b1a3a] text-white flex flex-col h-full border-r border-slate-800 shadow-xl">
+    <aside className="bg-[#0b1a3a] text-white flex flex-col h-full border-r border-slate-800 shadow-xl">
       {/* Brand Header */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
@@ -144,7 +144,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block sticky top-0 h-screen shrink-0">
+      <div className="hidden lg:block sticky top-0 h-screen shrink-0 w-64">
         {content}
       </div>
 
