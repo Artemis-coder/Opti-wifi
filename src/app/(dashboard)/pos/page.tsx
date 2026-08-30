@@ -86,7 +86,7 @@ async function loadData() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <Card className="border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total POS</span>
@@ -107,7 +107,7 @@ async function loadData() {
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{activePos}</p>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500">
+        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Désactivés</span>
             <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
