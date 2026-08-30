@@ -155,7 +155,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
             onClick={onCloseMobile}
           />
-          <div className="relative z-10 w-screen h-[85vh] max-h-[85vh] mt-auto animate-in slide-in-from-bottom duration-200 rounded-t-2xl overflow-hidden flex flex-col">
+          <div className="relative z-10 w-screen h-[90vh] max-h-[90vh] mt-auto mx-0 mb-0 animate-in slide-in-from-bottom duration-200 rounded-2xl overflow-hidden flex flex-col">
             {/* Drag Handle & Close Button */}
             <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
               <div className="flex-1 flex justify-center">
@@ -170,7 +170,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
               </button>
             </div>
             {/* Drawer Content */}
-            <div className="flex-1 overflow-y-auto px-4 pb-6">
+            <div className="flex-1 overflow-y-auto">
               {content}
             </div>
           </div>
