@@ -16,13 +16,17 @@ import {
   X,
   LogOut,
   User as UserIcon,
-  MapPin
+  MapPin,
+  Wifi,
+  WifiOff,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -34,6 +38,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const supabase = createClient();
+  const { status, isOnline, isOffline, isUnstable } = useOnlineStatus();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -112,9 +117,14 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
           <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs border border-amber-500/30">
             <UserIcon className="w-4 h-4" />
           </div>
-          <div className="overflow-hidden">
-            <p className="text-xs font-bold text-white truncate">{user?.nom || 'Compte Utilisateur'}</p>
-            <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">{user?.role || 'Collecteur'}</p>
+          <div className="flex items-center gap-2 overflow-hidden">
+            {isOffline && <span title="Hors ligne"><WifiOff className="w-4 h-4 text-red-500 shrink-0" /></span>}
+            {isUnstable && <span title="Connexion instable"><AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" /></span>}
+            {isOnline && <span title="En ligne"><Wifi className="w-4 h-4 text-emerald-500 shrink-0" /></span>}
+            <div className="overflow-hidden">
+              <p className="text-xs font-bold text-white truncate">{user?.nom || 'Compte Utilisateur'}</p>
+              <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">{user?.role || 'Collecteur'}</p>
+            </div>
           </div>
         </div>
 
