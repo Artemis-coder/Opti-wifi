@@ -3,12 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Store, 
-  Ticket, 
-  Receipt, 
-  Menu 
+import {
+  LayoutDashboard,
+  Store,
+  Ticket,
+  Receipt,
+  MapPin,
+  Menu,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { cn } from '@/lib/utils/cn';
@@ -26,6 +27,7 @@ export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
     { label: 'POS', href: '/pos', icon: Store },
     { label: 'Tickets', href: '/tickets', icon: Ticket, adminOnly: true },
     { label: 'Collectes', href: '/collections', icon: Receipt },
+    { label: 'Espaces', href: '/spaces', icon: MapPin },
   ];
 
   const filteredItems = primaryItems.filter((item) => !item.adminOnly || user?.role === 'administrateur');

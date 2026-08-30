@@ -23,8 +23,9 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from '../edit-pos-modal';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem } from '@/types/database';
+import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useSpaceStore } from '@/lib/stores/spaceStore';
 
 interface AllocationSummary {
   ticketType: TicketType;
@@ -46,7 +47,9 @@ export default function PosDetailPage() {
   const [allocations, setAllocations] = useState<TicketAllocation[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [spaces, setSpaces] = useState<WifiSpace[]>([]);
 
+  const { currentSpaceId } = useSpaceStore();
   const supabase = createClient();
 
   useEffect(() => {
@@ -68,28 +71,41 @@ export default function PosDetailPage() {
         .eq('role', 'collecteur');
       setCollectors(colData || []);
 
-      const { data: ticketData } = await supabase.from('ticket_types').select('*');
+      let ticketQuery = supabase.from('ticket_types').select('*');
+      if (currentSpaceId) {
+        ticketQuery = ticketQuery.eq('space_id', currentSpaceId);
+      }
+      const { data: ticketData } = await ticketQuery;
       setTicketTypes(ticketData || []);
 
-      const { data: allocData } = await supabase
+      let allocQuery = supabase
         .from('ticket_allocations')
         .select('*, ticket_type:ticket_types(*)')
-        .eq('pos_id', posId)
-        .order('created_at', { ascending: false });
+        .eq('pos_id', posId);
+      if (currentSpaceId) {
+        allocQuery = allocQuery.eq('space_id', currentSpaceId);
+      }
+      const { data: allocData } = await allocQuery.order('created_at', { ascending: false });
       setAllocations(allocData || []);
 
-      const { data: colItemsData } = await supabase
+      let colQuery = supabase
         .from('collections')
         .select('*, items:collection_items(*)')
-        .eq('pos_id', posId)
-        .order('created_at', { ascending: false });
+        .eq('pos_id', posId);
+      if (currentSpaceId) {
+        colQuery = colQuery.eq('space_id', currentSpaceId);
+      }
+      const { data: colItemsData } = await colQuery.order('created_at', { ascending: false });
       setCollections(colItemsData || []);
+
+      const { data: spacesData } = await supabase.from('wifi_spaces').select('*');
+      if (spacesData) setSpaces(spacesData);
 
       setLoading(false);
     }
 
     loadData();
-  }, [posId]);
+  }, [posId, currentSpaceId, supabase]);
 
   const handlePosUpdated = (updated: PointOfSale) => {
     setPos(updated);
@@ -541,6 +557,7 @@ export default function PosDetailPage() {
         onClose={() => setIsEditModalOpen(false)}
         pos={pos}
         collectors={collectors}
+        spaces={spaces}
         onSuccess={handlePosUpdated}
       />
     </div>
