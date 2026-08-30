@@ -21,6 +21,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [resetMode, setResetMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
@@ -44,7 +47,6 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      // Fetch user profile from Supabase DB
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -67,6 +69,26 @@ export default function LoginPage() {
 
       router.push('/dashboard');
     }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) return;
+    setResetLoading(true);
+    setError('');
+    setSuccessMsg('');
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+
+    if (resetError) {
+      setError(resetError.message || 'Erreur lors de l\'envoi du lien de réinitialisation.');
+    } else {
+      setSuccessMsg('Lien de réinitialisation envoyé ! Vérifiez votre email.');
+      setResetEmail('');
+    }
+    setResetLoading(false);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -224,7 +246,7 @@ export default function LoginPage() {
         )}
 
         {/* LOGIN FORM */}
-        {mode === 'login' ? (
+        {mode === 'login' && !resetMode ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
               label="Adresse Email"
@@ -243,9 +265,45 @@ export default function LoginPage() {
               required
             />
 
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => { setResetMode(true); setError(''); setSuccessMsg(''); }}
+                className="text-xs text-amber-600 hover:text-amber-700 font-semibold"
+              >
+                Mot de passe oublié ?
+              </button>
+            </div>
+
             <Button type="submit" className="w-full h-11 text-sm font-bold" isLoading={loading}>
               Se connecter à mon espace
             </Button>
+          </form>
+        ) : mode === 'login' && resetMode ? (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <p className="text-xs text-slate-500">
+              Entrez votre adresse email pour recevoir un lien de réinitialisation de mot de passe.
+            </p>
+            <Input
+              label="Adresse Email"
+              type="email"
+              placeholder="votre.email@exemple.ci"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              required
+            />
+
+            <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={resetLoading}>
+              Envoyer le lien de réinitialisation
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => { setResetMode(false); setError(''); setSuccessMsg(''); }}
+              className="w-full text-xs text-slate-500 hover:text-slate-700 font-semibold"
+            >
+              Retour à la connexion
+            </button>
           </form>
         ) : (
           /* REGISTER FORM */
