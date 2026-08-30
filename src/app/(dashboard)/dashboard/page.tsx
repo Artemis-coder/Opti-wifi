@@ -106,9 +106,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold tracking-tight">
             Bienvenue dans votre espace, {user?.nom || 'Utilisateur'} 👋
           </h1>
-          <p className="text-xs text-slate-300 mt-1">
-            Données en direct extraites de votre base de données.
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/collections/new">
