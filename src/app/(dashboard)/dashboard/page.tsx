@@ -43,15 +43,11 @@ export default function DashboardPage() {
     async function loadDashboardData() {
       setLoading(true);
 
-      // 1. Fetch POS count
       let posQuery = supabase.from('points_of_sale').select('id', { count: 'exact' });
       if (currentSpaceId) {
         posQuery = posQuery.eq('space_id', currentSpaceId);
       }
-      const { data: posData } = await posQuery;
-      setPosActifsCount(posData?.length || 0);
 
-      // 2. Fetch recent collections & items
       let colQuery = supabase
         .from('collections')
         .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
@@ -59,7 +55,30 @@ export default function DashboardPage() {
       if (currentSpaceId) {
         colQuery = colQuery.eq('space_id', currentSpaceId);
       }
-      const { data: colData } = await colQuery;
+
+      let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
+      if (currentSpaceId) {
+        itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
+      }
+
+      let allocQuery = supabase.from('ticket_allocations').select('quantite');
+      if (currentSpaceId) {
+        allocQuery = allocQuery.eq('space_id', currentSpaceId);
+      }
+
+      const [posRes, colRes, itemsRes, allocRes] = await Promise.all([
+        posQuery,
+        colQuery,
+        itemsQuery,
+        allocQuery,
+      ]);
+
+      const posData = posRes.data;
+      const colData = colRes.data;
+      const itemsData = itemsRes.data;
+      const allocData = allocRes.data;
+
+      setPosActifsCount(posData?.length || 0);
 
       if (colData && colData.length > 0) {
         setCollections(colData);
@@ -84,12 +103,6 @@ export default function DashboardPage() {
         setEcartTotal(0);
       }
 
-      // 3. Fetch tickets sold count from collection_items
-      let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
-      if (currentSpaceId) {
-        itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
-      }
-      const { data: itemsData } = await itemsQuery;
       if (itemsData && itemsData.length > 0) {
         const totalSold = itemsData.reduce((acc, curr) => acc + (curr.quantite_vendue || 0), 0);
         setTicketsSoldTotal(totalSold);
@@ -97,12 +110,6 @@ export default function DashboardPage() {
         setTicketsSoldTotal(0);
       }
 
-      // 4. Fetch total allocated tickets from ticket_allocations
-      let allocQuery = supabase.from('ticket_allocations').select('quantite');
-      if (currentSpaceId) {
-        allocQuery = allocQuery.eq('space_id', currentSpaceId);
-      }
-      const { data: allocData } = await allocQuery;
       if (allocData && allocData.length > 0) {
         const totalAllocated = allocData.reduce((acc, curr) => acc + (curr.quantite || 0), 0);
         setTicketsAllouesTotal(totalAllocated);

@@ -37,19 +37,21 @@ export default function NewAllocationPage() {
     async function loadData() {
       setLoading(true);
 
-      const { data: posData } = await supabase.from('points_of_sale').select('*');
-      const { data: ticketData } = await supabase.from('ticket_types').select('*');
+      const [posRes, ticketRes] = await Promise.all([
+        supabase.from('points_of_sale').select('*').order('nom'),
+        supabase.from('ticket_types').select('*').order('nom'),
+      ]);
 
-      if (posData && posData.length > 0) {
-        setPosList(posData);
-        setPosId(posData[0].id);
+      if (posRes.data && posRes.data.length > 0) {
+        setPosList(posRes.data);
+        setPosId(posRes.data[0].id);
       } else {
         setPosList([]);
       }
 
-      if (ticketData && ticketData.length > 0) {
-        setTicketTypes(ticketData);
-        setLines((prev) => prev.map((l, i) => (i === 0 ? { ...l, ticketTypeId: ticketData[0].id } : l)));
+      if (ticketRes.data && ticketRes.data.length > 0) {
+        setTicketTypes(ticketRes.data);
+        setLines((prev) => prev.map((l, i) => (i === 0 ? { ...l, ticketTypeId: ticketRes.data![0].id } : l)));
       } else {
         setTicketTypes([]);
       }
