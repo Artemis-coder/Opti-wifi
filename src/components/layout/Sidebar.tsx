@@ -155,8 +155,24 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
             onClick={onCloseMobile}
           />
-          <div className="relative z-10 w-64 max-w-[80vw] h-full animate-in slide-in-from-left duration-200">
-            {content}
+          <div className="relative z-10 w-full h-[85vh] max-h-[85vh] mt-auto animate-in slide-in-from-bottom duration-200 rounded-t-2xl overflow-hidden flex flex-col">
+            {/* Drag Handle & Close Button */}
+            <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
+              <div className="flex-1 flex justify-center">
+                <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
+              </div>
+              <button
+                onClick={onCloseMobile}
+                className="ml-4 p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition"
+                aria-label="Fermer le menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {/* Drawer Content */}
+            <div className="flex-1 overflow-y-auto px-4 pb-6">
+              {content}
+            </div>
           </div>
         </div>
       )}
