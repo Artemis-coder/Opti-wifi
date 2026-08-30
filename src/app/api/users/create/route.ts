@@ -1,18 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nvaavjyogadlimkosdsr.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+function getSupabaseAdmin() {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        { error: 'SUPABASE_SERVICE_ROLE_KEY n\'est pas configurée.' },
+        { status: 500 }
+      );
+    }
+
+    const supabase = getSupabaseAdmin();
+
     const body = await request.json();
     const { nom, email, role, telephone, mot_de_passe } = body;
 
