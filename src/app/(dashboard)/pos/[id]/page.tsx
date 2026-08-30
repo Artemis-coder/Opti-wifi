@@ -17,6 +17,8 @@ import {
   Info,
   Clock,
   Ticket,
+  User,
+  FileText,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -25,7 +27,6 @@ import { EditPosModal } from '../edit-pos-modal';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
-import { useSpaceStore } from '@/lib/stores/spaceStore';
 
 interface AllocationSummary {
   ticketType: TicketType;
@@ -48,8 +49,8 @@ export default function PosDetailPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [spaces, setSpaces] = useState<WifiSpace[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
 
-  const { currentSpaceId } = useSpaceStore();
   const supabase = createClient();
 
   useEffect(() => {
@@ -71,31 +72,24 @@ export default function PosDetailPage() {
         .eq('role', 'collecteur');
       setCollectors(colData || []);
 
-      let ticketQuery = supabase.from('ticket_types').select('*');
-      if (currentSpaceId) {
-        ticketQuery = ticketQuery.eq('space_id', currentSpaceId);
-      }
-      const { data: ticketData } = await ticketQuery;
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      if (profilesData) setProfiles(profilesData);
+
+      const { data: ticketData } = await supabase.from('ticket_types').select('*');
       setTicketTypes(ticketData || []);
 
-      let allocQuery = supabase
+      const { data: allocData } = await supabase
         .from('ticket_allocations')
         .select('*, ticket_type:ticket_types(*)')
-        .eq('pos_id', posId);
-      if (currentSpaceId) {
-        allocQuery = allocQuery.eq('space_id', currentSpaceId);
-      }
-      const { data: allocData } = await allocQuery.order('created_at', { ascending: false });
+        .eq('pos_id', posId)
+        .order('created_at', { ascending: false });
       setAllocations(allocData || []);
 
-      let colQuery = supabase
+      const { data: colItemsData } = await supabase
         .from('collections')
         .select('*, items:collection_items(*)')
-        .eq('pos_id', posId);
-      if (currentSpaceId) {
-        colQuery = colQuery.eq('space_id', currentSpaceId);
-      }
-      const { data: colItemsData } = await colQuery.order('created_at', { ascending: false });
+        .eq('pos_id', posId)
+        .order('created_at', { ascending: false });
       setCollections(colItemsData || []);
 
       const { data: spacesData } = await supabase.from('wifi_spaces').select('*');
@@ -105,7 +99,7 @@ export default function PosDetailPage() {
     }
 
     loadData();
-  }, [posId, currentSpaceId, supabase]);
+  }, [posId, supabase]);
 
   const handlePosUpdated = (updated: PointOfSale) => {
     setPos(updated);
@@ -171,6 +165,22 @@ export default function PosDetailPage() {
   const totalExpected = collections.reduce((sum, c) => sum + Number(c.montant_attendu || 0), 0);
   const totalCollected = collections.reduce((sum, c) => sum + Number(c.montant_collecte || 0), 0);
   const totalDifference = totalCollected - totalExpected;
+
+  const getAllocatorName = (allouePar?: string) => {
+    if (!allouePar) return 'Système';
+    const profile = profiles.find((p) => p.id === allouePar);
+    return profile?.nom || 'Utilisateur inconnu';
+  };
+
+  const getTicketTypeName = (ticketTypeId: string) => {
+    const ticket = ticketTypes.find((t) => t.id === ticketTypeId);
+    return ticket?.nom || 'Type inconnu';
+  };
+
+  const getTicketTypePrix = (ticketTypeId: string) => {
+    const ticket = ticketTypes.find((t) => t.id === ticketTypeId);
+    return ticket?.prix || 0;
+  };
 
   if (loading) {
     return (
@@ -442,20 +452,37 @@ export default function PosDetailPage() {
                 <tr>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Type de Ticket</th>
-                  <th className="px-4 py-3 text-right">Quantité Allouée</th>
-                  <th className="px-4 py-3">Notes / Référence</th>
+                  <th className="px-4 py-3 text-right">Quantité</th>
+                  <th className="px-4 py-3 text-right">Montant</th>
+                  <th className="px-4 py-3">Alloué par</th>
+                  <th className="px-4 py-3">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                 {allocations.map((a) => (
                   <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                      {formatDateFR(a.created_at)}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {formatDateFR(a.created_at)}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
-                      {a.ticket_type?.nom || 'Type inconnu'}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <Ticket className="w-3.5 h-3.5 text-emerald-600" />
+                        {getTicketTypeName(a.ticket_type_id)}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{a.quantite}</td>
+                    <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
+                      {formatCurrencyFCFA(a.quantite * getTicketTypePrix(a.ticket_type_id))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 text-slate-400" />
+                        {getAllocatorName(a.alloue_par)}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-slate-500">{a.notes || '—'}</td>
                   </tr>
                 ))}
