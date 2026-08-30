@@ -40,6 +40,7 @@ import {
 } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { PosSummary } from '@/components/ui/PosSummary';
 
 export default function SpaceDashboardPage() {
   const params = useParams();
@@ -306,35 +307,26 @@ export default function SpaceDashboardPage() {
         </div>
       </div>
 
-      {/* Linked POS Summary */}
-      <Card className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
-              <Store className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                Points de Vente rattachés à cet espace
-              </p>
-              <p className="text-xs text-slate-500">
-                {linkedPos.length} POS ({linkedPos.filter((p) => p.statut === 'actif').length} actif)
-              </p>
-            </div>
-          </div>
-          {user?.role === 'administrateur' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setManagePosSpaceId(spaceId)}
-              className="gap-1 text-xs font-semibold text-blue-600"
-            >
-              <Link2 className="w-3.5 h-3.5" />
-              Gérer les POS
-            </Button>
-          )}
-        </div>
-      </Card>
+{/* Linked POS Summary */}
+       <Card className="p-4">
+         <div className="flex items-center justify-between">
+           <PosSummary
+             linkedPosCount={linkedPos.length}
+             activePosCount={linkedPos.filter((p) => p.statut === 'actif').length}
+           />
+           {user?.role === 'administrateur' && (
+             <Button
+               variant="ghost"
+               size="sm"
+               onClick={() => setManagePosSpaceId(spaceId)}
+               className="gap-1 text-xs font-semibold text-blue-600"
+             >
+               <Link2 className="w-3.5 h-3.5" />
+               Gérer les POS
+             </Button>
+           )}
+         </div>
+       </Card>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
