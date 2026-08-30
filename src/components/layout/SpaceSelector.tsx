@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, ExternalLink } from 'lucide-react';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { createClient } from '@/lib/supabase/client';
-import { WifiSpace } from '@/types/database';
 
 export function SpaceSelector() {
   const { currentSpaceId, spaces, setCurrentSpaceId, setSpaces } = useSpaceStore();
@@ -27,9 +27,20 @@ export function SpaceSelector() {
 
   return (
     <div className="px-4 py-3 border-b border-slate-800/80">
-      <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-        Espace Wi-Fi
-      </label>
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+          Espace Wi-Fi
+        </label>
+        {currentSpaceId && selectedSpace && (
+          <Link
+            href={`/spaces/${currentSpaceId}`}
+            className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 hover:text-amber-300 uppercase tracking-wider"
+            title="Voir le tableau de bord de cet espace"
+          >
+            Tableau de bord <ExternalLink className="w-2.5 h-2.5" />
+          </Link>
+        )}
+      </div>
       <div className="relative">
         <select
           value={currentSpaceId || ''}

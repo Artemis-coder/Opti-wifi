@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Plus, Edit, Trash2, MapPin, Loader2, AlertCircle, Store, Link2, Unlink } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -240,6 +241,12 @@ export default function WifiSpacesPage() {
                     {linkedPos.length} point{linkedPos.length > 1 ? 's' : ''} de vente rattaché
                     {linkedPos.length > 1 ? 's' : ''}
                   </span>
+                  <Link
+                    href={`/spaces/${space.id}`}
+                    className="ml-auto text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Tableau de bord →
+                  </Link>
                 </div>
 
                 {/* Linked POS list */}
