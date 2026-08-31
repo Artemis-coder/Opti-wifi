@@ -101,7 +101,7 @@ export default function SpaceDashboardPage() {
         setLinkedPos(posRes.data.filter((p: PointOfSale) => p.space_id === spaceId));
         setUnlinkedPos(
           posRes.data.filter(
-            (p: PointOfSale) => p.space_id !== spaceId && p.space_id !== undefined && p.space_id !== null
+            (p: PointOfSale) => !p.space_id
           )
         );
       }
