@@ -64,6 +64,7 @@ export default function SpaceDashboardPage() {
   const [montantCollecteTotal, setMontantCollecteTotal] = useState(0);
   const [ecartTotal, setEcartTotal] = useState(0);
   const [ticketsAllouesTotal, setTicketsAllouesTotal] = useState(0);
+  const [totalCommission, setTotalCommission] = useState(0);
 
   const { user } = useAuthStore();
   const supabase = createClient();
@@ -148,6 +149,12 @@ export default function SpaceDashboardPage() {
         0
       );
       setTicketsAllouesTotal(totalAllocated);
+
+      const commissionTotal = spaceCollections.reduce(
+        (acc, curr) => acc + Number(curr.commission || 0),
+        0
+      );
+      setTotalCommission(commissionTotal);
 
       setRecentCollections(spaceCollections.slice(0, 5));
 
@@ -384,27 +391,47 @@ export default function SpaceDashboardPage() {
           </div>
         </Card>
 
-{/* Montant Encaissé */}
-         <Card className="border-l-4 border-l-emerald-500">
-           <div className="flex items-center justify-between">
-             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-               Total Encaissé
-             </span>
-             <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-               <Receipt className="w-5 h-5" />
-             </div>
-           </div>
-           <div className="mt-3">
-             <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-               {formatCurrencyFCFA(montantCollecteTotal)}
-             </p>
-             <p className="text-xs text-slate-500 mt-1">
-               Total espèces perçues
-             </p>
-           </div>
-         </Card>
+         {/* Montant Encaissé */}
+          <Card className="border-l-4 border-l-emerald-500">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Total Encaissé
+              </span>
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Receipt className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                {formatCurrencyFCFA(montantCollecteTotal)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Total espèces perçues
+              </p>
+            </div>
+          </Card>
 
-{/* Écart / Différence */}
+          {/* Commission Versée */}
+          <Card className="border-l-4 border-l-teal-500">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Commission Versée
+              </span>
+              <div className="p-2 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                <Receipt className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                {formatCurrencyFCFA(totalCommission)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Total commissions aux POS de l&apos;espace
+              </p>
+            </div>
+          </Card>
+
+          {/* Écart / Différence */}
           <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
             <div className="flex items-center justify-between">
              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
