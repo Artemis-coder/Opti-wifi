@@ -461,7 +461,7 @@ export default function SpaceDashboardPage() {
       {/* Main Content Grid: Raccourcis & Recent Encaissements */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Raccourcis Métier */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-1 space-y-4 max-w-[405px]">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
             Raccourcis Métier (Espace)
           </h2>
@@ -536,7 +536,7 @@ export default function SpaceDashboardPage() {
         </div>
 
         {/* Right Column: Derniers Encaissements */}
-        <div className="space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Derniers Encaissements (Espace)

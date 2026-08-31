@@ -222,8 +222,8 @@ export default function DashboardPage() {
 
       {/* Main Content Grid: Quick Actions & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Right Column: Quick Links & Actions */}
-        <div className="space-y-4">
+        {/* Left Column: Raccourcis Métier */}
+        <div className="lg:col-span-1 space-y-4 max-w-[405px]">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Raccourcis Métier</h2>
           
           <Card className="grid grid-cols-1 auto-rows-fr gap-3">
