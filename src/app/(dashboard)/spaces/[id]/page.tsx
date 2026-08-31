@@ -109,23 +109,6 @@ export default function SpaceDashboardPage() {
       if (colRes.data) setCollections(colRes.data);
 
       // Compute KPIs
-      const allItems: CollectionItem[] = [];
-      if (colRes.data) {
-        colRes.data.forEach((c: Collection) => {
-          if (c.items) allItems.push(...c.items);
-        });
-      }
-
-      const soldTotal = allItems.reduce(
-        (acc, curr) => acc + (curr.quantite_vendue || 0),
-        0
-      );
-      setTicketsSoldTotal(soldTotal);
-
-      const linkedPosIds = linkedPos.map((p) => p.id);
-      // Wait, linkedPos is set above with setLinkedPos but we need it here
-      // Actually let's compute from posRes data directly
-
       const actualLinkedPosIds = (posRes.data || [])
         .filter((p: PointOfSale) => p.space_id === spaceId)
         .map((p: PointOfSale) => p.id);
@@ -136,6 +119,17 @@ export default function SpaceDashboardPage() {
       const spaceCollections = (colRes.data || []).filter((c: Collection) =>
         actualLinkedPosIds.includes(c.pos_id)
       );
+
+      const spaceItems: CollectionItem[] = [];
+      spaceCollections.forEach((c) => {
+        if (c.items) spaceItems.push(...c.items);
+      });
+
+      const soldTotal = spaceItems.reduce(
+        (acc, curr) => acc + (curr.quantite_vendue || 0),
+        0
+      );
+      setTicketsSoldTotal(soldTotal);
 
       let totalExpected = 0;
       let totalCollected = 0;
