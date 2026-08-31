@@ -118,18 +118,24 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
             Espace Wi-Fi
           </label>
-          <select
-            value={spaceId}
-            onChange={(e) => setSpaceId(e.target.value)}
-            className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-          >
-            <option value="">Aucun espace</option>
-            {spaces.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nom}
-              </option>
-            ))}
-          </select>
+          {pos?.space_id ? (
+            <div className="w-full h-10 px-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm flex items-center text-slate-700 dark:text-slate-300">
+              {spaces.find((s) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
+            </div>
+          ) : (
+            <select
+              value={spaceId}
+              onChange={(e) => setSpaceId(e.target.value)}
+              className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
+            >
+              <option value="">Aucun espace</option>
+              {spaces.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nom}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="space-y-1.5">
