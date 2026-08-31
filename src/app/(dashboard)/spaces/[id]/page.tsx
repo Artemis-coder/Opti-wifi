@@ -330,7 +330,7 @@ export default function SpaceDashboardPage() {
        </Card>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Tickets Alloués */}
         <Card className="border-l-4 border-l-purple-500">
           <div className="flex items-center justify-between">
