@@ -278,164 +278,84 @@ export default function WifiSpacesPage() {
             const isManaging = managePosSpaceId === space.id;
 
             return (
-              <Card key={space.id} className="space-y-4 h-full">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                      <MapPin className="w-5 h-5" />
+              <Link key={space.id} href={`/spaces/${space.id}`} className="block group">
+                <Card className="space-y-3 h-full">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-slate-900 dark:text-white">{space.nom}</h3>
+                        <p className="text-xs text-slate-500 mt-1">{space.description || 'Aucune description'}</p>
+                        {(space.adresse || space.ville) && (
+                          <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                            <MapPin className="w-3 h-3" />
+                            <span>
+                              {[space.adresse, space.ville].filter(Boolean).join(', ')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-sm text-slate-900 dark:text-white">{space.nom}</h3>
-                      <p className="text-xs text-slate-500 mt-1">{space.description || 'Aucune description'}</p>
-                      {(space.adresse || space.ville) && (
-                        <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          <span>
-                            {[space.adresse, space.ville].filter(Boolean).join(', ')}
-                          </span>
-                        </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          space.statut === 'actif'
+                            ? 'success'
+                            : space.statut === 'suspendu'
+                            ? 'danger'
+                            : 'neutral'
+                        }
+                      >
+                        {space.statut}
+                      </Badge>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleToggleStatus(space);
+                          }}
+                          disabled={togglingId === space.id}
+                          className="p-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title={space.statut === 'actif' ? 'Désactiver' : 'Activer'}
+                        >
+                          {togglingId === space.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : space.statut === 'actif' ? (
+                            <PowerOff className="w-3.5 h-3.5" />
+                          ) : (
+                            <Power className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={
-                        space.statut === 'actif'
-                          ? 'success'
-                          : space.statut === 'suspendu'
-                          ? 'danger'
-                          : 'neutral'
-                      }
-                    >
-                      {space.statut}
-                    </Badge>
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleStatus(space)}
-                        disabled={togglingId === space.id}
-                        className="p-1 h-7 w-7"
-                        title={space.statut === 'actif' ? 'Désactiver' : 'Activer'}
-                      >
-                        {togglingId === space.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : space.statut === 'actif' ? (
-                          <PowerOff className="w-3.5 h-3.5" />
-                        ) : (
-                          <Power className="w-3.5 h-3.5" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </div>
 
-                {/* Linked POS count */}
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <div className="p-1.5 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
-                    <Store className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    {linkedPos.length} point{linkedPos.length > 1 ? 's' : ''} de vente rattaché
-                    {linkedPos.length > 1 ? 's' : ''}
-                  </span>
-                  <Link
-                    href={`/spaces/${space.id}`}
-                    className="ml-auto text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    Tableau de bord →
-                  </Link>
-                </div>
-
-                {/* Linked POS list */}
-                {linkedPos.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                      POS liés à cet espace
-                    </p>
-                    <div className="space-y-1.5">
-                      {linkedPos.map((p) => (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Store className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                {p.nom}
-                              </p>
-                              <p className="text-[10px] text-slate-500 truncate">{p.ville}</p>
-                            </div>
-                          </div>
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => handleUnlinkPos(p.id)}
-                              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-500/10 rounded transition"
-                              title="Détacher ce POS"
-                            >
-                              <Unlink className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                  {/* Linked POS count */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="p-1.5 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
+                      <Store className="w-3.5 h-3.5" />
                     </div>
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                      {linkedPos.length} point{linkedPos.length > 1 ? 's' : ''} de vente rattaché
+                      {linkedPos.length > 1 ? 's' : ''}
+                    </span>
                   </div>
-                )}
 
-                {isAdmin && (
-                  <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setManagePosSpaceId(isManaging ? null : space.id)}
-                      className="gap-1 text-xs w-full justify-center"
-                    >
-                      <Link2 className="w-3.5 h-3.5" />
-                      {isManaging ? 'Fermer la liste' : 'Rattacher un POS existant'}
-                    </Button>
-
-                    {isManaging && (
-                      <div className="space-y-1.5 max-h-60 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800">
-                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-1 pb-1">
-                          POS disponibles ({unlinkedPos.length})
-                        </p>
-                        {unlinkedPos.length === 0 ? (
-                          <p className="text-xs text-slate-500 text-center py-4">
-                            Tous les POS sont déjà rattachés à un espace.
-                          </p>
-                        ) : (
-                          unlinkedPos.map((p) => (
-                            <div
-                              key={p.id}
-                              className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                  {p.nom}
-                                </p>
-                                <p className="text-[10px] text-slate-500 truncate">{p.ville}</p>
-                              </div>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleLinkPos(space.id, p.id)}
-                                className="gap-1 text-[11px] py-1 px-2 h-7"
-                              >
-                                <Link2 className="w-3 h-3" /> Rattacher
-                              </Button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleOpenModal(space)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleOpenModal(space);
+                        }}
                         className="gap-1 text-xs"
                       >
                         <Edit className="w-3.5 h-3.5" /> Modifier
@@ -443,15 +363,71 @@ export default function WifiSpacesPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(space.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(space.id);
+                        }}
                         className="gap-1 text-xs text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Supprimer
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setManagePosSpaceId(isManaging ? null : space.id);
+                        }}
+                        className="gap-1 text-xs ml-auto"
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                        {isManaging ? 'Fermer' : 'Rattacher un POS'}
+                      </Button>
+
+                      {isManaging && (
+                        <div className="space-y-1.5 max-h-60 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-1 pb-1">
+                            POS disponibles ({unlinkedPos.length})
+                          </p>
+                          {unlinkedPos.length === 0 ? (
+                            <p className="text-xs text-slate-500 text-center py-4">
+                              Tous les POS sont déjà rattachés à un espace.
+                            </p>
+                          ) : (
+                            unlinkedPos.map((p) => (
+                              <div
+                                key={p.id}
+                                className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                    {p.nom}
+                                  </p>
+                                  <p className="text-[10px] text-slate-500 truncate">{p.ville}</p>
+                                </div>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleLinkPos(space.id, p.id);
+                                  }}
+                                  className="gap-1 text-[11px] py-1 px-2 h-7"
+                                >
+                                  <Link2 className="w-3 h-3" /> Rattacher
+                                </Button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-              </Card>
+                  )}
+                </Card>
+              </Link>
             );
           })}
         </div>
