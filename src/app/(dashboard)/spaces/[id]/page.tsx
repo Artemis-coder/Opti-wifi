@@ -275,6 +275,11 @@ export default function SpaceDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#0b1a3a] to-[#162e63] p-6 rounded-2xl text-white shadow-lg border border-slate-800">
         <div>
           <div className="flex items-center gap-3">
+            <Link href="/spaces">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="w-4 h-4" /> Retour
+              </Button>
+            </Link>
             <MapPin className="w-6 h-6 text-amber-400" />
             <h1 className="text-2xl font-bold">{space.nom}</h1>
           </div>
