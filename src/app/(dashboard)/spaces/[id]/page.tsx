@@ -458,10 +458,85 @@ export default function SpaceDashboardPage() {
          </Card>
        </div>
 
-      {/* Main Content Grid: Recent Encaissements & Raccourcis */}
+      {/* Main Content Grid: Raccourcis & Recent Encaissements */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Derniers Encaissements */}
+        {/* Left Column: Raccourcis Métier */}
         <div className="lg:col-span-2 space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            Raccourcis Métier (Espace)
+          </h2>
+
+          <Card className="grid grid-cols-1 gap-3">
+            {user?.role === 'administrateur' && (
+              <Link
+                href="/allocations/new"
+                className="flex items-center justify-between p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 hover:scale-[1.01] transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-purple-600 text-white">
+                    <ArrowLeftRight className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">Allouer des Tickets</p>
+                    <p className="text-xs text-slate-500">Distribuer du stock aux POS</p>
+                  </div>
+                </div>
+                <span className="text-purple-600 font-bold">→</span>
+              </Link>
+            )}
+
+            <Link
+              href="/collections/new"
+              className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 hover:scale-[1.01] transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500 text-slate-950">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">Nouvelle Collecte</p>
+                  <p className="text-xs text-slate-500">Saisir un encaissement de caisse</p>
+                </div>
+              </div>
+              <span className="text-amber-600 font-bold">→</span>
+            </Link>
+
+            <Link
+              href="/pos"
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-900 text-white">
+                  <Store className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">Points de Vente</p>
+                  <p className="text-xs text-slate-500">Gérer le réseau de distribution</p>
+                </div>
+              </div>
+              <span className="text-slate-400 font-bold">→</span>
+            </Link>
+
+            <Link
+              href="/tickets"
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-600 text-white">
+                  <Ticket className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">Types de Tickets</p>
+                  <p className="text-xs text-slate-500">Consulter et modifier les tarifs</p>
+                </div>
+              </div>
+              <span className="text-slate-400 font-bold">→</span>
+            </Link>
+          </Card>
+        </div>
+
+        {/* Right Column: Derniers Encaissements */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Derniers Encaissements (Espace)
@@ -477,28 +552,19 @@ export default function SpaceDashboardPage() {
           {loading ? (
             <Card className="p-8 text-center text-slate-500">
               <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
-              <p className="text-xs font-medium mt-2">
-                Chargement des encaissements...
-              </p>
+              <p className="text-xs font-medium mt-2">Chargement des encaissements...</p>
             </Card>
           ) : recentCollections.length === 0 ? (
             <Card className="p-8 text-center space-y-3">
               <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
                 <Inbox className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Aucun encaissement enregistré
-              </h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement enregistré</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Aucune collecte n'a été effectuée pour les points de vente
-                rattachés à cet espace.
+                Aucune collecte n'a été effectuée pour les points de vente rattachés à cet espace.
               </p>
               <Link href="/collections/new" className="inline-block pt-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="font-bold gap-2"
-                >
+                <Button variant="secondary" size="sm" className="font-bold gap-2">
                   <PlusCircle className="w-4 h-4" /> Effectuer une collecte
                 </Button>
               </Link>
@@ -518,35 +584,16 @@ export default function SpaceDashboardPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                     {recentCollections.map((col) => (
-                      <tr
-                        key={col.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
-                      >
-                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
-                          {col.pos?.nom || 'POS'}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                          {col.collecteur?.nom || 'Collecteur'}
-                        </td>
-                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                          {formatCurrencyFCFA(col.montant_collecte)}
-                        </td>
+                      <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{col.pos?.nom || 'POS'}</td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{col.collecteur?.nom || 'Collecteur'}</td>
+                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(col.montant_collecte)}</td>
                         <td className="px-4 py-3">
-                          <Badge
-                            variant={
-                              col.statut === 'validee'
-                                ? 'success'
-                                : 'warning'
-                            }
-                          >
-                            {col.statut === 'validee'
-                              ? 'Validée'
-                              : 'Brouillon'}
+                          <Badge variant={col.statut === 'validee' ? 'success' : 'warning'}>
+                            {col.statut === 'validee' ? 'Validée' : 'Brouillon'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-slate-500">
-                          {formatDateFR(col.created_at)}
-                        </td>
+                        <td className="px-4 py-3 text-slate-500">{formatDateFR(col.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -554,99 +601,6 @@ export default function SpaceDashboardPage() {
               </div>
             </Card>
           )}
-        </div>
-
-        {/* Right Column: Raccourcis Métier */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            Raccourcis Métier (Espace)
-          </h2>
-
-          <Card className="grid grid-cols-1 gap-3">
-            {user?.role === 'administrateur' && (
-              <Link
-                href="/allocations/new"
-                className="flex items-center justify-between p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 hover:scale-[1.01] transition"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-600 text-white">
-                    <ArrowLeftRight className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">
-                      Allouer des Tickets
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Distribuer du stock aux POS
-                    </p>
-                  </div>
-                </div>
-                <span className="text-purple-600 font-bold">→</span>
-              </Link>
-            )}
-
-            <Link
-              href="/collections/new"
-              className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 hover:scale-[1.01] transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500 text-slate-950">
-                  <Receipt className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">
-                    Nouvelle Collecte
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Saisir un encaissement de caisse
-                  </p>
-                </div>
-              </div>
-              <span className="text-amber-600 font-bold">→</span>
-            </Link>
-
-            <Link
-              href="/pos"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-900 text-white">
-                  <Store className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">
-                    Points de Vente
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Gérer le réseau de distribution
-                  </p>
-                </div>
-              </div>
-              <span className="text-slate-400 font-bold">→</span>
-            </Link>
-
-            <Link
-              href="/tickets"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-600 text-white">
-                  <Ticket className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">
-                    Types de Tickets
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Consulter et modifier les tarifs
-                  </p>
-                </div>
-              </div>
-              <span className="text-slate-400 font-bold">→</span>
-            </Link>
-          </Card>
-
-
         </div>
       </div>
 
