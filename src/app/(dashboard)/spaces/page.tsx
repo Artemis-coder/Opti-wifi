@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, MapPin, Loader2, AlertCircle, Store, Link2, Unlink } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Loader2, AlertCircle, Store, Link2, Unlink, Search, Power, PowerOff } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -14,6 +14,7 @@ import { WifiSpace, PointOfSale } from '@/types/database';
 
 export default function WifiSpacesPage() {
   const { user } = useAuthStore();
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [spaces, setSpaces] = useState<WifiSpace[]>([]);
   const [allPos, setAllPos] = useState<PointOfSale[]>([]);
@@ -21,6 +22,7 @@ export default function WifiSpacesPage() {
   const [editingSpace, setEditingSpace] = useState<WifiSpace | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [managePosSpaceId, setManagePosSpaceId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [nom, setNom] = useState('');
   const [description, setDescription] = useState('');
@@ -29,6 +31,7 @@ export default function WifiSpacesPage() {
   const [statut, setStatut] = useState<'actif' | 'inactif' | 'suspendu'>('actif');
 
   const supabase = createClient();
+  const isAdmin = user?.role === 'administrateur';
 
   useEffect(() => {
     async function loadAll() {
@@ -43,6 +46,16 @@ export default function WifiSpacesPage() {
     }
     loadAll();
   }, [supabase]);
+
+  const filteredSpaces = spaces.filter((s) =>
+    s.nom.toLowerCase().includes(search.toLowerCase()) ||
+    (s.ville || '').toLowerCase().includes(search.toLowerCase()) ||
+    (s.adresse || '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalSpaces = spaces.length;
+  const activeSpaces = spaces.filter((s) => s.statut === 'actif').length;
+  const inactiveSpaces = spaces.filter((s) => s.statut === 'inactif' || s.statut === 'suspendu').length;
 
   const resetForm = () => {
     setNom('');
@@ -110,6 +123,22 @@ export default function WifiSpacesPage() {
     setSubmitting(false);
   };
 
+  const handleToggleStatus = async (space: WifiSpace) => {
+    if (!isAdmin) return;
+    const newStatus = space.statut === 'actif' ? 'inactif' : 'actif';
+    setTogglingId(space.id);
+    const { error } = await supabase
+      .from('wifi_spaces')
+      .update({ statut: newStatus })
+      .eq('id', space.id);
+
+    if (!error) {
+      setSpaces((prev) => prev.map((s) => (s.id === space.id ? { ...s, statut: newStatus } : s)));
+      toast.success(`Espace ${newStatus === 'actif' ? 'activé' : 'désactivé'}`);
+    }
+    setTogglingId(null);
+  };
+
   const handleDelete = async (id: string) => {
     const linkedCount = allPos.filter((p) => p.space_id === id).length;
     const message =
@@ -162,14 +191,13 @@ export default function WifiSpacesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Espaces Wi-Fi</h1>
-          <p className="text-xs text-slate-500">
-            Gérez vos zones géographiques, regroupez vos points de vente par espace et visualisez les liens.
-          </p>
+          <p className="text-xs text-slate-500">Gérez vos zones géographiques et regroupez vos points de vente.</p>
         </div>
-        {user?.role === 'administrateur' && (
+        {isAdmin && (
           <Button onClick={() => handleOpenModal()} className="gap-2 font-semibold">
             <Plus className="w-4 h-4" />
             Créer un Espace
@@ -177,24 +205,74 @@ export default function WifiSpacesPage() {
         )}
       </div>
 
-      {spaces.length === 0 ? (
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <Card className="border-l-4 border-l-amber-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Espaces</span>
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
+              <MapPin className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{totalSpaces}</p>
+        </Card>
+
+        <Card className="border-l-4 border-l-emerald-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Actifs</span>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
+              <Power className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{activeSpaces}</p>
+        </Card>
+
+        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Désactivés</span>
+            <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
+              <PowerOff className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{inactiveSpaces}</p>
+        </Card>
+      </div>
+
+      {/* Filter Bar */}
+      <Card className="p-4">
+        <div className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Rechercher par nom, ville ou adresse..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+          />
+        </div>
+      </Card>
+
+      {/* Grid Space Cards or Empty State */}
+      {filteredSpaces.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
           <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
             <MapPin className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun espace configuré</h3>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun espace trouvé</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Créez votre premier espace Wi-Fi pour commencer à organiser vos points de vente, tickets et collectes.
+            {spaces.length === 0
+              ? 'Créez votre premier espace Wi-Fi pour commencer à organiser vos points de vente.'
+              : 'Aucun espace ne correspond à votre recherche.'}
           </p>
-          {user?.role === 'administrateur' && (
+          {isAdmin && spaces.length === 0 && (
             <Button onClick={() => handleOpenModal()} variant="secondary" className="font-bold gap-2">
               <Plus className="w-4 h-4" /> Créer mon premier espace
             </Button>
           )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {spaces.map((space) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSpaces.map((space) => {
             const linkedPos = allPos.filter((p) => p.space_id === space.id);
             const unlinkedPos = allPos.filter((p) => !p.space_id);
             const isManaging = managePosSpaceId === space.id;
@@ -219,17 +297,37 @@ export default function WifiSpacesPage() {
                       )}
                     </div>
                   </div>
-                  <Badge
-                    variant={
-                      space.statut === 'actif'
-                        ? 'success'
-                        : space.statut === 'suspendu'
-                        ? 'danger'
-                        : 'neutral'
-                    }
-                  >
-                    {space.statut}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={
+                        space.statut === 'actif'
+                          ? 'success'
+                          : space.statut === 'suspendu'
+                          ? 'danger'
+                          : 'neutral'
+                      }
+                    >
+                      {space.statut}
+                    </Badge>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleStatus(space)}
+                        disabled={togglingId === space.id}
+                        className="p-1 h-7 w-7"
+                        title={space.statut === 'actif' ? 'Désactiver' : 'Activer'}
+                      >
+                        {togglingId === space.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : space.statut === 'actif' ? (
+                          <PowerOff className="w-3.5 h-3.5" />
+                        ) : (
+                          <Power className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Linked POS count */}
@@ -270,7 +368,7 @@ export default function WifiSpacesPage() {
                               <p className="text-[10px] text-slate-500 truncate">{p.ville}</p>
                             </div>
                           </div>
-                          {user?.role === 'administrateur' && (
+                          {isAdmin && (
                             <button
                               type="button"
                               onClick={() => handleUnlinkPos(p.id)}
@@ -286,7 +384,7 @@ export default function WifiSpacesPage() {
                   </div>
                 )}
 
-                {user?.role === 'administrateur' && (
+                {isAdmin && (
                   <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <Button
                       variant="ghost"
