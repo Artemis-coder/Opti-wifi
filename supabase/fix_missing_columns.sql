@@ -95,3 +95,38 @@ DROP TRIGGER IF EXISTS trg_wifi_spaces_updated_at ON wifi_spaces;
 CREATE TRIGGER trg_wifi_spaces_updated_at
   BEFORE UPDATE ON wifi_spaces
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- ============================================================
+-- Correction des politiques RLS pour éviter la récursion infinie
+-- Le profiles select policy peut avoir une requête SELECT sur profiles
+-- ce qui cause une récursion infinie via is_admin()
+-- ============================================================
+
+-- Profiles : SELECT (utilisateur voit son profil + admins voient tout)
+DROP POLICY IF EXISTS "profiles_select_own" ON profiles;
+DROP POLICY IF EXISTS "Utilisateur voit son profil" ON profiles;
+CREATE POLICY "profiles_select" ON profiles
+  FOR SELECT USING (auth.uid() = id OR is_admin());
+
+-- Profiles : UPDATE
+DROP POLICY IF EXISTS "profiles_update_own" ON profiles;
+DROP POLICY IF EXISTS "Utilisateur modifie son profil" ON profiles;
+CREATE POLICY "profiles_update" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+-- Profiles : INSERT
+DROP POLICY IF EXISTS "profiles_insert_own" ON profiles;
+DROP POLICY IF EXISTS "Utilisateur cree son profil" ON profiles;
+CREATE POLICY "profiles_insert" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Profiles : ALL (admins gèrent tous les profils)
+DROP POLICY IF EXISTS "Admins gerent tous les profils" ON profiles;
+CREATE POLICY "profiles_all_admin" ON profiles
+  FOR ALL USING (is_admin());
+
+-- Ticket types admin policies (remove inline EXISTS if present)
+DROP POLICY IF EXISTS "ticket_types_write_admin" ON ticket_types;
+CREATE POLICY "ticket_types_write_admin" ON ticket_types
+  FOR ALL USING (is_admin())
+  WITH CHECK (is_admin());
