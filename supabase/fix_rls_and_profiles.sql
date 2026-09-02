@@ -69,17 +69,22 @@ DROP POLICY IF EXISTS "Users access collection items via collection" ON collecti
 -- Règle : tout utilisateur CONNECTÉ peut lire et écrire
 -- --------------------------------------------------------
 
--- PROFILES : tout utilisateur connecté voit et modifie son profil
--- Les admins voient tous les profils
--- Note: is_admin() utilise SET LOCAL row_security = 'off' pour éviter la récursion infinie
-CREATE POLICY "profiles_select_own" ON profiles
-  FOR SELECT USING (auth.uid() = id OR is_admin());
+-- PROFILES : tout utilisateur connecté peut voir les profils
+-- AUCUN appel à is_admin() sur profiles pour éviter l'erreur 42P17
+CREATE POLICY "profiles_select_authenticated" ON profiles
+  FOR SELECT
+  TO authenticated
+  USING (true);
 
 CREATE POLICY "profiles_update_own" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
-CREATE POLICY "profiles_insert_own" ON profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "profiles_insert_allow" ON profiles
+  FOR INSERT
+  WITH CHECK (true);
 
 -- POINTS_OF_SALE : tout utilisateur connecté peut tout faire
 -- (on simplifie pour débloquer l'application)

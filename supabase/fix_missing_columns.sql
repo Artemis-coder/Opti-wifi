@@ -23,18 +23,22 @@ $$ LANGUAGE plpgsql;
 
 -- ============================================================
 -- Fonction helper is_admin() — corrigée pour éviter la récursion infinie
--- SET LOCAL row_security = 'off' contourne le RLS lors de la requête
--- sur profiles, évitant la boucle infinie (42P17)
+-- Utilise LANGUAGE sql STABLE SECURITY DEFINER avec search_path public.
+-- La table profiles n'appelle JAMAIS is_admin() dans ses politiques,
+-- garantissant l'absence totale de boucle de récursion (erreur 42P17).
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS $$
-BEGIN
-  SET LOCAL row_security = 'off';
-  RETURN EXISTS (
-    SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'administrateur'
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'administrateur'
   );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ============================================================
 -- Ajout des colonnes manquantes (idempotent avec IF NOT EXISTS)
@@ -100,8 +104,8 @@ CREATE TRIGGER trg_wifi_spaces_updated_at
 -- ============================================================
 -- CORRECTION DES POLITIQUES RLS
 -- Pour éviter l'erreur 42P17, on DROP TOUTES les politiques existantes
--- puis on en recrée de nouvelles avec des noms uniques.
--- On utilise DROP ... IF EXISTS pour chaque nom possible.
+-- sur profiles, et AUCUNE politique sur profiles ne doit faire appel
+-- à is_admin() (puisque is_admin() lit profiles).
 -- ============================================================
 
 -- D'abord, supprimer TOUTES les politiques existantes sur profiles
@@ -119,24 +123,31 @@ DROP POLICY IF EXISTS "profiles_all_admin" ON profiles;
 DROP POLICY IF EXISTS "Users read own profile" ON profiles;
 DROP POLICY IF EXISTS "Admins read write profiles" ON profiles;
 DROP POLICY IF EXISTS "profiles_insert_allow" ON profiles;
+DROP POLICY IF EXISTS "fix_profiles_select" ON profiles;
+DROP POLICY IF EXISTS "fix_profiles_update" ON profiles;
+DROP POLICY IF EXISTS "fix_profiles_insert" ON profiles;
+DROP POLICY IF EXISTS "fix_profiles_all_admin" ON profiles;
+DROP POLICY IF EXISTS "fix_profiles_insert_allow" ON profiles;
+DROP POLICY IF EXISTS "profiles_select_authenticated" ON profiles;
 
--- Recréer les politiques profiles avec des noms uniques
-CREATE POLICY "fix_profiles_select" ON profiles
-  FOR SELECT USING (auth.uid() = id OR is_admin());
+-- Recréer les politiques profiles SANS boucle de récursion :
+-- 1. Lecture : tout utilisateur authentifié peut lire les profils (pour afficher collecteurs, POS, etc.)
+CREATE POLICY "profiles_select_authenticated" ON profiles
+  FOR SELECT
+  TO authenticated
+  USING (true);
 
-CREATE POLICY "fix_profiles_update" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
+-- 2. Mise à jour : chaque utilisateur peut modifier son propre profil
+CREATE POLICY "profiles_update_own" ON profiles
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
-CREATE POLICY "fix_profiles_insert" ON profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "fix_profiles_all_admin" ON profiles
-  FOR ALL USING (is_admin());
-
--- Allow insert for trigger (handle_new_user) and self-registration
--- Note: trigger runs as SECURITY DEFINER, so is_admin() bypass works
-CREATE POLICY "fix_profiles_insert_allow" ON profiles
-  FOR INSERT WITH CHECK (true);
+-- 3. Insertion : autorisée pour l'auto-inscription et le trigger handle_new_user
+CREATE POLICY "profiles_insert_allow" ON profiles
+  FOR INSERT
+  WITH CHECK (true);
 
 -- Supprimer et recréer les politiques sur ticket_types
 DROP POLICY IF EXISTS "Tous voient les tickets actifs" ON ticket_types;
