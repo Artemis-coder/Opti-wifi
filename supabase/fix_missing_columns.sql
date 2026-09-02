@@ -54,6 +54,21 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS devise VARCHAR(10) DEFAULT 'XOF';
 
 -- ============================================================
+-- Fonction helper is_admin() — corrigée pour éviter la récursion infinie
+-- (SET LOCAL row_security = 'off' permet de contourner le RLS
+--  lors de la requête sur profiles, évitant le bouclage)
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  SET LOCAL row_security = 'off';
+  RETURN EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'administrateur'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
 -- Triggers updated_at (après que la fonction soit créée)
 -- ============================================================
 

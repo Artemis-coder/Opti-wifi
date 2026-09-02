@@ -111,9 +111,12 @@ ALTER TABLE collection_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- ETAPE 10 : Fonction helper is_admin()
+-- Note: SET LOCAL row_security = 'off' prevent infinite recursion
+-- (the profiles table RLS policy calls is_admin(), which would loop)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
+  SET LOCAL row_security = 'off';
   RETURN EXISTS (
     SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'administrateur'
   );

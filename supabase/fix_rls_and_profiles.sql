@@ -71,10 +71,9 @@ DROP POLICY IF EXISTS "Users access collection items via collection" ON collecti
 
 -- PROFILES : tout utilisateur connecté voit et modifie son profil
 -- Les admins voient tous les profils
+-- Note: is_admin() utilise SET LOCAL row_security = 'off' pour éviter la récursion infinie
 CREATE POLICY "profiles_select_own" ON profiles
-  FOR SELECT USING (auth.uid() = id OR EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'administrateur'
-  ));
+  FOR SELECT USING (auth.uid() = id OR is_admin());
 
 CREATE POLICY "profiles_update_own" ON profiles
   FOR UPDATE USING (auth.uid() = id);
@@ -94,12 +93,8 @@ CREATE POLICY "ticket_types_read_all" ON ticket_types
   FOR SELECT USING (auth.role() = 'authenticated');
 
 CREATE POLICY "ticket_types_write_admin" ON ticket_types
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'administrateur')
-  )
-  WITH CHECK (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'administrateur')
-  );
+  FOR ALL USING (is_admin())
+  WITH CHECK (is_admin());
 
 -- TICKET_ALLOCATIONS : tout utilisateur connecté peut tout faire
 CREATE POLICY "allocations_all_authenticated" ON ticket_allocations
