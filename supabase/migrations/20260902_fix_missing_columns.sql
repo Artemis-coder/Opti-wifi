@@ -133,6 +133,11 @@ CREATE POLICY "fix_profiles_insert" ON profiles
 CREATE POLICY "fix_profiles_all_admin" ON profiles
   FOR ALL USING (is_admin());
 
+-- Allow insert for trigger (handle_new_user) and self-registration
+-- Note: trigger runs as SECURITY DEFINER, so is_admin() bypass works
+CREATE POLICY "fix_profiles_insert_allow" ON profiles
+  FOR INSERT WITH CHECK (true);
+
 -- Supprimer et recréer les politiques sur ticket_types
 DROP POLICY IF EXISTS "Tous voient les tickets actifs" ON ticket_types;
 DROP POLICY IF EXISTS "Admins gerent les ticket types" ON ticket_types;
