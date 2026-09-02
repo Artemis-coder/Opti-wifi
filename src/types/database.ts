@@ -47,6 +47,7 @@ export interface TicketType {
   actif: boolean;
   space_id?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface TicketAllocation {

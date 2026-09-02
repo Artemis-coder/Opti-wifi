@@ -101,3 +101,17 @@ Before every commit, verify:
 - [ ] `tsc --noEmit` passes with 0 errors
 - [ ] `eslint` passes with 0 errors
 
+## Database Backup & Restore
+
+Manual backup script:
+- `bash scripts/backup.sh` - Create a dated backup (JSON format)
+- `bash scripts/backup.sh --list` - List available backups
+- `bash scripts/backup.sh --restore=<filename>` - Restore from a backup file
+- `bash scripts/backup.sh --clean=7` - Delete backups older than 7 days
+
+Automatic daily backup (cron at 2 AM):
+- Install cron: `echo "0 2 * * * $(pwd)/scripts/cron_backup.sh" | crontab -`
+
+SQL migration for missing columns (must be run manually in Supabase SQL Editor):
+- `supabase/fix_missing_columns.sql` - Adds space_id, updated_at, date_allocation, commission, date_collecte, devise columns and set_updated_at triggers
+

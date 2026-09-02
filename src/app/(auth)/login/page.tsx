@@ -57,7 +57,7 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [nom, setNom] = useState('');
-  const [role, setRole] = useState<UserRole>('administrateur');
+  const [role, setRole] = useState<UserRole>('collecteur');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -99,7 +99,7 @@ export default function LoginPage() {
           id: data.user.id,
           nom: data.user.email?.split('@')[0] || 'Utilisateur',
           email: data.user.email || '',
-          role: 'administrateur' as UserRole,
+           role: 'collecteur' as UserRole,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };

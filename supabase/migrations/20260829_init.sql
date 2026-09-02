@@ -4,28 +4,26 @@
 -- URL: https://supabase.com/dashboard/project/nvaavjyogadlimkosdsr/sql
 -- ============================================================
 
--- ETAPE 0 : Reset propre (suppression des anciens objets)
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
-DROP FUNCTION IF EXISTS public.is_admin() CASCADE;
-DROP TABLE IF EXISTS audit_logs CASCADE;
-DROP TABLE IF EXISTS collection_items CASCADE;
-DROP TABLE IF EXISTS collections CASCADE;
-DROP TABLE IF EXISTS ticket_allocations CASCADE;
-DROP TABLE IF EXISTS ticket_types CASCADE;
-DROP TABLE IF EXISTS points_of_sale CASCADE;
-DROP TABLE IF EXISTS profiles CASCADE;
-DROP TYPE IF EXISTS user_role CASCADE;
-DROP TYPE IF EXISTS collection_status CASCADE;
-DROP TYPE IF EXISTS pos_status CASCADE;
+-- ETAPE 0 : Creation idempotente (preservation des donnees existantes)
+-- Cette migration est idempotente: elle peut etre re-executee sans perdre de donnees.
+-- Les objets existants (tables, types, fonctions, triggers) sont preserves.
 
--- ETAPE 1 : ENUMs
-CREATE TYPE user_role AS ENUM ('administrateur', 'collecteur');
-CREATE TYPE collection_status AS ENUM ('brouillon', 'validee', 'annulee');
-CREATE TYPE pos_status AS ENUM ('actif', 'inactif', 'suspendu');
+-- ENUMs (utilisation de DO blocks car CREATE TYPE IF NOT EXISTS n'est pas supporté)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE user_role AS ENUM ('administrateur', 'collecteur');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'collection_status') THEN
+    CREATE TYPE collection_status AS ENUM ('brouillon', 'validee', 'annulee');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'pos_status') THEN
+    CREATE TYPE pos_status AS ENUM ('actif', 'inactif', 'suspendu');
+  END IF;
+END $$;
 
 -- ETAPE 2 : Table PROFILES
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
     id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     nom         VARCHAR(255) NOT NULL DEFAULT 'Utilisateur',
     email       VARCHAR(255) NOT NULL UNIQUE,
@@ -36,7 +34,7 @@ CREATE TABLE profiles (
 );
 
 -- ETAPE 3 : Table POINTS_OF_SALE
-CREATE TABLE points_of_sale (
+CREATE TABLE IF NOT EXISTS points_of_sale (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nom             VARCHAR(255) NOT NULL,
     adresse         TEXT,
@@ -48,7 +46,7 @@ CREATE TABLE points_of_sale (
 );
 
 -- ETAPE 4 : Table TICKET_TYPES
-CREATE TABLE ticket_types (
+CREATE TABLE IF NOT EXISTS ticket_types (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nom             VARCHAR(100) NOT NULL,
     duree_heures    INT NOT NULL,
@@ -58,7 +56,7 @@ CREATE TABLE ticket_types (
 );
 
 -- ETAPE 5 : Table TICKET_ALLOCATIONS
-CREATE TABLE ticket_allocations (
+CREATE TABLE IF NOT EXISTS ticket_allocations (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     pos_id          UUID NOT NULL REFERENCES points_of_sale(id) ON DELETE CASCADE,
     ticket_type_id  UUID NOT NULL REFERENCES ticket_types(id) ON DELETE CASCADE,
@@ -69,7 +67,7 @@ CREATE TABLE ticket_allocations (
 );
 
 -- ETAPE 6 : Table COLLECTIONS
-CREATE TABLE collections (
+CREATE TABLE IF NOT EXISTS collections (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     pos_id              UUID NOT NULL REFERENCES points_of_sale(id) ON DELETE CASCADE,
     collecteur_id       UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -82,7 +80,7 @@ CREATE TABLE collections (
 );
 
 -- ETAPE 7 : Table COLLECTION_ITEMS
-CREATE TABLE collection_items (
+CREATE TABLE IF NOT EXISTS collection_items (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     collection_id       UUID NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
     ticket_type_id      UUID NOT NULL REFERENCES ticket_types(id) ON DELETE CASCADE,
@@ -93,7 +91,7 @@ CREATE TABLE collection_items (
 );
 
 -- ETAPE 8 : Table AUDIT_LOGS
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_name      VARCHAR(100) NOT NULL,
     operation       VARCHAR(20) NOT NULL,
@@ -122,33 +120,45 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ETAPE 11 : Politiques RLS
-
+-- ETAPE 11 : Politiques RLS (idempotentes: drop + recreate)
 -- Profiles
+DROP POLICY IF EXISTS "Utilisateur voit son profil" ON profiles;
+DROP POLICY IF EXISTS "Utilisateur modifie son profil" ON profiles;
+DROP POLICY IF EXISTS "Utilisateur cree son profil" ON profiles;
+DROP POLICY IF EXISTS "Admins gerent tous les profils" ON profiles;
 CREATE POLICY "Utilisateur voit son profil" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Utilisateur modifie son profil" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Utilisateur cree son profil" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Admins gerent tous les profils" ON profiles FOR ALL USING (is_admin());
 
 -- Points de Vente
+DROP POLICY IF EXISTS "Admins gerent les POS" ON points_of_sale;
+DROP POLICY IF EXISTS "Collecteurs lisent leurs POS" ON points_of_sale;
 CREATE POLICY "Admins gerent les POS" ON points_of_sale FOR ALL USING (is_admin());
 CREATE POLICY "Collecteurs lisent leurs POS" ON points_of_sale FOR SELECT USING (collecteur_id = auth.uid() OR is_admin());
 
 -- Ticket Types
+DROP POLICY IF EXISTS "Tous voient les tickets actifs" ON ticket_types;
+DROP POLICY IF EXISTS "Admins gerent les ticket types" ON ticket_types;
 CREATE POLICY "Tous voient les tickets actifs" ON ticket_types FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins gerent les ticket types" ON ticket_types FOR ALL USING (is_admin());
 
 -- Ticket Allocations
+DROP POLICY IF EXISTS "Admins gerent les allocations" ON ticket_allocations;
+DROP POLICY IF EXISTS "Collecteurs voient leurs allocations" ON ticket_allocations;
 CREATE POLICY "Admins gerent les allocations" ON ticket_allocations FOR ALL USING (is_admin());
 CREATE POLICY "Collecteurs voient leurs allocations" ON ticket_allocations FOR SELECT USING (
     EXISTS (SELECT 1 FROM points_of_sale WHERE id = pos_id AND collecteur_id = auth.uid()) OR is_admin()
 );
 
 -- Collections
+DROP POLICY IF EXISTS "Admins gerent toutes les collectes" ON collections;
+DROP POLICY IF EXISTS "Collecteurs gerent leurs collectes" ON collections;
 CREATE POLICY "Admins gerent toutes les collectes" ON collections FOR ALL USING (is_admin());
 CREATE POLICY "Collecteurs gerent leurs collectes" ON collections FOR ALL USING (collecteur_id = auth.uid());
 
 -- Collection Items
+DROP POLICY IF EXISTS "Acces items via collection" ON collection_items;
 CREATE POLICY "Acces items via collection" ON collection_items FOR ALL USING (
     EXISTS (
         SELECT 1 FROM collections
@@ -158,6 +168,7 @@ CREATE POLICY "Acces items via collection" ON collection_items FOR ALL USING (
 );
 
 -- Audit Logs
+DROP POLICY IF EXISTS "Admins voient les logs" ON audit_logs;
 CREATE POLICY "Admins voient les logs" ON audit_logs FOR ALL USING (is_admin());
 
 -- ETAPE 12 : Trigger auto-creation du profil a l'inscription
@@ -207,7 +218,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TRIGGER on_auth_user_created
+CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
