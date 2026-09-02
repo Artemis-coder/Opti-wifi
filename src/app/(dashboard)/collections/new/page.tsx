@@ -93,7 +93,8 @@ export default function NewCollectionWizard() {
       if (allocData) {
         allocData.forEach((alloc) => {
           const typeId = alloc.ticket_type_id;
-          allocMap[typeId] = (allocMap[typeId] || 0) + alloc.quantite;
+          const qty = alloc.type === 'exchange_return' ? -alloc.quantite : alloc.quantite;
+          allocMap[typeId] = (allocMap[typeId] || 0) + qty;
           if (alloc.ticket_type) {
             ticketMap[typeId] = alloc.ticket_type;
           }

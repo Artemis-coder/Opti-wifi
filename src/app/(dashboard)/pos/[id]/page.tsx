@@ -126,7 +126,8 @@ export default function PosDetailPage() {
       if (!tt) return;
       const s = summaryByTypeId.get(tt.id);
       if (s) {
-        s.alloue += alloc.quantite;
+        const qty = alloc.type === 'exchange_return' ? -alloc.quantite : alloc.quantite;
+        s.alloue += qty;
       }
     });
 

@@ -1,6 +1,7 @@
 export type UserRole = 'administrateur' | 'collecteur';
 export type PosStatus = 'actif' | 'inactif' | 'suspendu';
 export type CollectionStatus = 'brouillon' | 'validee' | 'annulee';
+export type AllocationType = 'allocation' | 'exchange_return' | 'exchange_receive';
 
 export interface WifiSpace {
   id: string;
@@ -56,7 +57,10 @@ export interface TicketAllocation {
   alloue_par?: string;
   notes?: string;
   space_id?: string;
+  date_allocation?: string;
   created_at: string;
+  type?: AllocationType;
+  exchange_group_id?: string;
   pos?: PointOfSale;
   ticket_type?: TicketType;
 }

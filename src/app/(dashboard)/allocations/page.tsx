@@ -2,15 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeftRight, Plus, Store, Ticket, Loader2, Calendar, User, FileText } from 'lucide-react';
+import { ArrowLeftRight, Plus, Store, Ticket, Loader2, Calendar, User, FileText, Repeat } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { toast } from 'sonner';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
-import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function AllocationsPage() {
   const [loading, setLoading] = useState(true);
@@ -20,7 +18,6 @@ export default function AllocationsPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedPosId, setSelectedPosId] = useState<string>('all');
 
-  const { user } = useAuthStore();
   const supabase = createClient();
 
   useEffect(() => {
@@ -77,6 +74,17 @@ export default function AllocationsPage() {
     return ticket?.prix || 0;
   };
 
+  const getAllocationTypeLabel = (alloc: TicketAllocation) => {
+    switch (alloc.type) {
+      case 'exchange_return':
+        return { label: 'Rendu (Échange)', color: 'text-red-600' };
+      case 'exchange_receive':
+        return { label: 'Reçu (Échange)', color: 'text-emerald-600' };
+      default:
+        return { label: 'Allocation', color: 'text-amber-600' };
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
@@ -101,6 +109,12 @@ export default function AllocationsPage() {
           <Button className="gap-2 font-semibold">
             <Plus className="w-4 h-4" />
             Nouvelle Allocation
+          </Button>
+        </Link>
+        <Link href="/allocations/exchange">
+          <Button variant="outline" className="gap-2 font-semibold">
+            <Repeat className="w-4 h-4" />
+            Échange de Tickets
           </Button>
         </Link>
       </div>
@@ -178,6 +192,7 @@ export default function AllocationsPage() {
                   <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                     <tr>
                       <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Nature</th>
                       <th className="px-4 py-3">Type de Ticket</th>
                       <th className="px-4 py-3">Quantité</th>
                       <th className="px-4 py-3">Montant</th>
@@ -186,46 +201,58 @@ export default function AllocationsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                    {posAllocations.map((alloc) => (
-                      <tr key={alloc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            {formatDateFR(alloc.created_at)}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <Ticket className="w-3.5 h-3.5 text-emerald-600" />
-                            {getTicketTypeName(alloc.ticket_type_id)}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-bold text-slate-900 dark:text-white">
-                            {alloc.quantite}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {formatCurrencyFCFA(alloc.quantite * getTicketTypePrix(alloc.ticket_type_id))}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <User className="w-3.5 h-3.5 text-slate-400" />
-                            {getAllocatorName(alloc.alloue_par)}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          {alloc.notes ? (
+                    {posAllocations.map((alloc) => {
+                      const typeInfo = getAllocationTypeLabel(alloc);
+                      const isReturn = alloc.type === 'exchange_return';
+                      const isReceive = alloc.type === 'exchange_receive';
+                      return (
+                        <tr key={alloc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
-                              <FileText className="w-3.5 h-3.5 text-slate-400" />
-                              <span className="truncate max-w-[200px]">{alloc.notes}</span>
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              {formatDateFR(alloc.created_at)}
                             </div>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant={isReturn ? 'danger' : isReceive ? 'success' : 'info'}>
+                              {typeInfo.label}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <Ticket className="w-3.5 h-3.5 text-emerald-600" />
+                              {getTicketTypeName(alloc.ticket_type_id)}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`font-bold ${
+                              isReturn ? 'text-red-600' : isReceive ? 'text-emerald-600' : 'text-slate-900 dark:text-white'
+                            }`}>
+                              {isReturn ? `-${alloc.quantite}` : alloc.quantite}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {formatCurrencyFCFA(alloc.quantite * getTicketTypePrix(alloc.ticket_type_id))}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <User className="w-3.5 h-3.5 text-slate-400" />
+                              {getAllocatorName(alloc.alloue_par)}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {alloc.notes ? (
+                              <div className="flex items-center gap-1">
+                                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                                <span className="truncate max-w-[200px]">{alloc.notes}</span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -237,12 +264,18 @@ export default function AllocationsPage() {
                 </span>
                 <div className="flex items-center gap-4">
                   <span className="font-bold text-slate-900 dark:text-white">
-                    {posAllocations.reduce((sum, a) => sum + a.quantite, 0)} tickets alloués
+                    {posAllocations.reduce((sum, a) => {
+                      const qty = a.type === 'exchange_return' ? -a.quantite : a.quantite;
+                      return sum + qty;
+                    }, 0)} tickets net
                   </span>
                   <span className="font-bold text-amber-600">
                     {formatCurrencyFCFA(
                       posAllocations.reduce(
-                        (sum, a) => sum + a.quantite * getTicketTypePrix(a.ticket_type_id),
+                        (sum, a) => {
+                          const qty = a.type === 'exchange_return' ? -a.quantite : a.quantite;
+                          return sum + qty * getTicketTypePrix(a.ticket_type_id);
+                        },
                         0
                       )
                     )}
