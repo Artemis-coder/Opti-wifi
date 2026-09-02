@@ -41,7 +41,7 @@ async function getSupabaseServerClient() {
   });
 }
 
-async function requireAdmin(supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>) {
+async function requireAuth(supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>) {
   const {
     data: { user },
     error,
@@ -61,8 +61,8 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof getSupabaseServe
     return { error: NextResponse.json({ error: 'Profil utilisateur introuvable.' }, { status: 403 }) };
   }
 
-  if (profile.role !== 'administrateur') {
-    return { error: NextResponse.json({ error: 'Accès refusé: privilèges administrateur requis.' }, { status: 403 }) };
+  if (profile.role !== 'administrateur' && profile.role !== 'collecteur') {
+    return { error: NextResponse.json({ error: 'Accès refusé: privilèges insuffisants.' }, { status: 403 }) };
   }
 
   return { user };
@@ -71,7 +71,7 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof getSupabaseServe
 export async function POST(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
 
-  const authResult = await requireAdmin(supabase);
+  const authResult = await requireAuth(supabase);
   if (authResult.error) {
     return authResult.error;
   }
@@ -93,15 +93,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Au moins un ticket à recevoir est requis.' }, { status: 400 });
     }
 
-    const returnsPayload = body.returns.map((r) => ({
-      ticket_type_id: r.ticket_type_id,
+    // Accepter à la fois ticket_type_id (snake_case) et ticketTypeId (camelCase)
+    const returnsPayload = body.returns.map((r: any) => ({
+      ticket_type_id: r.ticket_type_id || r.ticketTypeId,
       quantite: Math.max(0, parseInt(String(r.quantite), 10) || 0),
     }));
 
-    const receivesPayload = body.receives.map((r) => ({
-      ticket_type_id: r.ticket_type_id,
+    const receivesPayload = body.receives.map((r: any) => ({
+      ticket_type_id: r.ticket_type_id || r.ticketTypeId,
       quantite: Math.max(0, parseInt(String(r.quantite), 10) || 0),
     }));
+
+    if (returnsPayload.some((r) => !r.ticket_type_id || r.quantite <= 0)) {
+      return NextResponse.json({ error: 'Chaque ticket à rendre doit avoir un identifiant et une quantité valide (> 0).' }, { status: 400 });
+    }
+
+    if (receivesPayload.some((r) => !r.ticket_type_id || r.quantite <= 0)) {
+      return NextResponse.json({ error: 'Chaque ticket à recevoir doit avoir un identifiant et une quantité valide (> 0).' }, { status: 400 });
+    }
 
     const { data, error } = await supabase.rpc('perform_ticket_exchange', {
       p_pos_id: body.pos_id,
@@ -113,7 +122,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('RPC perform_ticket_exchange error:', error);
+      return NextResponse.json({ error: error.message || 'Erreur lors de l\'échange de tickets.' }, { status: 500 });
     }
 
     const result = data as { success: boolean; message: string; exchange_group_id?: string };

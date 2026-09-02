@@ -109,8 +109,8 @@ export default function ExchangePage() {
         .eq('pos_id', posId);
 
       if (currentSpaceId) {
-        allocQuery = allocQuery.eq('space_id', currentSpaceId);
-        collectionsQuery = collectionsQuery.eq('space_id', currentSpaceId);
+        allocQuery = allocQuery.or(`space_id.eq.${currentSpaceId},space_id.is.null`);
+        collectionsQuery = collectionsQuery.or(`space_id.eq.${currentSpaceId},space_id.is.null`);
       }
 
       const { data: allocData } = await allocQuery;
@@ -261,8 +261,16 @@ export default function ExchangePage() {
         pos_id: posId,
         space_id: currentSpaceId || null,
         notes: notes || null,
-        returns: validReturns,
-        receives: validReceives,
+        returns: validReturns.map((r) => ({
+          ticket_type_id: r.ticketTypeId,
+          ticketTypeId: r.ticketTypeId,
+          quantite: r.quantite,
+        })),
+        receives: validReceives.map((r) => ({
+          ticket_type_id: r.ticketTypeId,
+          ticketTypeId: r.ticketTypeId,
+          quantite: r.quantite,
+        })),
       }),
     });
 
