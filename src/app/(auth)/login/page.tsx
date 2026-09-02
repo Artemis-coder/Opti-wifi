@@ -86,7 +86,7 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
@@ -95,15 +95,24 @@ export default function LoginPage() {
       if (profile) {
         setUser(profile);
       } else {
-        const newProfile = {
+        // The profile query failed or returned no rows.
+        // Determine the correct role from auth metadata instead of defaulting to collecteur.
+        const authRole = data.user.user_metadata?.role || data.user.app_metadata?.role;
+        const isAdminFromAuth = authRole === 'administrateur';
+
+        const fallbackProfile = {
           id: data.user.id,
           nom: data.user.email?.split('@')[0] || 'Utilisateur',
           email: data.user.email || '',
-           role: 'collecteur' as UserRole,
+          role: (isAdminFromAuth ? 'administrateur' : 'collecteur') as UserRole,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
-        setUser(newProfile);
+
+        console.warn('Profile not found in DB for user:', data.user.id, '- falling back to auth metadata role:', fallbackProfile.role);
+        console.warn('Profile query error:', profileError?.message);
+
+        setUser(fallbackProfile);
       }
 
       router.push('/dashboard');
@@ -179,7 +188,20 @@ export default function LoginPage() {
         if (signInData?.user) {
           const { data: existingProfile } = await supabase
             .from('profiles').select('*').eq('id', signInData.user.id).single();
-          setUser(existingProfile ?? { id: signInData.user.id, nom, email, role, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+
+          if (existingProfile) {
+            setUser(existingProfile);
+          } else {
+            const authRole = signInData.user.user_metadata?.role;
+            setUser({
+              id: signInData.user.id,
+              nom,
+              email,
+              role: authRole || role,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          }
           setSuccessMsg('Connexion réussie ! Redirection...');
           setTimeout(() => router.push('/dashboard'), 500);
           return;

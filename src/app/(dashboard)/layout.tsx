@@ -6,17 +6,42 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { createClient } from '@/lib/supabase/client';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const router = useRouter();
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading, setUser, setIsLoading } = useAuthStore();
+  const supabase = createClient();
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/login');
     }
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      const refreshProfile = async () => {
+        try {
+          const { data: refreshedProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (refreshedProfile && refreshedProfile.id === user.id) {
+            if (refreshedProfile.role !== user.role) {
+              setUser(refreshedProfile);
+            }
+          }
+        } catch (err) {
+          console.warn('Could not refresh profile:', err);
+        }
+      };
+      refreshProfile();
+    }
+  }, [user, supabase, setUser]);
 
   if (isLoading || !user) {
     return (
