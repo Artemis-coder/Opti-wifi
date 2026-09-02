@@ -1,18 +1,27 @@
 -- ============================================================
--- OPTIWIFI - Correction des colonnes manquantes + RLS recursion fix
+-- OPTIWIFI - CORRECTIF DÉFINITIF RLS & COLONNES MANQUANTES
 -- ============================================================
--- Ajoute les colonnes manquantes et corrige l'erreur 42P17
--- (infinite recursion detected in policy for relation "profiles")
+-- Ce script élimine DÉFINITIVEMENT l'erreur 42P17 :
+-- "infinite recursion detected in policy for relation profiles"
 --
--- À exécuter DANS SUPABASE SQL EDITOR APRÈS avoir appliqué init.sql:
---   https://supabase.com/dashboard/project/nvaavjyogadlimkosdsr/sql
+-- POURQUOI CETTE ERREUR ARRIVE :
+-- PostgreSQL détecte une récursion quand une policy sur "profiles"
+-- appelle une fonction ou sous-requête qui interroge "profiles".
+-- Même si une policy a été corrigée, des anciennes policies avec
+-- d'autres noms restent actives dans la base Supabase.
 --
--- IMPORTANT: Ce script est 100% idempotent - peut être relancé sans erreur
+-- SOLUTION RADICALE ET PROFESSIONNELLE :
+-- 1. On purge DYNAMIQUEMENT 100% des policies existantes sur toutes les tables.
+-- 2. La fonction is_admin() lit d'abord le JWT (en mémoire) et auth.users (hors RLS).
+-- 3. La table profiles n'a AUCUNE policy qui appelle is_admin() ou profiles.
+-- 4. Synchronisation des métadonnées auth.users pour le JWT.
+--
+-- Exécutez ce script dans : Supabase Dashboard > SQL Editor > Run
 -- ============================================================
 
--- ============================================================
--- Fonction helper set_updated_at (doit être créée AVANT les triggers)
--- ============================================================
+-- ------------------------------------------------------------
+-- 1. Fonction helper set_updated_at
+-- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -21,243 +30,288 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ============================================================
--- Fonction helper is_admin() — corrigée pour éviter la récursion infinie
--- Utilise LANGUAGE sql STABLE SECURITY DEFINER avec search_path public.
--- La table profiles n'appelle JAMAIS is_admin() dans ses politiques,
--- garantissant l'absence totale de boucle de récursion (erreur 42P17).
--- ============================================================
+-- ------------------------------------------------------------
+-- 2. Fonction helper is_admin() — 100% SANS RÉCURSION
+--    Priorité 1: auth.jwt() (mémoire, 0 requête, 0 récursion)
+--    Priorité 2: auth.users (table système auth, 0 RLS sur profiles)
+--    Priorité 3: public.profiles (sécurisé car profiles n'appelle plus is_admin)
+-- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
-LANGUAGE sql
+LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, auth
 AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'administrateur'
-  );
+DECLARE
+  v_is_admin BOOLEAN := FALSE;
+BEGIN
+  -- 1. Vérification directe dans le JWT (instantané en mémoire)
+  IF (auth.jwt() -> 'user_metadata' ->> 'role') = 'administrateur'
+     OR (auth.jwt() -> 'user_metadata' ->> 'force_admin') = 'true'
+     OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'administrateur' THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 2. Vérification dans auth.users (schéma auth, aucune RLS)
+  SELECT (raw_user_meta_data->>'role' = 'administrateur' OR raw_user_meta_data->>'force_admin' = 'true')
+  INTO v_is_admin
+  FROM auth.users
+  WHERE id = auth.uid();
+
+  IF v_is_admin IS TRUE THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 3. Vérification directe dans public.profiles en repli
+  SELECT (role = 'administrateur')
+  INTO v_is_admin
+  FROM public.profiles
+  WHERE id = auth.uid();
+
+  RETURN COALESCE(v_is_admin, FALSE);
+END;
 $$;
 
--- ============================================================
--- Ajout des colonnes manquantes (idempotent avec IF NOT EXISTS)
--- ============================================================
-
--- points_of_sale : colonnes space_id et updated_at
+-- ------------------------------------------------------------
+-- 3. Ajout des colonnes manquantes (idempotent)
+-- ------------------------------------------------------------
 ALTER TABLE points_of_sale
   ADD COLUMN IF NOT EXISTS space_id UUID REFERENCES wifi_spaces(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
--- ticket_types : colonnes space_id et updated_at
 ALTER TABLE ticket_types
   ADD COLUMN IF NOT EXISTS space_id UUID REFERENCES wifi_spaces(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
--- ticket_allocations : colonnes space_id et date_allocation
 ALTER TABLE ticket_allocations
   ADD COLUMN IF NOT EXISTS space_id UUID REFERENCES wifi_spaces(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS date_allocation DATE DEFAULT CURRENT_DATE;
 
--- collections : colonnes space_id, date_collecte, commission
 ALTER TABLE collections
   ADD COLUMN IF NOT EXISTS space_id UUID REFERENCES wifi_spaces(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS date_collecte DATE,
   ADD COLUMN IF NOT EXISTS commission DECIMAL(12, 2) DEFAULT 0;
 
--- collection_items : colonne space_id
 ALTER TABLE collection_items
   ADD COLUMN IF NOT EXISTS space_id UUID REFERENCES wifi_spaces(id) ON DELETE SET NULL;
 
--- profiles : colonne devise
 ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS devise VARCHAR(10) DEFAULT 'XOF';
 
--- ============================================================
--- Triggers updated_at (DROP IF EXISTS + CREATE = idempotent)
--- ============================================================
-
--- points_of_sale
+-- ------------------------------------------------------------
+-- 4. Triggers updated_at
+-- ------------------------------------------------------------
 DROP TRIGGER IF EXISTS trg_points_of_sale_updated_at ON points_of_sale;
 CREATE TRIGGER trg_points_of_sale_updated_at
   BEFORE UPDATE ON points_of_sale
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- ticket_types
 DROP TRIGGER IF EXISTS trg_ticket_types_updated_at ON ticket_types;
 CREATE TRIGGER trg_ticket_types_updated_at
   BEFORE UPDATE ON ticket_types
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- profiles
 DROP TRIGGER IF EXISTS trg_profiles_updated_at ON profiles;
 CREATE TRIGGER trg_profiles_updated_at
   BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- wifi_spaces
 DROP TRIGGER IF EXISTS trg_wifi_spaces_updated_at ON wifi_spaces;
 CREATE TRIGGER trg_wifi_spaces_updated_at
   BEFORE UPDATE ON wifi_spaces
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- ============================================================
--- CORRECTION DES POLITIQUES RLS
--- Pour éviter l'erreur 42P17, on DROP TOUTES les politiques existantes
--- sur profiles, et AUCUNE politique sur profiles ne doit faire appel
--- à is_admin() (puisque is_admin() lit profiles).
--- ============================================================
+-- ------------------------------------------------------------
+-- 5. PURGE TOTALE ET DYNAMIQUE DE TOUTES LES POLICIES EXISTANTES
+--    Élimine TOUTES les policies orphelines, cachées ou anciennes
+--    qui causent l'erreur de récursion infinie 42P17.
+-- ------------------------------------------------------------
+DO $$
+DECLARE
+    r RECORD;
+    t TEXT;
+    target_tables TEXT[] := ARRAY[
+      'profiles',
+      'points_of_sale',
+      'ticket_types',
+      'ticket_allocations',
+      'collections',
+      'collection_items',
+      'audit_logs',
+      'wifi_spaces'
+    ];
+BEGIN
+    FOREACH t IN ARRAY target_tables LOOP
+        FOR r IN (
+          SELECT policyname
+          FROM pg_policies
+          WHERE tablename = t AND schemaname = 'public'
+        ) LOOP
+            EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', r.policyname, t);
+        END LOOP;
+    END LOOP;
+END $$;
 
--- D'abord, supprimer TOUTES les politiques existantes sur profiles
-DROP POLICY IF EXISTS "Utilisateur voit son profil" ON profiles;
-DROP POLICY IF EXISTS "Utilisateur modifie son profil" ON profiles;
-DROP POLICY IF EXISTS "Utilisateur cree son profil" ON profiles;
-DROP POLICY IF EXISTS "Admins gerent tous les profils" ON profiles;
-DROP POLICY IF EXISTS "profiles_select_own" ON profiles;
-DROP POLICY IF EXISTS "profiles_update_own" ON profiles;
-DROP POLICY IF EXISTS "profiles_insert_own" ON profiles;
-DROP POLICY IF EXISTS "profiles_select" ON profiles;
-DROP POLICY IF EXISTS "profiles_update" ON profiles;
-DROP POLICY IF EXISTS "profiles_insert" ON profiles;
-DROP POLICY IF EXISTS "profiles_all_admin" ON profiles;
-DROP POLICY IF EXISTS "Users read own profile" ON profiles;
-DROP POLICY IF EXISTS "Admins read write profiles" ON profiles;
-DROP POLICY IF EXISTS "profiles_insert_allow" ON profiles;
-DROP POLICY IF EXISTS "fix_profiles_select" ON profiles;
-DROP POLICY IF EXISTS "fix_profiles_update" ON profiles;
-DROP POLICY IF EXISTS "fix_profiles_insert" ON profiles;
-DROP POLICY IF EXISTS "fix_profiles_all_admin" ON profiles;
-DROP POLICY IF EXISTS "fix_profiles_insert_allow" ON profiles;
-DROP POLICY IF EXISTS "profiles_select_authenticated" ON profiles;
+-- Activer RLS sur toutes les tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.points_of_sale ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ticket_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ticket_allocations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.collection_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wifi_spaces ENABLE ROW LEVEL SECURITY;
 
--- Recréer les politiques profiles SANS boucle de récursion :
--- 1. Lecture : tout utilisateur authentifié peut lire les profils (pour afficher collecteurs, POS, etc.)
-CREATE POLICY "profiles_select_authenticated" ON profiles
+-- ------------------------------------------------------------
+-- 6. NOUVELLES POLITIQUES RLS PROPRES ET NON-RÉCURSIVES
+-- ------------------------------------------------------------
+
+-- A. PROFILES (AUCUN appel à is_admin(), AUCUNE sous-requête sur profiles)
+CREATE POLICY "profiles_select_all" ON public.profiles
   FOR SELECT
   TO authenticated
   USING (true);
 
--- 2. Mise à jour : chaque utilisateur peut modifier son propre profil
-CREATE POLICY "profiles_update_own" ON profiles
+CREATE POLICY "profiles_update_own" ON public.profiles
   FOR UPDATE
   TO authenticated
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
--- 3. Insertion : autorisée pour l'auto-inscription et le trigger handle_new_user
-CREATE POLICY "profiles_insert_allow" ON profiles
+CREATE POLICY "profiles_insert_allow" ON public.profiles
   FOR INSERT
   WITH CHECK (true);
 
--- Supprimer et recréer les politiques sur ticket_types
-DROP POLICY IF EXISTS "Tous voient les tickets actifs" ON ticket_types;
-DROP POLICY IF EXISTS "Admins gerent les ticket types" ON ticket_types;
-DROP POLICY IF EXISTS "Everyone authenticated reads active ticket types" ON ticket_types;
-DROP POLICY IF EXISTS "Admins manage ticket types" ON ticket_types;
-DROP POLICY IF EXISTS "ticket_types_read_all" ON ticket_types;
-DROP POLICY IF EXISTS "ticket_types_write_admin" ON ticket_types;
+-- B. POINTS DE VENTE (points_of_sale)
+CREATE POLICY "pos_select_all" ON public.points_of_sale
+  FOR SELECT
+  TO authenticated
+  USING (true);
 
-CREATE POLICY "fix_ticket_types_read_all" ON ticket_types
-  FOR SELECT USING (auth.role() = 'authenticated');
-
-CREATE POLICY "fix_ticket_types_write_admin" ON ticket_types
-  FOR ALL USING (is_admin())
+CREATE POLICY "pos_insert_admin" ON public.points_of_sale
+  FOR INSERT
+  TO authenticated
   WITH CHECK (is_admin());
 
--- Supprimer et recréer les politiques sur points_of_sale
-DROP POLICY IF EXISTS "Admins gerent les POS" ON points_of_sale;
-DROP POLICY IF EXISTS "Collecteurs lisent leurs POS" ON points_of_sale;
-DROP POLICY IF EXISTS "Admins manage POS" ON points_of_sale;
-DROP POLICY IF EXISTS "Collectors read assigned POS" ON points_of_sale;
-DROP POLICY IF EXISTS "pos_all_authenticated" ON points_of_sale;
+CREATE POLICY "pos_update_admin" ON public.points_of_sale
+  FOR UPDATE
+  TO authenticated
+  USING (is_admin());
 
-CREATE POLICY "fix_pos_read_all" ON points_of_sale
-  FOR SELECT USING (true);
+CREATE POLICY "pos_delete_admin" ON public.points_of_sale
+  FOR DELETE
+  TO authenticated
+  USING (is_admin());
 
-CREATE POLICY "fix_pos_write_admin" ON points_of_sale
-  FOR INSERT WITH CHECK (is_admin());
+-- C. TYPES DE TICKETS (ticket_types)
+CREATE POLICY "ticket_types_select_all" ON public.ticket_types
+  FOR SELECT
+  TO authenticated
+  USING (true);
 
-CREATE POLICY "fix_pos_update_admin" ON points_of_sale
-  FOR UPDATE USING (is_admin());
+CREATE POLICY "ticket_types_all_admin" ON public.ticket_types
+  FOR ALL
+  TO authenticated
+  USING (is_admin())
+  WITH CHECK (is_admin());
 
-CREATE POLICY "fix_pos_delete_admin" ON points_of_sale
-  FOR DELETE USING (is_admin());
-
--- Supprimer et recréer les politiques sur ticket_allocations
-DROP POLICY IF EXISTS "Admins gerent les allocations" ON ticket_allocations;
-DROP POLICY IF EXISTS "Collecteurs voient leurs allocations" ON ticket_allocations;
-DROP POLICY IF EXISTS "allocations_all_authenticated" ON ticket_allocations;
-
-CREATE POLICY "fix_allocations_read" ON ticket_allocations
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM points_of_sale WHERE id = pos_id AND collecteur_id = auth.uid())
-    OR is_admin()
-  );
-
-CREATE POLICY "fix_allocations_write" ON ticket_allocations
-  FOR INSERT WITH CHECK (is_admin());
-
-CREATE POLICY "fix_allocations_update" ON ticket_allocations
-  FOR UPDATE USING (is_admin());
-
-CREATE POLICY "fix_allocations_delete" ON ticket_allocations
-  FOR DELETE USING (is_admin());
-
--- Supprimer et recréer les politiques sur collections
-DROP POLICY IF EXISTS "Admins gerent toutes les collectes" ON collections;
-DROP POLICY IF EXISTS "Collecteurs gerent leurs collectes" ON collections;
-DROP POLICY IF EXISTS "Admins manage collections" ON collections;
-DROP POLICY IF EXISTS "Collectors manage own collections" ON collections;
-DROP POLICY IF EXISTS "collections_all_authenticated" ON collections;
-
-CREATE POLICY "fix_collections_admin" ON collections
-  FOR ALL USING (is_admin());
-
-CREATE POLICY "fix_collections_collecteur" ON collections
-  FOR SELECT USING (collecteur_id = auth.uid());
-
--- Supprimer et recréer les politiques sur collection_items
-DROP POLICY IF EXISTS "Acces items via collection" ON collection_items;
-DROP POLICY IF EXISTS "Users access collection items via collection" ON collection_items;
-DROP POLICY IF EXISTS "collection_items_all_authenticated" ON collection_items;
-
-CREATE POLICY "fix_collection_items_access" ON collection_items
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM collections
-      WHERE collections.id = collection_items.collection_id
-      AND (collections.collecteur_id = auth.uid() OR is_admin())
+-- D. ALLOCATIONS DE TICKETS (ticket_allocations)
+CREATE POLICY "allocations_select" ON public.ticket_allocations
+  FOR SELECT
+  TO authenticated
+  USING (
+    is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.points_of_sale
+      WHERE id = ticket_allocations.pos_id AND collecteur_id = auth.uid()
     )
   );
 
--- Supprimer et recréer les politiques sur audit_logs
-DROP POLICY IF EXISTS "Admins voient les logs" ON audit_logs;
-DROP POLICY IF EXISTS "audit_logs_all_authenticated" ON audit_logs;
-
-CREATE POLICY "fix_audit_logs_admin" ON audit_logs
-  FOR ALL USING (is_admin());
-
--- Supprimer et recréer les politiques sur wifi_spaces
-DROP POLICY IF EXISTS "Users can view all wifi_spaces" ON wifi_spaces;
-DROP POLICY IF EXISTS "Admins can insert wifi_spaces" ON wifi_spaces;
-DROP POLICY IF EXISTS "Admins can update wifi_spaces" ON wifi_spaces;
-DROP POLICY IF EXISTS "Admins can delete wifi_spaces" ON wifi_spaces;
-
-CREATE POLICY "fix_wifi_spaces_read" ON wifi_spaces
-  FOR SELECT USING (true);
-
-CREATE POLICY "fix_wifi_spaces_write" ON wifi_spaces
-  FOR ALL USING (is_admin())
+CREATE POLICY "allocations_all_admin" ON public.ticket_allocations
+  FOR ALL
+  TO authenticated
+  USING (is_admin())
   WITH CHECK (is_admin());
 
--- ============================================================
--- VÉRIFICATION : afficher les profils existants
--- ============================================================
-SELECT id, nom, email, role, devise FROM profiles ORDER BY created_at;
+-- E. COLLECTES (collections)
+CREATE POLICY "collections_select" ON public.collections
+  FOR SELECT
+  TO authenticated
+  USING (collecteur_id = auth.uid() OR is_admin());
 
--- VÉRIFICATION : afficher les colonnes des tables
-SELECT table_name, column_name, data_type
-FROM information_schema.columns
-WHERE table_schema = 'public'
-AND table_name IN ('profiles', 'points_of_sale', 'ticket_types', 'ticket_allocations', 'collections', 'collection_items', 'wifi_spaces')
-ORDER BY table_name, ordinal_position;
+CREATE POLICY "collections_all_admin" ON public.collections
+  FOR ALL
+  TO authenticated
+  USING (is_admin())
+  WITH CHECK (is_admin());
+
+CREATE POLICY "collections_insert_collector" ON public.collections
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (collecteur_id = auth.uid());
+
+CREATE POLICY "collections_update_collector" ON public.collections
+  FOR UPDATE
+  TO authenticated
+  USING (collecteur_id = auth.uid());
+
+-- F. ITEMS DE COLLECTE (collection_items)
+CREATE POLICY "collection_items_all" ON public.collection_items
+  FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.collections c
+      WHERE c.id = collection_items.collection_id
+      AND (c.collecteur_id = auth.uid() OR is_admin())
+    )
+  );
+
+-- G. ESPACES WIFI (wifi_spaces)
+CREATE POLICY "wifi_spaces_select_all" ON public.wifi_spaces
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "wifi_spaces_all_admin" ON public.wifi_spaces
+  FOR ALL
+  TO authenticated
+  USING (is_admin())
+  WITH CHECK (is_admin());
+
+-- H. AUDIT LOGS (audit_logs)
+CREATE POLICY "audit_logs_all_admin" ON public.audit_logs
+  FOR ALL
+  TO authenticated
+  USING (is_admin());
+
+-- ------------------------------------------------------------
+-- 7. SYNCHRONISATION DES ROLES DANS auth.users
+--    Garantit que le JWT contient le rôle administrateur
+-- ------------------------------------------------------------
+UPDATE auth.users au
+SET raw_user_meta_data = jsonb_set(
+  jsonb_set(
+    COALESCE(au.raw_user_meta_data, '{}'::jsonb),
+    '{role}',
+    to_jsonb(p.role::text),
+    true
+  ),
+  '{force_admin}',
+  to_jsonb(CASE WHEN p.role = 'administrateur' THEN 'true' ELSE 'false' END),
+  true
+)
+FROM public.profiles p
+WHERE p.id = au.id;
+
+-- ------------------------------------------------------------
+-- 8. VÉRIFICATION DU RÉSULTAT
+-- ------------------------------------------------------------
+SELECT 'Policies restantes sur profiles:' AS check_info;
+SELECT policyname, cmd, qual, with_check
+FROM pg_policies
+WHERE tablename = 'profiles' AND schemaname = 'public';
+
+SELECT 'Profils existants:' AS profiles_info;
+SELECT id, nom, email, role, devise FROM public.profiles ORDER BY created_at;
