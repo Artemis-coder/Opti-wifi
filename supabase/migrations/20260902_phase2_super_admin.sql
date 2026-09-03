@@ -186,7 +186,7 @@ ALTER TABLE collections
   ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
 
 ALTER TABLE collection_items
-  ADD COLUMN IF NOT NULL IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
 
 -- ----------------------------------------------------------
 -- ÉTAPE 2: Index pour les performances multi-tenant
