@@ -241,7 +241,7 @@ BEGIN
       AND role IN ('super_admin', 'platform_support')
   );
 END;
-$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- get_user_organization_id(): retourne l'organization_id du profil courant
 CREATE OR REPLACE FUNCTION public.get_user_organization_id()
@@ -253,7 +253,7 @@ BEGIN
   SELECT organization_id INTO org_id FROM profiles WHERE id = auth.uid();
   RETURN org_id;
 END;
-$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- ----------------------------------------------------------
 -- ÉTAPE 5: Politiques RLS — platform_users (Super Admin access)
