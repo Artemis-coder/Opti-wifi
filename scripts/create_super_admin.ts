@@ -5,16 +5,20 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function createSuperAdmin() {
+export async function createSuperAdmin() {
+  const email = 'kedakeyaoboris@gmail.com';
+  const password = '20071995@94119427';
+
   try {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: 'superadmin@optiwifi.ci',
-      password: 'Admin123!@#',
+      email,
+      password,
       email_confirm: true,
+      user_metadata: { full_name: 'Super Admin' },
     });
     if (authError) throw authError;
 
-    const uid = authData?.user?.id;
+    const uid = authData?.user?.id ?? (await supabase.auth.admin.getUserByEmail(email)).data?.user?.id;
     if (!uid) throw new Error('No user ID returned');
 
     const { error: profileError } = await supabase
@@ -22,7 +26,7 @@ async function createSuperAdmin() {
       .upsert({
         id: uid,
         nom: 'Super Admin',
-        email: 'superadmin@optiwifi.ci',
+        email,
         role: 'administrateur',
       }, { onConflict: 'id' });
     if (profileError) throw profileError;
@@ -33,21 +37,14 @@ async function createSuperAdmin() {
         auth_user_id: uid,
         role: 'super_admin',
         full_name: 'Super Admin',
-        email: 'superadmin@optiwifi.ci',
+        email,
         is_active: true,
       }, { onConflict: 'auth_user_id' });
     if (puError) throw puError;
 
-    console.log('Super admin account created successfully.');
-    console.log('Email: superadmin@optiwifi.ci');
-    console.log('Password: Admin123!@#');
-    console.log('User ID:', uid);
+    console.log('Super admin account ready:', email);
   } catch (err) {
-    if (err instanceof Error && err.message.includes('already exists')) {
-      console.log('Account already exists. Updating...');
-    } else {
-      console.error('Error:', err instanceof Error ? err.message : err);
-    }
+    console.error('Error:', err instanceof Error ? err.message : err);
   }
 }
 
