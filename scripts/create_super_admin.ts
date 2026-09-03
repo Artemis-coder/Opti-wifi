@@ -18,7 +18,7 @@ export async function createSuperAdmin() {
     });
     if (authError) throw authError;
 
-    const uid = authData?.user?.id ?? (await supabase.auth.admin.getUserByEmail(email)).data?.user?.id;
+    const uid = authData?.user?.id;
     if (!uid) throw new Error('No user ID returned');
 
     const { error: profileError } = await supabase
