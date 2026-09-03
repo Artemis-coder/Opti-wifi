@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "backup": "bash scripts/backup.sh",
+    "backup:restore": "bash scripts/backup.sh --restore=",
+    "backup:list": "bash scripts/backup.sh --list",
+    "backup:clean": "bash scripts/cron_backup.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
