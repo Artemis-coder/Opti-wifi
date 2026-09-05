@@ -67,10 +67,11 @@ export async function GET(request: Request) {
   }
 
   // Fetch auth user status (banned or not)
-  const authUsersResult = await adminClient.auth.admin.listUsers();
+  const { data: authUsersData } = await adminClient.auth.admin.listUsers();
   const authUserMap = new Map();
-  authUsersResult.users?.forEach((au: { id: string; banned?: boolean }) => {
-    authUserMap.set(au.id, au.banned || false);
+  authUsersData?.users?.forEach((au: { id: string; banned_until?: string }) => {
+    const isBanned = au.banned_until ? new Date(au.banned_until) > new Date() : false;
+    authUserMap.set(au.id, isBanned);
   });
 
   const enrichedUsers = (users || []).map((u: Record<string, unknown>) => ({
@@ -132,9 +133,9 @@ export async function PATCH(request: Request) {
 
   switch (action) {
     case 'deactivate': {
-      const { data: authData, error: authError } = await adminClient.auth.admin.updateUser(
+      const { data: authData, error: authError } = await adminClient.auth.admin.updateUserById(
         userId,
-        { banned: true }
+        { ban_duration: '876000h' }
       );
       if (authError) {
         return NextResponse.json({ error: authError.message }, { status: 500 });
@@ -151,9 +152,9 @@ export async function PATCH(request: Request) {
     }
 
     case 'activate': {
-      const { data: authData, error: authError } = await adminClient.auth.admin.updateUser(
+      const { data: authData, error: authError } = await adminClient.auth.admin.updateUserById(
         userId,
-        { banned: false }
+        { ban_duration: 'none' }
       );
       if (authError) {
         return NextResponse.json({ error: authError.message }, { status: 500 });
@@ -180,7 +181,8 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 });
       }
 
-      const { error: resetError } = await adminClient.auth.admin.generateResetLink({
+      const { error: resetError } = await adminClient.auth.admin.generateLink({
+        type: 'recovery',
         email: profile.email,
       });
 

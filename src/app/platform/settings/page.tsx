@@ -42,7 +42,7 @@ export default function PlatformSettingsPage() {
       if (res.ok && result.data) {
         const settingsMap: Record<string, SettingValue> = {};
         result.data.forEach((s: PlatformSettings) => {
-          settingsMap[s.key] = s.value;
+          settingsMap[s.key] = s.value as SettingValue;
         });
         setSettings(settingsMap);
         setEditedValues(settingsMap);
@@ -82,6 +82,29 @@ export default function PlatformSettingsPage() {
     setEditedValues((prev) => ({ ...prev, [key]: value }));
   };
 
+  const getString = (key: string, fallback = ''): string => {
+    const val = editedValues[key];
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number') return String(val);
+    return fallback;
+  };
+
+  const getNumber = (key: string, fallback = 0): number => {
+    const val = editedValues[key];
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const parsed = parseInt(val, 10);
+      return isNaN(parsed) ? fallback : parsed;
+    }
+    return fallback;
+  };
+
+  const getBoolean = (key: string, fallback = false): boolean => {
+    const val = editedValues[key];
+    if (typeof val === 'boolean') return val;
+    return fallback;
+  };
+
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
@@ -91,7 +114,7 @@ export default function PlatformSettingsPage() {
     );
   }
 
-  const maintenanceMode = settings.maintenance_mode === true;
+  const maintenanceMode = getBoolean('maintenance_mode');
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -118,25 +141,25 @@ export default function PlatformSettingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Nom de la plateforme"
-            value={editedValues.platform_name || ''}
+            value={getString('platform_name', 'OptiWifi')}
             onChange={(e) => updateValue('platform_name', e.target.value)}
             placeholder="OptiWifi"
           />
           <Input
             label="Logo (URL)"
-            value={editedValues.platform_logo || ''}
+            value={getString('platform_logo', '/assets/logo.jpg')}
             onChange={(e) => updateValue('platform_logo', e.target.value)}
             placeholder="/assets/logo.jpg"
           />
           <Input
             label="Email support"
-            value={editedValues.support_email || ''}
+            value={getString('support_email', 'support@optiwifi.ci')}
             onChange={(e) => updateValue('support_email', e.target.value)}
             placeholder="support@optiwifi.ci"
           />
           <Input
             label="Téléphone support"
-            value={editedValues.support_phone || ''}
+            value={getString('support_phone')}
             onChange={(e) => updateValue('support_phone', e.target.value)}
             placeholder="+225 XX XX XX XX"
           />
@@ -147,7 +170,7 @@ export default function PlatformSettingsPage() {
             Devise principale
           </label>
           <select
-            value={editedValues.platform_currency || 'XOF'}
+            value={getString('platform_currency', 'XOF')}
             onChange={(e) => updateValue('platform_currency', e.target.value)}
             className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
           >
@@ -268,7 +291,7 @@ export default function PlatformSettingsPage() {
 
         <Input
           label="Message de maintenance"
-          value={editedValues.maintenance_message || ''}
+          value={getString('maintenance_message', '')}
           onChange={(e) => updateValue('maintenance_message', e.target.value)}
           placeholder="La plateforme est actuellement en maintenance..."
         />

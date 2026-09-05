@@ -108,11 +108,13 @@ export async function PATCH(request: Request) {
     },
   });
 
-  const { data: { old_data: _old } } = await adminClient
+  const { data: oldSetting } = await adminClient
     .from('platform_settings')
     .select('value')
     .eq('key', key)
     .maybeSingle();
+
+  const _old = oldSetting?.value;
 
   const { data: setting, error } = await adminClient
     .from('platform_settings')
