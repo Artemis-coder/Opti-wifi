@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 -- ----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS platform_users (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  auth_user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  auth_user_id    UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   role            platform_role NOT NULL DEFAULT 'super_admin',
   full_name       VARCHAR(255),
   email           VARCHAR(255),
@@ -500,7 +500,9 @@ BEGIN
     NOW()
   FROM profiles p
   WHERE p.role = 'administrateur'
-  ON CONFLICT (auth_user_id) DO NOTHING;
+  AND NOT EXISTS (
+    SELECT 1 FROM platform_users pu WHERE pu.auth_user_id = p.id
+  );
 
   RAISE NOTICE 'Migration completed: organization=%', default_org_id;
 END $$;
