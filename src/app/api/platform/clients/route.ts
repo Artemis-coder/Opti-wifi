@@ -44,20 +44,19 @@ export async function GET(request: Request) {
   const limit = parseInt(searchParams.get('limit') || '100');
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  let query = supabase
-    .from('organizations')
-    .select(`
-      *,
-      subscription:subscriptions!inner(
-        plan:subscription_plans!inner(name),
-        status,
-        start_date,
-        end_date,
-        trial_end
-      ),
-      plan:subscription_plans(name)
-    `, { count: 'exact' })
-    .order('created_at', { ascending: false });
+    let query = supabase
+      .from('organizations')
+      .select(`
+        *,
+        subscription:subscriptions(
+          plan:subscription_plans(name),
+          status,
+          start_date,
+          end_date,
+          trial_end
+        )
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false });
 
   if (search) {
     query = query.or(`name.ilike.%${search}%,contact_name.ilike.%${search}%,email.ilike.%${search}%`);
@@ -74,7 +73,12 @@ export async function GET(request: Request) {
   }
 
   const enrichedOrgs = (orgs || []).map((org) => {
-    const sub = org.subscription;
+    const subList = Array.isArray(org.subscription) ? org.subscription : [org.subscription];
+    const sub = subList.find(Boolean); // Get first defined element if any
+    
+    // Check if the plan name is in sub.plan directly (if object) or an array
+    const planName = sub?.plan?.name || (Array.isArray(sub?.plan) ? sub?.plan[0]?.name : undefined) || org.plan?.name || 'Aucun';
+
     return {
       id: org.id,
       name: org.name,
@@ -84,7 +88,7 @@ export async function GET(request: Request) {
       status: org.status,
       currency: org.currency,
       created_at: org.created_at,
-      plan_name: sub?.plan?.name || org.plan?.name || 'Aucun',
+      plan_name: planName,
       subscription_status: sub?.status || 'none',
       subscription_end_date: sub?.end_date || null,
       subscription_trial_end: sub?.trial_end || null,
