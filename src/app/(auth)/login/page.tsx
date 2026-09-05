@@ -115,7 +115,19 @@ export default function LoginPage() {
         setUser(fallbackProfile);
       }
 
-      router.push('/dashboard');
+      // Check if user is a platform super admin
+      const { data: platformUser } = await supabase
+        .from('platform_users')
+        .select('role')
+        .eq('auth_user_id', data.user.id)
+        .eq('is_active', true)
+        .single();
+
+      if (platformUser && (platformUser.role === 'super_admin' || platformUser.role === 'platform_support')) {
+        router.push('/platform/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
     }
   };
 
