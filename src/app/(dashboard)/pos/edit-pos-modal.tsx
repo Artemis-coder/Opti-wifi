@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 interface EditPosModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface EditPosModalProps {
 
 export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSuccess }: EditPosModalProps) {
   const { currentSpaceId } = useSpaceStore();
+  const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nom, setNom] = useState(pos?.nom || '');
   const [adresse, setAdresse] = useState(pos?.adresse || '');
@@ -39,6 +41,31 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
 
     setIsSubmitting(true);
 
+    // Enforce POS quota for new creation
+    if (!pos && user?.organization_id) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('*, plan:subscription_plans(*)')
+        .eq('organization_id', user.organization_id)
+        .in('status', ['active', 'trialing'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (sub?.plan && typeof sub.plan.max_points_of_sale === 'number') {
+        const { count } = await supabase
+          .from('points_of_sale')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', user.organization_id);
+
+        if (count !== null && count >= sub.plan.max_points_of_sale) {
+          toast.error(`Limite de points de vente atteinte (${count}/${sub.plan.max_points_of_sale}) pour votre forfait "${sub.plan.name}". Veuillez mettre à niveau votre abonnement.`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+    }
+
     const payload = {
       nom: nom.trim(),
       adresse: adresse.trim() || null,
@@ -46,6 +73,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
       collecteur_id: collecteurId || null,
       space_id: spaceId || null,
       statut,
+      organization_id: user?.organization_id || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -64,7 +92,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
     } else {
       const res = await supabase
         .from('points_of_sale')
-        .insert({ ...payload, statut: 'actif' } as PointOfSale)
+        .insert({ ...payload, statut: 'actif' } as unknown as PointOfSale)
         .select('*, collecteur:profiles(*)')
         .single();
       result = res.data;

@@ -3,6 +3,7 @@
 // ============================================================
 
 export type OrganizationStatus =
+  | 'pending_approval'
   | 'trial'
   | 'active'
   | 'expiring'

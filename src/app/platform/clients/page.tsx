@@ -38,6 +38,7 @@ interface ClientOrg {
 }
 
 const STATUS_CONFIG: Record<OrganizationStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
+  pending_approval: { label: 'En attente', color: 'warning' },
   trial: { label: 'Essai', color: 'info' },
   active: { label: 'Actif', color: 'success' },
   expiring: { label: 'Expire bientôt', color: 'warning' },
@@ -48,6 +49,7 @@ const STATUS_CONFIG: Record<OrganizationStatus, { label: string; color: 'success
 };
 
 const STATUS_ICONS: Record<OrganizationStatus, React.ElementType> = {
+  pending_approval: AlertCircle,
   trial: Clock,
   active: CheckCircle,
   expiring: Clock,
@@ -59,8 +61,9 @@ const STATUS_ICONS: Record<OrganizationStatus, React.ElementType> = {
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'all', label: 'Tous les statuts' },
-  { value: 'trial', label: 'Essai' },
+  { value: 'pending_approval', label: 'En attente' },
   { value: 'active', label: 'Actifs' },
+  { value: 'trial', label: 'Essai' },
   { value: 'expiring', label: 'Expire bientôt' },
   { value: 'expired', label: 'Expirés' },
   { value: 'suspended', label: 'Suspendus' },
@@ -75,6 +78,8 @@ export default function PlatformClientsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionOrgId, setActionOrgId] = useState<string | null>(null);
 
+  const [newClientsCount, setNewClientsCount] = useState(0);
+
   useEffect(() => {
     async function fetchClients() {
       setLoading(true);
@@ -87,7 +92,10 @@ export default function PlatformClientsPage() {
         const res = await fetch(`/api/platform/clients?${params}`);
         const result = await res.json();
         if (res.ok) {
-          setClients(result.data || []);
+          const list = result.data || [];
+          setClients(list);
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          setNewClientsCount(list.filter((c: ClientOrg) => new Date(c.created_at) >= weekAgo).length);
         }
       } catch (err) {
         console.warn('Clients fetch error:', err);
@@ -101,6 +109,7 @@ export default function PlatformClientsPage() {
 
   const handleStatusAction = async (orgId: string, action: string, orgName: string) => {
     const actionLabels: Record<string, string> = {
+      approve: 'approuver',
       activate: 'activer',
       suspend: 'suspendre',
       reactivate: 'réactiver',
@@ -166,6 +175,8 @@ export default function PlatformClientsPage() {
 
   const activeCount = clients.filter((c) => c.status === 'active').length;
   const suspendedCount = clients.filter((c) => c.status === 'suspended').length;
+  const pendingCount = clients.filter((c) => c.status === 'pending_approval').length;
+
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -184,7 +195,7 @@ export default function PlatformClientsPage() {
       </div>
 
       {/* KPI Mini-cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className={`grid gap-4 ${pendingCount > 0 ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
         <Card className="border-l-4 border-l-blue-900">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase">Total</span>
@@ -192,6 +203,15 @@ export default function PlatformClientsPage() {
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{clients.length}</p>
         </Card>
+        {pendingCount > 0 && (
+          <Card className="border-l-4 border-l-amber-500 bg-amber-50/40 dark:bg-amber-950/20">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase">En Attente</span>
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 animate-pulse" />
+            </div>
+            <p className="text-2xl font-extrabold text-amber-700 dark:text-amber-400 mt-2">{pendingCount}</p>
+          </Card>
+        )}
         <Card className="border-l-4 border-l-emerald-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase">Actifs</span>
@@ -206,18 +226,12 @@ export default function PlatformClientsPage() {
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{suspendedCount}</p>
         </Card>
-        <Card className="border-l-4 border-l-amber-500">
+        <Card className="border-l-4 border-l-cyan-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase">Nouveaux (7j)</span>
-            <Activity className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <Activity className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">
-            {clients.filter((c) => {
-              const created = new Date(c.created_at);
-              const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-              return created >= weekAgo;
-            }).length}
-          </p>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{newClientsCount}</p>
         </Card>
       </div>
 
@@ -324,7 +338,20 @@ export default function PlatformClientsPage() {
                         {client.subscription_end_date ? formatDateFR(client.subscription_end_date) : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {client.status === 'pending_approval' && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1 shadow-xs"
+                              onClick={() => handleStatusAction(client.id, 'approve', client.name)}
+                              disabled={!!isActionDisabled}
+                              title="Valider et approuver ce client"
+                            >
+                              {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                              <span>Approuver</span>
+                            </Button>
+                          )}
                           {client.status === 'suspended' && (
                             <Button
                               variant="ghost"
@@ -337,7 +364,7 @@ export default function PlatformClientsPage() {
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                             </Button>
                           )}
-                          {client.status !== 'suspended' && client.status !== 'cancelled' && client.status !== 'archived' && (
+                          {client.status !== 'suspended' && client.status !== 'cancelled' && client.status !== 'archived' && client.status !== 'pending_approval' && (
                             <Button
                               variant="ghost"
                               size="sm"

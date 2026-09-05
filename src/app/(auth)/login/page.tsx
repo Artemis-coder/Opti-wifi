@@ -57,7 +57,8 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [nom, setNom] = useState('');
-  const [role, setRole] = useState<UserRole>('collecteur');
+  const [orgName, setOrgName] = useState('');
+  const [role, setRole] = useState<UserRole>('administrateur');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -165,7 +166,7 @@ export default function LoginPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nom || !email || !password) {
+    if (!nom || !email || !password || !orgName) {
       setError('Veuillez remplir tous les champs obligatoires.');
       return;
     }
@@ -179,87 +180,32 @@ export default function LoginPage() {
     setError('');
     setSuccessMsg('');
 
-    const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, nom, orgName }),
+      });
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { nom, role },
-      },
-    });
+      const data = await res.json();
 
-    if (signUpError) {
-      if (
-        signUpError.message?.toLowerCase().includes('already registered') ||
-        signUpError.code === 'email_provider_disabled' ||
-        signUpError.message?.toLowerCase().includes('disabled')
-      ) {
-        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInData?.user) {
-          const { data: existingProfile } = await supabase
-            .from('profiles').select('*').eq('id', signInData.user.id).single();
-
-          if (existingProfile) {
-            setUser(existingProfile);
-          } else {
-            const authRole = signInData.user.user_metadata?.role;
-            setUser({
-              id: signInData.user.id,
-              nom,
-              email,
-              role: authRole || role,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
-          }
-          setSuccessMsg('Connexion réussie ! Redirection...');
-          setTimeout(() => router.push('/dashboard'), 500);
-          return;
-        }
-      }
-      setError(signUpError.message || 'Erreur lors de la création du compte.');
-      setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (signInError || !signInData?.session) {
-        setError('Compte créé. Veuillez vous connecter avec vos identifiants.');
+      if (!res.ok) {
+        setError(data.error || 'Erreur lors de la création du compte.');
         setLoading(false);
         return;
       }
 
-      const profileData = {
-        id: data.user.id,
-        nom: nom.trim(),
-        email: email.trim().toLowerCase(),
-        role: role,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert(profileData, { onConflict: 'id' });
-
-      if (profileError) {
-        console.warn('Profile upsert warning:', profileError.message);
-      }
-
-      const { data: savedProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      const finalProfile = savedProfile ?? { ...profileData, created_at: new Date().toISOString() };
-
-      setUser(finalProfile);
-      setSuccessMsg('✅ Compte créé avec succès ! Redirection vers votre espace...');
-      setTimeout(() => router.push('/dashboard'), 800);
+      setSuccessMsg(data.message || '✅ Compte créé avec succès ! En attente de validation.');
+      // Switch back to login mode so they know they have to wait or can try logging in
+      setTimeout(() => {
+        setMode('login');
+        setLoading(false);
+      }, 3000);
+      
+    } catch (err: unknown) {
+      console.error('Registration error:', err);
+      setError('Erreur de connexion au serveur.');
+      setLoading(false);
     }
   };
 
@@ -405,7 +351,15 @@ export default function LoginPage() {
         {mode === 'register' && (
           <form onSubmit={handleRegister} className="space-y-4">
             <Input
-              label="Nom Complet"
+              label="Nom de l'Entreprise"
+              type="text"
+              placeholder="ex: Boris Wifi"
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
+              required
+            />
+            <Input
+              label="Nom Complet du Gérant"
               type="text"
               placeholder="ex: Yao Brice"
               value={nom}
@@ -428,20 +382,6 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Rôle / Type de Compte
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
-              >
-                <option value="administrateur">👑 Administrateur (Gestion Totale)</option>
-                <option value="collecteur">💼 Collecteur / Agent Terrain</option>
-              </select>
-            </div>
 
             <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading}>
               Créer mon Compte

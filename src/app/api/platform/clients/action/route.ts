@@ -56,21 +56,20 @@ export async function PATCH(request: Request) {
   }
 
   let newStatus: string;
-  const validActions = ['activate', 'suspend', 'reactivate', 'cancel'];
+  const validActions = ['approve', 'activate', 'suspend', 'reactivate', 'cancel'];
 
   if (!validActions.includes(action)) {
     return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
   }
 
   switch (action) {
+    case 'approve':
     case 'activate':
+    case 'reactivate':
       newStatus = 'active';
       break;
     case 'suspend':
       newStatus = 'suspended';
-      break;
-    case 'reactivate':
-      newStatus = 'active';
       break;
     case 'cancel':
       newStatus = 'cancelled';

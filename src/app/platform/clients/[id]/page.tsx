@@ -88,6 +88,7 @@ interface ClientDetailData {
 }
 
 const STATUS_CONFIG: Record<OrganizationStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
+  pending_approval: { label: 'En attente', color: 'warning' },
   trial: { label: 'Essai', color: 'info' },
   active: { label: 'Actif', color: 'success' },
   expiring: { label: 'Expire bientôt', color: 'warning' },
@@ -216,6 +217,8 @@ export default function ClientDetailPage() {
   const orgConfig = STATUS_CONFIG[org.status] || { label: org.status, color: 'neutral' };
 
   const getSubAction = () => {
+    if (!org) return null;
+    if (org.status === 'pending_approval') return { action: 'approve', label: 'Approuver' };
     if (org.status === 'suspended') return { action: 'reactivate', label: 'Réactiver' };
     if (org.status === 'active' || org.status === 'trial' || org.status === 'expiring') return { action: 'suspend', label: 'Suspendre' };
     return null;
@@ -430,7 +433,7 @@ export default function ClientDetailPage() {
                 <p className="text-slate-900 dark:text-white">{formatDateFR(sub.start_date || org.created_at)}</p>
               </div>
               <div>
-                <span className="font-semibold text-slate-500">Date d'expiration</span>
+                <span className="font-semibold text-slate-500">Date d&apos;expiration</span>
                 <p className="text-slate-900 dark:text-white">{formatDateFR(sub.end_date || '—')}</p>
               </div>
               <div>

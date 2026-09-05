@@ -21,6 +21,7 @@ export interface Profile {
   role: UserRole;
   telephone?: string;
   devise?: string;
+  organization_id?: string;
   created_at: string;
   updated_at: string;
 }
