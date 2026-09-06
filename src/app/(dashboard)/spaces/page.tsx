@@ -97,6 +97,7 @@ export default function WifiSpacesPage() {
       adresse: adresse.trim() || undefined,
       ville: ville.trim() || undefined,
       statut,
+      organization_id: user?.organization_id || null,
       updated_at: new Date().toISOString(),
     };
 

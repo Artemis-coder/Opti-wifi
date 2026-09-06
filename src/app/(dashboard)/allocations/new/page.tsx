@@ -11,6 +11,7 @@ import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PointOfSale, TicketType } from '@/types/database';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 interface AllocationLine {
   ticketTypeId: string;
@@ -19,6 +20,7 @@ interface AllocationLine {
 
 export default function NewAllocationPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -105,6 +107,7 @@ const addLine = () => {
       quantite: l.quantite,
       notes,
       space_id: selectedPos?.space_id || null,
+      organization_id: user?.organization_id || null,
       date_allocation: dateAllocation || new Date().toISOString().split('T')[0],
     }));
 

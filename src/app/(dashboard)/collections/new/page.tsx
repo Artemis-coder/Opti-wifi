@@ -172,6 +172,7 @@ export default function NewCollectionWizard() {
         commission: parseFloat(commission) || 0,
         date_collecte: dateCollecte || new Date().toISOString().split('T')[0],
         notes,
+        organization_id: user?.organization_id || null,
       })
       .select('id')
       .single();
@@ -186,6 +187,7 @@ export default function NewCollectionWizard() {
           quantite_vendue: quantities[t.id] || 0,
           prix_unitaire: t.prix,
           space_id: currentSpaceId || null,
+          organization_id: user?.organization_id || null,
         }));
 
       if (itemsToInsert.length > 0) {

@@ -12,8 +12,10 @@ import { EditTicketModal } from './edit-ticket-modal';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { TicketType } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function TicketTypesPage() {
+  const { user } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -48,6 +50,7 @@ export default function TicketTypesPage() {
       duree_heures: parseInt(duree) || 24,
       prix: parseFloat(prix) || 500,
       actif: true,
+      organization_id: user?.organization_id || null,
     };
 
     const { data, error } = await supabase
