@@ -10,6 +10,84 @@
 -- =========================================================================
 
 -- ====================================
+-- ÉTAPE 0 : S'ASSURER QUE LES COLONNES organization_id EXISTENT
+-- ====================================
+-- Certaines tables peuvent ne pas encore avoir la colonne organization_id
+-- si la migration 20260902_phase2_super_admin.sql n'a pas été appliquée.
+
+-- Créer les types enum si nécessaire
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'organization_status') THEN
+    CREATE TYPE organization_status AS ENUM ('trial', 'active', 'suspended', 'cancelled');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'platform_role') THEN
+    CREATE TYPE platform_role AS ENUM ('super_admin', 'platform_support');
+  END IF;
+END $$;
+
+-- Créer la table organizations si nécessaire
+CREATE TABLE IF NOT EXISTS organizations (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name            VARCHAR(255) NOT NULL,
+  contact_name    VARCHAR(255),
+  email           VARCHAR(255),
+  phone           VARCHAR(50),
+  address         TEXT,
+  status          organization_status NOT NULL DEFAULT 'trial',
+  currency        VARCHAR(10) NOT NULL DEFAULT 'XOF',
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Créer la table platform_users si nécessaire
+CREATE TABLE IF NOT EXISTS platform_users (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth_user_id    UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  role            platform_role NOT NULL DEFAULT 'super_admin',
+  full_name       VARCHAR(255),
+  email           VARCHAR(255),
+  is_active       BOOLEAN NOT NULL DEFAULT true,
+  last_login      TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ajouter organization_id sur toutes les tables concernées
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE wifi_spaces
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE points_of_sale
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE ticket_types
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE ticket_allocations
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE collections
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE collection_items
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE audit_logs
+  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+-- Index pour performance multi-tenant
+CREATE INDEX IF NOT EXISTS idx_profiles_organization_id ON profiles(organization_id);
+CREATE INDEX IF NOT EXISTS idx_wifi_spaces_organization_id ON wifi_spaces(organization_id);
+CREATE INDEX IF NOT EXISTS idx_points_of_sale_organization_id ON points_of_sale(organization_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_types_organization_id ON ticket_types(organization_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_allocations_organization_id ON ticket_allocations(organization_id);
+CREATE INDEX IF NOT EXISTS idx_collections_organization_id ON collections(organization_id);
+CREATE INDEX IF NOT EXISTS idx_collection_items_organization_id ON collection_items(organization_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_organization_id ON audit_logs(organization_id);
+
+-- ====================================
 -- ÉTAPE 1 : SUPPRIMER TOUTES LES POLICIES EXISTANTES
 -- ====================================
 DO $$
