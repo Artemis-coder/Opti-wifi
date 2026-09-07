@@ -1,10 +1,12 @@
 -- ============================================================
--- DIAGNOSTIC + FIX: Nettoyage complet de platform_users
+-- FIX: Nettoyage complet de platform_users
 -- ============================================================
+-- Mapping attendu :
+--   kedakeyaoboris@gmail.com  -> profil organisation -> /dashboard
+--   superadmin@optiwifi.com   -> super admin        -> /platform/dashboard
 
--- ÉTAPE 1: Diagnostic - voir TOUS les utilisateurs platform
+-- 1. Diagnostic
 SELECT
-  pu.id AS platform_user_id,
   pu.auth_user_id,
   pu.role AS platform_role,
   pu.is_active,
@@ -12,15 +14,16 @@ SELECT
   p.nom,
   p.role AS profile_role
 FROM platform_users pu
-LEFT JOIN profiles p ON p.id = pu.auth_user_id
+JOIN profiles p ON p.id = pu.auth_user_id
 ORDER BY pu.created_at;
 
--- ÉTAPE 2: Supprimer TOUTES les entrées platform_users
--- puis ne garder que les super admins explicitement désignés
+-- 2. Supprimer TOUTES les entrées platform_users
 DELETE FROM platform_users;
 
--- ÉTAPE 3: Recréer uniquement le(s) super admin(s) légitime(s)
--- ⚠️  MODIFIEZ CETTE SECTION avec vos super admins légitimes
+-- 3. Vérifier que la table est vide
+SELECT COUNT(*) AS remaining FROM platform_users;
+
+-- 4. Créer UNIQUEMENT le super admin légitime
 INSERT INTO platform_users (auth_user_id, role, full_name, email, is_active, created_at, updated_at)
 SELECT
   p.id,
@@ -31,14 +34,13 @@ SELECT
   NOW(),
   NOW()
 FROM profiles p
-WHERE p.email = 'kedakeyaoboris@gmail.com'
+WHERE p.email = 'superadmin@optiwifi.com'
   AND NOT EXISTS (
     SELECT 1 FROM platform_users pu WHERE pu.auth_user_id = p.id
   );
 
--- ÉTAPE 4: Vérification finale
+-- 5. Vérification finale
 SELECT
-  pu.id AS platform_user_id,
   pu.auth_user_id,
   pu.role AS platform_role,
   pu.is_active,
@@ -46,5 +48,4 @@ SELECT
   p.nom,
   p.role AS profile_role
 FROM platform_users pu
-JOIN profiles p ON p.id = pu.auth_user_id
-ORDER BY pu.created_at;
+JOIN profiles p ON p.id = pu.auth_user_id;
