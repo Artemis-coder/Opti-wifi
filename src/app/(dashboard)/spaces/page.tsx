@@ -35,17 +35,18 @@ export default function WifiSpacesPage() {
 
   useEffect(() => {
     async function loadAll() {
+      if (!user?.organization_id) return;
       setLoading(true);
       const [spacesRes, posRes] = await Promise.all([
-        supabase.from('wifi_spaces').select('*').order('created_at', { ascending: false }),
-        supabase.from('points_of_sale').select('*').order('nom'),
+        supabase.from('wifi_spaces').select('*').eq('organization_id', user.organization_id).order('created_at', { ascending: false }),
+        supabase.from('points_of_sale').select('*').eq('organization_id', user.organization_id).order('nom'),
       ]);
       if (spacesRes.data) setSpaces(spacesRes.data);
       if (posRes.data) setAllPos(posRes.data);
       setLoading(false);
     }
     loadAll();
-  }, [supabase]);
+  }, [user?.organization_id, supabase]);
 
   const filteredSpaces = spaces.filter((s) =>
     s.nom.toLowerCase().includes(search.toLowerCase()) ||

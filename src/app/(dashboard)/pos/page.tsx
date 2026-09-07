@@ -28,24 +28,32 @@ export default function PosPage() {
   const supabase = createClient();
 
   useEffect(() => {
-async function loadData() {
-    setLoading(true);
-    const { data: posData } = await supabase.from('points_of_sale').select('*, collecteur:profiles(*)');
+    async function loadData() {
+      if (!user?.organization_id) return;
+      setLoading(true);
+      const { data: posData } = await supabase
+        .from('points_of_sale')
+        .select('*, collecteur:profiles(*)')
+        .eq('organization_id', user.organization_id);
 
-    const { data: colData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'collecteur');
+      const { data: colData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', user.organization_id)
+        .eq('role', 'collecteur');
 
-    const { data: spacesData } = await supabase.from('wifi_spaces').select('*');
+      const { data: spacesData } = await supabase
+        .from('wifi_spaces')
+        .select('*')
+        .eq('organization_id', user.organization_id);
 
-    if (colData) setCollectors(colData);
-    if (spacesData) setSpaces(spacesData);
-    setPosList(posData || []);
-    setLoading(false);
-  }
+      if (colData) setCollectors(colData);
+      if (spacesData) setSpaces(spacesData);
+      setPosList(posData || []);
+      setLoading(false);
+    }
     loadData();
-  }, [supabase]);
+  }, [user?.organization_id, supabase]);
 
   const filteredPos = posList.filter((p) =>
     p.nom.toLowerCase().includes(search.toLowerCase()) ||

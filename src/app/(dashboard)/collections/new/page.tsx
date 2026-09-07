@@ -42,8 +42,9 @@ export default function NewCollectionWizard() {
 
   useEffect(() => {
     async function loadOptions() {
+      if (!user?.organization_id) return;
       setLoading(true);
-      let query = supabase.from('points_of_sale').select('*');
+      let query = supabase.from('points_of_sale').select('*').eq('organization_id', user.organization_id);
       if (currentSpaceId) {
         query = query.eq('space_id', currentSpaceId);
       }
@@ -58,7 +59,7 @@ export default function NewCollectionWizard() {
       setLoading(false);
     }
     loadOptions();
-  }, [currentSpaceId, supabase]);
+  }, [currentSpaceId, user?.organization_id, supabase]);
 
   const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPosId(e.target.value);
@@ -73,11 +74,13 @@ export default function NewCollectionWizard() {
       let allocQuery = supabase
         .from('ticket_allocations')
         .select('*, ticket_type:ticket_types(*)')
+        .eq('organization_id', user.organization_id)
         .eq('pos_id', posId);
 
       let collectionsQuery = supabase
         .from('collections')
         .select('*, items:collection_items(*)')
+        .eq('organization_id', user.organization_id)
         .eq('pos_id', posId);
 
       if (currentSpaceId) {
@@ -130,8 +133,10 @@ export default function NewCollectionWizard() {
       setLoadingAllocations(false);
     }
 
-    loadAllocations();
-  }, [posId, currentSpaceId, supabase]);
+    if (user?.organization_id) {
+      loadAllocations();
+    }
+  }, [posId, currentSpaceId, user?.organization_id, supabase]);
 
   const montantAttendu = allocatedTickets.reduce((sum, t) => {
     const q = quantities[t.id] || 0;

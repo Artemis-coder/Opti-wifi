@@ -37,11 +37,12 @@ export default function NewAllocationPage() {
 
   useEffect(() => {
     async function loadData() {
+      if (!user?.organization_id) return;
       setLoading(true);
 
       const [posRes, ticketRes] = await Promise.all([
-        supabase.from('points_of_sale').select('*').order('nom'),
-        supabase.from('ticket_types').select('*').order('nom'),
+        supabase.from('points_of_sale').select('*').eq('organization_id', user.organization_id).order('nom'),
+        supabase.from('ticket_types').select('*').eq('organization_id', user.organization_id).order('nom'),
       ]);
 
       if (posRes.data && posRes.data.length > 0) {
@@ -61,7 +62,7 @@ export default function NewAllocationPage() {
     }
 
     loadData();
-  }, [supabase]);
+  }, [user?.organization_id, supabase]);
 
   const selectedPos = posList.find((p) => p.id === posId);
 

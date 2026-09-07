@@ -71,7 +71,7 @@ export default function SpaceDashboardPage() {
 
   useEffect(() => {
     async function loadSpaceData() {
-      if (!spaceId) return;
+      if (!spaceId || !user?.organization_id) return;
       setLoading(true);
 
       const [
@@ -82,16 +82,17 @@ export default function SpaceDashboardPage() {
         allocRes,
         colRes,
       ] = await Promise.all([
-        supabase.from('wifi_spaces').select('*').eq('id', spaceId).single(),
+        supabase.from('wifi_spaces').select('*').eq('organization_id', user.organization_id).eq('id', spaceId).single(),
         supabase.from('points_of_sale').select(
           '*, collecteur:profiles(*), space:wifi_spaces(*)'
-        ),
-        supabase.from('wifi_spaces').select('*').order('nom'),
-        supabase.from('ticket_types').select('*'),
-        supabase.from('ticket_allocations').select('*, ticket_type:ticket_types(*)'),
+        ).eq('organization_id', user.organization_id),
+        supabase.from('wifi_spaces').select('*').eq('organization_id', user.organization_id).order('nom'),
+        supabase.from('ticket_types').select('*').eq('organization_id', user.organization_id),
+        supabase.from('ticket_allocations').select('*, ticket_type:ticket_types(*)').eq('organization_id', user.organization_id),
         supabase
           .from('collections')
           .select('*, items:collection_items(*), pos:points_of_sale(*), collecteur:profiles(*)')
+          .eq('organization_id', user.organization_id)
           .order('created_at', { ascending: false }),
       ]);
 
@@ -162,7 +163,7 @@ export default function SpaceDashboardPage() {
     }
 
     loadSpaceData();
-  }, [spaceId, supabase]);
+  }, [spaceId, user?.organization_id, supabase]);
 
   const handleSpaceUpdated = (updated: WifiSpace) => {
     setSpace(updated);

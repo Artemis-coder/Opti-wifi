@@ -9,9 +9,11 @@ import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
+import { useAuthStore } from '@/lib/stores/authStore';
 import { Collection } from '@/types/database';
 
 export default function CollectionsPage() {
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
   const supabase = createClient();
@@ -19,10 +21,12 @@ export default function CollectionsPage() {
 
   useEffect(() => {
     async function loadCollections() {
+      if (!user?.organization_id) return;
       setLoading(true);
       let query = supabase
         .from('collections')
         .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
+        .eq('organization_id', user.organization_id)
         .order('created_at', { ascending: false });
 
       if (currentSpaceId) {
@@ -34,7 +38,7 @@ export default function CollectionsPage() {
       setLoading(false);
     }
     loadCollections();
-  }, [currentSpaceId, supabase]);
+  }, [currentSpaceId, user?.organization_id, supabase]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

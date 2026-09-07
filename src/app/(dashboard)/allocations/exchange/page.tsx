@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
+import { useAuthStore } from '@/lib/stores/authStore';
 import { PointOfSale, TicketType, CollectionItem } from '@/types/database';
 
 interface ExchangeItem {
@@ -44,6 +45,7 @@ interface TicketStockInfo {
 export default function ExchangePage() {
   const router = useRouter();
   const { currentSpaceId } = useSpaceStore();
+  const { user } = useAuthStore();
   const supabase = createClient();
 
   const [step, setStep] = useState(1);
@@ -63,8 +65,9 @@ export default function ExchangePage() {
 
   useEffect(() => {
     async function loadOptions() {
+      if (!user?.organization_id) return;
       setLoading(true);
-      let query = supabase.from('points_of_sale').select('*');
+      let query = supabase.from('points_of_sale').select('*').eq('organization_id', user.organization_id);
       if (currentSpaceId) {
         query = query.eq('space_id', currentSpaceId);
       }
@@ -77,6 +80,7 @@ export default function ExchangePage() {
       const { data: ticketData } = await supabase
         .from('ticket_types')
         .select('*')
+        .eq('organization_id', user.organization_id)
         .eq('actif', true)
         .order('prix', { ascending: true });
       if (ticketData) setTicketTypes(ticketData);
@@ -84,7 +88,7 @@ export default function ExchangePage() {
       setLoading(false);
     }
     loadOptions();
-  }, [supabase, currentSpaceId]);
+  }, [supabase, currentSpaceId, user?.organization_id]);
 
   const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPosId(e.target.value);

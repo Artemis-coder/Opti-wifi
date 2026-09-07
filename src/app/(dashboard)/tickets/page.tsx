@@ -31,13 +31,18 @@ export default function TicketTypesPage() {
 
   useEffect(() => {
     async function loadTickets() {
+      if (!user?.organization_id) return;
       setLoading(true);
-      const { data } = await supabase.from('ticket_types').select('*').order('prix', { ascending: true });
+      const { data } = await supabase
+        .from('ticket_types')
+        .select('*')
+        .eq('organization_id', user.organization_id)
+        .order('prix', { ascending: true });
       setTickets(data || []);
       setLoading(false);
     }
     loadTickets();
-  }, [supabase]);
+  }, [user?.organization_id, supabase]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

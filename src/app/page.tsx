@@ -21,16 +21,18 @@ export default async function RootPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    const { data: platformUser } = await supabase
-      .from('platform_users')
-      .select('role')
-      .eq('auth_user_id', user.id)
-      .single();
+  if (!user) {
+    redirect('/login');
+  }
 
-    if (platformUser && (platformUser.role === 'super_admin' || platformUser.role === 'platform_support')) {
-      redirect('/platform/dashboard');
-    }
+  const { data: platformUser } = await supabase
+    .from('platform_users')
+    .select('role')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (platformUser && (platformUser.role === 'super_admin' || platformUser.role === 'platform_support')) {
+    redirect('/platform/dashboard');
   }
 
   redirect('/dashboard');

@@ -123,17 +123,7 @@ export async function middleware(request: NextRequest) {
 
   // --- Client app routes ---
   if (user && isAuthRoute) {
-    const { data: platformUser } = await supabase
-      .from('platform_users')
-      .select('role')
-      .eq('auth_user_id', user.id)
-      .single();
-
-    if (platformUser && (platformUser.role === 'super_admin' || platformUser.role === 'platform_support')) {
-      return NextResponse.redirect(new URL('/platform/dashboard', request.url));
-    }
-
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return supabaseResponse;
   }
 
   if (isClientRoute && !user) {

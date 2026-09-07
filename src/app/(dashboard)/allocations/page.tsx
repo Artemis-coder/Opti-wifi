@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function AllocationsPage() {
   const [loading, setLoading] = useState(true);
@@ -18,17 +19,19 @@ export default function AllocationsPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedPosId, setSelectedPosId] = useState<string>('all');
 
+  const { user } = useAuthStore();
   const supabase = createClient();
 
   useEffect(() => {
     async function loadData() {
+      if (!user?.organization_id) return;
       setLoading(true);
 
       const [posRes, allocRes, ticketRes, profileRes] = await Promise.all([
-        supabase.from('points_of_sale').select('*').order('nom'),
-        supabase.from('ticket_allocations').select('*, pos:points_of_sale(*), ticket_type:ticket_types(*)').order('created_at', { ascending: false }),
-        supabase.from('ticket_types').select('*').order('nom'),
-        supabase.from('profiles').select('*'),
+        supabase.from('points_of_sale').select('*').eq('organization_id', user.organization_id).order('nom'),
+        supabase.from('ticket_allocations').select('*, pos:points_of_sale(*), ticket_type:ticket_types(*)').eq('organization_id', user.organization_id).order('created_at', { ascending: false }),
+        supabase.from('ticket_types').select('*').eq('organization_id', user.organization_id).order('nom'),
+        supabase.from('profiles').select('*').eq('organization_id', user.organization_id),
       ]);
 
       if (posRes.data) setPosList(posRes.data);
@@ -40,7 +43,7 @@ export default function AllocationsPage() {
     }
 
     loadData();
-  }, [supabase]);
+  }, [user?.organization_id, supabase]);
 
   const filteredAllocations = selectedPosId === 'all'
     ? allocations

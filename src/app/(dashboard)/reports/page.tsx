@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
+import { useAuthStore } from '@/lib/stores/authStore';
 import { Collection, PointOfSale } from '@/types/database';
 
 export default function ReportsPage() {
@@ -22,14 +23,18 @@ export default function ReportsPage() {
 
   const supabase = createClient();
   const { currentSpaceId } = useSpaceStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     async function loadData() {
-      let posQuery = supabase.from('points_of_sale').select('*');
-      let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
+      if (!user?.organization_id) return;
+      
+      let posQuery = supabase.from('points_of_sale').select('*').eq('organization_id', user.organization_id);
+      let itemsQuery = supabase.from('collection_items').select('quantite_vendue').eq('organization_id', user.organization_id);
       let collectionsQuery = supabase
         .from('collections')
         .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
+        .eq('organization_id', user.organization_id)
         .order('created_at', { ascending: false });
 
       if (currentSpaceId) {
@@ -45,6 +50,7 @@ export default function ReportsPage() {
       const { count: collectors } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
+        .eq('organization_id', user.organization_id)
         .eq('role', 'collecteur');
       setCollectorsCount(collectors || 0);
 
@@ -59,7 +65,7 @@ export default function ReportsPage() {
       setCollections(colData || []);
     }
     loadData();
-  }, [startDate, endDate, currentSpaceId, supabase]);
+  }, [startDate, endDate, currentSpaceId, user?.organization_id, supabase]);
 
   const downloadCSV = (filename: string, content: string) => {
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });

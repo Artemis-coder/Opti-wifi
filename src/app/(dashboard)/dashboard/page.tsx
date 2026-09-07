@@ -41,9 +41,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadDashboardData() {
+      if (!user?.organization_id) return;
       setLoading(true);
 
-      let posQuery = supabase.from('points_of_sale').select('id', { count: 'exact' });
+      let posQuery = supabase.from('points_of_sale').select('id', { count: 'exact' }).eq('organization_id', user.organization_id);
       if (currentSpaceId) {
         posQuery = posQuery.eq('space_id', currentSpaceId);
       }
@@ -51,17 +52,18 @@ export default function DashboardPage() {
       let colQuery = supabase
         .from('collections')
         .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
+        .eq('organization_id', user.organization_id)
         .order('created_at', { ascending: false });
       if (currentSpaceId) {
         colQuery = colQuery.eq('space_id', currentSpaceId);
       }
 
-      let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
+      let itemsQuery = supabase.from('collection_items').select('quantite_vendue').eq('organization_id', user.organization_id);
       if (currentSpaceId) {
         itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
       }
 
-      let allocQuery = supabase.from('ticket_allocations').select('quantite');
+      let allocQuery = supabase.from('ticket_allocations').select('quantite').eq('organization_id', user.organization_id);
       if (currentSpaceId) {
         allocQuery = allocQuery.eq('space_id', currentSpaceId);
       }
@@ -121,7 +123,7 @@ export default function DashboardPage() {
     }
 
     loadDashboardData();
-  }, [currentSpaceId, supabase]);
+  }, [currentSpaceId, user?.organization_id, supabase]);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">

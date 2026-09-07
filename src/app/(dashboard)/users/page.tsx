@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Profile, UserRole } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,17 +24,23 @@ export default function UsersPage() {
   const [telephone, setTelephone] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
 
+  const { user } = useAuthStore();
   const supabase = createClient();
 
   useEffect(() => {
     async function loadUsers() {
+      if (!user?.organization_id) return;
       setLoading(true);
-      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', user.organization_id)
+        .order('created_at', { ascending: false });
       setUsers(data || []);
       setLoading(false);
     }
     loadUsers();
-  }, []);
+  }, [user?.organization_id, supabase]);
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();

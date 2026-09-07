@@ -27,6 +27,7 @@ import { EditPosModal } from '../edit-pos-modal';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 interface AllocationSummary {
   ticketType: TicketType;
@@ -51,16 +52,18 @@ export default function PosDetailPage() {
   const [spaces, setSpaces] = useState<WifiSpace[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
+  const { user } = useAuthStore();
   const supabase = createClient();
 
   useEffect(() => {
     async function loadData() {
-      if (!posId) return;
+      if (!posId || !user?.organization_id) return;
       setLoading(true);
 
       const { data: posData } = await supabase
         .from('points_of_sale')
         .select('*, collecteur:profiles(*)')
+        .eq('organization_id', user.organization_id)
         .eq('id', posId)
         .single();
 
@@ -69,18 +72,26 @@ export default function PosDetailPage() {
       const { data: colData } = await supabase
         .from('profiles')
         .select('*')
+        .eq('organization_id', user.organization_id)
         .eq('role', 'collecteur');
       setCollectors(colData || []);
 
-      const { data: profilesData } = await supabase.from('profiles').select('*');
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', user.organization_id);
       if (profilesData) setProfiles(profilesData);
 
-      const { data: ticketData } = await supabase.from('ticket_types').select('*');
+      const { data: ticketData } = await supabase
+        .from('ticket_types')
+        .select('*')
+        .eq('organization_id', user.organization_id);
       setTicketTypes(ticketData || []);
 
       const { data: allocData } = await supabase
         .from('ticket_allocations')
         .select('*, ticket_type:ticket_types(*)')
+        .eq('organization_id', user.organization_id)
         .eq('pos_id', posId)
         .order('created_at', { ascending: false });
       setAllocations(allocData || []);
@@ -88,18 +99,22 @@ export default function PosDetailPage() {
       const { data: colItemsData } = await supabase
         .from('collections')
         .select('*, items:collection_items(*)')
+        .eq('organization_id', user.organization_id)
         .eq('pos_id', posId)
         .order('created_at', { ascending: false });
       setCollections(colItemsData || []);
 
-      const { data: spacesData } = await supabase.from('wifi_spaces').select('*');
+      const { data: spacesData } = await supabase
+        .from('wifi_spaces')
+        .select('*')
+        .eq('organization_id', user.organization_id);
       if (spacesData) setSpaces(spacesData);
 
       setLoading(false);
     }
 
     loadData();
-  }, [posId, supabase]);
+  }, [posId, user?.organization_id, supabase]);
 
   const handlePosUpdated = (updated: PointOfSale) => {
     setPos(updated);
