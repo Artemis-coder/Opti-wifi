@@ -147,9 +147,9 @@ export default function PlatformSettingsPage() {
           />
           <Input
             label="Logo (URL)"
-            value={getString('platform_logo', '/assets/logo.jpg')}
+            value={getString('platform_logo', '/assets/platform-logo.jpg')}
             onChange={(e) => updateValue('platform_logo', e.target.value)}
-            placeholder="/assets/logo.jpg"
+            placeholder="/assets/platform-logo.jpg"
           />
           <Input
             label="Email support"

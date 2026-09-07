@@ -66,7 +66,7 @@ export default function PlatformLoginPage() {
       <div className="w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/20 p-8 space-y-6 relative z-10">
         <div className="text-center space-y-2">
           <div className="w-16 h-16 rounded-2xl mx-auto overflow-hidden relative shadow-lg border border-amber-500/30 flex items-center justify-center bg-[#0b1a3a]">
-            <Image src="/assets/logo.jpg" alt="OptiWifi Logo" width={64} height={64} className="object-cover" />
+            <Image src="/assets/platform-logo.jpg" alt="OptiWifi Platform Logo" width={64} height={64} className="object-cover" />
           </div>
           <div className="flex items-center justify-center gap-2 mt-2">
             <Shield className="w-5 h-5 text-amber-400" />

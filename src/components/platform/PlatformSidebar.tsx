@@ -88,7 +88,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg overflow-hidden relative bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-            <Image src="/assets/logo.jpg" alt="OptiWifi Logo" width={36} height={36} className="object-cover" />
+            <Image src="/assets/platform-logo.jpg" alt="OptiWifi Platform Logo" width={36} height={36} className="object-cover" />
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight tracking-wide">👑 Super Admin</h1>
