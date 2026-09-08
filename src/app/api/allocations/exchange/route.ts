@@ -22,6 +22,7 @@ interface RequestBody {
   space_id?: string | null;
   notes?: string | null;
   returns: ExchangeItem[];
+  returns_defect?: ExchangeItem[];
   receives: ExchangeItem[];
 }
 
@@ -85,7 +86,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Le point de vente est requis.' }, { status: 400 });
     }
 
-    if (!Array.isArray(body.returns) || body.returns.length === 0) {
+    if (!Array.isArray(body.returns)) {
+      body.returns = [];
+    }
+
+    if (!Array.isArray(body.returns_defect)) {
+      body.returns_defect = [];
+    }
+
+    if (body.returns.length === 0 && body.returns_defect.length === 0) {
       return NextResponse.json({ error: 'Au moins un ticket à rendre est requis.' }, { status: 400 });
     }
 

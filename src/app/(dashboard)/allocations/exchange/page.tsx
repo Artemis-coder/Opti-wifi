@@ -17,6 +17,7 @@ import {
   Receipt,
   Plus,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -34,11 +35,17 @@ interface ExchangeItem {
   quantite: number;
 }
 
+interface ExchangeItemDef extends ExchangeItem {
+  kind: 'fonctionnel' | 'non_fonctionnel';
+}
+
 interface TicketStockInfo {
   ticketType: TicketType;
   alloue: number;
   vendu: number;
   restant: number;
+  non_fonctionnel: number;
+  disponible_fonctionnel: number;
   prix_unitaire: number;
 }
 
@@ -60,6 +67,7 @@ export default function ExchangePage() {
 
   const [posId, setPosId] = useState('');
   const [returns, setReturns] = useState<ExchangeItem[]>([]);
+  const [returnsDefect, setReturnsDefect] = useState<ExchangeItemDef[]>([]);
   const [receives, setReceives] = useState<ExchangeItem[]>([]);
   const [notes, setNotes] = useState('');
 
@@ -93,6 +101,7 @@ export default function ExchangePage() {
   const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPosId(e.target.value);
     setReturns([]);
+    setReturnsDefect([]);
     setReceives([]);
     setPosStockInfo({});
   };
@@ -124,12 +133,16 @@ export default function ExchangePage() {
       if (allocData) {
         const ticketMap: Record<string, TicketType> = {};
         const allocatedMap: Record<string, number> = {};
+        const nonFonctionnelMap: Record<string, number> = {};
 
         allocData.forEach((alloc) => {
           const typeId = alloc.ticket_type_id;
           const baseQty = alloc.type === 'exchange_return' ? -alloc.quantite : alloc.quantite;
-          if (alloc.statut === 'non_fonctionnel') return;
-          allocatedMap[typeId] = (allocatedMap[typeId] || 0) + baseQty;
+          if (alloc.statut === 'non_fonctionnel') {
+            nonFonctionnelMap[typeId] = (nonFonctionnelMap[typeId] || 0) + baseQty;
+          } else {
+            allocatedMap[typeId] = (allocatedMap[typeId] || 0) + baseQty;
+          }
           if (alloc.ticket_type) {
             ticketMap[typeId] = alloc.ticket_type;
           }
@@ -148,16 +161,24 @@ export default function ExchangePage() {
           });
         }
 
-        Object.entries(allocatedMap).forEach(([typeId, allocQty]) => {
+        const allTypeIds = new Set<string>([
+          ...Object.keys(allocatedMap),
+          ...Object.keys(nonFonctionnelMap),
+        ]);
+
+        allTypeIds.forEach((typeId) => {
           const ticket = ticketMap[typeId];
           if (!ticket) return;
+          const alloue = allocatedMap[typeId] || 0;
           const vendu = soldMap[typeId] || 0;
-          const restant = allocQty - vendu;
+          const disponible_fonctionnel = Math.max(0, alloue - vendu);
           stockMap[typeId] = {
             ticketType: ticket,
-            alloue: allocQty,
-            vendu: vendu,
-            restant: Math.max(0, restant),
+            alloue,
+            vendu,
+            restant: disponible_fonctionnel,
+            non_fonctionnel: nonFonctionnelMap[typeId] || 0,
+            disponible_fonctionnel,
             prix_unitaire: Number(ticket.prix),
           };
         });
@@ -180,17 +201,33 @@ export default function ExchangePage() {
     return sum + r.quantite * getTicketTypePrix(r.ticketTypeId);
   }, 0);
 
+  const totalDefectValue = returnsDefect.reduce((sum, r) => {
+    return sum + r.quantite * getTicketTypePrix(r.ticketTypeId);
+  }, 0);
+
+  const totalReturnedValueAll = totalReturnedValue + totalDefectValue;
+
   const totalReceivedValue = receives.reduce((sum, r) => {
     return sum + r.quantite * getTicketTypePrix(r.ticketTypeId);
   }, 0);
 
   const valueDifference = totalReceivedValue - totalReturnedValue;
-  const isExchangeBalanced = totalReturnedValue > 0 && valueDifference === 0;
+  const hasFunctionalReturns = returns.some((r) => r.quantite > 0);
+  const hasDefectReturns = returnsDefect.some((r) => r.quantite > 0);
+  const isExchangeBalanced =
+    (hasFunctionalReturns && totalReturnedValue > 0 && valueDifference === 0) ||
+    (!hasFunctionalReturns && hasDefectReturns && totalReceivedValue > 0);
 
   const updateReturn = (index: number, field: keyof ExchangeItem, value: string | number) => {
     const updated = [...returns];
     updated[index] = { ...updated[index], [field]: value };
     setReturns(updated);
+  };
+
+  const updateReturnDefect = (index: number, field: keyof ExchangeItem, value: string | number) => {
+    const updated = [...returnsDefect];
+    updated[index] = { ...updated[index], [field]: value };
+    setReturnsDefect(updated);
   };
 
   const addReceiveLine = () => {
@@ -239,9 +276,10 @@ export default function ExchangePage() {
     }
 
     const validReturns = returns.filter((r) => r.ticketTypeId && r.quantite > 0);
+    const validReturnsDefect = returnsDefect.filter((r) => r.ticketTypeId && r.quantite > 0);
     const validReceives = receives.filter((r) => r.ticketTypeId && r.quantite > 0);
 
-    if (validReturns.length === 0) {
+    if (validReturns.length === 0 && validReturnsDefect.length === 0) {
       toast.error('Veuillez sélectionner au moins un type de ticket à rendre.');
       return;
     }
@@ -250,7 +288,7 @@ export default function ExchangePage() {
       return;
     }
 
-    if (valueDifference !== 0) {
+    if (validReturns.length > 0 && valueDifference !== 0) {
       toast.error(
         `La valeur d'échange ne correspond pas. Rendu: ${formatCurrencyFCFA(totalReturnedValue)} — Reçu: ${formatCurrencyFCFA(totalReceivedValue)} (écart: ${formatCurrencyFCFA(Math.abs(valueDifference))}).`
       );
@@ -267,6 +305,11 @@ export default function ExchangePage() {
         space_id: currentSpaceId || null,
         notes: notes || null,
         returns: validReturns.map((r) => ({
+          ticket_type_id: r.ticketTypeId,
+          ticketTypeId: r.ticketTypeId,
+          quantite: r.quantite,
+        })),
+        returns_defect: validReturnsDefect.map((r) => ({
           ticket_type_id: r.ticketTypeId,
           ticketTypeId: r.ticketTypeId,
           quantite: r.quantite,
@@ -405,7 +448,7 @@ export default function ExchangePage() {
             <Card className="p-6 space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 2 : Sélection des Tickets à Rendre</h3>
               <p className="text-xs text-slate-500">
-                Sélectionnez les types de tickets que vous souhaitez rendre. Seuls les tickets disponibles (alloués - vendus) peuvent être rendus.
+                Sélectionnez les types de tickets que vous souhaitez rendre. Les tickets <strong>fonctionnels</strong> font l&apos;objet d&apos;un échange à valeur équivalente ; les tickets <strong className="text-red-600">défectueux</strong> sont rendus sans contrepartie.
               </p>
 
               {loadingStock ? (
@@ -424,10 +467,14 @@ export default function ExchangePage() {
               ) : (
                 <div className="space-y-3">
                   {Object.values(posStockInfo)
-                    .filter((s) => s.restant > 0)
-                    .map((stock) => (
-                      <div key={stock.ticketType.id} className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
-                        <div className="flex-1">
+                    .filter((s) => s.disponible_fonctionnel > 0 || s.non_fonctionnel > 0)
+                    .map((stock) => {
+                      const defectMax = Math.max(0, stock.non_fonctionnel);
+                      const funcMax = Math.max(0, stock.disponible_fonctionnel);
+                      const funcExisting = returns.find((r) => r.ticketTypeId === stock.ticketType.id)?.quantite || 0;
+                      const defectExisting = returnsDefect.find((r) => r.ticketTypeId === stock.ticketType.id)?.quantite || 0;
+                      return (
+                        <div key={stock.ticketType.id} className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Ticket className="w-4 h-4 text-emerald-600" />
@@ -437,7 +484,7 @@ export default function ExchangePage() {
                               {formatCurrencyFCFA(stock.prix_unitaire)} / unité
                             </Badge>
                           </div>
-                          <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+                          <div className="grid grid-cols-4 gap-2 text-xs">
                             <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
                               <span className="text-slate-500">Alloués</span>
                               <span className="block font-bold text-slate-900 dark:text-white">{stock.alloue}</span>
@@ -448,33 +495,60 @@ export default function ExchangePage() {
                             </div>
                             <div className="text-center p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
                               <span className="text-emerald-700 dark:text-emerald-300">Disponibles</span>
-                              <span className="block font-bold text-emerald-700 dark:text-emerald-400">{stock.restant}</span>
+                              <span className="block font-bold text-emerald-700 dark:text-emerald-400">{funcMax}</span>
+                            </div>
+                            <div className="text-center p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                              <span className="text-red-700 dark:text-red-300">Non fonctionnels</span>
+                              <span className="block font-bold text-red-700 dark:text-red-400">{defectMax}</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rendre du stock fonctionnel</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                max={funcMax}
+                                value={funcExisting || ''}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  const capped = Math.min(val, funcMax);
+                                  const existing = returns.find((r) => r.ticketTypeId === stock.ticketType.id);
+                                  if (existing) {
+                                    const idx = returns.findIndex((r) => r.ticketTypeId === stock.ticketType.id);
+                                    updateReturn(idx, 'quantite', capped);
+                                  } else {
+                                    setReturns([...returns, { ticketTypeId: stock.ticketType.id, quantite: capped }]);
+                                  }
+                                }}
+                                placeholder="0"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-semibold text-red-500 uppercase tracking-wider">Rendre du stock défectueux</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                max={defectMax}
+                                value={defectExisting || ''}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  const capped = Math.min(val, defectMax);
+                                  const existing = returnsDefect.find((r) => r.ticketTypeId === stock.ticketType.id);
+                                  if (existing) {
+                                    const idx = returnsDefect.findIndex((r) => r.ticketTypeId === stock.ticketType.id);
+                                    updateReturnDefect(idx, 'quantite', capped);
+                                  } else {
+                                    setReturnsDefect([...returnsDefect, { ticketTypeId: stock.ticketType.id, quantite: capped, kind: 'non_fonctionnel' }]);
+                                  }
+                                }}
+                                placeholder="0"
+                              />
                             </div>
                           </div>
                         </div>
-                        <div className="w-24">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={stock.restant}
-                            value={returns.find((r) => r.ticketTypeId === stock.ticketType.id)?.quantite || ''}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              const capped = Math.min(val, stock.restant);
-                              const existing = returns.find((r) => r.ticketTypeId === stock.ticketType.id);
-                              if (existing) {
-                                const idx = returns.findIndex((r) => r.ticketTypeId === stock.ticketType.id);
-                                updateReturn(idx, 'quantite', capped);
-                              } else {
-                                setReturns([...returns, { ticketTypeId: stock.ticketType.id, quantite: capped }]);
-                              }
-                            }}
-                            placeholder="0"
-                            helperText="à rendre"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               )}
 
@@ -482,10 +556,22 @@ export default function ExchangePage() {
                 <div className="pt-4 p-4 bg-blue-900/10 dark:bg-blue-950/40 rounded-xl border border-blue-900/20 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <TrendingDown className="w-5 h-5 text-blue-600" />
-                    <span className="font-semibold text-slate-900 dark:text-white">Valeur totale à rendre</span>
+                    <span className="font-semibold text-slate-900 dark:text-white">Valeur totale à rendre (équivalence)</span>
                   </div>
                   <span className="text-xl font-extrabold text-blue-700 dark:text-blue-300">
                     {formatCurrencyFCFA(totalReturnedValue)}
+                  </span>
+                </div>
+              )}
+
+              {totalDefectValue > 0 && (
+                <div className="pt-4 p-4 bg-red-900/10 dark:bg-red-950/40 rounded-xl border border-red-900/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                    <span className="font-semibold text-slate-900 dark:text-white">Valeur des tickets défectueux (hors équivalence)</span>
+                  </div>
+                  <span className="text-xl font-extrabold text-red-700 dark:text-red-300">
+                    {formatCurrencyFCFA(totalDefectValue)}
                   </span>
                 </div>
               )}
@@ -497,7 +583,7 @@ export default function ExchangePage() {
                 <Button
                   type="button"
                   onClick={() => setStep(3)}
-                  disabled={totalReturnedValue === 0}
+                  disabled={totalReturnedValue === 0 && totalDefectValue === 0}
                   className="gap-2"
                 >
                   Suivant <ArrowRight className="w-4 h-4" />
@@ -511,116 +597,133 @@ export default function ExchangePage() {
             <Card className="p-6 space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 3 : Sélection des Tickets à Recevoir</h3>
               <p className="text-xs text-slate-500">
-                Choisissez les types de tickets à recevoir en échange. La valeur totale reçue doit correspondre à la valeur rendue ({formatCurrencyFCFA(totalReturnedValue)}).
+                {hasFunctionalReturns
+                  ? 'Choisissez les types de tickets à recevoir en échange. La valeur totale reçue doit correspondre à la valeur rendue ('
+                  : 'Aucun ticket à recevoir n\'est requis pour un rendu défectueux. Passez directement à la validation.'}
+                {hasFunctionalReturns && `${formatCurrencyFCFA(totalReturnedValue)}).`}
               </p>
 
-              <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-amber-500" />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Valeur à échanger</span>
-                </div>
-                <span className="text-lg font-extrabold text-slate-900 dark:text-white">
-                  {formatCurrencyFCFA(totalReturnedValue)}
-                </span>
-              </div>
+              {hasFunctionalReturns ? (
+                <>
+                  <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-4 h-4 text-amber-500" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Valeur à échanger</span>
+                    </div>
+                    <span className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      {formatCurrencyFCFA(totalReturnedValue)}
+                    </span>
+                  </div>
 
-              {receives.length === 0 ? (
-                <div className="text-center py-6 space-y-3">
-                  <Button onClick={addReceiveLine} variant="secondary" className="gap-2 font-bold">
-                    <Plus className="w-4 h-4" /> Ajouter un type de ticket
-                  </Button>
-                </div>
-              ) : (
-                receives.map((line, index) => {
-                  const ticket = getTicketTypeById(line.ticketTypeId);
-                  const suggestedQty = line.ticketTypeId ? autoCalculateReceive(line.ticketTypeId) : 0;
+                  {receives.length === 0 ? (
+                    <div className="text-center py-6 space-y-3">
+                      <Button onClick={addReceiveLine} variant="secondary" className="gap-2 font-bold">
+                        <Plus className="w-4 h-4" /> Ajouter un type de ticket
+                      </Button>
+                    </div>
+                  ) : (
+                    receives.map((line, index) => {
+                      const ticket = getTicketTypeById(line.ticketTypeId);
+                      const suggestedQty = line.ticketTypeId ? autoCalculateReceive(line.ticketTypeId) : 0;
 
-                  return (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
-                      <div className="flex-1 space-y-2">
-                        <select
-                          value={line.ticketTypeId}
-                          onChange={(e) => updateReceive(index, 'ticketTypeId', e.target.value)}
-                          className="w-full h-9 px-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium"
-                        >
-                          <option value="">Sélectionner un type</option>
-                          {ticketTypes
-                            .filter((t) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
-                            .map((t) => (
-                              <option key={t.id} value={t.id}>
-                                {t.nom} — {formatCurrencyFCFA(Number(t.prix))}
-                              </option>
-                            ))}
-                        </select>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Input
-                            label="Quantité à recevoir"
-                            type="number"
-                            min="0"
-                            value={line.quantite || ''}
-                            onChange={(e) => updateReceive(index, 'quantite', parseInt(e.target.value) || 0)}
-                            placeholder="0"
-                          />
-                          <div className="flex items-end">
-                            {ticket && suggestedQty > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => updateReceive(index, 'quantite', suggestedQty)}
-                                className="text-xs text-amber-600 hover:text-amber-700 font-medium underline"
-                              >
-                                Suggestion: {suggestedQty}
-                              </button>
+                      return (
+                        <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                          <div className="flex-1 space-y-2">
+                            <select
+                              value={line.ticketTypeId}
+                              onChange={(e) => updateReceive(index, 'ticketTypeId', e.target.value)}
+                              className="w-full h-9 px-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium"
+                            >
+                              <option value="">Sélectionner un type</option>
+                              {ticketTypes
+                                .filter((t) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
+                                .map((t) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.nom} — {formatCurrencyFCFA(Number(t.prix))}
+                                  </option>
+                                ))}
+                            </select>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input
+                                label="Quantité à recevoir"
+                                type="number"
+                                min="0"
+                                value={line.quantite || ''}
+                                onChange={(e) => updateReceive(index, 'quantite', parseInt(e.target.value) || 0)}
+                                placeholder="0"
+                              />
+                              <div className="flex items-end">
+                                {ticket && suggestedQty > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateReceive(index, 'quantite', suggestedQty)}
+                                    className="text-xs text-amber-600 hover:text-amber-700 font-medium underline"
+                                  >
+                                    Suggestion: {suggestedQty}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {ticket && (
+                              <p className="text-xs text-slate-500">
+                                {formatCurrencyFCFA(Number(ticket.prix))} × {line.quantite || 0} = {formatCurrencyFCFA((line.quantite || 0) * Number(ticket.prix))}
+                              </p>
                             )}
                           </div>
+                          {receives.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeReceiveLine(index)}
+                              className="text-red-600 hover:text-red-700 mt-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
-                        {ticket && (
-                          <p className="text-xs text-slate-500">
-                            {formatCurrencyFCFA(Number(ticket.prix))} × {line.quantite || 0} = {formatCurrencyFCFA((line.quantite || 0) * Number(ticket.prix))}
+                      );
+                    })
+                  )}
+
+                  <div className="flex justify-between pt-2">
+                    <Button type="button" size="sm" variant="ghost" onClick={addReceiveLine} className="gap-1 text-xs">
+                      <Plus className="w-4 h-4" /> Ajouter un type
+                    </Button>
+                    {receives.some((r) => r.ticketTypeId) && (
+                      <Button type="button" size="sm" variant="ghost" onClick={handleAutoFillAll} className="text-xs">
+                        Auto-calculer
+                      </Button>
+                    )}
+                  </div>
+
+                  {totalReceivedValue > 0 && (
+                    <div className="pt-4 p-4 bg-purple-900/10 dark:bg-purple-950/40 rounded-xl border border-purple-900/20 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-purple-600" />
+                        <span className="font-semibold text-slate-900 dark:text-white">Valeur totale à recevoir</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xl font-extrabold text-purple-700 dark:text-purple-300">
+                          {formatCurrencyFCFA(totalReceivedValue)}
+                        </span>
+                        {valueDifference !== 0 && (
+                          <p className={`text-xs font-bold ${valueDifference > 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                            {valueDifference > 0 ? 'Excédent' : 'Manquant'}: {formatCurrencyFCFA(Math.abs(valueDifference))}
                           </p>
                         )}
                       </div>
-                      {receives.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeReceiveLine(index)}
-                          className="text-red-600 hover:text-red-700 mt-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
                     </div>
-                  );
-                })
-              )}
-
-              <div className="flex justify-between pt-2">
-                <Button type="button" size="sm" variant="ghost" onClick={addReceiveLine} className="gap-1 text-xs">
-                  <Plus className="w-4 h-4" /> Ajouter un type
-                </Button>
-                {receives.some((r) => r.ticketTypeId) && (
-                  <Button type="button" size="sm" variant="ghost" onClick={handleAutoFillAll} className="text-xs">
-                    Auto-calculer
-                  </Button>
-                )}
-              </div>
-
-              {totalReceivedValue > 0 && (
-                <div className="pt-4 p-4 bg-purple-900/10 dark:bg-purple-950/40 rounded-xl border border-purple-900/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
-                    <span className="font-semibold text-slate-900 dark:text-white">Valeur totale à recevoir</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xl font-extrabold text-purple-700 dark:text-purple-300">
-                      {formatCurrencyFCFA(totalReceivedValue)}
-                    </span>
-                    {valueDifference !== 0 && (
-                      <p className={`text-xs font-bold ${valueDifference > 0 ? 'text-red-600' : 'text-amber-600'}`}>
-                        {valueDifference > 0 ? 'Excédent' : 'Manquant'}: {formatCurrencyFCFA(Math.abs(valueDifference))}
-                      </p>
-                    )}
+                  )}
+                </>
+              ) : (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-bold text-emerald-800 dark:text-emerald-300">Aucun ticket à recevoir requis</p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                      Vous rendez uniquement des tickets défectueux. Aucune contrepartie n'est nécessaire.
+                    </p>
                   </div>
                 </div>
               )}
@@ -653,26 +756,63 @@ export default function ExchangePage() {
                     <TrendingDown className="w-5 h-5 text-red-500" />
                     <h4 className="font-bold text-slate-900 dark:text-white">Tickets à Rendre</h4>
                   </div>
-                  {returns.filter((r) => r.quantite > 0).map((r, idx) => {
-                    const ticket = getTicketTypeById(r.ticketTypeId);
-                    if (!ticket) return null;
-                    return (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
-                        <div>
-                          <span className="font-bold text-sm text-slate-900 dark:text-white">{ticket.nom}</span>
-                          <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-slate-900 dark:text-white">{r.quantite}</span>
-                          <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
-                        </div>
+
+                  {returnsDefect.filter((r) => r.quantite > 0).length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-red-600 uppercase tracking-wider flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Stock défectueux (hors équivalence)
+                      </span>
+                      {returnsDefect.filter((r) => r.quantite > 0).map((r, idx) => {
+                        const ticket = getTicketTypeById(r.ticketTypeId);
+                        if (!ticket) return null;
+                        return (
+                          <div key={`def-${idx}`} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800">
+                            <div>
+                              <span className="font-bold text-sm text-slate-900 dark:text-white">{ticket.nom}</span>
+                              <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-bold text-red-700 dark:text-red-300">{r.quantite}</span>
+                              <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="flex items-center justify-between p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                        <span className="text-xs font-bold text-red-800 dark:text-red-300">Total défectueux</span>
+                        <span className="text-sm font-extrabold text-red-700 dark:text-red-300">
+                          {formatCurrencyFCFA(returnsDefect.reduce((s, r) => s + r.quantite * getTicketTypePrix(r.ticketTypeId), 0))}
+                        </span>
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
+
+                  {returns.filter((r) => r.quantite > 0).length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Stock fonctionnel (équivalence)</span>
+                      {returns.filter((r) => r.quantite > 0).map((r, idx) => {
+                        const ticket = getTicketTypeById(r.ticketTypeId);
+                        if (!ticket) return null;
+                        return (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                              <span className="font-bold text-sm text-slate-900 dark:text-white">{ticket.nom}</span>
+                              <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-bold text-slate-900 dark:text-white">{r.quantite}</span>
+                              <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800">
                     <span className="font-bold text-red-800 dark:text-red-300">Total Rendu</span>
                     <span className="font-extrabold text-red-700 dark:text-red-300">
-                      {formatCurrencyFCFA(totalReturnedValue)}
+                      {formatCurrencyFCFA(totalReturnedValueAll)}
                     </span>
                   </div>
                 </div>
@@ -683,22 +823,26 @@ export default function ExchangePage() {
                     <TrendingUp className="w-5 h-5 text-emerald-500" />
                     <h4 className="font-bold text-slate-900 dark:text-white">Tickets à Recevoir</h4>
                   </div>
-                  {receives.filter((r) => r.quantite > 0).map((r, idx) => {
-                    const ticket = getTicketTypeById(r.ticketTypeId);
-                    if (!ticket) return null;
-                    return (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
-                        <div>
-                          <span className="font-bold text-sm text-slate-900 dark:text-white">{ticket.nom}</span>
-                          <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
+                  {receives.filter((r) => r.quantite > 0).length === 0 ? (
+                    <p className="text-xs text-slate-500 italic">Aucun ticket à recevoir (rendu défectueux uniquement).</p>
+                  ) : (
+                    receives.filter((r) => r.quantite > 0).map((r, idx) => {
+                      const ticket = getTicketTypeById(r.ticketTypeId);
+                      if (!ticket) return null;
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                          <div>
+                            <span className="font-bold text-sm text-slate-900 dark:text-white">{ticket.nom}</span>
+                            <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-slate-900 dark:text-white">{r.quantite}</span>
+                            <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <span className="font-bold text-slate-900 dark:text-white">{r.quantite}</span>
-                          <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                   <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-200 dark:border-emerald-800">
                     <span className="font-bold text-emerald-800 dark:text-emerald-300">Total Reçu</span>
                     <span className="font-extrabold text-emerald-700 dark:text-emerald-300">
@@ -718,9 +862,15 @@ export default function ExchangePage() {
                   <Badge variant={isExchangeBalanced ? 'success' : 'danger'}>
                     {isExchangeBalanced ? 'Équilibré ✓' : 'Non équilibré ⚠️'}
                   </Badge>
-                  <span className="font-semibold">Écart de valeur</span>
+                  <span className="font-semibold">
+                    {hasDefectReturns && !hasFunctionalReturns ? 'Rendu défectueux (hors équivalence)' : 'Écart de valeur'}
+                  </span>
                 </div>
-                <span className="font-extrabold">{formatCurrencyFCFA(Math.abs(valueDifference))}</span>
+                <span className="font-extrabold">
+                  {hasDefectReturns && !hasFunctionalReturns
+                    ? 'OK'
+                    : formatCurrencyFCFA(Math.abs(valueDifference))}
+                </span>
               </div>
 
               <div className="space-y-2">
