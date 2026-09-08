@@ -20,6 +20,7 @@ import {
   Wifi,
   WifiOff,
   AlertTriangle,
+  CreditCard,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
@@ -55,6 +56,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
     { label: 'Collectes & Caisses', href: '/collections', icon: Receipt, roles: ['administrateur', 'collecteur'] },
     { label: 'Rapports & Exports', href: '/reports', icon: FileSpreadsheet, roles: ['administrateur'] },
     { label: 'Utilisateurs', href: '/users', icon: Users, roles: ['administrateur'] },
+    { label: 'Abonnement', href: '/subscription', icon: CreditCard, roles: ['administrateur'] },
     { label: 'Paramètres', href: '/settings', icon: Settings, roles: ['administrateur', 'collecteur'] },
   ];
 
