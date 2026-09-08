@@ -45,7 +45,7 @@ const customStorage = {
 
 export const usePlatformAuthStore = create<PlatformAuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       platformUser: null,
       isLoading: true,
       setPlatformUser: (platformUser: PlatformUser | null) => set({ platformUser, isLoading: false }),

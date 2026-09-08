@@ -15,10 +15,8 @@ import {
   ArrowRight,
   Activity,
   Ban,
-  Info,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
@@ -38,29 +36,35 @@ export default function OrganizationSubscriptionPage() {
   const [currentSubscription, setCurrentSubscription] = useState<SubscriptionWithPlan | null>(null);
   const [otherSubscriptions, setOtherSubscriptions] = useState<SubscriptionWithPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    loadSubscriptions();
-  }, []);
+    let mounted = true;
 
-  async function loadSubscriptions() {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/subscription');
-      const result = await res.json();
-      if (res.ok) {
-        setCurrentSubscription(result.current || null);
-        setOtherSubscriptions(result.others || []);
-      } else {
-        toast.error(result.error || 'Erreur de chargement');
+    const load = async () => {
+      try {
+        const res = await fetch('/api/subscription');
+        const result = await res.json();
+        if (mounted && res.ok) {
+          setCurrentSubscription(result.current || null);
+          setOtherSubscriptions(result.others || []);
+        }
+      } catch {
+        if (mounted) {
+          toast.error('Erreur réseau');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    } catch {
-      toast.error('Erreur réseau');
-    } finally {
-      setLoading(false);
-    }
-  }
+    };
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const calculateDaysRemaining = (endDate: string | null | undefined): number | null => {
     if (!endDate) return null;
@@ -69,18 +73,6 @@ export default function OrganizationSubscriptionPage() {
     const diffTime = end.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 0;
-  };
-
-  const formatDateWithTime = (dateStr: string | null | undefined): string => {
-    if (!dateStr) return '—';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   if (loading) {
@@ -155,7 +147,7 @@ export default function OrganizationSubscriptionPage() {
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">
             {otherSubscriptions.length + (currentSubscription ? 1 : 0)}
           </p>
-          <p className="text-xs text-slate-500 mt-1">Enregistrés sur l'organisation</p>
+          <p className="text-xs text-slate-500 mt-1">Enregistrés sur l&apos;organisation</p>
         </Card>
       </div>
 
@@ -235,10 +227,10 @@ export default function OrganizationSubscriptionPage() {
                 <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                    Période d'essai en cours
+                    Période d&apos;essai en cours
                   </p>
                   <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                    Votre période d'essai se termine le <strong>{formatDateFR(currentSubscription.trial_end)}</strong>.
+                    Votre période d&apos;essai se termine le <strong>{formatDateFR(currentSubscription.trial_end)}</strong>.
                     {calculateDaysRemaining(currentSubscription.trial_end) !== null && (
                       <> Il reste <strong>{calculateDaysRemaining(currentSubscription.trial_end)} jour(s)</strong>.</>
                     )}
@@ -300,7 +292,7 @@ export default function OrganizationSubscriptionPage() {
                 )}
                 {currentSubscription.plan.trial_days && (
                   <div>
-                    <span className="text-slate-500">Jours d'essai:</span>
+                    <span className="text-slate-500">Jours d&apos;essai:</span>
                     <span className="font-semibold text-slate-900 dark:text-white ml-1">
                       {currentSubscription.plan.trial_days}
                     </span>
@@ -315,7 +307,7 @@ export default function OrganizationSubscriptionPage() {
           <CreditCard className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">Aucun abonnement actif</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Vous n'avez pas d'abonnement en cours. Contactez l'administrateur pour souscrire à un plan.
+            Vous n&apos;avez pas d&apos;abonnement en cours. Contactez l&apos;administrateur pour souscrire à un plan.
           </p>
         </Card>
       )}
@@ -379,7 +371,7 @@ export default function OrganizationSubscriptionPage() {
             <ArrowRight className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Besoin d'aide ?</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Besoin d&apos;aide ?</h3>
             <p className="text-xs text-slate-500 mt-1">
               Pour modifier votre abonnement, renouveler ou toute question, contactez le support OptiWifi.
             </p>

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { PlatformUser } from '@/types/platform';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
 import { PlatformSidebar } from '@/components/platform/PlatformSidebar';
@@ -15,7 +14,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const router = useRouter();
-  const { platformUser, isLoading, setPlatformUser, logout, checkSession } = usePlatformAuthStore();
+  const { platformUser, isLoading, checkSession } = usePlatformAuthStore();
   const supabase = createClient();
 
   useEffect(() => {
