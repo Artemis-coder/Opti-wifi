@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeftRight, Plus, Store, Ticket, Loader2, Calendar, User, FileText, Repeat } from 'lucide-react';
+import { ArrowLeftRight, Plus, Store, Ticket, Loader2, Calendar, User, FileText, Repeat, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -48,6 +48,18 @@ export default function AllocationsPage() {
   const filteredAllocations = selectedPosId === 'all'
     ? allocations
     : allocations.filter((a) => a.pos_id === selectedPosId);
+
+  const totalAllocations = filteredAllocations.length;
+  const exchangedAllocations = filteredAllocations.filter(
+    (a) => a.type === 'exchange_return' || a.type === 'exchange_receive'
+  );
+  const totalExchangedTickets = exchangedAllocations.reduce((sum, a) => {
+    const qty = a.type === 'exchange_return' ? -a.quantite : a.quantite;
+    return sum + Math.abs(qty);
+  }, 0);
+  const nonFunctionalTickets = filteredAllocations
+    .filter((a) => a.type === 'exchange_return')
+    .reduce((sum, a) => sum + a.quantite, 0);
 
   const allocationsByPos = filteredAllocations.reduce((acc, alloc) => {
     const posId = alloc.pos_id;
@@ -144,6 +156,42 @@ export default function AllocationsPage() {
           </div>
         </div>
       </Card>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="border-l-4 border-l-amber-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Allocations</span>
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
+              <ArrowLeftRight className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{totalAllocations}</p>
+          <p className="text-xs text-slate-500 mt-1">Allocations enregistrées</p>
+        </Card>
+
+        <Card className="border-l-4 border-l-emerald-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Échangés</span>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
+              <Repeat className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{totalExchangedTickets}</p>
+          <p className="text-xs text-slate-500 mt-1">Tickets impliqués dans des échanges</p>
+        </Card>
+
+        <Card className="border-l-4 border-l-red-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Non Fonctionnels</span>
+            <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{nonFunctionalTickets}</p>
+          <p className="text-xs text-slate-500 mt-1">Tickets rendus (défauts)</p>
+        </Card>
+      </div>
 
       {/* Allocations by POS */}
       {Object.keys(allocationsByPos).length === 0 ? (
