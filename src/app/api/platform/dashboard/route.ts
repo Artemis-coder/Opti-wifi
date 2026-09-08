@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -38,6 +39,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
   }
 
+  const adminClient = createServerClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll() {},
+    },
+  });
+
   const { searchParams } = new URL(request.url);
   const range = searchParams.get('range') || '30d';
 
@@ -67,11 +77,11 @@ export async function GET(request: Request) {
   const rangeStartISO = rangeStart.toISOString();
 
   const [orgsRes, subsRes, paymentsRes, plansRes, orgsInRangeRes] = await Promise.all([
-    supabase.from('organizations').select('id, status, created_at'),
-    supabase.from('subscriptions').select('id, organization_id, plan_id, status, start_date, end_date, cancelled_at, created_at'),
-    supabase.from('payments').select('id, organization_id, amount, currency, status, paid_at, created_at'),
-    supabase.from('subscription_plans').select('id, name, created_at'),
-    supabase.from('organizations').select('id, status, created_at').gte('created_at', rangeStartISO),
+    adminClient.from('organizations').select('id, status, created_at'),
+    adminClient.from('subscriptions').select('id, organization_id, plan_id, status, start_date, end_date, cancelled_at, created_at'),
+    adminClient.from('payments').select('id, organization_id, amount, currency, status, paid_at, created_at'),
+    adminClient.from('subscription_plans').select('id, name, created_at'),
+    adminClient.from('organizations').select('id, status, created_at').gte('created_at', rangeStartISO),
   ]);
 
   const orgs = orgsRes.data || [];
