@@ -17,10 +17,14 @@ FROM platform_users pu
 JOIN profiles p ON p.id = pu.auth_user_id
 ORDER BY pu.created_at;
 
--- 2. Supprimer TOUTES les entrées platform_users
-DELETE FROM platform_users;
+-- 2. Supprimer les entrées incorrectes (Boris = admin d'organisation, pas super admin)
+DELETE FROM platform_users 
+WHERE auth_user_id = (SELECT id FROM profiles WHERE email = 'kedakeyaoboris@gmail.com')
+   OR auth_user_id NOT IN (
+     SELECT p.id FROM profiles p WHERE p.email = 'superadmin@optiwifi.com'
+   );
 
--- 3. Vérifier que la table est vide
+-- 3. Vérifier qu'aucune entrée incorrecte ne reste (seul superadmin devrait rester)
 SELECT COUNT(*) AS remaining FROM platform_users;
 
 -- 4. Créer UNIQUEMENT le super admin légitime

@@ -31,37 +31,11 @@ BEGIN
     END LOOP;
 END $$;
 
--- 3. CORRIGER L'ACCÈS AU BACK-OFFICE POUR VOTRE COMPTE
--- Assurer que votre email est bien dans la table platform_users
-DO $$
-DECLARE
-    v_email TEXT := 'kedakeyaoboris@gmail.com';
-    v_user_id UUID;
-    v_platform_user_id UUID;
-BEGIN
-    -- Récupérer l'ID de l'utilisateur depuis auth.users
-    SELECT id INTO v_user_id FROM auth.users WHERE email = v_email LIMIT 1;
-    
-    IF v_user_id IS NOT NULL THEN
-        -- Vérifier si l'utilisateur est déjà dans platform_users
-        SELECT id INTO v_platform_user_id FROM platform_users WHERE auth_user_id = v_user_id;
-        
-        IF v_platform_user_id IS NULL THEN
-            -- Insérer l'utilisateur s'il n'y est pas
-            INSERT INTO platform_users (auth_user_id, role, email, full_name, is_active)
-            VALUES (v_user_id, 'super_admin', v_email, 'Boris (Admin)', true);
-            RAISE NOTICE 'Accès au back-office créé pour %', v_email;
-        ELSE
-            -- Mettre à jour si déjà présent
-            UPDATE platform_users 
-            SET role = 'super_admin', is_active = true 
-            WHERE auth_user_id = v_user_id;
-            RAISE NOTICE 'Accès au back-office mis à jour pour %', v_email;
-        END IF;
-    ELSE
-        RAISE NOTICE 'L''utilisateur avec l''email % n''a pas été trouvé dans auth.users', v_email;
-    END IF;
-END $$;
+-- 3. CORRECTION : Boris (kedakeyaoboris@gmail.com) est un ADMIN D'ORGANISATION, PAS un super admin.
+-- Il doit être redirigé vers /dashboard, pas /platform/dashboard.
+-- Seul superadmin@optiwifi.com doit avoir le rôle super_admin dans platform_users.
+-- Toute entrée existante pour Boris est supprimée (traité par migration 20260907+).
+-- La correction finale est assurée par la migration 20260908_fix_super_admin_routing.sql.
 
 -- 4. RECRÉER LA VUE POUR L'APPLICATION (SANS RLS MAIS FILTRÉE)
 -- L'application filtre déjà côté Frontend/Backend par organization_id.
