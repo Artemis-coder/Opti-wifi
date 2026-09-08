@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Store, Plus, Search, MapPin, UserCheck, Loader2, Edit, Power, PowerOff } from 'lucide-react';
+import { Store, Plus, Search, MapPin, UserCheck, Loader2, Edit, Power, PowerOff, ArrowLeftRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from './edit-pos-modal';
-import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
+import { PointOfSale, Profile, PosStatus, WifiSpace, TicketType, TicketAllocation } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { formatCurrencyFCFA } from '@/lib/utils/format';
 
 export default function PosPage() {
   const [search, setSearch] = useState('');
@@ -21,6 +22,8 @@ export default function PosPage() {
   const [editingPos, setEditingPos] = useState<PointOfSale | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [spaces, setSpaces] = useState<WifiSpace[]>([]);
+  const [allocations, setAllocations] = useState<TicketAllocation[]>([]);
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'administrateur';
@@ -31,25 +34,35 @@ export default function PosPage() {
     async function loadData() {
       if (!user?.organization_id) return;
       setLoading(true);
-      const { data: posData } = await supabase
-        .from('points_of_sale')
-        .select('*, collecteur:profiles(*)')
-        .eq('organization_id', user.organization_id);
+      const [posRes, colRes, spacesRes, allocRes, ticketRes] = await Promise.all([
+        supabase
+          .from('points_of_sale')
+          .select('*, collecteur:profiles(*)')
+          .eq('organization_id', user.organization_id),
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('organization_id', user.organization_id)
+          .eq('role', 'collecteur'),
+        supabase
+          .from('wifi_spaces')
+          .select('*')
+          .eq('organization_id', user.organization_id),
+        supabase
+          .from('ticket_allocations')
+          .select('*, ticket_type:ticket_types(*)')
+          .eq('organization_id', user.organization_id),
+        supabase
+          .from('ticket_types')
+          .select('*')
+          .eq('organization_id', user.organization_id),
+      ]);
 
-      const { data: colData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('organization_id', user.organization_id)
-        .eq('role', 'collecteur');
-
-      const { data: spacesData } = await supabase
-        .from('wifi_spaces')
-        .select('*')
-        .eq('organization_id', user.organization_id);
-
-      if (colData) setCollectors(colData);
-      if (spacesData) setSpaces(spacesData);
-      setPosList(posData || []);
+      if (posRes.data) setPosList(posRes.data);
+      if (colRes.data) setCollectors(colRes.data);
+      if (spacesRes.data) setSpaces(spacesRes.data);
+      if (allocRes.data) setAllocations(allocRes.data);
+      if (ticketRes.data) setTicketTypes(ticketRes.data);
       setLoading(false);
     }
     loadData();
@@ -63,6 +76,26 @@ export default function PosPage() {
   const totalPos = posList.length;
   const activePos = posList.filter((p) => p.statut === 'actif').length;
   const inactivePos = posList.filter((p) => p.statut === 'inactif' || p.statut === 'suspendu').length;
+
+  function computePosStockValue(posId: string): number {
+    return allocations
+      .filter((a) => a.pos_id === posId)
+      .reduce((sum, a) => {
+        const tt = ticketTypes.find((t) => t.id === a.ticket_type_id) || a.ticket_type;
+        const qty = a.type === 'exchange_return' ? -a.quantite : a.quantite;
+        return sum + qty * (tt?.prix || 0);
+      }, 0);
+  }
+
+  const stockValueByPos = new Map<string, number>();
+  posList.forEach((pos) => {
+    stockValueByPos.set(pos.id, computePosStockValue(pos.id));
+  });
+
+  const totalStockValue = Array.from(stockValueByPos.values()).reduce(
+    (sum, value) => sum + value,
+    0
+  );
 
   const handleToggleStatus = async (pos: PointOfSale) => {
     if (!isAdmin) return;
@@ -94,7 +127,7 @@ export default function PosPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total POS</span>
@@ -123,6 +156,19 @@ export default function PosPage() {
             </div>
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{inactivePos}</p>
+        </Card>
+
+        <Card className="border-l-4 border-l-amber-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valeur du stock alloué</span>
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
+              <ArrowLeftRight className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">
+            {formatCurrencyFCFA(totalStockValue)}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">Total cumulé sur tous les POS</p>
         </Card>
       </div>
 
@@ -225,6 +271,15 @@ export default function PosPage() {
                     <span>Collecteur : <strong className="text-slate-800 dark:text-slate-200">{pos.collecteur?.nom || 'Non attribué'}</strong></span>
                   </div>
                   <span className="text-[11px] text-slate-400">ID #{pos.id.slice(0, 4)}</span>
+                </div>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1">
+                    <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="text-slate-500">Valeur du stock alloué</span>
+                  </div>
+                  <span className="font-bold text-amber-600">
+                    {formatCurrencyFCFA(stockValueByPos.get(pos.id) || 0)}
+                  </span>
                 </div>
               </Card>
             </Link>
