@@ -58,7 +58,7 @@ export default function AllocationsPage() {
     return sum + Math.abs(qty);
   }, 0);
   const nonFunctionalTickets = filteredAllocations
-    .filter((a) => a.type === 'exchange_return')
+    .filter((a) => a.statut === 'non_fonctionnel')
     .reduce((sum, a) => sum + a.quantite, 0);
 
   const allocationsByPos = filteredAllocations.reduce((acc, alloc) => {

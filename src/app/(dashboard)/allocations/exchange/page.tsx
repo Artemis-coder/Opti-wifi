@@ -128,6 +128,7 @@ export default function ExchangePage() {
         allocData.forEach((alloc) => {
           const typeId = alloc.ticket_type_id;
           const baseQty = alloc.type === 'exchange_return' ? -alloc.quantite : alloc.quantite;
+          if (alloc.statut === 'non_fonctionnel') return;
           allocatedMap[typeId] = (allocatedMap[typeId] || 0) + baseQty;
           if (alloc.ticket_type) {
             ticketMap[typeId] = alloc.ticket_type;

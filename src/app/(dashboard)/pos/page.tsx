@@ -79,7 +79,7 @@ export default function PosPage() {
 
   function computePosStockValue(posId: string): number {
     return allocations
-      .filter((a) => a.pos_id === posId)
+      .filter((a) => a.pos_id === posId && a.statut !== 'non_fonctionnel')
       .reduce((sum, a) => {
         const tt = ticketTypes.find((t) => t.id === a.ticket_type_id) || a.ticket_type;
         const qty = a.type === 'exchange_return' ? -a.quantite : a.quantite;
