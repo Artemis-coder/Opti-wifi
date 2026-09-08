@@ -15,45 +15,20 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const router = useRouter();
-  const { platformUser, isLoading, setPlatformUser, logout } = usePlatformAuthStore();
+  const { platformUser, isLoading, setPlatformUser, logout, checkSession } = usePlatformAuthStore();
   const supabase = createClient();
+
+  useEffect(() => {
+    if (!platformUser && !isLoginPage) {
+      checkSession(supabase as never);
+    }
+  }, [platformUser, isLoginPage, checkSession, supabase]);
 
   useEffect(() => {
     if (!platformUser && !isLoading && !isLoginPage) {
       router.push('/platform/login');
     }
   }, [platformUser, isLoading, router, isLoginPage]);
-
-  useEffect(() => {
-    async function checkSession() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: pu } = await supabase
-          .from('platform_users')
-          .select('*')
-          .eq('auth_user_id', user.id)
-          .eq('is_active', true)
-          .single();
-
-        if (pu) {
-          setPlatformUser(pu as unknown as PlatformUser);
-        } else if (!isLoginPage) {
-          logout();
-          router.push('/platform/login');
-        }
-      } else if (!isLoginPage) {
-        logout();
-        router.push('/platform/login');
-      }
-    }
-
-    if (!platformUser && !isLoading && !isLoginPage) {
-      checkSession();
-    }
-  }, [platformUser, isLoading, supabase, setPlatformUser, logout, router, isLoginPage]);
 
   if (isLoginPage) {
     return <>{children}</>;
