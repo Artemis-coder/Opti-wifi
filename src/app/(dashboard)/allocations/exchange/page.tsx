@@ -484,7 +484,7 @@ export default function ExchangePage() {
                               {formatCurrencyFCFA(stock.prix_unitaire)} / unité
                             </Badge>
                           </div>
-                          <div className="grid grid-cols-4 gap-2 text-xs">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                             <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
                               <span className="text-slate-500">Alloués</span>
                               <span className="block font-bold text-slate-900 dark:text-white">{stock.alloue}</span>
@@ -498,21 +498,21 @@ export default function ExchangePage() {
                               <span className="block font-bold text-emerald-700 dark:text-emerald-400">{funcMax}</span>
                             </div>
                             <div className="text-center p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                              <span className="text-red-700 dark:text-red-300">Non fonctionnels</span>
+                              <span className="text-red-700 dark:text-red-300">Non fonct.</span>
                               <span className="block font-bold text-red-700 dark:text-red-400">{defectMax}</span>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1.5">
                               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rendre du stock fonctionnel</span>
                               <Input
                                 type="number"
                                 min="0"
-                                max={funcMax}
+                                max={funcMax > 0 ? funcMax : undefined}
                                 value={funcExisting || ''}
                                 onChange={(e) => {
                                   const val = parseInt(e.target.value) || 0;
-                                  const capped = Math.min(val, funcMax);
+                                  const capped = funcMax > 0 ? Math.min(val, funcMax) : val;
                                   const existing = returns.find((r) => r.ticketTypeId === stock.ticketType.id);
                                   if (existing) {
                                     const idx = returns.findIndex((r) => r.ticketTypeId === stock.ticketType.id);
@@ -529,11 +529,11 @@ export default function ExchangePage() {
                               <Input
                                 type="number"
                                 min="0"
-                                max={defectMax}
+                                max={defectMax > 0 ? defectMax : undefined}
                                 value={defectExisting || ''}
                                 onChange={(e) => {
                                   const val = parseInt(e.target.value) || 0;
-                                  const capped = Math.min(val, defectMax);
+                                  const capped = defectMax > 0 ? Math.min(val, defectMax) : val;
                                   const existing = returnsDefect.find((r) => r.ticketTypeId === stock.ticketType.id);
                                   if (existing) {
                                     const idx = returnsDefect.findIndex((r) => r.ticketTypeId === stock.ticketType.id);
@@ -621,67 +621,67 @@ export default function ExchangePage() {
                         <Plus className="w-4 h-4" /> Ajouter un type de ticket
                       </Button>
                     </div>
-                  ) : (
+) : (
                     receives.map((line, index) => {
                       const ticket = getTicketTypeById(line.ticketTypeId);
                       const suggestedQty = line.ticketTypeId ? autoCalculateReceive(line.ticketTypeId) : 0;
 
                       return (
-                        <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
-                          <div className="flex-1 space-y-2">
-                            <select
-                              value={line.ticketTypeId}
-                              onChange={(e) => updateReceive(index, 'ticketTypeId', e.target.value)}
-                              className="w-full h-9 px-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium"
-                            >
-                              <option value="">Sélectionner un type</option>
-                              {ticketTypes
-                                .filter((t) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
-                                .map((t) => (
-                                  <option key={t.id} value={t.id}>
-                                    {t.nom} — {formatCurrencyFCFA(Number(t.prix))}
-                                  </option>
-                                ))}
-                            </select>
-                            <div className="grid grid-cols-2 gap-2">
-                              <Input
-                                label="Quantité à recevoir"
-                                type="number"
-                                min="0"
-                                value={line.quantite || ''}
-                                onChange={(e) => updateReceive(index, 'quantite', parseInt(e.target.value) || 0)}
-                                placeholder="0"
-                              />
-                              <div className="flex items-end">
-                                {ticket && suggestedQty > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => updateReceive(index, 'quantite', suggestedQty)}
-                                    className="text-xs text-amber-600 hover:text-amber-700 font-medium underline"
-                                  >
-                                    Suggestion: {suggestedQty}
-                                  </button>
-                                )}
+                        <div key={index} className="flex flex-col sm:flex-row items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div className="flex-1 space-y-2 w-full">
+                              <select
+                                value={line.ticketTypeId}
+                                onChange={(e) => updateReceive(index, 'ticketTypeId', e.target.value)}
+                                className="w-full h-9 px-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium"
+                              >
+                                <option value="">Sélectionner un type</option>
+                                {ticketTypes
+                                  .filter((t) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
+                                  .map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.nom} — {formatCurrencyFCFA(Number(t.prix))}
+                                    </option>
+                                  ))}
+                              </select>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Input
+                                  label="Quantité à recevoir"
+                                  type="number"
+                                  min="0"
+                                  value={line.quantite || ''}
+                                  onChange={(e) => updateReceive(index, 'quantite', parseInt(e.target.value) || 0)}
+                                  placeholder="0"
+                                />
+                                <div className="flex items-end">
+                                  {ticket && suggestedQty > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => updateReceive(index, 'quantite', suggestedQty)}
+                                      className="text-xs text-amber-600 hover:text-amber-700 font-medium underline"
+                                    >
+                                      Suggestion: {suggestedQty}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
+                              {ticket && (
+                                <p className="text-xs text-slate-500">
+                                  {formatCurrencyFCFA(Number(ticket.prix))} × {line.quantite || 0} = {formatCurrencyFCFA((line.quantite || 0) * Number(ticket.prix))}
+                                </p>
+                              )}
                             </div>
-                            {ticket && (
-                              <p className="text-xs text-slate-500">
-                                {formatCurrencyFCFA(Number(ticket.prix))} × {line.quantite || 0} = {formatCurrencyFCFA((line.quantite || 0) * Number(ticket.prix))}
-                              </p>
+                            {receives.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeReceiveLine(index)}
+                                className="text-red-600 hover:text-red-700 mt-1 self-start"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             )}
                           </div>
-                          {receives.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeReceiveLine(index)}
-                              className="text-red-600 hover:text-red-700 mt-1"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
                       );
                     })
                   )}
@@ -749,7 +749,7 @@ export default function ExchangePage() {
             <Card className="p-6 space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 4 : Vérification et Validation</h3>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 {/* Returns Summary */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
