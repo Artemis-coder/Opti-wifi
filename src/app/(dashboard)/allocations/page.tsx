@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeftRight, Plus, Store, Ticket, Loader2, Calendar, User, FileText, Repeat, AlertTriangle } from 'lucide-react';
+import { ArrowLeftRight, Plus, Store, Ticket, Loader2, Calendar, User, FileText, Repeat, AlertTriangle, Trash2, Edit } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/database';
+import { PointOfSale, TicketAllocation, TicketType, Profile, AllocationStatut } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { toast } from 'sonner';
 
 export default function AllocationsPage() {
   const [loading, setLoading] = useState(true);
@@ -18,9 +20,19 @@ export default function AllocationsPage() {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedPosId, setSelectedPosId] = useState<string>('all');
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editModalAlloc, setEditModalAlloc] = useState<TicketAllocation | null>(null);
+  const [editQuantite, setEditQuantite] = useState(0);
+  const [editNotes, setEditNotes] = useState('');
+  const [editStatut, setEditStatut] = useState<AllocationStatut>('fonctionnel');
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const { user } = useAuthStore();
   const supabase = createClient();
+  const isAdmin = user?.role === 'administrateur';
 
   useEffect(() => {
     async function loadData() {
@@ -100,6 +112,127 @@ export default function AllocationsPage() {
     }
   };
 
+  const openEditModal = (alloc: TicketAllocation) => {
+    setEditModalAlloc(alloc);
+    setEditQuantite(alloc.quantite);
+    setEditNotes(alloc.notes || '');
+    setEditStatut(alloc.statut || 'fonctionnel');
+  };
+
+  const closeEditModal = () => {
+    setEditModalAlloc(null);
+    setEditQuantite(0);
+    setEditNotes('');
+    setEditStatut('fonctionnel');
+    setIsSavingEdit(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editModalAlloc || !user?.organization_id) return;
+    setIsSavingEdit(true);
+
+    try {
+      const res = await fetch('/api/allocations/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization_id: user.organization_id,
+          updates: [
+            {
+              id: editModalAlloc.id,
+              quantite: editQuantite,
+              notes: editNotes || null,
+              statut: editStatut,
+            },
+          ],
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || result.message || 'Échec de la mise à jour.');
+      }
+
+      setAllocations((prev) =>
+        prev.map((a) =>
+          a.id === editModalAlloc.id
+            ? { ...a, quantite: editQuantite, notes: editNotes || null, statut: editStatut }
+            : a
+        )
+      );
+
+      toast.success('Allocation modifiée avec succès.');
+      closeEditModal();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la modification.';
+      toast.error(message);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleIndividualDelete = async () => {
+    if (!deleteConfirmId || !user?.organization_id) return;
+    setIsDeleting(true);
+
+    try {
+      const res = await fetch('/api/allocations/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization_id: user.organization_id,
+          allocation_ids: [deleteConfirmId],
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || result.message || 'Échec de la suppression.');
+      }
+
+      setAllocations((prev) => prev.filter((a) => a.id !== deleteConfirmId));
+      toast.success('Allocation supprimée.');
+      setDeleteConfirmId(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la suppression.';
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!user?.organization_id) return;
+    setIsBulkDeleting(true);
+
+    try {
+      const res = await fetch('/api/allocations/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization_id: user.organization_id,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || result.message || 'Échec de la suppression globale.');
+      }
+
+      setAllocations([]);
+      toast.success('Toutes les allocations ont été supprimées.');
+      setBulkDeleteModalOpen(false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la suppression globale.';
+      toast.error(message);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
@@ -132,6 +265,16 @@ export default function AllocationsPage() {
             Échange de Tickets
           </Button>
         </Link>
+        {isAdmin && (
+          <Button
+            variant="danger"
+            className="gap-2 font-semibold"
+            onClick={() => setBulkDeleteModalOpen(true)}
+          >
+            <Trash2 className="w-4 h-4" />
+            Supprimer Tout
+          </Button>
+        )}
       </div>
 
       {/* Filter */}
@@ -249,6 +392,7 @@ export default function AllocationsPage() {
                       <th className="px-4 py-3">Montant</th>
                       <th className="px-4 py-3">Alloué par</th>
                       <th className="px-4 py-3">Notes</th>
+                      {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
@@ -301,6 +445,26 @@ export default function AllocationsPage() {
                               <span className="text-slate-400">—</span>
                             )}
                           </td>
+                          {isAdmin && (
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => openEditModal(alloc)}
+                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                                  title="Modifier"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmId(alloc.id)}
+                                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -337,6 +501,100 @@ export default function AllocationsPage() {
           ))}
         </div>
       )}
+
+      {/* Bulk Delete Modal */}
+      <Modal isOpen={bulkDeleteModalOpen} onClose={() => setBulkDeleteModalOpen(false)} title="Supprimer toutes les allocations">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-sm text-red-800 dark:text-red-300">
+              Cette action est irréversible. Toutes les allocations de votre organisation seront supprimées définitivement.
+            </p>
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Voulez-vous vraiment supprimer toutes les allocations ? Cette action ne peut pas être annulée.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setBulkDeleteModalOpen(false)} disabled={isBulkDeleting}>
+              Annuler
+            </Button>
+            <Button variant="danger" onClick={handleBulkDelete} isLoading={isBulkDeleting}>
+              Supprimer Tout
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Individual Delete Modal */}
+      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="Supprimer l'allocation">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Voulez-vous vraiment supprimer cette allocation ? Cette action ne peut pas être annulée.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setDeleteConfirmId(null)} disabled={isDeleting}>
+              Annuler
+            </Button>
+            <Button variant="danger" onClick={handleIndividualDelete} isLoading={isDeleting}>
+              Supprimer
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Allocation Modal */}
+      <Modal isOpen={!!editModalAlloc} onClose={closeEditModal} title="Modifier l'allocation">
+        {editModalAlloc && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Quantité
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={editQuantite}
+                onChange={(e) => setEditQuantite(Math.max(0, parseInt(e.target.value || '0', 10)))}
+                className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Statut
+              </label>
+              <select
+                value={editStatut}
+                onChange={(e) => setEditStatut(e.target.value as AllocationStatut)}
+                className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
+              >
+                <option value="fonctionnel">Fonctionnel</option>
+                <option value="non_fonctionnel">Non fonctionnel</option>
+                <option value="en_reparation">En réparation</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Notes
+              </label>
+              <textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium resize-none"
+                placeholder="Notes optionnelles..."
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={closeEditModal} disabled={isSavingEdit}>
+                Annuler
+              </Button>
+              <Button onClick={handleSaveEdit} isLoading={isSavingEdit}>
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
