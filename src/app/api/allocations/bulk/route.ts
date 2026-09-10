@@ -57,7 +57,7 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof getSupabaseServe
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, organization_id')
     .eq('id', user.id)
     .single();
 
