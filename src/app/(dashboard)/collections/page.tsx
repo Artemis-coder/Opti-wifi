@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Receipt, Plus, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Receipt, Plus, CheckCircle2, AlertTriangle, Loader2, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { CollectionDetailSheet } from '@/components/collections/CollectionDetailSheet';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
@@ -16,6 +17,7 @@ export default function CollectionsPage() {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [selected, setSelected] = useState<Collection | null>(null);
   const supabase = createClient();
   const { currentSpaceId } = useSpaceStore();
 
@@ -81,53 +83,65 @@ export default function CollectionsPage() {
           <ul className="sm:hidden divide-y divide-slate-200 dark:divide-slate-800">
             {collections.map((c) => (
               <li key={c.id} className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                      {c.pos?.nom || 'POS'}
-                    </p>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      {c.collecteur?.nom || 'Collecteur'} ·{' '}
-                      {c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}
-                    </p>
+                <button
+                  type="button"
+                  onClick={() => setSelected(c)}
+                  aria-label={`Voir le détail de l'encaissement du ${c.pos?.nom || 'POS'}`}
+                  className="md-ripple w-full space-y-2 text-left"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                        {c.pos?.nom || 'POS'}
+                      </p>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {c.collecteur?.nom || 'Collecteur'} ·{' '}
+                        {c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}
+                      </p>
+                    </div>
+                    <Badge variant={c.statut === 'validee' ? 'success' : 'warning'}>
+                      {c.statut === 'validee' ? 'Validée' : 'Brouillon'}
+                    </Badge>
                   </div>
-                  <Badge variant={c.statut === 'validee' ? 'success' : 'warning'}>
-                    {c.statut === 'validee' ? 'Validée' : 'Brouillon'}
-                  </Badge>
-                </div>
 
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Attendu</span>
-                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                      {formatCurrencyFCFA(c.montant_attendu)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Commission</span>
-                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                      {formatCurrencyFCFA(Number(c.commission || 0))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Encaissé</span>
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      {formatCurrencyFCFA(c.montant_collecte)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Écart</span>
-                    {c.difference === 0 ? (
-                      <span className="font-bold text-emerald-600 inline-flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> 0
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Attendu</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {formatCurrencyFCFA(c.montant_attendu)}
                       </span>
-                    ) : (
-                      <span className="font-bold text-red-600 inline-flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5" /> {formatCurrencyFCFA(c.difference)}
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Commission</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {formatCurrencyFCFA(Number(c.commission || 0))}
                       </span>
-                    )}
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Encaissé</span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {formatCurrencyFCFA(c.montant_collecte)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Écart</span>
+                      {c.difference === 0 ? (
+                        <span className="font-bold text-emerald-600 inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> 0
+                        </span>
+                      ) : (
+                        <span className="font-bold text-red-600 inline-flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" /> {formatCurrencyFCFA(c.difference)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
+
+                  <p className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+                    Voir le détail et la conciliation
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </p>
+                </button>
               </li>
             ))}
           </ul>
@@ -144,11 +158,18 @@ export default function CollectionsPage() {
                   <th className="px-4 py-3">Écart (Diff)</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3 text-right">
+                    <span className="sr-only">Détail</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                 {collections.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                  <tr
+                    key={c.id}
+                    onClick={() => setSelected(c)}
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
+                  >
                     <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{c.pos?.nom || 'POS'}</td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{c.collecteur?.nom || 'Collecteur'}</td>
                     <td className="px-4 py-3 font-medium text-slate-600">{formatCurrencyFCFA(c.montant_attendu)}</td>
@@ -173,6 +194,19 @@ export default function CollectionsPage() {
                     <td className="px-4 py-3 text-slate-500">
                       {c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelected(c);
+                        }}
+                        aria-label={`Voir le détail de l'encaissement du ${c.pos?.nom || 'POS'}`}
+                        className="md-ripple tap-target inline-flex items-center justify-center rounded-full text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -180,6 +214,8 @@ export default function CollectionsPage() {
           </div>
         </Card>
       )}
+
+      <CollectionDetailSheet collection={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

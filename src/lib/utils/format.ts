@@ -17,6 +17,14 @@ export function formatDateFR(dateString: string): string {
   }).format(date);
 }
 
+export function formatDateOnlyFR(dateString: string): string {
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(dateString));
+}
+
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat('fr-FR').format(num);
 }

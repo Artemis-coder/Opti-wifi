@@ -13,10 +13,12 @@ import {
   Loader2,
   Inbox,
   Package,
+  ChevronRight,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { CollectionDetailSheet } from '@/components/collections/CollectionDetailSheet';
 import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/format';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
@@ -28,6 +30,7 @@ export default function DashboardPage() {
   const { currentSpaceId } = useSpaceStore();
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
 
   // Computed KPIs from real Supabase DB
   const [ticketsSoldTotal, setTicketsSoldTotal] = useState(0);
@@ -331,26 +334,37 @@ export default function DashboardPage() {
               {/* Mobile card list */}
               <ul className="sm:hidden divide-y divide-slate-200 dark:divide-slate-800">
                 {collections.slice(0, 5).map((col) => (
-                  <li key={col.id} className="p-3.5 space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white min-w-0 truncate">
-                        {col.pos?.nom || 'POS'}
+                  <li key={col.id} className="p-3.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCollection(col)}
+                      aria-label={`Voir le détail de l'encaissement du ${col.pos?.nom || 'POS'}`}
+                      className="md-ripple w-full space-y-1.5 text-left"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white min-w-0 truncate">
+                          {col.pos?.nom || 'POS'}
+                        </p>
+                        <Badge variant={col.statut === 'validee' ? 'success' : 'warning'}>
+                          {col.statut === 'validee' ? 'Validée' : 'Brouillon'}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {col.collecteur?.nom || 'Collecteur'}
                       </p>
-                      <Badge variant={col.statut === 'validee' ? 'success' : 'warning'}>
-                        {col.statut === 'validee' ? 'Validée' : 'Brouillon'}
-                      </Badge>
-                    </div>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      {col.collecteur?.nom || 'Collecteur'}
-                    </p>
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-base font-bold text-slate-900 dark:text-white">
-                        {formatCurrencyFCFA(col.montant_collecte)}
-                      </span>
-                      <span className="text-[11px] text-slate-500 shrink-0">
-                        {formatDateFR(col.created_at)}
-                      </span>
-                    </div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-base font-bold text-slate-900 dark:text-white">
+                          {formatCurrencyFCFA(col.montant_collecte)}
+                        </span>
+                        <span className="text-[11px] text-slate-500 shrink-0">
+                          {formatDateFR(col.created_at)}
+                        </span>
+                      </div>
+                      <p className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+                        Voir le détail et la conciliation
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </p>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -364,11 +378,18 @@ export default function DashboardPage() {
                       <th className="px-4 py-3">Montant Encaissé</th>
                       <th className="px-4 py-3">Statut</th>
                       <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3 text-right">
+                        <span className="sr-only">Détail</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                     {collections.slice(0, 5).map((col) => (
-                      <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <tr
+                        key={col.id}
+                        onClick={() => setSelectedCollection(col)}
+                        className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
+                      >
                         <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{col.pos?.nom || 'POS'}</td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{col.collecteur?.nom || 'Collecteur'}</td>
                         <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(col.montant_collecte)}</td>
@@ -378,6 +399,19 @@ export default function DashboardPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-slate-500">{formatDateFR(col.created_at)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCollection(col);
+                            }}
+                            aria-label={`Voir le détail de l'encaissement du ${col.pos?.nom || 'POS'}`}
+                            className="md-ripple tap-target inline-flex items-center justify-center rounded-full text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -387,6 +421,11 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <CollectionDetailSheet
+        collection={selectedCollection}
+        onClose={() => setSelectedCollection(null)}
+      />
     </div>
   );
 }
