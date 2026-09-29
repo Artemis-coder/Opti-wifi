@@ -162,7 +162,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
 
-        <BottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />
+        <BottomNav />
       </div>
     </div>
   );

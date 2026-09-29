@@ -56,7 +56,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           {children}
         </main>
 
-        <PlatformBottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />
+        <PlatformBottomNav />
       </div>
     </div>
   );

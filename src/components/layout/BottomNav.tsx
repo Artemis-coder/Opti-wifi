@@ -2,22 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Store,
-  Ticket,
-  Receipt,
-  MapPin,
-  Menu,
-  ArrowLeft,
-} from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { LayoutDashboard, Store, Ticket, Receipt, MapPin } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { NetworkNavItem } from '@/components/offline/NetworkNavItem';
 import { cn } from '@/lib/utils/cn';
-
-interface BottomNavProps {
-  onOpenMobileMenu: () => void;
-}
 
 const primaryItems = [
   { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard },
@@ -27,29 +16,8 @@ const primaryItems = [
   { label: 'Espaces', href: '/spaces', icon: MapPin },
 ];
 
-/**
- * Next.js stores a monotonically increasing `idx` in each history entry, so
- * `idx > 0` means the router has somewhere to go back to. `history.length` is
- * useless here: it also counts the entry the user arrived on.
- *
- * The snapshot is re-read on every render (so any navigation refreshes it) and
- * the popstate subscription keeps it correct for back/forward gestures.
- */
-function useCanGoBack(): boolean {
-  return React.useSyncExternalStore(
-    (onStoreChange) => {
-      window.addEventListener('popstate', onStoreChange);
-      return () => window.removeEventListener('popstate', onStoreChange);
-    },
-    () => ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0,
-    () => false
-  );
-}
-
-export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
+export function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
-  const canGoBack = useCanGoBack();
   const { user } = useAuthStore();
 
   const filteredItems = primaryItems.filter(
@@ -63,7 +31,7 @@ export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
       // scroll away, whatever the content height.
       className="lg:hidden shrink-0 bg-[#0b1a3a] text-white md-elevation-3 safe-bottom"
     >
-      <div className="flex items-stretch justify-around h-20 px-1">
+      <div className="flex items-stretch h-20 pl-1 pr-1.5">
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -76,14 +44,14 @@ export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
               href={item.href}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'md-ripple flex flex-1 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl py-1.5 transition-colors duration-200',
+                'md-ripple flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-1.5 transition-colors duration-200',
                 isActive ? 'text-amber-400' : 'text-slate-300'
               )}
             >
               {/* Material 3 active indicator: 64x32dp pill behind the icon */}
               <span
                 className={cn(
-                  'flex h-8 w-16 max-w-full items-center justify-center rounded-full transition-colors duration-200',
+                  'flex h-8 w-full max-w-16 items-center justify-center rounded-full transition-colors duration-200',
                   isActive ? 'bg-amber-400/25' : 'bg-transparent'
                 )}
               >
@@ -101,37 +69,8 @@ export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
           );
         })}
 
-        {/* Last slot is a back action once the user has drilled in, and falls
-            back to the full menu at the entry point of a section. */}
-        {canGoBack ? (
-          <button
-            type="button"
-            onClick={() => router.back()}
-            aria-label="Revenir à la page précédente"
-            className="md-ripple flex flex-1 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl py-1.5 text-amber-400 transition-colors duration-200"
-          >
-            <span className="flex h-8 w-16 max-w-full items-center justify-center rounded-full bg-amber-400/25">
-              <ArrowLeft className="h-6 w-6 shrink-0" strokeWidth={2.4} />
-            </span>
-            <span className="w-full truncate px-0.5 text-center text-[11px] font-semibold leading-4">
-              Retour
-            </span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onOpenMobileMenu}
-            aria-label="Ouvrir le menu complet"
-            className="md-ripple flex flex-1 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl py-1.5 text-slate-300 transition-colors duration-200"
-          >
-            <span className="flex h-8 w-16 max-w-full items-center justify-center rounded-full">
-              <Menu className="h-6 w-6 shrink-0" strokeWidth={1.8} />
-            </span>
-            <span className="w-full truncate px-0.5 text-center text-[11px] font-medium leading-4">
-              Menu
-            </span>
-          </button>
-        )}
+        {/* Trailing network indicator, pinned to the right of the bar. */}
+        <NetworkNavItem />
       </div>
     </nav>
   );

@@ -63,12 +63,25 @@
     touch-action: manipulation;
   }
 
-  /* On phones, dense data tables keep their columns and scroll inside their
-     own `overflow-x-auto` wrapper instead of squashing every cell. */
+  /* On phones a data table must never force a horizontal scroll. Densified
+     padding plus wrapping keeps every column reachable inside the viewport;
+     the pages that carry the most fields render a card list instead. */
   @media (max-width: 639px) {
     table {
-      min-width: max-content;
-      white-space: nowrap;
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    table th,
+    table td {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    table th {
+      white-space: normal;
     }
   }
 

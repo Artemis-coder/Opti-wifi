@@ -328,7 +328,34 @@ export default function DashboardPage() {
             </Card>
           ) : (
             <Card className="p-0 overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* Mobile card list */}
+              <ul className="sm:hidden divide-y divide-slate-200 dark:divide-slate-800">
+                {collections.slice(0, 5).map((col) => (
+                  <li key={col.id} className="p-3.5 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white min-w-0 truncate">
+                        {col.pos?.nom || 'POS'}
+                      </p>
+                      <Badge variant={col.statut === 'validee' ? 'success' : 'warning'}>
+                        {col.statut === 'validee' ? 'Validée' : 'Brouillon'}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {col.collecteur?.nom || 'Collecteur'}
+                    </p>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-base font-bold text-slate-900 dark:text-white">
+                        {formatCurrencyFCFA(col.montant_collecte)}
+                      </span>
+                      <span className="text-[11px] text-slate-500 shrink-0">
+                        {formatDateFR(col.created_at)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                     <tr>
