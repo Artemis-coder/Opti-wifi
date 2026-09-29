@@ -107,6 +107,13 @@
 .md-anim-slide-right { animation: md-slide-in-right 240ms cubic-bezier(0.2, 0, 0, 1) both; }
 
 @layer components {
+  /* Status chip anchored just below the 64dp app bar (plus any safe area).
+     The WebView is inset for the system bars, so the top inset is 0 inside
+     the Android app but stays correct on notched browsers. */
+  .app-status-anchor {
+    top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+  }
+
   /* ---------- App shell viewport ----------
      The app shell is locked to exactly one WebView viewport and the content
      area scrolls on its own. Without this the document itself grows, the
