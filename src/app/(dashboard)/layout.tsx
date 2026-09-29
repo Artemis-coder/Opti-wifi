@@ -152,13 +152,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+    <div className="app-viewport flex bg-slate-50 dark:bg-slate-950">
       <Sidebar isMobileOpen={isMobileOpen} onCloseMobile={() => setIsMobileOpen(false)} />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         <Header onOpenMobileMenu={() => setIsMobileOpen(true)} />
 
-        <main className="flex-1 p-4 sm:p-6 md:p-8 pb-24 lg:pb-8 overflow-y-auto">
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain p-3 sm:p-6 md:p-8 pb-8 lg:pb-8">
           {children}
         </main>
 

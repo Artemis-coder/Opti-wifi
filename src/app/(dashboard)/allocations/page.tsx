@@ -380,8 +380,76 @@ export default function AllocationsPage() {
                 </div>
               </div>
 
+              {/* Allocations — mobile card list */}
+              <ul className="sm:hidden divide-y divide-slate-200 dark:divide-slate-800">
+                {posAllocations.map((alloc) => {
+                  const typeInfo = getAllocationTypeLabel(alloc);
+                  const isReturn = alloc.type === 'exchange_return';
+                  const isReceive = alloc.type === 'exchange_receive';
+                  return (
+                    <li key={alloc.id} className="p-4 flex items-start gap-3">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                            {getTicketTypeName(alloc.ticket_type_id)}
+                          </span>
+                          <Badge variant={isReturn ? 'danger' : isReceive ? 'success' : 'info'}>
+                            {typeInfo.label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {formatDateFR(alloc.created_at)}
+                          </span>
+                          <span className="inline-flex items-center gap-1 truncate">
+                            <User className="w-3.5 h-3.5 shrink-0" />
+                            {getAllocatorName(alloc.alloue_par)}
+                          </span>
+                        </div>
+                        {alloc.notes && (
+                          <p className="text-[11px] text-slate-400 line-clamp-2">{alloc.notes}</p>
+                        )}
+                      </div>
+
+                      <div className="shrink-0 text-right space-y-1">
+                        <p className={`text-base font-bold ${
+                          isReturn ? 'text-red-600' : isReceive ? 'text-emerald-600' : 'text-slate-900 dark:text-white'
+                        }`}>
+                          {isReturn ? `-${alloc.quantite}` : alloc.quantite}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {formatCurrencyFCFA(alloc.quantite * getTicketTypePrix(alloc.ticket_type_id))}
+                        </p>
+                      </div>
+
+                      {isAdmin && (
+                        <div className="shrink-0 flex flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(alloc)}
+                            className="md-ripple tap-target flex items-center justify-center rounded-full text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
+                            aria-label="Modifier l'allocation"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmId(alloc.id)}
+                            className="md-ripple tap-target flex items-center justify-center rounded-full text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                            aria-label="Supprimer l'allocation"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+
               {/* Allocations Table */}
-              <div className="overflow-x-auto">
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                     <tr>
@@ -449,15 +517,17 @@ export default function AllocationsPage() {
                             <td className="px-4 py-3 text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <button
+                                  type="button"
                                   onClick={() => openEditModal(alloc)}
-                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                                  className="md-ripple p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
                                   title="Modifier"
                                 >
                                   <Edit className="w-4 h-4" />
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => setDeleteConfirmId(alloc.id)}
-                                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                                  className="md-ripple p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                                   title="Supprimer"
                                 >
                                   <Trash2 className="w-4 h-4" />

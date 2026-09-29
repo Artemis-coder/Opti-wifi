@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 tonal palette: Opti Wi-Fi navy + amber accent -->
+    <color name="ic_launcher_background">#0B1A3A</color>
+
+    <color name="md_primary">#0B1A3A</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_primary_container">#1D3763</color>
+    <color name="md_on_primary_container">#D9E2FF</color>
+
+    <color name="md_secondary">#475569</color>
+    <color name="md_on_secondary">#FFFFFF</color>
+    <color name="md_secondary_container">#D9E2FF</color>
+    <color name="md_on_secondary_container">#0B1A3A</color>
+
+    <color name="md_tertiary">#F59E0B</color>
+    <color name="md_on_tertiary">#1A1200</color>
+    <color name="md_tertiary_container">#FFDFA6</color>
+    <color name="md_on_tertiary_container">#3A2600</color>
+
+    <color name="md_error">#BA1A1A</color>
+    <color name="md_on_error">#FFFFFF</color>
+
+    <color name="md_background">#F7F8FC</color>
+    <color name="md_on_background">#111827</color>
+    <color name="md_surface">#F7F8FC</color>
+    <color name="md_on_surface">#111827</color>
+    <color name="md_surface_variant">#E3E7F0</color>
+    <color name="md_on_surface_variant">#4A5265</color>
+    <color name="md_outline">#C3C9D6</color>
+
+    <color name="splash_background">#0B1A3A</color>
+</resources>

@@ -28,23 +28,39 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-4 bg-slate-950/60 md-anim-fade"
+    >
       <div
+        onClick={(e) => e.stopPropagation()}
         className={cn(
-          'w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]',
+          'w-full bg-white dark:bg-slate-900 flex flex-col overflow-hidden safe-bottom',
+          // Material 3: modal bottom sheet on phones, dialog from sm upwards
+          'max-h-[92dvh] rounded-t-3xl md-elevation-3 md-anim-sheet',
+          'sm:max-w-lg sm:rounded-3xl sm:max-h-[88vh] sm:md-anim-scale',
           className
         )}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800">
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">{title}</h3>
+        <div className="relative flex items-center justify-between gap-3 px-4 sm:px-5 pt-3 sm:pt-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+          {/* Drag handle — Material 3 bottom sheet affordance */}
+          <div aria-hidden className="sm:hidden absolute left-1/2 -translate-x-1/2 top-2 w-9 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+          <h3 className="min-w-0 flex-1 truncate pt-2 sm:pt-0 text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">
+            {title}
+          </h3>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            aria-label="Fermer"
+            className="md-ripple tap-target shrink-0 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-4 sm:p-6 overflow-y-auto">{children}</div>
+        <div className="md-scroll flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">{children}</div>
       </div>
     </div>
   );

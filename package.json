@@ -10,9 +10,21 @@
     "backup": "bash scripts/backup.sh",
     "backup:restore": "bash scripts/backup.sh --restore=",
     "backup:list": "bash scripts/backup.sh --list",
-    "backup:clean": "bash scripts/cron_backup.sh"
+    "backup:clean": "bash scripts/cron_backup.sh",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "android:apk": "cap sync android && cd android && ./gradlew assembleRelease",
+    "android:apk:debug": "cap sync android && cd android && ./gradlew assembleDebug",
+    "android:assets": "python3 scripts/generate_android_assets.py"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/haptics": "^7.0.5",
+    "@capacitor/keyboard": "^7.0.6",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@capacitor/status-bar": "^7.0.6",
     "@hookform/resolvers": "^5.9.1",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
@@ -31,6 +43,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.6.9",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

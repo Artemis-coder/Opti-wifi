@@ -65,14 +65,18 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const content = (
     <aside className="bg-[#0b1a3a] text-white flex flex-col h-full border-r border-slate-800 shadow-xl">
       {/* Brand Header */}
-      <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800/80">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg overflow-hidden relative bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+      <div className="h-16 flex items-center justify-between gap-2 px-4 sm:px-6 border-b border-slate-800/80">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 shrink-0 rounded-lg overflow-hidden relative bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
             <Image src="/assets/logo.jpg" alt="OptiWifi Logo" width={36} height={36} className="object-cover" />
           </div>
-          <div>
-            <h1 className="font-bold text-lg leading-tight tracking-wide text-white">👑 Espace Administrateur</h1>
-            <p className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Gestion Tickets</p>
+          <div className="min-w-0">
+            <h1 className="font-bold text-base sm:text-lg leading-tight tracking-wide text-white truncate">
+              👑 Espace Administrateur
+            </h1>
+            <p className="text-[10px] text-slate-400 font-medium tracking-wider uppercase truncate">
+              Gestion Tickets
+            </p>
           </div>
         </div>
 
@@ -81,7 +85,8 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
           <button
             type="button"
             onClick={onCloseMobile}
-            className="lg:hidden p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="md-ripple tap-target lg:hidden shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
+            aria-label="Fermer le menu"
           >
             <X className="w-5 h-5" />
           </button>
@@ -99,15 +104,16 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onCloseMobile}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-150',
+                'md-ripple flex items-center gap-3 min-h-12 px-3 rounded-2xl text-sm font-medium transition-colors duration-150',
                 isActive
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                  ? 'bg-amber-500 text-slate-950 font-bold'
                   : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
               )}
             >
-              <Icon className={cn('w-5 h-5', isActive ? 'text-slate-950' : 'text-slate-400')} />
-              <span>{item.label}</span>
+              <Icon className={cn('w-5 h-5 shrink-0', isActive ? 'text-slate-950' : 'text-slate-400')} />
+              <span className="truncate">{item.label}</span>
             </Link>
           );
         })}
@@ -150,29 +156,20 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
         {content}
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer — Material 3 modal bottom sheet */}
       {isMobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
           <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs animate-in fade-in"
+            className="fixed inset-0 bg-slate-950/60 md-anim-fade"
             onClick={onCloseMobile}
           />
-          <div className="relative z-10 w-screen h-[90vh] max-h-[90vh] mt-auto mx-0 mb-0 animate-in slide-in-from-bottom duration-200 rounded-2xl overflow-hidden flex flex-col">
-            {/* Drag Handle & Close Button */}
-            <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
-              <div className="flex-1 flex justify-center">
-                <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
-              </div>
-              <button
-                onClick={onCloseMobile}
-                className="ml-4 p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition"
-                aria-label="Fermer le menu"
-              >
-                <X className="w-5 h-5" />
-              </button>
+          <div className="relative z-10 w-full h-[90dvh] max-h-[90dvh] mt-auto md-elevation-3 md-anim-sheet rounded-t-3xl overflow-hidden flex flex-col safe-bottom">
+            {/* Drag handle — the close button lives in the brand header below */}
+            <div className="flex items-center justify-center px-4 pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
             </div>
             {/* Drawer Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               {content}
             </div>
           </div>

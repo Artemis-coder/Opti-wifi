@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -17,23 +17,34 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Opti Wi-Fi",
   description: "Gestion de points de vente, allocations de tickets et encaissements",
+  applicationName: "Opti Wi-Fi",
+  appleWebApp: { capable: true, title: "Opti Wi-Fi", statusBarStyle: "black-translucent" },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    apple: "/assets/logo.jpg",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0b1a3a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}
         <ConnectionStatus />
-        <Toaster closeButton position="top-right" />
+        <Toaster closeButton position="top-center" offset={72} />
       </body>
     </html>
   );

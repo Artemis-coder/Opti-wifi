@@ -241,7 +241,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
+              className={`md-ripple tap-target flex-1 text-xs sm:text-sm font-bold rounded-xl transition-colors ${
                 mode === 'login'
                   ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -252,7 +252,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => { setMode('register'); setError(''); setSuccessMsg(''); }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
+              className={`md-ripple tap-target flex-1 text-xs sm:text-sm font-bold rounded-xl transition-colors ${
                 mode === 'register'
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
                   : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -297,12 +297,12 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => { setMode('recovery'); setError(''); setSuccessMsg(''); }}
-              className="text-xs text-amber-600 hover:text-amber-700 font-semibold"
+              className="md-ripple text-amber-600 hover:text-amber-700 font-semibold text-sm py-3 px-2 -ml-2"
             >
               Mot de passe oublié ?
             </button>
 
-            <Button type="submit" className="w-full h-11 text-sm font-bold" isLoading={loading}>
+            <Button type="submit" className="w-full h-12 sm:h-11 text-sm font-bold" isLoading={loading}>
               Se connecter à mon espace
             </Button>
           </form>

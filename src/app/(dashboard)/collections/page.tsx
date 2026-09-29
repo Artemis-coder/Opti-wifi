@@ -77,7 +77,62 @@ export default function CollectionsPage() {
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <ul className="sm:hidden divide-y divide-slate-200 dark:divide-slate-800">
+            {collections.map((c) => (
+              <li key={c.id} className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                      {c.pos?.nom || 'POS'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {c.collecteur?.nom || 'Collecteur'} ·{' '}
+                      {c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}
+                    </p>
+                  </div>
+                  <Badge variant={c.statut === 'validee' ? 'success' : 'warning'}>
+                    {c.statut === 'validee' ? 'Validée' : 'Brouillon'}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Attendu</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {formatCurrencyFCFA(c.montant_attendu)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Commission</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {formatCurrencyFCFA(Number(c.commission || 0))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Encaissé</span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {formatCurrencyFCFA(c.montant_collecte)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Écart</span>
+                    {c.difference === 0 ? (
+                      <span className="font-bold text-emerald-600 inline-flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> 0
+                      </span>
+                    ) : (
+                      <span className="font-bold text-red-600 inline-flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" /> {formatCurrencyFCFA(c.difference)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
