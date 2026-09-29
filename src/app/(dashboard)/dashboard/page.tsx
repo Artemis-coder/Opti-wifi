@@ -16,6 +16,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StatTile } from '@/components/ui/StatTile';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { CollectionDetailSheet } from '@/components/collections/CollectionDetailSheet';
@@ -142,87 +143,51 @@ export default function DashboardPage() {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* KPI 1: Tickets Vendus */}
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Vendus</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Ticket className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatNumber(ticketsSoldTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Nombre total de pass écoulés</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Tickets Vendus"
+          value={formatNumber(ticketsSoldTotal)}
+          hint="Nombre total de pass écoulés"
+          icon={Ticket}
+          tone="amber"
+        />
 
         {/* KPI 1b: Tickets Alloués */}
-        <Card className="border-l-4 border-l-purple-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Alloués</span>
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
-              <Package className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatNumber(ticketsAllouesTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Stock total distribué aux POS</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Tickets Alloués"
+          value={formatNumber(ticketsAllouesTotal)}
+          hint="Stock total distribué aux POS"
+          icon={Package}
+          tone="purple"
+        />
 
         {/* KPI 2: Chiffre d'Affaires */}
-        <Card className="border-l-4 border-l-blue-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chiffre d&apos;Affaires</span>
-            <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
-              <Banknote className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatCurrencyFCFA(chiffreAffairesTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Montant théorique attendu</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Chiffre d'Affaires"
+          value={formatCurrencyFCFA(chiffreAffairesTotal)}
+          hint="Montant théorique attendu"
+          icon={Banknote}
+          tone="blueDark"
+        />
 
         {/* KPI 3: Montant Encaissé */}
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Encaissé</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Receipt className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatCurrencyFCFA(montantCollecteTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Total espèces perçues</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Total Encaissé"
+          value={formatCurrencyFCFA(montantCollecteTotal)}
+          hint="Total espèces perçues"
+          icon={Receipt}
+          tone="emerald"
+        />
 
         {/* KPI 4: Écart Global */}
-        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Écart / Différence</span>
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400">
-              <ArrowDownRight className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className={`text-2xl font-extrabold ${ecartTotal < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-              {formatCurrencyFCFA(ecartTotal)}
-            </p>
-            <div className="flex items-center justify-between mt-1 text-xs text-slate-500">
-              <span>POS Enregistrés</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{posActifsCount} points</span>
-            </div>
-          </div>
-        </Card>
+        <StatTile
+          label="Écart / Différence"
+          value={formatCurrencyFCFA(ecartTotal)}
+          valueClassName={ecartTotal < 0 ? 'text-red-600' : 'text-emerald-600'}
+          hint={`${posActifsCount} points enregistrés`}
+          icon={ArrowDownRight}
+          tone="red"
+          className="col-span-2 sm:col-span-1"
+        />
       </div>
 
       {/* Main Content Grid: Quick Actions & Recent Activity */}

@@ -21,6 +21,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StatTile } from '@/components/ui/StatTile';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from '../edit-pos-modal';
@@ -297,74 +298,46 @@ export default function PosDetailPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Alloués</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Package className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalAlloue}</p>
-            <p className="text-xs text-slate-500 mt-1">Stock total alloué à ce POS</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Tickets Alloués"
+          value={totalAlloue}
+          hint="Stock total alloué à ce POS"
+          icon={Package}
+          tone="amber"
+        />
 
-        <Card className="border-l-4 border-l-blue-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Vendus</span>
-            <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
-              <ShoppingCart className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalVendu}</p>
-            <p className="text-xs text-slate-500 mt-1">Nombre total de pass écoulés</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Tickets Vendus"
+          value={totalVendu}
+          hint="Nombre total de pass écoulés"
+          icon={ShoppingCart}
+          tone="blueDark"
+        />
 
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Restants</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Package className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalRestant}</p>
-            <p className="text-xs text-slate-500 mt-1">Stock non encore vendu</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Tickets Restants"
+          value={totalRestant}
+          hint="Stock non encore vendu"
+          icon={Package}
+          tone="emerald"
+        />
 
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chiffre d&apos;Affaires</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatCurrencyFCFA(totalCA)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">CA total depuis les collectes</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Chiffre d'Affaires"
+          value={formatCurrencyFCFA(totalCA)}
+          hint="CA total depuis les collectes"
+          icon={BarChart3}
+          tone="amber"
+        />
 
-        <Card className="border-l-4 border-l-amber-500 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Commission Totale</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Receipt className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatCurrencyFCFA(totalCommission)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Total commissions versées</p>
-          </div>
-        </Card>
+        <StatTile
+          label="Commission Totale"
+          value={formatCurrencyFCFA(totalCommission)}
+          hint="Total commissions versées"
+          icon={Receipt}
+          tone="emerald"
+          className="col-span-2 sm:col-span-1"
+        />
       </div>
 
       {/* Allocation Summary Table */}

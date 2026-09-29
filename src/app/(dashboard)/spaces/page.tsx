@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Edit, Trash2, MapPin, Loader2, AlertCircle, Store, Link2, Unlink, Search, Power, PowerOff } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StatTile } from '@/components/ui/StatTile';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -208,36 +209,30 @@ export default function WifiSpacesPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Espaces</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
-              <MapPin className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{totalSpaces}</p>
-        </Card>
-
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Actifs</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
-              <Power className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{activeSpaces}</p>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Désactivés</span>
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
-              <PowerOff className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{inactiveSpaces}</p>
-        </Card>
+      {/* KPI Cards — 2 par ligne sur mobile, la 3e tuile occupe la ligne, 3 a partir de lg */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <StatTile
+          label="Total Espaces"
+          value={totalSpaces}
+          hint="Tous les espaces enregistrés"
+          icon={MapPin}
+          tone="amber"
+        />
+        <StatTile
+          label="Actifs"
+          value={activeSpaces}
+          hint="Ouverts et opérationnels"
+          icon={Power}
+          tone="emerald"
+        />
+        <StatTile
+          label="Désactivés"
+          value={inactiveSpaces}
+          hint="Fermés ou désactivés"
+          icon={PowerOff}
+          tone="red"
+          className="col-span-2 lg:col-span-1"
+        />
       </div>
 
       {/* Filter Bar */}

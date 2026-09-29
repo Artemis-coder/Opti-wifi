@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Store, Plus, Search, MapPin, UserCheck, Loader2, Edit, Power, PowerOff, ArrowLeftRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StatTile } from '@/components/ui/StatTile';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from './edit-pos-modal';
@@ -126,50 +127,36 @@ export default function PosPage() {
         </Button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total POS</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
-              <Store className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{totalPos}</p>
-        </Card>
-
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Actifs</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
-              <Power className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{activePos}</p>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Désactivés</span>
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
-              <PowerOff className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{inactivePos}</p>
-        </Card>
-
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valeur du stock alloué</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
-              <ArrowLeftRight className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">
-            {formatCurrencyFCFA(totalStockValue)}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Total cumulé sur tous les POS</p>
-        </Card>
+      {/* KPI Cards — 2 par ligne sur mobile, 4 en une ligne a partir de lg */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatTile
+          label="Total POS"
+          value={totalPos}
+          hint="Tous les points de vente"
+          icon={Store}
+          tone="amber"
+        />
+        <StatTile
+          label="Actifs"
+          value={activePos}
+          hint="Ouverts et opérationnels"
+          icon={Power}
+          tone="emerald"
+        />
+        <StatTile
+          label="Désactivés"
+          value={inactivePos}
+          hint="Fermés ou désactivés"
+          icon={PowerOff}
+          tone="red"
+        />
+        <StatTile
+          label="Valeur du stock alloué"
+          value={formatCurrencyFCFA(totalStockValue)}
+          hint="Total cumulé sur tous les POS"
+          icon={ArrowLeftRight}
+          tone="amber"
+        />
       </div>
 
       {/* Filter Bar */}
