@@ -19,7 +19,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
-import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
+import { formatCurrencyFCFA, formatDateFR, formatDateOnlyFR } from '@/lib/utils/format';
 import { SubscriptionWithPlan, SubscriptionStatus } from '@/types/platform';
 
 const STATUS_CONFIG: Record<SubscriptionStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral'; icon: React.ReactNode }> = {
@@ -92,62 +92,70 @@ export default function OrganizationSubscriptionPage() {
         <p className="text-xs text-slate-500 mt-1">Gérez votre abonnement et consultez son statut.</p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Abonnement en cours</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
-              <Activity className="w-5 h-5" />
+      {/* KPI Cards — 2 par ligne sur mobile, 4 en une ligne a partir de lg */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="flex flex-col border-l-4 border-l-emerald-500">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-2xl font-extrabold leading-none text-slate-900 dark:text-white">
+              {currentSubscription ? 'Oui' : 'Non'}
+            </p>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 shrink-0">
+              <Activity className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">
-            {currentSubscription ? 'Oui' : 'Non'}
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide mt-3">
+            Abonnement en cours
           </p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-[11px] text-slate-500 mt-auto pt-1">
             {currentSubscription ? STATUS_CONFIG[currentSubscription.status]?.label || currentSubscription.status : 'Aucun actif'}
           </p>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Désactivés</span>
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
-              <Ban className="w-5 h-5" />
+        <Card className="flex flex-col border-l-4 border-l-red-500">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-2xl font-extrabold leading-none text-slate-900 dark:text-white">
+              {otherSubscriptions.filter((s) => s.status === 'cancelled' || s.status === 'suspended').length}
+            </p>
+            <div className="p-2 rounded-lg bg-red-500/10 text-red-600 shrink-0">
+              <Ban className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">
-            {otherSubscriptions.filter((s) => s.status === 'cancelled' || s.status === 'suspended').length}
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide mt-3">
+            Désactivés
           </p>
-          <p className="text-xs text-slate-500 mt-1">Abonnements annulés ou suspendus</p>
+          <p className="text-[11px] text-slate-500 mt-auto pt-1">Abonnements annulés ou suspendus</p>
         </Card>
 
-        <Card className="border-l-4 border-l-amber-500 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jours restants</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
-              <Calendar className="w-5 h-5" />
+        <Card className="flex flex-col border-l-4 border-l-amber-500">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-2xl font-extrabold leading-none text-slate-900 dark:text-white">
+              {currentSubscription?.end_date ? (calculateDaysRemaining(currentSubscription.end_date) ?? 0) : '—'}
+            </p>
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 shrink-0">
+              <Calendar className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">
-            {currentSubscription?.end_date ? (calculateDaysRemaining(currentSubscription.end_date) ?? 0) : '—'}
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide mt-3">
+            Jours restants
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            {currentSubscription?.end_date ? `Jusqu'au ${formatDateFR(currentSubscription.end_date)}` : 'Date non définie'}
+          <p className="text-[11px] text-slate-500 mt-auto pt-1">
+            {currentSubscription?.end_date ? `Jusqu'au ${formatDateOnlyFR(currentSubscription.end_date)}` : 'Date non définie'}
           </p>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total abonnements</span>
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600">
-              <CreditCard className="w-5 h-5" />
+        <Card className="flex flex-col border-l-4 border-l-blue-500">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-2xl font-extrabold leading-none text-slate-900 dark:text-white">
+              {otherSubscriptions.length + (currentSubscription ? 1 : 0)}
+            </p>
+            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 shrink-0">
+              <CreditCard className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">
-            {otherSubscriptions.length + (currentSubscription ? 1 : 0)}
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide mt-3">
+            Total abonnements
           </p>
-          <p className="text-xs text-slate-500 mt-1">Enregistrés sur l&apos;organisation</p>
+          <p className="text-[11px] text-slate-500 mt-auto pt-1">Enregistrés sur l&apos;organisation</p>
         </Card>
       </div>
 
