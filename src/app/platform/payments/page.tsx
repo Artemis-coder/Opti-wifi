@@ -13,7 +13,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PaymentStatus } from '@/types/platform';
@@ -116,17 +116,21 @@ export default function PlatformPaymentsPage() {
               className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
-          <Input
+          <DatePicker
             label="Date de début"
-            type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={setStartDate}
+            placeholder="Toutes les dates"
+            maxDate={endDate || undefined}
+            clearable
           />
-          <Input
+          <DatePicker
             label="Date de fin"
-            type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={setEndDate}
+            placeholder="Toutes les dates"
+            minDate={startDate || undefined}
+            clearable
           />
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-500 uppercase">Statut</label>

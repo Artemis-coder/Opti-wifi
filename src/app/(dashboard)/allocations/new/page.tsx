@@ -6,6 +6,7 @@ import { ArrowLeftRight, CheckCircle2, Loader2, AlertCircle, Plus, Trash2, Recei
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { Select } from '@/components/ui/Select';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
@@ -186,16 +187,11 @@ const addLine = () => {
                 options={posList.map((p) => ({ value: p.id, label: p.nom, description: p.ville }))}
               />
 
-               <div className="space-y-1.5">
-                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                   Date d&apos;Allocation
-                 </label>
-                 <Input
-                   type="date"
-                   value={dateAllocation}
-                   onChange={(e) => setDateAllocation(e.target.value)}
-                 />
-               </div>
+               <DatePicker
+                 label="Date d'Allocation"
+                 value={dateAllocation}
+                 onChange={setDateAllocation}
+               />
 
                <div className="space-y-3">
                  <div className="flex items-center justify-between">

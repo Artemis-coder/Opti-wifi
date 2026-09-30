@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { Badge } from '@/components/ui/Badge';
 import { formatDateFR } from '@/lib/utils/format';
 import { PlatformAuditLogWithUser } from '@/types/platform';
@@ -109,17 +110,21 @@ export default function PlatformAuditLogsPage() {
             value={entityTypeFilter}
             onChange={(e) => setEntityTypeFilter(e.target.value)}
           />
-          <Input
+          <DatePicker
             label="Date de début"
-            type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={setStartDate}
+            placeholder="Toutes les dates"
+            maxDate={endDate || undefined}
+            clearable
           />
-          <Input
+          <DatePicker
             label="Date de fin"
-            type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={setEndDate}
+            placeholder="Toutes les dates"
+            minDate={startDate || undefined}
+            clearable
           />
         </div>
       </Card>

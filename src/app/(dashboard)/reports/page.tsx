@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FileSpreadsheet, Download, Store, Users, Ticket, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
@@ -167,17 +167,21 @@ export default function ReportsPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
+          <DatePicker
             label="Date de début"
-            type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={setStartDate}
+            placeholder="Toutes les dates"
+            maxDate={endDate || undefined}
+            clearable
           />
-          <Input
+          <DatePicker
             label="Date de fin"
-            type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={setEndDate}
+            placeholder="Toutes les dates"
+            minDate={startDate || undefined}
+            clearable
           />
         </div>
       </Card>

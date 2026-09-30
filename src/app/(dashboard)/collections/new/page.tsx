@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
@@ -381,11 +382,10 @@ export default function NewCollectionWizard() {
                   onChange={(e) => setCommission(e.target.value)}
                   placeholder="ex: 2000"
                 />
-                <Input
+                <DatePicker
                   label="Date de collecte"
-                  type="date"
                   value={dateCollecte}
-                  onChange={(e) => setDateCollecte(e.target.value)}
+                  onChange={setDateCollecte}
                 />
               </div>
               <div className="flex justify-between pt-4">

@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/format';
 import { toast } from 'sonner';
 import {
@@ -674,29 +675,23 @@ export default function ClientDetailPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Date de début (optionnel)
-              </label>
-              <input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Date de fin (optionnel)
-              </label>
-              <input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <DatePicker
+              label="Date de début (optionnel)"
+              value={customStartDate}
+              onChange={setCustomStartDate}
+              placeholder="Selon le plan"
+              maxDate={customEndDate || undefined}
+              clearable
+            />
+            <DatePicker
+              label="Date de fin (optionnel)"
+              value={customEndDate}
+              onChange={setCustomEndDate}
+              placeholder="Selon le plan"
+              minDate={customStartDate || undefined}
+              clearable
+            />
           </div>
 
           <label className="flex items-center gap-2">
