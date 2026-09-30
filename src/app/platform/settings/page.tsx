@@ -18,6 +18,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { PlatformSettings } from '@/types/platform';
@@ -165,21 +166,17 @@ export default function PlatformSettingsPage() {
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-            Devise principale
-          </label>
-          <select
-            value={getString('platform_currency', 'XOF')}
-            onChange={(e) => updateValue('platform_currency', e.target.value)}
-            className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-          >
-            <option value="XOF">Franc CFA (XOF)</option>
-            <option value="XAF">Franc CFA (XAF)</option>
-            <option value="EUR">Euro (EUR)</option>
-            <option value="USD">Dollar US (USD)</option>
-          </select>
-        </div>
+        <Select
+          label="Devise principale"
+          value={getString('platform_currency', 'XOF')}
+          onChange={(v) => updateValue('platform_currency', v)}
+          options={[
+            { value: 'XOF', label: 'Franc CFA (XOF)' },
+            { value: 'XAF', label: 'Franc CFA (XAF)' },
+            { value: 'EUR', label: 'Euro (EUR)' },
+            { value: 'USD', label: 'Dollar US (USD)' },
+          ]}
+        />
 
         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
           <div className="flex items-center gap-3">

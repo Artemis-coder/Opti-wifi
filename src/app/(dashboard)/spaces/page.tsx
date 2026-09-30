@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { StatTile } from '@/components/ui/StatTile';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -382,20 +383,16 @@ export default function WifiSpacesPage() {
                   onChange={(e) => setVille(e.target.value)}
                   placeholder="ex: Abidjan"
                 />
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Statut
-                  </label>
-                  <select
-                    value={statut}
-                    onChange={(e) => setStatut(e.target.value as 'actif' | 'inactif' | 'suspendu')}
-                    className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
-                  >
-                    <option value="actif">Actif</option>
-                    <option value="inactif">Inactif</option>
-                    <option value="suspendu">Suspendu</option>
-                  </select>
-                </div>
+                <Select
+                  label="Statut"
+                  value={statut}
+                  onChange={(v) => setStatut(v as 'actif' | 'inactif' | 'suspendu')}
+                  options={[
+                    { value: 'actif', label: 'Actif' },
+                    { value: 'inactif', label: 'Inactif' },
+                    { value: 'suspendu', label: 'Suspendu' },
+                  ]}
+                />
                 <div className="flex justify-end gap-3 pt-2">
                   <Button type="button" variant="ghost" onClick={handleCloseModal}>
                     Annuler

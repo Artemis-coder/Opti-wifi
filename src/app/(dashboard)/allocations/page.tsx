@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, TicketAllocation, TicketType, Profile, AllocationStatut } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
@@ -281,21 +282,15 @@ export default function AllocationsPage() {
       <Card className="p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-              Filtrer par Point de Vente
-            </label>
-            <select
+            <Select
+              label="Filtrer par Point de Vente"
               value={selectedPosId}
-              onChange={(e) => setSelectedPosId(e.target.value)}
-              className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
-            >
-              <option value="all">Tous les points de vente</option>
-              {posList.map((pos) => (
-                <option key={pos.id} value={pos.id}>
-                  {pos.nom}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedPosId}
+              options={[
+                { value: 'all', label: 'Tous les points de vente' },
+                ...posList.map((pos) => ({ value: pos.id, label: pos.nom })),
+              ]}
+            />
           </div>
         </div>
       </Card>
@@ -629,18 +624,16 @@ export default function AllocationsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Statut
-              </label>
-              <select
+              <Select
+                label="Statut"
                 value={editStatut}
-                onChange={(e) => setEditStatut(e.target.value as AllocationStatut)}
-                className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
-              >
-                <option value="fonctionnel">Fonctionnel</option>
-                <option value="non_fonctionnel">Non fonctionnel</option>
-                <option value="en_reparation">En réparation</option>
-              </select>
+                onChange={(v) => setEditStatut(v as AllocationStatut)}
+                options={[
+                  { value: 'fonctionnel', label: 'Fonctionnel' },
+                  { value: 'non_fonctionnel', label: 'Non fonctionnel' },
+                  { value: 'en_reparation', label: 'En réparation' },
+                ]}
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">

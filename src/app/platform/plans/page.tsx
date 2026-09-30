@@ -16,6 +16,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { toast } from 'sonner';
@@ -331,36 +332,20 @@ export default function PlatformPlansPage() {
               onChange={(e) => setFormPrice(e.target.value)}
               required
             />
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Devise
-              </label>
-              <select
-                value={formCurrency}
-                onChange={(e) => setFormCurrency(e.target.value)}
-                className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Devise"
+              value={formCurrency}
+              onChange={setFormCurrency}
+              options={CURRENCIES.map((c) => ({ value: c.value, label: c.label }))}
+            />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Période de facturation
-            </label>
-            <select
-              value={formPeriod}
-              onChange={(e) => setFormPeriod(e.target.value as BillingPeriod)}
-              className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-            >
-              {BILLING_PERIODS.map((p) => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Période de facturation"
+            value={formPeriod}
+            onChange={(v) => setFormPeriod(v as BillingPeriod)}
+            options={BILLING_PERIODS.map((p) => ({ value: p.value, label: p.label }))}
+          />
 
           <Input
             label="Jours d'essai"
@@ -391,20 +376,12 @@ export default function PlatformPlansPage() {
             onChange={(e) => setFormMaxTickets(e.target.value)}
           />
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Statut
-            </label>
-            <select
-              value={formStatus}
-              onChange={(e) => setFormStatus(e.target.value as PlanStatus)}
-              className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-            >
-              {PLAN_STATUSES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Statut"
+            value={formStatus}
+            onChange={(v) => setFormStatus(v as PlanStatus)}
+            options={PLAN_STATUSES.map((s) => ({ value: s.value, label: s.label }))}
+          />
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleCloseModal} disabled={submitting}>

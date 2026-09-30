@@ -22,6 +22,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
@@ -98,8 +99,8 @@ export default function ExchangePage() {
     loadOptions();
   }, [supabase, currentSpaceId, user?.organization_id]);
 
-  const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPosId(e.target.value);
+  const handlePosChange = (value: string) => {
+    setPosId(value);
     setReturns([]);
     setReturnsDefect([]);
     setReceives([]);
@@ -420,20 +421,13 @@ export default function ExchangePage() {
           {step === 1 && (
             <Card className="p-6 space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Point de Vente concerné
-                </label>
-                <select
-                  value={posId}
-                  onChange={handlePosChange}
-                  className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium"
-                >
-                  {posList.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Point de Vente concerné"
+                value={posId}
+                onChange={handlePosChange}
+                placeholder="Choisir un point de vente"
+                options={posList.map((p) => ({ value: p.id, label: p.nom, description: p.ville }))}
+              />
 
               <div className="pt-4 flex justify-end">
                 <Button type="button" onClick={() => setStep(2)} className="gap-2">
@@ -629,20 +623,22 @@ export default function ExchangePage() {
                       return (
                         <div key={index} className="flex flex-col sm:flex-row items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
                             <div className="flex-1 space-y-2 w-full">
-                              <select
+                              <Select
                                 value={line.ticketTypeId}
-                                onChange={(e) => updateReceive(index, 'ticketTypeId', e.target.value)}
-                                className="w-full h-9 px-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium"
-                              >
-                                <option value="">Sélectionner un type</option>
-                                {ticketTypes
-                                  .filter((t) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
-                                  .map((t) => (
-                                    <option key={t.id} value={t.id}>
-                                      {t.nom} — {formatCurrencyFCFA(Number(t.prix))}
-                                    </option>
-                                  ))}
-                              </select>
+                                onChange={(v) => updateReceive(index, 'ticketTypeId', v)}
+                                placeholder="Sélectionner un type"
+                                searchPlaceholder="Rechercher un type de ticket"
+                                options={[
+                                  { value: '', label: 'Sélectionner un type' },
+                                  ...ticketTypes
+                                    .filter((t) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
+                                    .map((t) => ({
+                                      value: t.id,
+                                      label: t.nom,
+                                      description: formatCurrencyFCFA(Number(t.prix)),
+                                    })),
+                                ]}
+                              />
                               <div className="grid grid-cols-2 gap-2">
                                 <Input
                                   label="Quantité à recevoir"

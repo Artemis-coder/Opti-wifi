@@ -35,6 +35,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/format';
 import { toast } from 'sonner';
 import {
@@ -631,24 +632,17 @@ export default function ClientDetailPage() {
         title="Attribuer un abonnement"
       >
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Plan *
-            </label>
-            <select
-              value={selectedPlanId}
-              onChange={(e) => setSelectedPlanId(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-            >
-              <option value="">Sélectionner un plan</option>
-              {plans.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} - {formatCurrencyFCFA(p.price)} / {p.billing_period}
-                  {p.trial_days && p.trial_days > 0 && ` (${p.trial_days} jours d'essai)`}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Plan *"
+            value={selectedPlanId}
+            onChange={setSelectedPlanId}
+            placeholder="Sélectionner un plan"
+            options={plans.map((p) => ({
+              value: p.id,
+              label: `${p.name} - ${formatCurrencyFCFA(p.price)} / ${p.billing_period}`,
+              description: p.trial_days && p.trial_days > 0 ? `${p.trial_days} jours d'essai` : undefined,
+            }))}
+          />
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">

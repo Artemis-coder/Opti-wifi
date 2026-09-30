@@ -14,8 +14,11 @@ export interface SelectOption {
 
 interface SelectProps {
   options: SelectOption[];
-  value: string;
-  onChange: (value: string) => void;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  /** Rend la valeur lisible dans un FormData lors d'une soumission native. */
+  name?: string;
   label?: string;
   placeholder?: string;
   /** Seuil au-delà duquel un champ de recherche est proposé. */
@@ -39,7 +42,9 @@ interface SelectProps {
 export function Select({
   options,
   value,
+  defaultValue = '',
   onChange,
+  name,
   label,
   placeholder = 'Sélectionner...',
   searchThreshold = 8,
@@ -48,12 +53,17 @@ export function Select({
   disabled = false,
   className,
 }: SelectProps) {
+  // Mode controle quand value est fourni, sinon mode non controle : le
+  // declencheur garde sa propre valeur et reste lisible dans un FormData.
+  const isControlled = value !== undefined;
+  const [inner, setInner] = useState(defaultValue);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const selected = options.find((o) => o.value === value);
+  const current = isControlled ? value : inner;
+  const selected = options.find((o) => o.value === current);
   const isSearchable = options.length > searchThreshold;
 
   useEffect(() => {
@@ -93,7 +103,8 @@ export function Select({
   }, [options, query]);
 
   const commit = (v: string) => {
-    onChange(v);
+    if (!isControlled) setInner(v);
+    onChange?.(v);
     setQuery('');
     setOpen(false);
   };
@@ -136,6 +147,10 @@ export function Select({
         />
       </button>
 
+      {/* Rend la valeur lisible dans un FormData pour les formulaires
+          soumis de maniere native, comme sur la fiche d'un espace. */}
+      {name && <input type="hidden" name={name} value={current} />}
+
       <Modal
         isOpen={open}
         onClose={closeSheet}
@@ -161,7 +176,7 @@ export function Select({
         ) : (
           <ul role="listbox" className="space-y-1.5 -mx-1">
             {filtered.map((o) => {
-              const isSelected = o.value === value;
+              const isSelected = o.value === current;
               return (
                 <li key={o.value}>
                   <button

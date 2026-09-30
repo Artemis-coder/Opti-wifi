@@ -6,6 +6,7 @@ import { ArrowLeftRight, CheckCircle2, Loader2, AlertCircle, Plus, Trash2, Recei
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { useRouter } from 'next/navigation';
@@ -177,20 +178,13 @@ const addLine = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Point de Vente Cible
-                </label>
-                <select
-                  value={posId}
-                  onChange={(e) => setPosId(e.target.value)}
-                  className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
-                >
-                  {posList.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
-                  ))}
-                 </select>
-               </div>
+              <Select
+                label="Point de Vente Cible"
+                value={posId}
+                onChange={setPosId}
+                placeholder="Choisir un point de vente"
+                options={posList.map((p) => ({ value: p.id, label: p.nom, description: p.ville }))}
+              />
 
                <div className="space-y-1.5">
                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -216,15 +210,17 @@ const addLine = () => {
                 {lines.map((line, index) => (
                   <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
                     <div className="flex-1 space-y-2">
-                      <select
+                      <Select
                         value={line.ticketTypeId}
-                        onChange={(e) => updateLine(index, 'ticketTypeId', e.target.value)}
-                        className="w-full h-9 px-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium"
-                      >
-                        {ticketTypes.map((t) => (
-                          <option key={t.id} value={t.id}>{t.nom} — {formatCurrencyFCFA(t.prix)}</option>
-                        ))}
-                      </select>
+                        onChange={(v) => updateLine(index, 'ticketTypeId', v)}
+                        placeholder="Sélectionner un type"
+                        searchPlaceholder="Rechercher un type de ticket"
+                        options={ticketTypes.map((t) => ({
+                          value: t.id,
+                          label: t.nom,
+                          description: formatCurrencyFCFA(t.prix),
+                        }))}
+                      />
                       <div className="grid grid-cols-2 gap-2">
                         <Input
                           label="Quantité allouée"
