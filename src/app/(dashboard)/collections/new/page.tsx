@@ -7,6 +7,7 @@ import { Receipt, CheckCircle2, ArrowRight, ArrowLeft, Loader2, Package } from '
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
@@ -60,11 +61,6 @@ export default function NewCollectionWizard() {
     }
     loadOptions();
   }, [currentSpaceId, user?.organization_id, supabase]);
-
-  const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPosId(e.target.value);
-    setQuantities({});
-  };
 
   useEffect(() => {
     async function loadAllocations() {
@@ -208,7 +204,7 @@ export default function NewCollectionWizard() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto w-full min-w-0 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <Receipt className="w-6 h-6 text-amber-500" />
@@ -258,18 +254,21 @@ export default function NewCollectionWizard() {
           {step === 1 && (
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Point de Vente concerné</label>
-                <select
-                  value={posId}
-                  onChange={handlePosChange}
-                  className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium"
-                >
-                  {posList.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Point de Vente concerné"
+                value={posId}
+                onChange={(v) => {
+                  setPosId(v);
+                  setQuantities({});
+                }}
+                options={posList.map((p) => ({
+                  value: p.id,
+                  label: p.nom,
+                  description: p.ville,
+                }))}
+                placeholder="Choisir un point de vente"
+                emptyMessage="Aucun point de vente"
+              />
               <div className="flex justify-end pt-4">
                 <Button onClick={() => setStep(2)} className="gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
