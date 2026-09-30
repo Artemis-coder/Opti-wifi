@@ -65,7 +65,7 @@ export function Header({ onOpenMobileMenu, title }: HeaderProps) {
         <button
           type="button"
           onClick={onOpenMobileMenu}
-          className={ICON_BUTTON}
+          className={`${ICON_BUTTON} lg:hidden`}
           aria-label="Ouvrir le menu"
         >
           <Menu className="w-6 h-6" />

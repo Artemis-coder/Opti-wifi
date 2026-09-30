@@ -28,6 +28,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { BottomSheetMenu } from '@/components/ui/BottomSheetMenu';
+import { NavAccount, NavAction, NavRow, NavSection, type NavTone } from '@/components/ui/NavSheet';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -61,6 +63,33 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   ];
 
   const filteredNav = navItems.filter((item) => !user?.role || item.roles.includes(user.role));
+
+  // La feuille mobile reprend la meme liste, mais en groupes façon Réglages iOS
+  // et sans les entrées interdites au rôle courant.
+  const allowed = (href: string) => {
+    const item = navItems.find((n) => n.href === href);
+    return !item || !user?.role || item.roles.includes(user.role);
+  };
+
+  const isActive = (href: string) =>
+    pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+
+  const posRow = (
+    href: string,
+    label: string,
+    icon: React.ComponentType<{ className?: string }>,
+    tone: NavTone
+  ) =>
+    allowed(href) ? (
+      <NavRow
+        href={href}
+        label={label}
+        icon={icon}
+        tone={tone}
+        active={isActive(href)}
+        onNavigate={() => onCloseMobile?.()}
+      />
+    ) : null;
 
   const content = (
     <aside className="bg-[#0b1a3a] text-white flex flex-col h-full border-r border-slate-800 shadow-xl">
@@ -156,25 +185,54 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
         {content}
       </div>
 
-      {/* Mobile Drawer — Material 3 modal bottom sheet */}
-      {isMobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
-          <div
-            className="fixed inset-0 bg-slate-950/60 md-anim-fade"
-            onClick={onCloseMobile}
+      {/* Mobile: feuille du bas, avec paliers et glissement, facon iOS */}
+      <BottomSheetMenu
+        open={isMobileOpen}
+        onClose={() => onCloseMobile?.()}
+        title="Menu"
+      >
+        <NavAccount
+          name={user?.nom || 'Compte Utilisateur'}
+          role={user?.role || 'Collecteur'}
+          online={isOnline}
+          offline={isOffline}
+          unstable={isUnstable}
+          avatar={<UserIcon className="h-6 w-6" />}
+        />
+
+        <NavSection title="Pilotage">
+          <NavRow
+            href="/dashboard"
+            label="Dashboard"
+            icon={LayoutDashboard}
+            tone="blue"
+            active={isActive('/dashboard')}
+            onNavigate={() => onCloseMobile?.()}
           />
-          <div className="relative z-10 w-full h-[90dvh] max-h-[90dvh] mt-auto md-elevation-3 md-anim-sheet rounded-t-3xl overflow-hidden flex flex-col safe-bottom">
-            {/* Drag handle — the close button lives in the brand header below */}
-            <div className="flex items-center justify-center px-4 pt-3 pb-1 shrink-0">
-              <div className="w-10 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
-            </div>
-            {/* Drawer Content */}
-            <div className="flex-1 overflow-y-auto overscroll-contain">
-              {content}
-            </div>
-          </div>
-        </div>
-      )}
+        </NavSection>
+
+        <NavSection title="Réseau">
+          {posRow('/spaces', 'Espaces Wi-Fi', MapPin, 'emerald')}
+          {posRow('/pos', 'Points de Vente', Store, 'amber')}
+        </NavSection>
+
+        <NavSection title="Stock & Caisses">
+          {posRow('/tickets', 'Types de Tickets', Ticket, 'purple')}
+          {posRow('/allocations', 'Allocations', ArrowLeftRight, 'amber')}
+          {posRow('/collections', 'Collectes & Caisses', Receipt, 'emerald')}
+        </NavSection>
+
+        <NavSection title="Administration">
+          {posRow('/reports', 'Rapports & Exports', FileSpreadsheet, 'blue')}
+          {posRow('/users', 'Utilisateurs', Users, 'slate')}
+          {posRow('/subscription', 'Abonnement', CreditCard, 'purple')}
+          {posRow('/settings', 'Paramètres', Settings, 'slate')}
+        </NavSection>
+
+        <NavSection>
+          <NavAction label="Se déconnecter" icon={LogOut} onClick={handleLogout} />
+        </NavSection>
+      </BottomSheetMenu>
     </>
   );
 }

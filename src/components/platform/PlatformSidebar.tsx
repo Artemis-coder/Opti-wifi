@@ -28,6 +28,8 @@ import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils/cn';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { BottomSheetMenu } from '@/components/ui/BottomSheetMenu';
+import { NavAccount, NavAction, NavRow, NavSection, type NavTone } from '@/components/ui/NavSheet';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -82,6 +84,22 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
     logout();
     router.push('/platform/login');
   };
+
+  const row = (
+    href: string,
+    label: string,
+    icon: React.ComponentType<{ className?: string }>,
+    tone: NavTone
+  ) => (
+    <NavRow
+      href={href}
+      label={label}
+      icon={icon}
+      tone={tone}
+      active={pathname === href || pathname.startsWith(href + '/')}
+      onNavigate={() => onCloseMobile?.()}
+    />
+  );
 
   const content = (
     <aside className="bg-[#0b1a3a] text-white flex flex-col h-full border-r border-slate-800 shadow-xl">
@@ -200,22 +218,52 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
         {content}
       </div>
 
-      {isMobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex flex-col">
-          <div
-            className="fixed inset-0 bg-slate-950/60 md-anim-fade"
-            onClick={onCloseMobile}
-          />
-          <div className="relative z-10 w-full h-[90dvh] max-h-[90dvh] mt-auto md-elevation-3 md-anim-sheet rounded-t-3xl overflow-hidden flex flex-col safe-bottom">
-            <div className="flex items-center justify-center px-4 pt-3 pb-1 shrink-0">
-              <div className="w-10 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
-            </div>
-            <div className="flex-1 overflow-y-auto overscroll-contain">
-              {content}
-            </div>
-          </div>
-        </div>
-      )}
+      <BottomSheetMenu
+        open={isMobileOpen}
+        onClose={() => onCloseMobile?.()}
+        title="Menu Plateforme"
+      >
+        <NavAccount
+          name={platformUser?.full_name || platformUser?.email || 'Super Admin'}
+          role={platformUser?.role || 'super_admin'}
+          online={isOnline}
+          offline={isOffline}
+          unstable={isUnstable}
+          avatar={<UserIcon className="h-6 w-6" />}
+        />
+
+        <NavSection title="Pilotage">
+          {row('/platform/dashboard', 'Dashboard', LayoutDashboard, 'blue')}
+        </NavSection>
+
+        <NavSection title="Clients">
+          {row('/platform/clients', 'Tous les clients', Building2, 'blue')}
+        </NavSection>
+
+        <NavSection title="Abonnements">
+          {row('/platform/subscriptions', 'Tous les abonnements', Receipt, 'amber')}
+          {row('/platform/plans', 'Plans tarifaires', Wallet, 'purple')}
+          {row('/platform/subscriptions/expiring', 'Expirations', History, 'red')}
+        </NavSection>
+
+        <NavSection title="Paiements">
+          {row('/platform/payments', 'Transactions', Receipt, 'emerald')}
+          {row('/platform/invoices', 'Factures', FileText, 'slate')}
+        </NavSection>
+
+        <NavSection title="Autres">
+          {row('/platform/users', 'Utilisateurs', Users, 'blue')}
+          {row('/platform/reports', 'Rapports', BarChart3, 'emerald')}
+          {row('/platform/notifications', 'Notifications', Bell, 'amber')}
+          {row('/platform/audit-logs', "Journal d'audit", History, 'slate')}
+          {row('/platform/support', 'Support', LifeBuoy, 'purple')}
+          {row('/platform/settings', 'Paramètres', Settings, 'slate')}
+        </NavSection>
+
+        <NavSection>
+          <NavAction label="Se déconnecter" icon={LogOut} onClick={handleLogout} />
+        </NavSection>
+      </BottomSheetMenu>
     </>
   );
 }
