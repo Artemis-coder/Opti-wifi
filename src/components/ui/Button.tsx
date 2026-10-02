@@ -9,11 +9,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props }, ref) => {
-    const baseStyles = 'md-ripple inline-flex items-center justify-center gap-2 font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+    const baseStyles = 'md-ripple inline-flex items-center justify-center gap-2 font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
 
     const variants = {
-      primary: 'bg-[#0b1a3a] text-white hover:bg-[#122854] md-elevation-1',
-      secondary: 'bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold md-elevation-1',
+      primary: 'bg-brand-500 text-brand-on hover:bg-brand-600 md-elevation-1',
+      secondary: 'bg-brand-100 text-brand-800 hover:bg-brand-200 font-semibold md-elevation-1',
       outline: 'border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-900',
       danger: 'bg-red-600 text-white hover:bg-red-700 md-elevation-1',
       ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800',

@@ -1,0 +1,57 @@
+/*
+ * OptiSpace — Design System
+ * ---------------------------------------------------------------------------
+ * Single source of truth for the OptiSpace brand (source: Icon app/OptiSpace.jpg).
+ *
+ * Brand anchors
+ *   primary   #3f9e63   (brand-500)  main actions, active states, focus rings
+ *   secondary #84c865   (brand-400)  accents, active nav text, gradients
+ *   chrome    #1b3f2b   (brand-900)  dark surfaces (sidebars, bottom nav, splash)
+ *   on-brand  #0b1a0f                text/icon colour on primary & secondary
+ *
+ * Usage (Tailwind v4 utilities are generated from this file):
+ *   bg-brand-500 text-brand-on   primary button
+ *   text-brand-400               accent text on dark chrome
+ *   bg-brand-900                 sidebar / bottom nav surface
+ *   ring-brand-500 focus:ring-brand-500
+ *   bg-brand-100 text-brand-800  soft chip
+ *   from-brand-900 to-brand-500  hero gradient
+ *
+ * JS/TS consumers (charts, canvas, native config) must read the same values from
+ * src/lib/design-system.ts — keep both files in sync when a token changes.
+ */
+
+@theme {
+  /* ---- Brand scale (green) : 400 = secondary, 500 = primary ---- */
+  --color-brand-50: #f2f9f4;   /* 137 37% 96% */
+  --color-brand-100: #e0f2e7;  /* 143 41% 91% */
+  --color-brand-200: #c2e5cf;  /* 142 40% 83% */
+  --color-brand-300: #9ed6b4;  /* 143 41% 73% */
+  --color-brand-400: #84c865;  /* 101 47% 59% — secondary */
+  --color-brand-500: #3f9e63;  /* 142 43% 43% — primary */
+  --color-brand-600: #358554;  /* 143 43% 36% */
+  --color-brand-700: #2b6b45;  /* 144 43% 29% */
+  --color-brand-800: #235437;  /* 144 41% 23% */
+  --color-brand-900: #1b3f2b;  /* 146 40% 18% — dark chrome */
+  --color-brand-950: #0f261a;  /* 148 43% 10% */
+
+  /* ---- Semantic aliases ---- */
+  --color-brand: var(--color-brand-500);
+  --color-brand-accent: var(--color-brand-400);
+  --color-brand-chrome: var(--color-brand-900);
+  --color-brand-on: #0b1a0f;
+  --color-brand-ring: var(--color-brand-500);
+
+  /* ---- Feedback (kept neutral, not branded) ---- */
+  --color-danger: #ba1a1a;
+  --color-danger-soft: #fdecec;
+  --color-warning: #f59e0b;
+  --color-warning-soft: #ffdfa6;
+  --color-info: #3b82f6;
+  --color-success: var(--color-brand-500);
+
+  /* ---- Radii (pair with .md-shape-* helpers in globals.css) ---- */
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+  --radius-pill: 9999px;
+}

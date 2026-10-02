@@ -110,7 +110,7 @@ export default function TicketTypesPage() {
 
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           Chargement des forfaits...
         </div>
       ) : tickets.length === 0 ? (
@@ -138,7 +138,7 @@ export default function TicketTypesPage() {
                   <div>
                     <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.nom}</h3>
                     <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
-                      <Clock className="w-3.5 h-3.5 text-amber-500" />
+                      <Clock className="w-3.5 h-3.5 text-brand-500" />
                       <span>Durée : {t.duree_heures} heure(s)</span>
                     </div>
                   </div>
@@ -151,7 +151,7 @@ export default function TicketTypesPage() {
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-medium">Prix public :</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-extrabold text-[#0b1a3a] dark:text-amber-400">
+                  <span className="text-lg font-extrabold text-brand-900 dark:text-brand-400">
                     {formatCurrencyFCFA(t.prix)}
                   </span>
                   <Button

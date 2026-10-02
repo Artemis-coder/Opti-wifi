@@ -50,7 +50,7 @@ export default function PlatformExpiringSubscriptionsPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         <span>Chargement...</span>
       </div>
     );
@@ -92,7 +92,7 @@ export default function PlatformExpiringSubscriptionsPage() {
                   return (
                     <tr key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       <td className="px-4 py-3">
-                        <Link href={`/platform/clients/${sub.organization_id || ''}`} className="font-semibold text-slate-900 dark:text-white hover:text-amber-500">
+                        <Link href={`/platform/clients/${sub.organization_id || ''}`} className="font-semibold text-slate-900 dark:text-white hover:text-brand-500">
                           {sub.organization?.name || '—'}
                         </Link>
                       </td>

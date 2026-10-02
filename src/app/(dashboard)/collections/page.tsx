@@ -59,12 +59,12 @@ export default function CollectionsPage() {
 
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           Chargement des collectes...
         </div>
       ) : collections.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+          <div className="w-14 h-14 rounded-full bg-brand-500/10 text-brand-500 flex items-center justify-center mx-auto">
             <Receipt className="w-7 h-7" />
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement pour le moment</h3>
@@ -137,7 +137,7 @@ export default function CollectionsPage() {
                     </div>
                   </div>
 
-                  <p className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+                  <p className="flex items-center gap-1 text-[11px] font-semibold text-brand-600">
                     Voir le détail et la conciliation
                     <ChevronRight className="w-3.5 h-3.5" />
                   </p>
@@ -202,7 +202,7 @@ export default function CollectionsPage() {
                           setSelected(c);
                         }}
                         aria-label={`Voir le détail de l'encaissement du ${c.pos?.nom || 'POS'}`}
-                        className="md-ripple tap-target inline-flex items-center justify-center rounded-full text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                        className="md-ripple tap-target inline-flex items-center justify-center rounded-full text-slate-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>

@@ -349,7 +349,7 @@ export default function ExchangePage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         Chargement de l&apos;assistant d&apos;échange...
       </div>
     );
@@ -365,7 +365,7 @@ export default function ExchangePage() {
           </Button>
         </Link>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <ArrowLeftRight className="w-6 h-6 text-amber-500" />
+          <ArrowLeftRight className="w-6 h-6 text-brand-500" />
           Échange de Tickets
         </h1>
       </div>
@@ -386,7 +386,7 @@ export default function ExchangePage() {
                   isCompleted
                     ? 'bg-emerald-600 text-white'
                     : isActive
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
+                    ? 'bg-brand-500 text-slate-950 font-bold shadow-md'
                     : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
                 }`}
               >
@@ -447,7 +447,7 @@ export default function ExchangePage() {
 
               {loadingStock ? (
                 <div className="py-8 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-                  <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                  <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
                   Calcul du stock disponible...
                 </div>
               ) : Object.keys(posStockInfo).length === 0 ? (
@@ -455,7 +455,7 @@ export default function ExchangePage() {
                   <Package className="w-10 h-10 text-slate-300 mx-auto" />
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun ticket alloué à ce POS</h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    Aucun ticket n&apos;a été alloué à ce point de vente. <Link href="/allocations/new" className="text-amber-600 hover:underline">Allouer des tickets</Link>.
+                    Aucun ticket n&apos;a été alloué à ce point de vente. <Link href="/allocations/new" className="text-brand-600 hover:underline">Allouer des tickets</Link>.
                   </p>
                 </div>
               ) : (
@@ -601,7 +601,7 @@ export default function ExchangePage() {
                 <>
                   <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
                     <div className="flex items-center gap-2">
-                      <Info className="w-4 h-4 text-amber-500" />
+                      <Info className="w-4 h-4 text-brand-500" />
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Valeur à échanger</span>
                     </div>
                     <span className="text-lg font-extrabold text-slate-900 dark:text-white">
@@ -653,7 +653,7 @@ export default function ExchangePage() {
                                     <button
                                       type="button"
                                       onClick={() => updateReceive(index, 'quantite', suggestedQty)}
-                                      className="text-xs text-amber-600 hover:text-amber-700 font-medium underline"
+                                      className="text-xs text-brand-600 hover:text-brand-700 font-medium underline"
                                     >
                                       Suggestion: {suggestedQty}
                                     </button>
@@ -704,7 +704,7 @@ export default function ExchangePage() {
                           {formatCurrencyFCFA(totalReceivedValue)}
                         </span>
                         {valueDifference !== 0 && (
-                          <p className={`text-xs font-bold ${valueDifference > 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                          <p className={`text-xs font-bold ${valueDifference > 0 ? 'text-red-600' : 'text-brand-600'}`}>
                             {valueDifference > 0 ? 'Excédent' : 'Manquant'}: {formatCurrencyFCFA(Math.abs(valueDifference))}
                           </p>
                         )}
@@ -785,7 +785,7 @@ export default function ExchangePage() {
 
                   {returns.filter((r) => r.quantite > 0).length > 0 && (
                     <div className="space-y-2">
-                      <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Stock fonctionnel (équivalence)</span>
+                      <span className="text-[11px] font-bold text-brand-600 uppercase tracking-wider">Stock fonctionnel (équivalence)</span>
                       {returns.filter((r) => r.quantite > 0).map((r, idx) => {
                         const ticket = getTicketTypeById(r.ticketTypeId);
                         if (!ticket) return null;

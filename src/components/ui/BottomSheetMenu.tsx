@@ -194,7 +194,7 @@ function Sheet({
             <button
               type="button"
               onClick={onClose}
-              className="md-ripple tap-target shrink-0 rounded-full px-3.5 h-9 text-sm font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10"
+              className="md-ripple tap-target shrink-0 rounded-full px-3.5 h-9 text-sm font-semibold text-brand-600 dark:text-brand-400 bg-brand-500/10"
             >
               Fermer
             </button>

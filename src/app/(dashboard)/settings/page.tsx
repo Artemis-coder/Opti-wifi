@@ -91,7 +91,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         Chargement des paramètres...
       </div>
     );
@@ -106,7 +106,7 @@ export default function SettingsPage() {
 
       <Card className="space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <User className="w-5 h-5 text-amber-500" />
+          <User className="w-5 h-5 text-brand-500" />
           <div>
             <p className="text-sm font-bold text-slate-900 dark:text-white">Informations du Compte</p>
             <p className="text-xs text-slate-500">Mettez à jour vos données personnelles.</p>
@@ -170,7 +170,7 @@ export default function SettingsPage() {
 
       <Card className="space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <Globe className="w-5 h-5 text-amber-500" />
+          <Globe className="w-5 h-5 text-brand-500" />
           <div>
             <p className="text-sm font-bold text-slate-900 dark:text-white">Devise Principale</p>
             <p className="text-xs text-slate-500">Définie lors de la création du compte. Une fois choisie, elle ne peut plus être modifiée.</p>
@@ -179,7 +179,7 @@ export default function SettingsPage() {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
+            <div className="p-2 rounded-lg bg-brand-500/10 text-brand-600">
               <Globe className="w-5 h-5" />
             </div>
             <div>

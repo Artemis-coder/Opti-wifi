@@ -1,51 +1,52 @@
 @import "tailwindcss";
+@import "../styles/design-system.css";
 
 @layer base {
   :root {
-    /* ---- Material 3 tonal palette : Opti Wi-Fi navy + amber ---- */
-    --md-primary: 222 76% 14%;          /* #0b1a3a */
-    --md-on-primary: 0 0% 100%;
-    --md-primary-container: 221 60% 25%; /* #1d3763 */
-    --md-on-primary-container: 220 80% 91%;
+    /* ---- Material 3 tonal palette : OptiSpace green (see src/styles/design-system.css) ---- */
+    --md-primary: 142 43% 43%;          /* #3f9e63 */
+    --md-on-primary: 140 40% 6%;
+    --md-primary-container: 144 43% 29%; /* #2b6b45 */
+    --md-on-primary-container: 143 41% 91%;
 
-    --md-secondary: 215 28% 32%;
+    --md-secondary: 143 43% 36%;        /* #358554 */
     --md-on-secondary: 0 0% 100%;
-    --md-secondary-container: 220 65% 90%;
-    --md-on-secondary-container: 222 76% 14%;
+    --md-secondary-container: 143 41% 91%;
+    --md-on-secondary-container: 146 40% 18%;
 
-    --md-tertiary: 38 95% 52%;          /* #f59e0b */
-    --md-on-tertiary: 30 100% 6%;
-    --md-tertiary-container: 40 100% 83%;
-    --md-on-tertiary-container: 30 100% 13%;
+    --md-tertiary: 101 47% 59%;         /* #84c865 */
+    --md-on-tertiary: 140 40% 6%;
+    --md-tertiary-container: 143 41% 91%;
+    --md-on-tertiary-container: 144 41% 23%;
 
     --md-error: 359 82% 39%;
     --md-on-error: 0 0% 100%;
     --md-error-container: 359 100% 95%;
 
-    --md-surface: 220 33% 98%;
-    --md-on-surface: 221 39% 9%;
-    --md-surface-container-low: 220 30% 96%;
-    --md-surface-container: 220 26% 93%;
-    --md-surface-container-high: 220 24% 90%;
-    --md-on-surface-variant: 220 14% 36%;
-    --md-outline: 220 13% 79%;
-    --md-outline-variant: 220 20% 90%;
+    --md-surface: 140 33% 99%;
+    --md-on-surface: 152 39% 9%;
+    --md-surface-container-low: 140 30% 97%;
+    --md-surface-container: 140 26% 94%;
+    --md-surface-container-high: 140 24% 91%;
+    --md-on-surface-variant: 145 14% 36%;
+    --md-outline: 140 13% 82%;
+    --md-outline-variant: 140 20% 90%;
 
     /* ---- Legacy tokens kept for compatibility ---- */
-    --primary: 220 80% 22%;
-    --primary-light: 220 70% 35%;
-    --accent: 38 95% 52%;
-    --accent-dark: 38 90% 38%;
-    --bg-surface: 220 20% 98%;
+    --primary: 142 43% 43%;
+    --primary-light: 101 47% 59%;
+    --accent: 101 47% 59%;
+    --accent-dark: 143 43% 36%;
+    --bg-surface: 140 33% 99%;
     --card: 0 0% 100%;
-    --border: 220 15% 90%;
-    --text-primary: 220 30% 12%;
-    --text-secondary: 220 15% 45%;
+    --border: 140 20% 90%;
+    --text-primary: 152 30% 12%;
+    --text-secondary: 145 15% 45%;
   }
 
   html {
     /* Android WebView: prevent rubber-band revealing white behind the app */
-    background-color: #0b1a3a;
+    background-color: #1b3f2b;
     -webkit-tap-highlight-color: transparent;
   }
 

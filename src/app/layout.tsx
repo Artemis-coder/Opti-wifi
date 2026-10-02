@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { APP, BRAND } from "@/lib/design-system";
 import { StandaloneConnectionStatus } from "@/components/offline/ConnectionStatus";
 
 const geistSans = Geist({
@@ -15,10 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Opti Wi-Fi",
+  title: APP.name,
   description: "Gestion de points de vente, allocations de tickets et encaissements",
-  applicationName: "Opti Wi-Fi",
-  appleWebApp: { capable: true, title: "Opti Wi-Fi", statusBarStyle: "black-translucent" },
+  applicationName: APP.name,
+  appleWebApp: { capable: true, title: APP.name, statusBarStyle: "black-translucent" },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
@@ -32,7 +33,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#0b1a3a",
+  themeColor: BRAND.chrome,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

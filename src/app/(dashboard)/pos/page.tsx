@@ -134,7 +134,7 @@ export default function PosPage() {
           value={totalPos}
           hint="Tous les points de vente"
           icon={Store}
-          tone="amber"
+          tone="brand"
         />
         <StatTile
           label="Actifs"
@@ -155,7 +155,7 @@ export default function PosPage() {
           value={formatCurrencyFCFA(totalStockValue)}
           hint="Total cumulé sur tous les POS"
           icon={ArrowLeftRight}
-          tone="amber"
+          tone="brand"
         />
       </div>
 
@@ -168,7 +168,7 @@ export default function PosPage() {
             placeholder="Rechercher par nom ou ville..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
       </Card>
@@ -176,12 +176,12 @@ export default function PosPage() {
       {/* Grid POS Cards or Empty State */}
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           Chargement des points de vente...
         </div>
       ) : filteredPos.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+          <div className="w-14 h-14 rounded-full bg-brand-500/10 text-brand-500 flex items-center justify-center mx-auto">
             <Store className="w-7 h-7" />
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun point de vente trouvé</h3>
@@ -196,10 +196,10 @@ export default function PosPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPos.map((pos) => (
             <Link key={pos.id} href={`/pos/${pos.id}`} className="block group">
-              <Card className="space-y-4 hover:border-amber-500/50 transition cursor-pointer h-full">
+              <Card className="space-y-4 hover:border-brand-500/50 transition cursor-pointer h-full">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-blue-900/10 text-blue-900 dark:text-amber-400 border border-blue-900/20">
+                    <div className="p-2.5 rounded-xl bg-blue-900/10 text-blue-900 dark:text-brand-400 border border-blue-900/20">
                       <Store className="w-5 h-5" />
                     </div>
                     <div>
@@ -261,10 +261,10 @@ export default function PosPage() {
                 </div>
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1">
-                    <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600" />
+                    <ArrowLeftRight className="w-3.5 h-3.5 text-brand-600" />
                     <span className="text-slate-500">Valeur du stock alloué</span>
                   </div>
-                  <span className="font-bold text-amber-600">
+                  <span className="font-bold text-brand-600">
                     {formatCurrencyFCFA(stockValueByPos.get(pos.id) || 0)}
                   </span>
                 </div>

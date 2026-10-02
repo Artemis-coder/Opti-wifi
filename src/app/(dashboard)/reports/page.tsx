@@ -127,10 +127,10 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-amber-500">
+        <Card className="border-l-4 border-l-brand-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Points de Vente</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
+            <div className="p-2 rounded-lg bg-brand-500/10 text-brand-600">
               <Store className="w-5 h-5" />
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function ReportsPage() {
 
       <Card className="space-y-4">
         <div className="flex items-center gap-3">
-          <Calendar className="w-5 h-5 text-amber-500" />
+          <Calendar className="w-5 h-5 text-brand-500" />
           <div>
             <p className="text-sm font-bold text-slate-900 dark:text-white">Filtrer par période</p>
             <p className="text-xs text-slate-500">Sélectionnez une plage de dates pour affiner les rapports.</p>
@@ -187,9 +187,9 @@ export default function ReportsPage() {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="space-y-4 border-l-4 border-l-amber-500">
+        <Card className="space-y-4 border-l-4 border-l-brand-500">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-600">
+            <div className="p-3 rounded-xl bg-brand-500/10 text-brand-600">
               <FileSpreadsheet className="w-6 h-6" />
             </div>
             <div>
@@ -204,7 +204,7 @@ export default function ReportsPage() {
 
         <Card className="space-y-4 border-l-4 border-l-blue-900">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-blue-900/10 text-blue-900 dark:text-amber-400">
+            <div className="p-3 rounded-xl bg-blue-900/10 text-blue-900 dark:text-brand-400">
               <Store className="w-6 h-6" />
             </div>
             <div>
@@ -250,7 +250,7 @@ export default function ReportsPage() {
                     <td className="px-4 py-3 text-right">{formatCurrencyFCFA(Number(c.commission || 0))}</td>
                     <td className="px-4 py-3 text-right">{formatCurrencyFCFA(Number(c.difference || 0))}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-bold ${c.statut === 'validee' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      <span className={`text-xs font-bold ${c.statut === 'validee' ? 'text-emerald-600' : 'text-brand-600'}`}>
                         {c.statut === 'validee' ? 'Validée' : 'Brouillon'}
                       </span>
                     </td>

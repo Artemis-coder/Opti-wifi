@@ -224,7 +224,7 @@ export default function PlatformNotificationsPage() {
       {/* Alerts */}
       {loading ? (
         <div className="py-10 flex justify-center items-center gap-2 text-slate-500 text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           <span>Analyse des alertes en cours...</span>
         </div>
       ) : visibleAlerts.length === 0 ? (

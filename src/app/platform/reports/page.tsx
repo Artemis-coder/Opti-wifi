@@ -152,7 +152,7 @@ export default function PlatformReportsPage() {
       {/* KPI Cards */}
       {loading ? (
         <div className="py-10 flex justify-center items-center gap-2 text-slate-500 text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           <span>Calcul des indicateurs...</span>
         </div>
       ) : kpis ? (
@@ -167,8 +167,8 @@ export default function PlatformReportsPage() {
                 value={formatCurrencyFCFA(kpis.mrr)}
                 sub="Monthly Recurring Revenue"
                 icon={BarChart3}
-                color="bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                border="border-l-amber-500"
+                color="bg-brand-500/10 text-brand-600 dark:text-brand-400"
+                border="border-l-brand-500"
                 trend={{ value: kpis.revenue_growth, label: 'vs mois dernier' }}
               />
               <StatCard

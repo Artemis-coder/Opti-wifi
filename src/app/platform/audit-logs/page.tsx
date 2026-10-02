@@ -101,7 +101,7 @@ export default function PlatformAuditLogsPage() {
               placeholder="Filtrer par action..."
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
           <Input
@@ -132,7 +132,7 @@ export default function PlatformAuditLogsPage() {
       {/* Table */}
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           <span>Chargement des logs...</span>
         </div>
       ) : logs.length === 0 ? (
@@ -166,7 +166,7 @@ export default function PlatformAuditLogsPage() {
                       <td className="px-4 py-3">
                         {log.platform_user ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-[#0b1a3a] text-amber-400 flex items-center justify-center font-bold text-xs">
+                            <div className="w-6 h-6 rounded-full bg-brand-900 text-brand-400 flex items-center justify-center font-bold text-xs">
                               {log.platform_user.full_name?.[0] || log.platform_user.email?.[0] || 'S'}
                             </div>
                             <span className="text-slate-900 dark:text-white">

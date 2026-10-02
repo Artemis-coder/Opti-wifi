@@ -1,4 +1,4 @@
-# Application Android (Opti Wi-Fi)
+# Application Android (OptiSpace)
 
 L'application web Next.js est empaquetée dans une application Android native via
 **Capacitor 7**. Le code Kotlin/Compose n'est pas utilisé : la couche UI Material 3
@@ -28,7 +28,7 @@ l'application affiche une page blanche.
 ## Commandes
 
 ```bash
-npm run android:assets     # régénère icônes + splash depuis public/assets/logo.jpg
+npm run android:assets     # régénère icônes + splash depuis "Icon app/OptiSpace.jpg"
 npm run android:sync       # copie la config et les plugins dans android/
 npm run android:apk        # build release signé -> android/app/build/outputs/apk/release/
 npm run android:open       # ouvre le projet dans Android Studio
@@ -49,13 +49,20 @@ publiée. Les mots de passe ne sont volontairement pas documentés ici.
 
 `scripts/generate_android_assets.py` (Python stdlib uniquement) compose les
 mipmaps adaptatifs, l'icône monochrome Material You (Android 13+) et les splash
-screens : fond marine `#0B1A3A`, badge blanc circulaire, logo centré.
+screens à partir de `Icon app/OptiSpace.jpg` : icône plein cadre pour les
+mipmaps legacy, artwork cantonnée dans la zone visible 72dp pour la couche
+adaptative (fond `#84C865`), badge circulaire sur le vert chrome `#1B3F2B`
+pour le splash.
 La layered `monochrome` de `mipmap-anydpi-v26/ic_launcher.xml` active les
 icônes thématiques Material You sur Android 13+.
 
 ## Règles Material 3 appliquées au front
 
-- Palette Material 3 dans `src/app/globals.css` (`--md-*`).
+- Design system : `src/styles/design-system.css` (tokens Tailwind `brand-*`,
+  source canonique) et son miroir TypeScript `src/lib/design-system.ts`
+  (graphiques, config native). Palette Material 3 dans `src/app/globals.css`
+  (`--md-*`).
+- Vert OptiSpace : primaire `#3F9E63`, secondaire `#84C865`, chrome `#1B3F2B`.
 - Cibles tactiles minimales 48dp (`.tap-target`, `.md-ripple` pour le state layer).
 - Barre de navigation Material 3 (hauteur 80dp, indicateur actif en pilule).
 - Modales en *modal bottom sheet* sur mobile, dialogues dès `sm`.

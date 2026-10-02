@@ -19,6 +19,7 @@ import { ChartCard } from '@/components/platform/ChartCard';
 import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { cn } from '@/lib/utils/cn';
+import { BRAND } from '@/lib/design-system';
 import {
   DashboardKpis,
   ChartDataPoint,
@@ -119,8 +120,8 @@ export default function PlatformDashboardPage() {
       label: 'Abonnements Actifs',
       value: kpis?.active_subscriptions ?? 0,
       icon: Calendar,
-      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-      border: 'border-l-amber-500',
+      color: 'bg-brand-500/10 text-brand-600 dark:text-brand-400',
+      border: 'border-l-brand-500',
     },
     {
       label: 'Expirations (30j)',
@@ -141,7 +142,7 @@ export default function PlatformDashboardPage() {
   if (loading && !kpis) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         <span>Chargement du tableau de bord...</span>
       </div>
     );
@@ -150,7 +151,7 @@ export default function PlatformDashboardPage() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#0b1a3a] to-[#162e63] p-6 rounded-2xl text-white shadow-lg border border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-brand-900 to-brand-700 p-6 rounded-2xl text-white shadow-lg border border-brand-800">
         <div>
           <h1 className="text-2xl font-bold">
             Tableau de Bord Super Administrateur
@@ -160,7 +161,7 @@ export default function PlatformDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-300">
-          <Badge variant="neutral" className="text-amber-300 border-amber-400/30">
+          <Badge variant="neutral" className="text-brand-300 border-brand-400/30">
             {platformUser?.role === 'super_admin' ? '👑 Super Admin' : 'Support'}
           </Badge>
         </div>
@@ -237,7 +238,7 @@ export default function PlatformDashboardPage() {
                 labelStyle={{ fontSize: 11 }}
               />
               <Legend iconSize={8} wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
-              <Line type="monotone" dataKey="new_accounts" stroke="#F59E0B" strokeWidth={2} dot={false} name="Nouveaux" />
+              <Line type="monotone" dataKey="new_accounts" stroke={BRAND.primary} strokeWidth={2} dot={false} name="Nouveaux" />
               <Line type="monotone" dataKey="activated" stroke="#10B981" strokeWidth={2} dot={false} name="Activés" />
               <Line type="monotone" dataKey="deactivated" stroke="#EF4444" strokeWidth={2} dot={false} name="Désactivés" />
             </LineChart>
@@ -258,7 +259,7 @@ export default function PlatformDashboardPage() {
               <Legend iconSize={8} wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
               <Line type="monotone" dataKey="new_subscriptions" stroke="#3B82F6" strokeWidth={2} dot={false} name="Nouveaux" />
               <Line type="monotone" dataKey="renewals" stroke="#8B5CF6" strokeWidth={2} dot={false} name="Renouvellements" />
-              <Line type="monotone" dataKey="expirations" stroke="#F59E0B" strokeWidth={2} dot={false} name="Expirations" />
+              <Line type="monotone" dataKey="expirations" stroke={BRAND.primary} strokeWidth={2} dot={false} name="Expirations" />
               <Line type="monotone" dataKey="cancellations" stroke="#EF4444" strokeWidth={2} dot={false} name="Annulations" />
             </LineChart>
           </ResponsiveContainer>

@@ -134,7 +134,7 @@ const addLine = () => {
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <ArrowLeftRight className="w-6 h-6 text-amber-500" />
+          <ArrowLeftRight className="w-6 h-6 text-brand-500" />
           Allocation de Tickets aux Points de Vente
         </h1>
         <p className="text-xs text-slate-500">Distribuez du stock de tickets à un point de vente de votre réseau.</p>
@@ -142,7 +142,7 @@ const addLine = () => {
 
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           Chargement des références...
         </div>
       ) : posList.length === 0 || ticketTypes.length === 0 ? (
@@ -265,7 +265,7 @@ const addLine = () => {
           <Card className="h-fit">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-amber-500" />
+                <Receipt className="w-5 h-5 text-brand-500" />
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">Récapitulatif de l&apos;Allocation</h3>
               </div>
 
@@ -304,7 +304,7 @@ const addLine = () => {
                 <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-500 uppercase">Total Tickets</span>
-                    <span className="text-lg font-extrabold text-amber-600">{totalTickets}</span>
+                    <span className="text-lg font-extrabold text-brand-600">{totalTickets}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-500 uppercase">Montant Total</span>

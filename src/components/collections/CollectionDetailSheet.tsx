@@ -162,7 +162,7 @@ export function CollectionDetailSheet({ collection, onClose }: CollectionDetailS
 
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
-            <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+            <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
             Chargement du détail...
           </div>
         ) : error ? (

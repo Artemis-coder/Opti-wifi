@@ -132,7 +132,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#0b1a3a] to-[#162e63] p-6 rounded-2xl text-white shadow-lg border border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-brand-900 to-brand-700 p-6 rounded-2xl text-white shadow-lg border border-brand-800">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             Bienvenue dans votre espace, {user?.nom || 'Utilisateur'} 👋
@@ -148,7 +148,7 @@ export default function DashboardPage() {
           value={formatNumber(ticketsSoldTotal)}
           hint="Nombre total de pass écoulés"
           icon={Ticket}
-          tone="amber"
+          tone="brand"
         />
 
         {/* KPI 1b: Tickets Alloués */}
@@ -217,10 +217,10 @@ export default function DashboardPage() {
 
             <Link
               href="/collections/new"
-              className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 hover:scale-[1.01] transition h-full"
+              className="flex items-center justify-between p-3 rounded-xl bg-brand-50 dark:bg-brand-950/30 border border-brand-200 dark:border-brand-900/50 hover:scale-[1.01] transition h-full"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500 text-slate-950">
+                <div className="p-2 rounded-lg bg-brand-500 text-slate-950">
                   <Receipt className="w-5 h-5" />
                 </div>
                 <div>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-slate-500">Saisir un encaissement de caisse</p>
                 </div>
               </div>
-              <span className="text-amber-600 font-bold">→</span>
+              <span className="text-brand-600 font-bold">→</span>
             </Link>
 
             <Link
@@ -269,14 +269,14 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Derniers Encaissements</h2>
-            <Link href="/collections" className="text-xs font-semibold text-amber-600 hover:text-amber-700">
+            <Link href="/collections" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
               Voir tout →
             </Link>
           </div>
 
           {loading ? (
             <Card className="p-8 text-center text-slate-500">
-              <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
+              <Loader2 className="w-6 h-6 animate-spin text-brand-500 mx-auto" />
               <p className="text-xs font-medium mt-2">Chargement des encaissements...</p>
             </Card>
           ) : collections.length === 0 ? (
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                           {formatDateFR(col.created_at)}
                         </span>
                       </div>
-                      <p className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+                      <p className="flex items-center gap-1 text-[11px] font-semibold text-brand-600">
                         Voir le détail et la conciliation
                         <ChevronRight className="w-3.5 h-3.5" />
                       </p>
@@ -372,7 +372,7 @@ export default function DashboardPage() {
                               setSelectedCollection(col);
                             }}
                             aria-label={`Voir le détail de l'encaissement du ${col.pos?.nom || 'POS'}`}
-                            className="md-ripple tap-target inline-flex items-center justify-center rounded-full text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                            className="md-ripple tap-target inline-flex items-center justify-center rounded-full text-slate-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition"
                           >
                             <ChevronRight className="w-4 h-4" />
                           </button>

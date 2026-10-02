@@ -38,7 +38,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           <span>Vérification de l&apos;accès Super Admin...</span>
         </div>
       </div>

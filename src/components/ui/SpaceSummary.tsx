@@ -14,7 +14,7 @@ export function SpaceSummary({ spaceName, spaceCount, className }: SpaceSummaryP
       'flex items-center gap-2',
       className
     )}>
-      <MapPin className="w-4 h-4 text-amber-400" />
+      <MapPin className="w-4 h-4 text-brand-400" />
       <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
         {spaceName}
       </span>

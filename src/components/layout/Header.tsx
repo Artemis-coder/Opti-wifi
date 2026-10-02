@@ -34,7 +34,7 @@ function resolveTitle(pathname: string): string {
   if (match) return TITLES[match];
   if (pathname.startsWith('/pos/')) return 'Détail du point de vente';
   if (pathname.startsWith('/spaces/')) return 'Espace Wi-Fi';
-  return 'Opti Wi-Fi';
+  return 'OptiSpace';
 }
 
 const ICON_BUTTON =

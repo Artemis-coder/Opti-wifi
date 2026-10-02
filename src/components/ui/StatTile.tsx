@@ -2,10 +2,10 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils/cn';
 
-export type StatTileTone = 'amber' | 'emerald' | 'red' | 'blue' | 'blueDark' | 'purple';
+export type StatTileTone = 'brand' | 'emerald' | 'red' | 'blue' | 'blueDark' | 'purple';
 
 const TONES: Record<StatTileTone, { border: string; chip: string }> = {
-  amber: { border: 'border-l-amber-500', chip: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  brand: { border: 'border-l-brand-500', chip: 'bg-brand-500/10 text-brand-600 dark:text-brand-400' },
   emerald: { border: 'border-l-emerald-500', chip: 'bg-emerald-500/10 text-emerald-600' },
   red: { border: 'border-l-red-500', chip: 'bg-red-500/10 text-red-600' },
   blue: { border: 'border-l-blue-500', chip: 'bg-blue-500/10 text-blue-600' },
@@ -38,11 +38,11 @@ export function StatTile({
   value,
   hint,
   icon: Icon,
-  tone = 'amber',
+  tone = 'brand',
   valueClassName,
   className,
 }: StatTileProps) {
-  const t = TONES[tone] ?? TONES.amber;
+  const t = TONES[tone] ?? TONES.brand;
   return (
     <Card className={cn('flex flex-col', t.border, className)}>
       <div className="flex items-start justify-between gap-2">

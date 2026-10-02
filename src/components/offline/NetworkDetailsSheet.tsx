@@ -99,7 +99,7 @@ export function NetworkDetailsSheet({ panel }: { panel: NetworkPanelState }) {
           type="button"
           onClick={handleSync}
           disabled={isSyncing}
-          className="md-ripple mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 text-sm font-semibold text-slate-950 disabled:opacity-60"
+          className="md-ripple mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 text-sm font-semibold text-slate-950 disabled:opacity-60"
         >
           <CloudUpload className={cn('w-4 h-4', isSyncing && 'animate-bounce')} />
           {isSyncing ? 'Synchronisation…' : `Synchroniser ${pendingCount} action(s)`}

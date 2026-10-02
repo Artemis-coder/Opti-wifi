@@ -100,14 +100,14 @@ export default function PlatformUsersPage() {
             placeholder="Rechercher par nom ou email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
       </Card>
 
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           <span>Chargement des utilisateurs...</span>
         </div>
       ) : users.length === 0 ? (
@@ -134,10 +134,10 @@ export default function PlatformUsersPage() {
                   <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border border-amber-500/30 ${
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border border-brand-500/30 ${
                           u.is_banned
                             ? 'bg-red-100 text-red-600'
-                            : 'bg-[#0b1a3a] text-amber-400'
+                            : 'bg-brand-900 text-brand-400'
                         }`}>
                           {u.nom?.[0] || u.email?.[0] || 'U'}
                         </div>
@@ -151,7 +151,7 @@ export default function PlatformUsersPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                       {u.organization ? (
-                        <Link href={`/platform/clients/${u.organization.id}`} className="hover:text-amber-500">
+                        <Link href={`/platform/clients/${u.organization.id}`} className="hover:text-brand-500">
                           {u.organization.name}
                         </Link>
                       ) : (

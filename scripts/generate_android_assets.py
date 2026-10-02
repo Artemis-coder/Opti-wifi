@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Generate Android launcher icons and splash screens for Opti Wi-Fi.
+"""Generate Android launcher icons and splash screens for OptiSpace.
 
 Pure stdlib (zlib + struct) PNG encoder/decoder so the build has no
 dependency on Pillow or a working ImageMagick binary.
 
-Design: navy #0B1A3A canvas, white circular badge, Opti Wi-Fi logo centred.
+Design: the OptiSpace icon (Icon app/OptiSpace.jpg) is full bleed, the
+adaptive foreground keeps it inside the 72dp mask with the secondary green
+(#84C865) as the background layer, and the splash shows it as a circular
+badge on the brand chrome canvas (#1B3F2B).
 Run from the repository root:  python3 scripts/generate_android_assets.py
 """
 
@@ -17,10 +20,9 @@ import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(ROOT, "android", "app", "src", "main", "res")
-LOGO = os.path.join(ROOT, "public", "assets", "logo.jpg")
+LOGO = os.path.join(ROOT, "Icon app", "OptiSpace.jpg")
 
-NAVY = (0x0B, 0x1A, 0x3A)
-WHITE = (0xFF, 0xFF, 0xFF)
+CHROME = (0x1B, 0x3F, 0x2B)  # BRAND.chrome
 SS = 4  # supersampling factor for anti-aliasing
 
 DENSITIES = {
@@ -157,13 +159,16 @@ def fill(color: tuple[int, int, int], w: int, h: int) -> bytearray:
 # -------------------------------------------------------------------------- draw
 
 
-def draw_badge(
+def make_circle_badge(
     canvas_w: int,
     canvas_h: int,
     badge_ratio: float,
+    icon: bytes,
+    iw: int,
+    ih: int,
     bg: tuple[int, int, int] | None,
-) -> tuple[bytearray, int, int, int]:
-    """Draw the white circular badge. Returns (canvas, cx, cy, diameter)."""
+) -> bytearray:
+    """Mask the icon into a circle centred on the canvas."""
     if bg is None:
         canvas = bytearray(canvas_w * canvas_h * 4)
     else:
@@ -171,58 +176,63 @@ def draw_badge(
 
     diameter = int(min(canvas_w, canvas_h) * badge_ratio)
     cx, cy = canvas_w // 2, canvas_h // 2
-    radius = diameter / 2.0
     left, top = cx - diameter // 2, cy - diameter // 2
+    radius = diameter / 2.0
+    mark = resize(icon, iw, ih, diameter, diameter)
 
-    for y in range(canvas_h):
-        row = y * canvas_w * 4
-        for x in range(canvas_w):
-            dx, dy = x + 0.5 - (left + radius), y + 0.5 - (top + radius)
+    for y in range(diameter):
+        for x in range(diameter):
+            dx, dy = x + 0.5 - radius, y + 0.5 - radius
             dist = (dx * dx + dy * dy) ** 0.5
-            if dist <= radius:
-                alpha = 255
-            elif dist <= radius + 1:
-                alpha = int(255 * (radius + 1 - dist))
-            else:
+            if dist > radius + 1:
                 continue
-            o = row + x * 4
-            canvas[o : o + 4] = bytes((WHITE[0], WHITE[1], WHITE[2], alpha))
-    return canvas, cx, cy, diameter
-
-
-def paste(dst: bytearray, dst_w: int, src: bytes, sw: int, sh: int, ox: int, oy: int) -> None:
-    for y in range(sh):
-        do = ((oy + y) * dst_w + ox) * 4
-        so = y * sw * 4
-        dst[do : do + sw * 4] = src[so : so + sw * 4]
+            alpha = 255 if dist <= radius else int(255 * (radius + 1 - dist))
+            so = (y * diameter + x) * 4
+            o = ((top + y) * canvas_w + left + x) * 4
+            canvas[o : o + 4] = bytes(
+                (
+                    mark[so],
+                    mark[so + 1],
+                    mark[so + 2],
+                    int(mark[so + 3] * alpha / 255),
+                )
+            )
+    return canvas
 
 
 # ------------------------------------------------------------------- generation
 
 
-def make_logo_canvas(size: int, logo: bytes, lw: int, lh: int, bg=None) -> bytearray:
+def make_legacy_icon(size: int, icon: bytes, iw: int, ih: int) -> bytearray:
+    """Full bleed square icon: the launcher applies its own shape mask."""
     big = size * SS
-    canvas, cx, cy, diameter = draw_badge(big, big, 0.72, bg)
-    inner = int(diameter * 0.94)
-    mark = resize(logo, lw, lh, inner, inner)
-    paste(canvas, big, mark, inner, inner, cx - inner // 2, cy - inner // 2)
-    return resize(canvas, big, big, size, size)
+    return resize(icon, iw, ih, big, big)
 
 
-def make_splash(w: int, h: int, logo: bytes, lw: int, lh: int) -> bytearray:
-    big_w, big_h = w * 2, h * 2
-    canvas, cx, cy, diameter = draw_badge(big_w, big_h, 0.34, NAVY)
-    inner = int(diameter * 0.94)
-    mark = resize(logo, lw, lh, inner, inner)
-    paste(canvas, big_w, mark, inner, inner, cx - inner // 2, cy - inner // 2)
+def make_adaptive_foreground(size: int, icon: bytes, iw: int, ih: int) -> bytearray:
+    """108dp canvas with the icon centred inside the 72dp visible mask."""
+    canvas = bytearray(size * size * 4)
+    inner = int(size * 72 / 108)
+    mark = resize(icon, iw, ih, inner, inner)
+    offset = (size - inner) // 2
+    for y in range(inner):
+        do = ((offset + y) * size + offset) * 4
+        so = y * inner * 4
+        canvas[do : do + inner * 4] = mark[so : so + inner * 4]
+    return canvas
+
+
+def make_splash(w: int, h: int, icon: bytes, iw: int, ih: int) -> bytearray:
+    big_w, big_h = w * SS, h * SS
+    canvas = make_circle_badge(big_w, big_h, 0.34, icon, iw, ih, CHROME)
     return resize(canvas, big_w, big_h, w, h)
 
 
 def main() -> int:
-    png_logo = os.path.join(os.path.dirname(LOGO), "_logo_tmp.png")
-    os.system(f'sips -s format png "{LOGO}" --out "{png_logo}" >/dev/null')
-    lw, lh, logo = read_png(png_logo)
-    os.remove(png_logo)
+    png_icon = os.path.join(os.path.dirname(LOGO), "_icon_tmp.png")
+    os.system(f'sips -s format png "{LOGO}" --out "{png_icon}" >/dev/null')
+    iw, ih, icon = read_png(png_icon)
+    os.remove(png_icon)
 
     for density, scale in DENSITIES.items():
         folder = os.path.join(RES, f"mipmap-{density}")
@@ -231,21 +241,21 @@ def main() -> int:
             os.path.join(folder, "ic_launcher.png"),
             legacy,
             legacy,
-            make_logo_canvas(legacy, logo, lw, lh, NAVY),
+            make_legacy_icon(legacy, icon, iw, ih),
         )
         write_png(
             os.path.join(folder, "ic_launcher_round.png"),
             legacy,
             legacy,
-            make_logo_canvas(legacy, logo, lw, lh, NAVY),
+            make_legacy_icon(legacy, icon, iw, ih),
         )
-        # Adaptive foreground: 108dp canvas, badge kept inside the 72dp mask.
+        # Adaptive foreground: 108dp canvas, artwork inside the 72dp mask.
         foreground = int(108 * scale)
         write_png(
             os.path.join(folder, "ic_launcher_foreground.png"),
             foreground,
             foreground,
-            make_logo_canvas(foreground, logo, lw, lh, None),
+            make_adaptive_foreground(foreground, icon, iw, ih),
         )
         print(f"mipmap-{density}: {legacy}px legacy, {foreground}px foreground")
 
@@ -259,7 +269,7 @@ def main() -> int:
 
     for folder, (w, h) in splashes.items():
         write_png(
-            os.path.join(RES, folder, "splash.png"), w, h, make_splash(w, h, logo, lw, lh)
+            os.path.join(RES, folder, "splash.png"), w, h, make_splash(w, h, icon, iw, ih)
         )
         print(f"{folder}/splash.png: {w}x{h}")
 

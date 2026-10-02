@@ -91,12 +91,12 @@ export default function UsersPage() {
 
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           Chargement des utilisateurs...
         </div>
       ) : users.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-blue-900/10 text-blue-900 dark:text-amber-400 flex items-center justify-center mx-auto">
+          <div className="w-14 h-14 rounded-full bg-blue-900/10 text-blue-900 dark:text-brand-400 flex items-center justify-center mx-auto">
             <Users className="w-7 h-7" />
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun utilisateur trouvé</h3>
@@ -113,7 +113,7 @@ export default function UsersPage() {
             <Card key={u.id} className="space-y-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#0b1a3a] text-amber-400 font-bold flex items-center justify-center text-sm border border-amber-500/30">
+                  <div className="w-10 h-10 rounded-full bg-brand-900 text-brand-400 font-bold flex items-center justify-center text-sm border border-brand-500/30">
                     {u.nom ? u.nom.slice(0, 2).toUpperCase() : 'US'}
                   </div>
                   <div>

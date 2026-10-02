@@ -147,7 +147,7 @@ export function DatePicker({
           'md-ripple tap-target w-full h-14 sm:h-11 pl-4 sm:pl-3.5 pr-3 flex items-center justify-between gap-3 text-left',
           'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl',
           'text-base sm:text-sm font-medium transition duration-150',
-          'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent',
+          'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           selected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'
         )}
@@ -221,9 +221,9 @@ export function DatePicker({
                 className={cn(
                   'md-ripple tap-target h-12 flex items-center justify-center rounded-xl text-sm sm:text-base font-semibold transition',
                   isSelected
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                    ? 'bg-brand-500 text-slate-950 shadow-sm'
                     : isToday
-                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/50'
+                    ? 'bg-brand-500/15 text-brand-700 dark:text-brand-300 ring-1 ring-brand-500/50'
                     : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800',
                   off && 'opacity-30 pointer-events-none'
                 )}
@@ -238,7 +238,7 @@ export function DatePicker({
           <button
             type="button"
             onClick={() => commit(todayISO)}
-            className="md-ripple tap-target px-4 h-11 rounded-xl text-sm font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+            className="md-ripple tap-target px-4 h-11 rounded-xl text-sm font-bold text-brand-600 dark:text-brand-400 hover:bg-brand-500/10"
           >
             Aujourd&apos;hui
           </button>

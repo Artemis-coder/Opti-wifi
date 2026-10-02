@@ -204,7 +204,7 @@ export default function PosDetailPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         Chargement du point de vente...
       </div>
     );
@@ -249,7 +249,7 @@ export default function PosDetailPage() {
       <Card className="p-6 space-y-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-blue-900/10 text-blue-900 dark:text-amber-400 border border-blue-900/20">
+            <div className="p-3 rounded-xl bg-blue-900/10 text-blue-900 dark:text-brand-400 border border-blue-900/20">
               <Store className="w-6 h-6" />
             </div>
             <div>
@@ -283,10 +283,10 @@ export default function PosDetailPage() {
             <span className="text-slate-800 dark:text-slate-200">{formatDateFR(pos.created_at)}</span>
           </div>
           <div className="flex items-center gap-2 text-sm md:col-span-2">
-            <MapPin className="w-4 h-4 text-amber-500" />
+            <MapPin className="w-4 h-4 text-brand-500" />
             <span className="text-slate-500">Espace Wi-Fi :</span>
             {pos.space_id ? (
-              <Link href="/spaces" className="font-semibold text-amber-600 hover:text-amber-700 hover:underline">
+              <Link href="/spaces" className="font-semibold text-brand-600 hover:text-brand-700 hover:underline">
                 {pos.space?.nom || spaces.find((s) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
               </Link>
             ) : (
@@ -303,7 +303,7 @@ export default function PosDetailPage() {
           value={totalAlloue}
           hint="Stock total alloué à ce POS"
           icon={Package}
-          tone="amber"
+          tone="brand"
         />
 
         <StatTile
@@ -327,7 +327,7 @@ export default function PosDetailPage() {
           value={formatCurrencyFCFA(totalCA)}
           hint="CA total depuis les collectes"
           icon={BarChart3}
-          tone="amber"
+          tone="brand"
         />
 
         <StatTile
@@ -344,7 +344,7 @@ export default function PosDetailPage() {
       <Card className="p-0 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Package className="w-5 h-5 text-amber-500" />
+            <Package className="w-5 h-5 text-brand-500" />
             Suivi des Allocations de Tickets
           </h2>
         </div>
@@ -417,7 +417,7 @@ export default function PosDetailPage() {
                   <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{totalAlloue}</td>
                   <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{totalVendu}</td>
                   <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{totalRestant}</td>
-                  <td className="px-4 py-3 text-right text-amber-600">{formatCurrencyFCFA(totalCA)}</td>
+                  <td className="px-4 py-3 text-right text-brand-600">{formatCurrencyFCFA(totalCA)}</td>
                   <td className="px-4 py-3 text-right">
                     {totalEcarts === 0 ? (
                       <span className="text-emerald-600">Conforme</span>
@@ -438,7 +438,7 @@ export default function PosDetailPage() {
       <Card className="p-0 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Clock className="w-5 h-5 text-amber-500" />
+            <Clock className="w-5 h-5 text-brand-500" />
             Historique des Allocations
           </h2>
         </div>

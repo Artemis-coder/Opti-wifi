@@ -1,10 +1,11 @@
 import type { CapacitorConfig } from '@capacitor/cli'
+import { APP, NATIVE } from './src/lib/design-system'
 
 const serverUrl = process.env.CAP_SERVER_URL ?? 'https://opti-wifi.vercel.app'
 
 const config: CapacitorConfig = {
-  appId: 'com.optiwifi.app',
-  appName: 'Opti Wi-Fi',
+  appId: APP.appId,
+  appName: APP.name,
   webDir: 'public',
   server: {
     url: serverUrl,
@@ -15,7 +16,7 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,
-    backgroundColor: '#0b1a3aff',
+    backgroundColor: NATIVE.background,
     // Android 15 (targetSdk 35) forces edge-to-edge: the WebView would draw
     // under the status bar and the system navigation bar, hiding the phone
     // taskbar. 'force' gives the WebView margins for the system bars so the
@@ -26,7 +27,7 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 1200,
       launchAutoHide: true,
-      backgroundColor: '#0b1a3aff',
+      backgroundColor: NATIVE.splashBackground,
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
@@ -35,7 +36,7 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'LIGHT',
-      backgroundColor: '#0b1a3a',
+      backgroundColor: NATIVE.statusBar,
       overlaysWebView: false,
     },
     Keyboard: {

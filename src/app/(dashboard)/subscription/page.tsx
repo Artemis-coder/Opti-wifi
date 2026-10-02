@@ -79,7 +79,7 @@ export default function OrganizationSubscriptionPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         <span>Chargement de votre abonnement...</span>
       </div>
     );
@@ -114,7 +114,7 @@ export default function OrganizationSubscriptionPage() {
           value={currentSubscription?.end_date ? (calculateDaysRemaining(currentSubscription.end_date) ?? 0) : '—'}
           hint={currentSubscription?.end_date ? `Jusqu'au ${formatDateOnlyFR(currentSubscription.end_date)}` : 'Date non définie'}
           icon={Calendar}
-          tone="amber"
+          tone="brand"
         />
         <StatTile
           label="Total abonnements"
@@ -127,9 +127,9 @@ export default function OrganizationSubscriptionPage() {
 
       {/* Current Subscription */}
       {currentSubscription ? (
-        <Card className="p-6 border-2 border-amber-500/30 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-slate-900">
+        <Card className="p-6 border-2 border-brand-500/30 bg-gradient-to-br from-brand-50 to-white dark:from-brand-950/20 dark:to-slate-900">
           <div className="flex items-start gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="w-14 h-14 rounded-2xl bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
               <Zap className="w-7 h-7" />
             </div>
             <div className="flex-1 min-w-0">
@@ -341,7 +341,7 @@ export default function OrganizationSubscriptionPage() {
       {/* Contact Support */}
       <Card className="p-6 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
             <ArrowRight className="w-5 h-5" />
           </div>
           <div>

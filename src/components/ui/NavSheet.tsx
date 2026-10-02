@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
-export type NavTone = 'amber' | 'emerald' | 'red' | 'blue' | 'purple' | 'slate';
+export type NavTone = 'brand' | 'emerald' | 'red' | 'blue' | 'purple' | 'slate';
 
 const TONES: Record<NavTone, string> = {
-  amber: 'bg-amber-500 text-white',
+  brand: 'bg-brand-500 text-brand-on',
   emerald: 'bg-emerald-500 text-white',
   red: 'bg-red-500 text-white',
   blue: 'bg-blue-500 text-white',
@@ -35,7 +35,7 @@ export function NavSection({ title, children }: { title?: string; children: Reac
 function rowClass(active: boolean) {
   return cn(
     'md-ripple flex w-full items-center gap-3.5 min-h-14 px-4 text-left transition-colors duration-150',
-    active ? 'bg-amber-500/10' : 'active:bg-slate-100 dark:active:bg-slate-800'
+    active ? 'bg-brand-500/10' : 'active:bg-slate-100 dark:active:bg-slate-800'
   );
 }
 
@@ -71,7 +71,7 @@ export function NavRow({ href, label, description, icon, tone = 'slate', active 
         <span
           className={cn(
             'block truncate text-[15px] font-medium',
-            active ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'
+            active ? 'text-brand-600 dark:text-brand-400' : 'text-slate-900 dark:text-white'
           )}
         >
           {label}
@@ -80,7 +80,7 @@ export function NavRow({ href, label, description, icon, tone = 'slate', active 
           <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{description}</span>
         )}
       </span>
-      {active && <ChevronRight className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />}
+      {active && <ChevronRight className="h-4 w-4 shrink-0 text-brand-500" aria-hidden />}
     </Link>
   );
 }
@@ -128,7 +128,7 @@ export function NavAccount({
 }) {
   return (
     <div className="mb-5 flex items-center gap-3.5 rounded-2xl bg-white dark:bg-slate-900 px-4 py-3.5 shadow-sm">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-amber-500/15 text-amber-500 ring-1 ring-amber-500/30">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-500/15 text-brand-500 ring-1 ring-brand-500/30">
         {avatar}
       </div>
       <div className="min-w-0 flex-1">
@@ -136,7 +136,7 @@ export function NavAccount({
         <p className="truncate text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{role}</p>
       </div>
       {offline && <span title="Hors ligne" className="shrink-0"><span className="block h-2 w-2 rounded-full bg-red-500" /></span>}
-      {unstable && <span title="Connexion instable" className="shrink-0"><span className="block h-2 w-2 rounded-full bg-amber-500" /></span>}
+      {unstable && <span title="Connexion instable" className="shrink-0"><span className="block h-2 w-2 rounded-full bg-brand-500" /></span>}
       {online && !offline && !unstable && <span title="En ligne" className="shrink-0"><span className="block h-2 w-2 rounded-full bg-emerald-500" /></span>}
     </div>
   );

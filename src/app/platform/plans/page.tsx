@@ -210,7 +210,7 @@ export default function PlatformPlansPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         <span>Chargement des plans...</span>
       </div>
     );
@@ -237,7 +237,7 @@ export default function PlatformPlansPage() {
             placeholder="Rechercher un plan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
       </Card>
@@ -255,7 +255,7 @@ export default function PlatformPlansPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPlans.map((plan) => (
-            <Card key={plan.id} className="space-y-4 border-l-4 border-l-amber-500">
+            <Card key={plan.id} className="space-y-4 border-l-4 border-l-brand-500">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">{plan.name}</h3>

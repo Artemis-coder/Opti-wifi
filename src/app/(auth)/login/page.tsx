@@ -212,17 +212,17 @@ export default function LoginPage() {
   const showTabs = mode === 'login' || mode === 'register';
 
   return (
-    <div className="min-h-screen bg-[#0b1a3a] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-brand-900 flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
 
       <div className="w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/20 p-8 space-y-6 relative z-10">
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl mx-auto overflow-hidden relative shadow-lg border border-amber-500/30 flex items-center justify-center bg-[#0b1a3a]">
+          <div className="w-16 h-16 rounded-2xl mx-auto overflow-hidden relative shadow-lg border border-brand-500/30 flex items-center justify-center bg-brand-900">
             <Image src="/assets/logo.jpg" alt="OptiWifi" width={64} height={64} className="object-cover" />
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Opti<span className="text-amber-500">Wifi</span>
+            Opti<span className="text-brand-500">Wifi</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Plateforme de Gestion des Tickets & Encaissements Wi-Fi
@@ -254,7 +254,7 @@ export default function LoginPage() {
               onClick={() => { setMode('register'); setError(''); setSuccessMsg(''); }}
               className={`md-ripple tap-target flex-1 text-xs sm:text-sm font-bold rounded-xl transition-colors ${
                 mode === 'register'
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
+                  ? 'bg-brand-500 text-slate-950 font-bold shadow-xs'
                   : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -297,7 +297,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => { setMode('recovery'); setError(''); setSuccessMsg(''); }}
-              className="md-ripple text-amber-600 hover:text-amber-700 font-semibold text-sm py-3 px-2 -ml-2"
+              className="md-ripple text-brand-600 hover:text-brand-700 font-semibold text-sm py-3 px-2 -ml-2"
             >
               Mot de passe oublié ?
             </button>

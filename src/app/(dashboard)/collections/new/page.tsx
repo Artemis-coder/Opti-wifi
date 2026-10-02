@@ -208,7 +208,7 @@ export default function NewCollectionWizard() {
     <div className="max-w-3xl mx-auto w-full min-w-0 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Receipt className="w-6 h-6 text-amber-500" />
+          <Receipt className="w-6 h-6 text-brand-500" />
           Assistant de Collecte & Encaissement Caisse
         </h1>
         <p className="text-xs text-slate-500">Enregistrement direct et sécurisé dans la base de données.</p>
@@ -220,7 +220,7 @@ export default function NewCollectionWizard() {
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
                 step === s
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
+                  ? 'bg-brand-500 text-slate-950 font-bold shadow-md'
                   : step > s
                   ? 'bg-emerald-600 text-white'
                   : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
@@ -241,7 +241,7 @@ export default function NewCollectionWizard() {
 
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
           Chargement de l&apos;assistant...
         </div>
       ) : submitted ? (
@@ -284,7 +284,7 @@ export default function NewCollectionWizard() {
 
               {loadingAllocations ? (
                 <div className="py-8 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-                  <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                  <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
                   Chargement des allocations...
                 </div>
               ) : allocatedTickets.filter((t) => (availableQtyMap[t.id] || 0) > 0).length === 0 ? (
@@ -350,7 +350,7 @@ export default function NewCollectionWizard() {
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 3 : Calcul Automatique du Montant Attendu</h3>
               <div className="p-4 bg-blue-900/10 dark:bg-blue-950/40 rounded-xl border border-blue-900/20 text-center space-y-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Montant Théorique à Encaisser</p>
-                <p className="text-3xl font-extrabold text-[#0b1a3a] dark:text-amber-400">{formatCurrencyFCFA(montantAttendu)}</p>
+                <p className="text-3xl font-extrabold text-brand-900 dark:text-brand-400">{formatCurrencyFCFA(montantAttendu)}</p>
               </div>
               <div className="flex justify-between pt-4">
                 <Button variant="ghost" onClick={() => setStep(2)} className="gap-2">

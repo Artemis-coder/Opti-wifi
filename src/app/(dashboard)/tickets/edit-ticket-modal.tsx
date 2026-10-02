@@ -102,7 +102,7 @@ export function EditTicketModal({ isOpen, onClose, ticket, onSuccess }: EditTick
             role="switch"
             aria-checked={actif}
             onClick={() => setActif(!actif)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 ${
               actif ? 'bg-emerald-600' : 'bg-slate-400'
             }`}
           >

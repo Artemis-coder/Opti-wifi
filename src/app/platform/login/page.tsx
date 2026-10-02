@@ -59,19 +59,19 @@ export default function PlatformLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b1a3a] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-brand-900 flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
 
       <div className="w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/20 p-8 space-y-6 relative z-10">
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl mx-auto overflow-hidden relative shadow-lg border border-amber-500/30 flex items-center justify-center bg-[#0b1a3a]">
+          <div className="w-16 h-16 rounded-2xl mx-auto overflow-hidden relative shadow-lg border border-brand-500/30 flex items-center justify-center bg-brand-900">
             <Image src="/assets/platform-logo.jpg" alt="OptiWifi Platform Logo" width={64} height={64} className="object-cover" />
           </div>
           <div className="flex items-center justify-center gap-2 mt-2">
-            <Shield className="w-5 h-5 text-amber-400" />
+            <Shield className="w-5 h-5 text-brand-400" />
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Opti<span className="text-amber-500">Wifi</span>
+              Opti<span className="text-brand-500">Wifi</span>
             </h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">

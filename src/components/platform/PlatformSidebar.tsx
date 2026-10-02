@@ -102,10 +102,10 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
   );
 
   const content = (
-    <aside className="bg-[#0b1a3a] text-white flex flex-col h-full border-r border-slate-800 shadow-xl">
-      <div className="h-16 flex items-center justify-between gap-2 px-4 sm:px-6 border-b border-slate-800/80">
+    <aside className="bg-brand-900 text-white flex flex-col h-full border-r border-brand-800 shadow-xl">
+      <div className="h-16 flex items-center justify-between gap-2 px-4 sm:px-6 border-b border-white/10">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 shrink-0 rounded-lg overflow-hidden relative bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+          <div className="w-9 h-9 shrink-0 rounded-lg overflow-hidden relative bg-brand-500/20 border border-brand-500/30 flex items-center justify-center">
             <Image src="/assets/platform-logo.jpg" alt="OptiWifi Platform Logo" width={36} height={36} className="object-cover" />
           </div>
           <div className="min-w-0">
@@ -146,7 +146,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
                       className={cn(
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150',
                         isActive
-                          ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                          ? 'bg-brand-500 text-slate-950 font-bold shadow-sm'
                           : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
                       )}
                     >
@@ -168,7 +168,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150',
                 isActive
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                  ? 'bg-brand-500 text-slate-950 font-bold shadow-sm'
                   : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
               )}
             >
@@ -179,9 +179,9 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
+      <div className="p-4 border-t border-white/10 bg-black/20 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs border border-amber-500/30">
+          <div className="w-8 h-8 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs border border-brand-500/30">
             <UserIcon className="w-4 h-4" />
           </div>
           <div className="flex items-center gap-2 overflow-hidden">
@@ -192,7 +192,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
               <p className="text-xs font-bold text-white truncate">
                 {platformUser?.full_name || platformUser?.email || 'Super Admin'}
               </p>
-              <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">
+              <p className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider">
                 {platformUser?.role || 'super_admin'}
               </p>
             </div>
@@ -241,7 +241,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
         </NavSection>
 
         <NavSection title="Abonnements">
-          {row('/platform/subscriptions', 'Tous les abonnements', Receipt, 'amber')}
+          {row('/platform/subscriptions', 'Tous les abonnements', Receipt, 'brand')}
           {row('/platform/plans', 'Plans tarifaires', Wallet, 'purple')}
           {row('/platform/subscriptions/expiring', 'Expirations', History, 'red')}
         </NavSection>
@@ -254,7 +254,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
         <NavSection title="Autres">
           {row('/platform/users', 'Utilisateurs', Users, 'blue')}
           {row('/platform/reports', 'Rapports', BarChart3, 'emerald')}
-          {row('/platform/notifications', 'Notifications', Bell, 'amber')}
+          {row('/platform/notifications', 'Notifications', Bell, 'brand')}
           {row('/platform/audit-logs', "Journal d'audit", History, 'slate')}
           {row('/platform/support', 'Support', LifeBuoy, 'purple')}
           {row('/platform/settings', 'Paramètres', Settings, 'slate')}

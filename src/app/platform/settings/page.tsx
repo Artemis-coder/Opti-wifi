@@ -109,7 +109,7 @@ export default function PlatformSettingsPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         <span>Chargement des paramètres...</span>
       </div>
     );
@@ -132,7 +132,7 @@ export default function PlatformSettingsPage() {
       {/* General */}
       <Card className="space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <Settings className="w-5 h-5 text-amber-500" />
+          <Settings className="w-5 h-5 text-brand-500" />
           <div>
             <p className="text-sm font-bold text-slate-900 dark:text-white">Général</p>
             <p className="text-xs text-slate-500">Configuration de base de la plateforme.</p>
@@ -189,7 +189,7 @@ export default function PlatformSettingsPage() {
           <button
             onClick={() => updateValue('allow_registration', !editedValues.allow_registration)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-              editedValues.allow_registration ? 'bg-amber-500' : 'bg-slate-400'
+              editedValues.allow_registration ? 'bg-brand-500' : 'bg-slate-400'
             }`}
           >
             <span className="sr-only">Toggle registration</span>
@@ -231,7 +231,7 @@ export default function PlatformSettingsPage() {
 
         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
           <div className="flex items-center gap-3">
-            <Bell className="w-5 h-5 text-amber-500" />
+            <Bell className="w-5 h-5 text-brand-500" />
             <div>
               <p className="text-sm font-semibold text-slate-900 dark:text-white">Renouvellement automatique par défaut</p>
               <p className="text-xs text-slate-500">Activer le renouvellement automatique pour les nouveaux abonnés.</p>
@@ -240,7 +240,7 @@ export default function PlatformSettingsPage() {
           <button
             onClick={() => updateValue('auto_renew_default', !editedValues.auto_renew_default)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-              editedValues.auto_renew_default ? 'bg-amber-500' : 'bg-slate-400'
+              editedValues.auto_renew_default ? 'bg-brand-500' : 'bg-slate-400'
             }`}
           >
             <span className="sr-only">Toggle auto-renew</span>

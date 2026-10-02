@@ -80,7 +80,7 @@ export default function PlatformSupportPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         <span>Chargement des tickets...</span>
       </div>
     );
@@ -112,7 +112,7 @@ export default function PlatformSupportPage() {
               <Card key={t.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <LifeBuoy className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <LifeBuoy className="w-5 h-5 text-brand-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-slate-900 dark:text-white">{t.subject}</h3>

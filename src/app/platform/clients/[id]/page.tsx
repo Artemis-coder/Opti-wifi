@@ -285,7 +285,7 @@ export default function ClientDetailPage() {
   if (loading || !data) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         <span>Chargement de la fiche client...</span>
       </div>
     );
@@ -319,7 +319,7 @@ export default function ClientDetailPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{org.name}</h1>
             <p className="text-xs text-slate-500 mt-1">
-              ID: {org.id} <button onClick={() => copyId(org.id)} className="hover:text-amber-500"><Copy className="w-3 h-3 inline" /></button>
+              ID: {org.id} <button onClick={() => copyId(org.id)} className="hover:text-brand-500"><Copy className="w-3 h-3 inline" /></button>
             </p>
           </div>
         </div>
@@ -379,7 +379,7 @@ export default function ClientDetailPage() {
         {/* General Info */}
         <Card className="space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <Building2 className="w-5 h-5 text-amber-500" />
+            <Building2 className="w-5 h-5 text-brand-500" />
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Informations Générales</h2>
           </div>
           <div className="space-y-3 text-sm">
@@ -488,7 +488,7 @@ export default function ClientDetailPage() {
         {/* Subscription Info */}
         <Card className="space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <Receipt className="w-5 h-5 text-amber-500" />
+            <Receipt className="w-5 h-5 text-brand-500" />
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Abonnement</h2>
           </div>
           {sub ? (
@@ -527,8 +527,8 @@ export default function ClientDetailPage() {
                 </p>
               </div>
               {sub.cancel_at_period_end && (
-                <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                <div className="p-2 bg-brand-50 dark:bg-brand-950/20 rounded-lg border border-brand-200 dark:border-brand-800">
+                  <p className="text-xs text-brand-800 dark:text-brand-300">
                     L&apos;abonnement sera annulé à la fin de la période en cours.
                   </p>
                 </div>
@@ -591,7 +591,7 @@ export default function ClientDetailPage() {
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {data.users.map((u) => (
                 <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40">
-                  <div className="w-7 h-7 rounded-full bg-[#0b1a3a] text-amber-400 flex items-center justify-center font-bold text-xs">
+                  <div className="w-7 h-7 rounded-full bg-brand-900 text-brand-400 flex items-center justify-center font-bold text-xs">
                     {u.nom?.[0] || u.email?.[0] || 'U'}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -657,7 +657,7 @@ export default function ClientDetailPage() {
                   value="active"
                   checked={assignStatus === 'active'}
                   onChange={() => setAssignStatus('active')}
-                  className="text-amber-500"
+                  className="text-brand-500"
                 />
                 <span className="text-sm text-slate-700 dark:text-slate-300">Actif</span>
               </label>
@@ -668,7 +668,7 @@ export default function ClientDetailPage() {
                   value="trialing"
                   checked={assignStatus === 'trialing'}
                   onChange={() => setAssignStatus('trialing')}
-                  className="text-amber-500"
+                  className="text-brand-500"
                 />
                 <span className="text-sm text-slate-700 dark:text-slate-300">Période d'essai</span>
               </label>
@@ -699,7 +699,7 @@ export default function ClientDetailPage() {
               type="checkbox"
               checked={autoRenew}
               onChange={(e) => setAutoRenew(e.target.checked)}
-              className="rounded text-amber-500"
+              className="rounded text-brand-500"
             />
             <span className="text-sm text-slate-700 dark:text-slate-300">Renouvellement automatique</span>
           </label>

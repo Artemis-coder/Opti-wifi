@@ -187,7 +187,7 @@ export default function WifiSpacesPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         Chargement des espaces...
       </div>
     );
@@ -217,7 +217,7 @@ export default function WifiSpacesPage() {
           value={totalSpaces}
           hint="Tous les espaces enregistrés"
           icon={MapPin}
-          tone="amber"
+          tone="brand"
         />
         <StatTile
           label="Actifs"
@@ -245,7 +245,7 @@ export default function WifiSpacesPage() {
             placeholder="Rechercher par nom, ville ou adresse..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
       </Card>
@@ -253,7 +253,7 @@ export default function WifiSpacesPage() {
       {/* Grid Space Cards or Empty State */}
       {filteredSpaces.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+          <div className="w-14 h-14 rounded-full bg-brand-500/10 text-brand-500 flex items-center justify-center mx-auto">
             <MapPin className="w-7 h-7" />
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun espace trouvé</h3>
@@ -280,7 +280,7 @@ export default function WifiSpacesPage() {
                 <Card className="space-y-3 h-full">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      <div className="p-2.5 rounded-xl bg-brand-500/10 text-brand-500 border border-brand-500/20">
                         <MapPin className="w-5 h-5" />
                       </div>
                       <div>

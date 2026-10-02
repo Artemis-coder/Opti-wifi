@@ -109,7 +109,7 @@ export default function AllocationsPage() {
       case 'exchange_receive':
         return { label: 'Reçu (Échange)', color: 'text-emerald-600' };
       default:
-        return { label: 'Allocation', color: 'text-amber-600' };
+        return { label: 'Allocation', color: 'text-brand-600' };
     }
   };
 
@@ -237,7 +237,7 @@ export default function AllocationsPage() {
   if (loading) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         Chargement des allocations...
       </div>
     );
@@ -249,7 +249,7 @@ export default function AllocationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <ArrowLeftRight className="w-6 h-6 text-amber-500" />
+            <ArrowLeftRight className="w-6 h-6 text-brand-500" />
             Suivi des Allocations
           </h1>
           <p className="text-xs text-slate-500">Historique complet des allocations de tickets par point de vente.</p>
@@ -297,10 +297,10 @@ export default function AllocationsPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-amber-500">
+        <Card className="border-l-4 border-l-brand-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Allocations</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
+            <div className="p-2 rounded-lg bg-brand-500/10 text-brand-600">
               <ArrowLeftRight className="w-5 h-5" />
             </div>
           </div>
@@ -334,7 +334,7 @@ export default function AllocationsPage() {
       {/* Allocations by POS */}
       {Object.keys(allocationsByPos).length === 0 ? (
         <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+          <div className="w-14 h-14 rounded-full bg-brand-500/10 text-brand-500 flex items-center justify-center mx-auto">
             <ArrowLeftRight className="w-7 h-7" />
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune allocation trouvée</h3>
@@ -549,7 +549,7 @@ export default function AllocationsPage() {
                       return sum + qty;
                     }, 0)} tickets net
                   </span>
-                  <span className="font-bold text-amber-600">
+                  <span className="font-bold text-brand-600">
                     {formatCurrencyFCFA(
                       posAllocations.reduce(
                         (sum, a) => {

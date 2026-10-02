@@ -133,7 +133,7 @@ export function Select({
           'md-ripple tap-target w-full h-14 sm:h-11 pl-4 sm:pl-3.5 pr-3 flex items-center justify-between gap-3 text-left',
           'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl',
           'text-base sm:text-sm font-medium transition duration-150',
-          'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent',
+          'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           selected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'
         )}
@@ -166,7 +166,7 @@ export function Select({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full h-12 sm:h-11 pl-10 pr-3 bg-slate-100 dark:bg-slate-800 border border-transparent rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full h-12 sm:h-11 pl-10 pr-3 bg-slate-100 dark:bg-slate-800 border border-transparent rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
         )}
@@ -188,7 +188,7 @@ export function Select({
                     className={cn(
                       'md-ripple tap-target w-full min-h-14 flex items-center gap-3 px-3 rounded-xl text-left transition',
                       isSelected
-                        ? 'bg-amber-500/10 border border-amber-500/40'
+                        ? 'bg-brand-500/10 border border-brand-500/40'
                         : 'border border-transparent hover:bg-slate-50 dark:hover:bg-slate-800',
                       o.disabled && 'opacity-40 cursor-not-allowed'
                     )}
@@ -203,7 +203,7 @@ export function Select({
                         </span>
                       )}
                     </span>
-                    {isSelected && <Check className="w-5 h-5 shrink-0 text-amber-500" />}
+                    {isSelected && <Check className="w-5 h-5 shrink-0 text-brand-500" />}
                   </button>
                 </li>
               );

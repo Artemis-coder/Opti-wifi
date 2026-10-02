@@ -36,7 +36,7 @@ export function NetworkNavItem() {
         </span>
 
         {panel.pendingCount > 0 && (
-          <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold text-slate-950">
+          <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-bold text-slate-950">
             {panel.pendingCount > 9 ? '9+' : panel.pendingCount}
           </span>
         )}

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Opti Wi-Fi</string>
-    <string name="title_activity_main">Opti Wi-Fi</string>
+    <string name="app_name">OptiSpace</string>
+    <string name="title_activity_main">OptiSpace</string>
     <string name="package_name">com.optiwifi.app</string>
     <string name="custom_url_scheme">com.optiwifi.app</string>
 </resources>

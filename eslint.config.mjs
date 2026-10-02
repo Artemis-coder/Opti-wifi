@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent Manager worktrees are full copies of the app: linting them
+    // duplicates every finding from the worktree they were branched from.
+    ".kilo/**",
+    "android/**",
   ]),
 ]);
 

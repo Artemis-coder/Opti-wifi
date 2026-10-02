@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { CHART_SERIES } from '@/lib/design-system';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -239,7 +240,7 @@ export async function GET(request: Request) {
     planCounts[planName] = (planCounts[planName] || 0) + 1;
   });
 
-  const planColors = ['#F59E0B', '#3B82F6', '#10B981', '#8B5CF6', '#EF4444', '#6366F1', '#14B8A8'];
+  const planColors = [...CHART_SERIES];
   const planDistribution = Object.entries(planCounts).map(([name, value], idx) => ({
     name,
     value,
