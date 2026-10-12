@@ -18,17 +18,20 @@ import {
   Clock,
   Ticket,
   User,
-  FileText,
+  RotateCcw,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatTile } from '@/components/ui/StatTile';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { EditPosModal } from '../edit-pos-modal';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { toast } from 'sonner';
 
 interface AllocationSummary {
   ticketType: TicketType;
@@ -52,6 +55,8 @@ export default function PosDetailPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [spaces, setSpaces] = useState<WifiSpace[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [resetStockModalOpen, setResetStockModalOpen] = useState(false);
+  const [isResettingStock, setIsResettingStock] = useState(false);
 
   const { user } = useAuthStore();
   const supabase = createClient();
@@ -119,6 +124,44 @@ export default function PosDetailPage() {
 
   const handlePosUpdated = (updated: PointOfSale) => {
     setPos(updated);
+  };
+
+  const handleResetStock = async () => {
+    if (!posId || !user?.organization_id) return;
+    setIsResettingStock(true);
+
+    try {
+      const res = await fetch('/api/allocations/reset-stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization_id: user.organization_id,
+          pos_id: posId,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || result.message || 'Échec de la réinitialisation du stock.');
+      }
+
+      toast.success('Stock réinitialisé avec succès.');
+      setResetStockModalOpen(false);
+
+      const { data: allocData } = await supabase
+        .from('ticket_allocations')
+        .select('*, ticket_type:ticket_types(*)')
+        .eq('organization_id', user.organization_id)
+        .eq('pos_id', posId)
+        .order('created_at', { ascending: false });
+      setAllocations(allocData || []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la réinitialisation du stock.';
+      toast.error(message);
+    } finally {
+      setIsResettingStock(false);
+    }
   };
 
   const computeAllocationSummary = (): AllocationSummary[] => {
@@ -243,6 +286,17 @@ export default function PosDetailPage() {
         <Button onClick={() => setIsEditModalOpen(true)} className="gap-2 font-semibold">
           <Edit className="w-4 h-4" /> Modifier le POS
         </Button>
+        {isAdmin && (
+          <Button
+            variant="danger"
+            className="gap-2 font-semibold"
+            onClick={() => setResetStockModalOpen(true)}
+            disabled={isResettingStock}
+          >
+            <RotateCcw className="w-4 h-4" />
+            Réinitialiser Stock
+          </Button>
+        )}
       </div>
 
       {/* POS Info Card */}
@@ -593,6 +647,34 @@ export default function PosDetailPage() {
           </div>
         </div>
       </Card>
+
+      {/* Reset Stock Modal */}
+      <Modal
+        isOpen={resetStockModalOpen}
+        onClose={() => setResetStockModalOpen(false)}
+        title="Réinitialiser le Stock du Point de Vente"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-sm text-red-800 dark:text-red-300">
+              Cette action est irréversible. Toutes les allocations de tickets pour ce point de vente seront supprimées définitivement.
+            </p>
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Voulez-vous vraiment réinitialiser le stock de <strong className="text-slate-900 dark:text-white">{pos?.nom}</strong> ?
+            Cela supprimera toutes les allocations de tickets enregistrées pour ce point de vente.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setResetStockModalOpen(false)} disabled={isResettingStock}>
+              Annuler
+            </Button>
+            <Button variant="danger" onClick={handleResetStock} isLoading={isResettingStock}>
+              Réinitialiser le Stock
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Edit POS Modal */}
       <EditPosModal
