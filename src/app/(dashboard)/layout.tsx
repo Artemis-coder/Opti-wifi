@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const router = useRouter();
-  const { user, isLoading, setUser, setIsLoading } = useAuthStore();
+  const { user, isLoading, setUser, setIsLoading, logout } = useAuthStore();
   const supabase = createClient();
 
   useEffect(() => {
@@ -30,6 +30,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     async function refreshProfile() {
       if (!user) {
         if (isMounted) setCheckingOrg(false);
+        return;
+      }
+
+      // Verify Supabase session is still valid
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // Session expired, clear auth store and redirect to login
+        if (isMounted) {
+          logout();
+          router.push('/login');
+        }
         return;
       }
 
@@ -64,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => {
       isMounted = false;
     };
-  }, [user, supabase, setUser]);
+  }, [user, supabase, setUser, logout, router]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
