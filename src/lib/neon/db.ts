@@ -29,11 +29,22 @@ export type SupabaseError = { message: string; code?: string; details?: string; 
 
 export async function query(text: string, params: any[] = []): Promise<QueryResult> {
   const sql = getSql();
-  const result: any = await (sql as any)(text, params);
-  const rows = result.rows || result || [];
+  const result: any = await sql.query(text, params);
+
+  let rows: any[];
+  if (Array.isArray(result)) {
+    rows = result;
+  } else if (result && Array.isArray(result.rows)) {
+    rows = result.rows;
+  } else if (result && typeof result[0] !== 'undefined') {
+    rows = Array.from(result as ArrayLike<any>);
+  } else {
+    rows = [];
+  }
+
   return {
-    rows: rows as any[],
-    rowCount: result.rowcount || (Array.isArray(rows) ? rows.length : 0),
+    rows,
+    rowCount: rows.length,
   };
 }
 
