@@ -453,7 +453,7 @@ export class TableBuilder {
 
     for (const n of nested) {
       const joinType = n.joinType === 'inner' ? 'INNER' : 'LEFT';
-      selectParts.push(`LEFT JOIN "${n.table}" AS "${n.alias}" ON "${this.tableName}".${this.fkColumn(n.alias)} = "${n.alias}"."id"`);
+      selectParts.push(`${joinType} JOIN "${n.table}" AS "${n.alias}" ON "${this.tableName}".${this.fkColumn(n.alias)} = "${n.alias}"."id"`);
       if (n.columns.length > 0) {
         n.columns.forEach(col => selectParts.push(`"${n.alias}"."${col}"`));
       } else {
@@ -464,7 +464,7 @@ export class TableBuilder {
     }
 
     const joinClause = selectParts.filter(p => p.startsWith('LEFT JOIN') || p.startsWith('INNER JOIN')).join(' ');
-    const colSelects = selectParts.filter(p => !p.startsWith('JOIN')).join(', ');
+    const colSelects = selectParts.filter(p => !(p.startsWith('LEFT JOIN') || p.startsWith('INNER JOIN'))).join(', ');
 
     const params: any[] = [];
     const whereBuild = this.buildWhereClause(params, 1);
