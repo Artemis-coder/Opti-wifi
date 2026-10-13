@@ -1,13 +1,25 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { Organization } from "@/types/platform";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+interface EnrichedOrg {
+  id: string;
+  name: string;
+  status: string;
+  currency: string;
+  created_at: string;
+  updated_at?: string;
+  subscription?: Record<string, unknown>;
+  plan?: Record<string, unknown>;
+  contact_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(undefined, undefined, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -72,7 +84,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const enrichedOrgs = (orgs || []).map((org) => {
+  const enrichedOrgs = (orgs || []).map((org: EnrichedOrg) => {
     const subList = Array.isArray(org.subscription) ? org.subscription : [org.subscription];
     const sub = subList.find(Boolean); // Get first defined element if any
     

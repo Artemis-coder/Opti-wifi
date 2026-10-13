@@ -4,6 +4,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { addToQueue } from '@/lib/offline/queue';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import type { SupabaseError } from '@/lib/neon/query-builder';
 
 export function useOfflineMutation() {
   const { isOnline } = useOnlineStatus();
@@ -33,7 +34,7 @@ export function useOfflineMutation() {
     }
 
     try {
-      let result: { data: T | null; error: Error | null } = { data: null, error: null };
+      let result: { data: T | null; error: SupabaseError | null } = { data: null, error: null };
 
       switch (type) {
         case 'create':
@@ -55,7 +56,7 @@ export function useOfflineMutation() {
       onSuccess?.(result.data as T);
       return result.data as T;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error('Unknown error');
+      const err = error instanceof Error ? error : new Error(error instanceof Object && 'message' in error ? String((error as { message: string }).message) : 'Unknown error');
       onError?.(err);
       toast.error(err.message);
       return null;

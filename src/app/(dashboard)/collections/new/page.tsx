@@ -13,7 +13,7 @@ import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
-import { PointOfSale, TicketType, CollectionItem } from '@/types/database';
+import { PointOfSale, TicketType, Collection, CollectionItem, TicketAllocation } from '@/types/database';
 
 export default function NewCollectionWizard() {
   const router = useRouter();
@@ -91,7 +91,7 @@ export default function NewCollectionWizard() {
       const ticketMap: Record<string, TicketType> = {};
 
       if (allocData) {
-        allocData.forEach((alloc) => {
+        allocData.forEach((alloc: TicketAllocation) => {
           const typeId = alloc.ticket_type_id;
           const qty = alloc.type === 'exchange_return' ? -alloc.quantite : alloc.quantite;
           allocMap[typeId] = (allocMap[typeId] || 0) + qty;
@@ -110,7 +110,7 @@ export default function NewCollectionWizard() {
 
       const soldMap: Record<string, number> = {};
       if (collectionsData) {
-        collectionsData.forEach((c) => {
+        collectionsData.forEach((c: Collection) => {
           if (c.items) {
             c.items!.forEach((item: CollectionItem) => {
               soldMap[item.ticket_type_id] = (soldMap[item.ticket_type_id] || 0) + item.quantite_vendue;
@@ -122,7 +122,7 @@ export default function NewCollectionWizard() {
       setAlreadySoldMap(soldMap);
 
       const availMap: Record<string, number> = {};
-      Object.keys(allocMap).forEach((typeId) => {
+      Object.keys(allocMap).forEach((typeId: string) => {
         availMap[typeId] = (allocMap[typeId] || 0) - (soldMap[typeId] || 0);
       });
       setAvailableQtyMap(availMap);
@@ -133,7 +133,7 @@ export default function NewCollectionWizard() {
     loadAllocations();
   }, [posId, currentSpaceId, supabase]);
 
-  const montantAttendu = allocatedTickets.reduce((sum, t) => {
+  const montantAttendu = allocatedTickets.reduce((sum: number, t: TicketType) => {
     const q = quantities[t.id] || 0;
     return sum + q * t.prix;
   }, 0);
@@ -178,8 +178,8 @@ export default function NewCollectionWizard() {
 
     if (collection) {
       const itemsToInsert = allocatedTickets
-        .filter((t) => (quantities[t.id] || 0) > 0)
-        .map((t) => ({
+        .filter((t: TicketType) => (quantities[t.id] || 0) > 0)
+        .map((t: TicketType) => ({
           collection_id: collection.id,
           ticket_type_id: t.id,
           stock_debut: 0,
@@ -211,7 +211,7 @@ export default function NewCollectionWizard() {
       </div>
 
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-        {[1, 2, 3, 4, 5].map((s) => (
+        {[1, 2, 3, 4, 5].map((s: number) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
@@ -258,7 +258,7 @@ export default function NewCollectionWizard() {
                   onChange={handlePosChange}
                   className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium"
                 >
-                  {posList.map((p) => (
+                  {posList.map((p: PointOfSale) => (
                     <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
                   ))}
                 </select>
@@ -280,7 +280,7 @@ export default function NewCollectionWizard() {
                   <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
                   Chargement des allocations...
                 </div>
-              ) : allocatedTickets.filter((t) => (availableQtyMap[t.id] || 0) > 0).length === 0 ? (
+              ) : allocatedTickets.filter((t: TicketType) => (availableQtyMap[t.id] || 0) > 0).length === 0 ? (
                 <div className="py-8 text-center space-y-3">
                   <Package className="w-10 h-10 text-slate-300 mx-auto" />
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun ticket alloué à ce POS</h3>
@@ -295,7 +295,7 @@ export default function NewCollectionWizard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {allocatedTickets.map((t) => {
+                  {allocatedTickets.map((t: TicketType) => {
                     const allocated = allocationMap[t.id] || 0;
                     const sold = alreadySoldMap[t.id] || 0;
                     const available = availableQtyMap[t.id] || 0;

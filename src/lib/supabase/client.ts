@@ -1,16 +1,5 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createBrowserClient } from '@/lib/neon/browser';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export { createBrowserClient, type BrowserAuthSession, type NeonError } from '@/lib/neon/browser';
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error(
-    'Supabase environment variables are not configured. ' +
-    'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local'
-  );
-}
-
-export function createClient() {
-  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
-
+export const createClient = createBrowserClient;

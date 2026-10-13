@@ -1,0 +1,43 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { neon } from '@neondatabase/serverless';
+import type { NeonQueryFunction } from '@neondatabase/serverless';
+
+const NEON_DATABASE_URL = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+
+let sqlInstance: NeonQueryFunction<any, any> | null = null;
+
+export function getSql(): NeonQueryFunction<any, any> {
+  if (!sqlInstance) {
+    if (!NEON_DATABASE_URL) {
+      throw new Error('DATABASE_URL is not configured. Set DATABASE_URL in your environment variables.');
+    }
+    sqlInstance = neon(NEON_DATABASE_URL);
+  }
+  return sqlInstance;
+}
+
+export interface QueryResult {
+  rows: any[];
+  rowCount: number;
+}
+
+export function makeError(message: string, code?: string): { message: string; code?: string; details: string; hint: string } {
+  return { message, code, details: '', hint: '' };
+}
+
+export type SupabaseError = { message: string; code?: string; details?: string; hint?: string };
+
+export async function query(text: string, params: any[] = []): Promise<QueryResult> {
+  const sql = getSql();
+  const result: any = await (sql as any)(text, params);
+  const rows = result.rows || result || [];
+  return {
+    rows: rows as any[],
+    rowCount: result.rowcount || (Array.isArray(rows) ? rows.length : 0),
+  };
+}
+
+export async function queryOne<T = any>(text: string, params: any[] = []): Promise<T | null> {
+  const result = await query(text, params);
+  return result.rows[0] || null;
+}

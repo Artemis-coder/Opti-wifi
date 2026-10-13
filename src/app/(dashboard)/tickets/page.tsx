@@ -79,12 +79,12 @@ export default function TicketTypesPage() {
       toast.error(`Erreur: ${error.message}`);
     } else {
       toast.success(newActif ? 'Ticket activé.' : 'Ticket désactivé.');
-      setTickets(tickets.map((t) => t.id === ticket.id ? { ...t, actif: newActif } : t));
+      setTickets(tickets.map((t: TicketType) => t.id === ticket.id ? { ...t, actif: newActif } : t));
     }
   };
 
   const handleTicketUpdated = (updated: TicketType) => {
-    setTickets(tickets.map((t) => (t.id === updated.id ? updated : t)));
+    setTickets(tickets.map((t: TicketType) => (t.id === updated.id ? updated : t)));
   };
 
   return (
@@ -120,7 +120,7 @@ export default function TicketTypesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tickets.map((t) => (
+          {tickets.map((t: TicketType) => (
             <Card key={t.id} className="space-y-4 hover:border-emerald-500/50 transition">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">

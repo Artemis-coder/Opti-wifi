@@ -16,7 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { PaymentStatus } from '@/types/platform';
+import { Payment, PaymentStatus } from '@/types/platform';
 
 const STATUS_CONFIG: Record<PaymentStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending: { label: 'En attente', color: 'warning' },
@@ -85,8 +85,8 @@ export default function PlatformPaymentsPage() {
   ];
 
   const totalAmount = payments
-    .filter((p) => p.status === 'successful')
-    .reduce((acc, p) => acc + Number(p.amount), 0);
+    .filter((p: PaymentRecord) => p.status === 'successful')
+    .reduce((acc: number, p: PaymentRecord) => acc + Number(p.amount), 0);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -131,7 +131,7 @@ export default function PlatformPaymentsPage() {
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-500 uppercase">Statut</label>
             <div className="flex flex-wrap gap-1">
-              {statusFilters.map((f) => {
+              {statusFilters.map((f: { value: string; label: string; icon: React.ElementType }) => {
                 const Icon = f.icon;
                 return (
                   <button
@@ -180,8 +180,8 @@ export default function PlatformPaymentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {payments.map((p) => {
-                  const config = STATUS_CONFIG[p.status] || STATUS_CONFIG.pending;
+                {payments.map((p: PaymentRecord) => {
+                  const config = STATUS_CONFIG[p.status as PaymentStatus] || STATUS_CONFIG.pending;
                   return (
                     <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       <td className="px-4 py-3">

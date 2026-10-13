@@ -1,15 +1,11 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { adminClient } from '@/lib/neon/admin';
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(undefined, undefined, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -66,14 +62,6 @@ export async function POST(request: Request) {
     entity_id: organizationId,
     new_data: { reason: 'Support technique — diagnostic à distance' },
     ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
-  });
-
-  // Generate a temporary impersonation token using admin API
-  const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
   });
 
   // Find an administrateur profile in the target organization

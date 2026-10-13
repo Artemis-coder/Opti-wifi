@@ -235,7 +235,7 @@ export default function PlatformReportsPage() {
           Export de Données (CSV)
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {EXPORTS.map((exp) => (
+          {EXPORTS.map((exp: { type: ExportType; label: string; description: string }) => (
             <Card key={exp.type} className="flex items-center justify-between gap-4 p-5">
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 mt-0.5">

@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
-import { PointOfSale, TicketType, CollectionItem } from '@/types/database';
+import { PointOfSale, TicketType, TicketAllocation, Collection, CollectionItem } from '@/types/database';
 
 interface ExchangeItem {
   ticketTypeId: string;
@@ -121,7 +121,7 @@ export default function ExchangePage() {
         const ticketMap: Record<string, TicketType> = {};
         const allocatedMap: Record<string, number> = {};
 
-        allocData.forEach((alloc) => {
+        allocData.forEach((alloc: TicketAllocation) => {
           const typeId = alloc.ticket_type_id;
           const baseQty = alloc.type === 'exchange_return' ? -alloc.quantite : alloc.quantite;
           allocatedMap[typeId] = (allocatedMap[typeId] || 0) + baseQty;
@@ -134,7 +134,7 @@ export default function ExchangePage() {
 
         const soldMap: Record<string, number> = {};
         if (collectionsData) {
-          collectionsData.forEach((c) => {
+          collectionsData.forEach((c: Collection) => {
             if (c.items) {
               c.items!.forEach((item: CollectionItem) => {
                 soldMap[item.ticket_type_id] = (soldMap[item.ticket_type_id] || 0) + item.quantite_vendue;
@@ -164,18 +164,18 @@ export default function ExchangePage() {
     loadStock();
   }, [posId, currentSpaceId, supabase]);
 
-  const getTicketTypeById = (id: string) => ticketTypes.find((t) => t.id === id);
+  const getTicketTypeById = (id: string) => ticketTypes.find((t: TicketType) => t.id === id);
 
   const getTicketTypePrix = (ticketTypeId: string) => {
     const ticket = getTicketTypeById(ticketTypeId);
     return ticket ? Number(ticket.prix) : 0;
   };
 
-  const totalReturnedValue = returns.reduce((sum, r) => {
+  const totalReturnedValue = returns.reduce((sum: number, r: ExchangeItem) => {
     return sum + r.quantite * getTicketTypePrix(r.ticketTypeId);
   }, 0);
 
-  const totalReceivedValue = receives.reduce((sum, r) => {
+  const totalReceivedValue = receives.reduce((sum: number, r: ExchangeItem) => {
     return sum + r.quantite * getTicketTypePrix(r.ticketTypeId);
   }, 0);
 
@@ -233,8 +233,8 @@ export default function ExchangePage() {
       return;
     }
 
-    const validReturns = returns.filter((r) => r.ticketTypeId && r.quantite > 0);
-    const validReceives = receives.filter((r) => r.ticketTypeId && r.quantite > 0);
+    const validReturns = returns.filter((r: ExchangeItem) => r.ticketTypeId && r.quantite > 0);
+    const validReceives = receives.filter((r: ExchangeItem) => r.ticketTypeId && r.quantite > 0);
 
     if (validReturns.length === 0) {
       toast.error('Veuillez sélectionner au moins un type de ticket à rendre.');
@@ -261,12 +261,12 @@ export default function ExchangePage() {
         pos_id: posId,
         space_id: currentSpaceId || null,
         notes: notes || null,
-        returns: validReturns.map((r) => ({
+        returns: validReturns.map((r: ExchangeItem) => ({
           ticket_type_id: r.ticketTypeId,
           ticketTypeId: r.ticketTypeId,
           quantite: r.quantite,
         })),
-        receives: validReceives.map((r) => ({
+        receives: validReceives.map((r: ExchangeItem) => ({
           ticket_type_id: r.ticketTypeId,
           ticketTypeId: r.ticketTypeId,
           quantite: r.quantite,
@@ -381,7 +381,7 @@ export default function ExchangePage() {
                   onChange={handlePosChange}
                   className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium"
                 >
-                  {posList.map((p) => (
+                  {posList.map((p: PointOfSale) => (
                     <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
                   ))}
                 </select>
@@ -419,8 +419,8 @@ export default function ExchangePage() {
               ) : (
                 <div className="space-y-3">
                   {Object.values(posStockInfo)
-                    .filter((s) => s.restant > 0)
-                    .map((stock) => (
+                    .filter((s: TicketStockInfo) => s.restant > 0)
+                    .map((stock: TicketStockInfo) => (
                       <div key={stock.ticketType.id} className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
@@ -452,11 +452,11 @@ export default function ExchangePage() {
                             type="number"
                             min="0"
                             max={stock.restant}
-                            value={returns.find((r) => r.ticketTypeId === stock.ticketType.id)?.quantite || ''}
+                            value={returns.find((r: ExchangeItem) => r.ticketTypeId === stock.ticketType.id)?.quantite || ''}
                             onChange={(e) => {
                               const val = parseInt(e.target.value) || 0;
                               const capped = Math.min(val, stock.restant);
-                              const existing = returns.find((r) => r.ticketTypeId === stock.ticketType.id);
+                              const existing = returns.find((r: ExchangeItem) => r.ticketTypeId === stock.ticketType.id);
                               if (existing) {
                                 const idx = returns.findIndex((r) => r.ticketTypeId === stock.ticketType.id);
                                 updateReturn(idx, 'quantite', capped);
@@ -540,8 +540,8 @@ export default function ExchangePage() {
                         >
                           <option value="">Sélectionner un type</option>
                           {ticketTypes
-                            .filter((t) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
-                            .map((t) => (
+                            .filter((t: TicketType) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
+                            .map((t: TicketType) => (
                               <option key={t.id} value={t.id}>
                                 {t.nom} — {formatCurrencyFCFA(Number(t.prix))}
                               </option>
@@ -648,7 +648,7 @@ export default function ExchangePage() {
                     <TrendingDown className="w-5 h-5 text-red-500" />
                     <h4 className="font-bold text-slate-900 dark:text-white">Tickets à Rendre</h4>
                   </div>
-                  {returns.filter((r) => r.quantite > 0).map((r, idx) => {
+                  {returns.filter((r: ExchangeItem) => r.quantite > 0).map((r, idx) => {
                     const ticket = getTicketTypeById(r.ticketTypeId);
                     if (!ticket) return null;
                     return (
@@ -678,7 +678,7 @@ export default function ExchangePage() {
                     <TrendingUp className="w-5 h-5 text-emerald-500" />
                     <h4 className="font-bold text-slate-900 dark:text-white">Tickets à Recevoir</h4>
                   </div>
-                  {receives.filter((r) => r.quantite > 0).map((r, idx) => {
+                  {receives.filter((r: ExchangeItem) => r.quantite > 0).map((r, idx) => {
                     const ticket = getTicketTypeById(r.ticketTypeId);
                     if (!ticket) return null;
                     return (

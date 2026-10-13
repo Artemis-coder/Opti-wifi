@@ -1,37 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
+import { adminClient } from '@/lib/neon/admin';
+import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'Supabase environment variables are not configured. ' +
-    'Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local'
-  );
-}
-
-function getSupabaseAdmin() {
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
-
 export async function POST(request: NextRequest) {
   try {
-    if (!SUPABASE_SERVICE_ROLE_KEY) {
-      return NextResponse.json(
-        { error: 'SUPABASE_SERVICE_ROLE_KEY n\'est pas configurée.' },
-        { status: 500 }
-      );
-    }
-
-    const supabase = getSupabaseAdmin();
+    const supabase = adminClient;
 
     const body = await request.json();
     const { nom, email, role, telephone, mot_de_passe } = body;
@@ -44,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const cookieStore = await cookies();
-    const clientSupabase = createServerClient(SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    const clientSupabase = createServerClient(undefined, undefined, {
       cookies: {
         getAll() { return cookieStore.getAll(); },
         setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); }
@@ -114,6 +88,10 @@ export async function POST(request: NextRequest) {
         );
       }
       return NextResponse.json({ error: authError.message }, { status: 400 });
+    }
+
+    if (!authData?.user) {
+      return NextResponse.json({ error: 'Erreur lors de la création de l\'utilisateur.' }, { status: 500 });
     }
 
     const profile: Record<string, unknown> = {

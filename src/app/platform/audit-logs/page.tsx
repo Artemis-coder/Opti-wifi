@@ -151,7 +151,7 @@ export default function PlatformAuditLogsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {logs.map((log) => {
+                {logs.map((log: PlatformAuditLogWithUser) => {
                   const isExpanded = expandedRows.has(log.id);
                   return (
                     <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
@@ -205,8 +205,8 @@ export default function PlatformAuditLogsPage() {
           </div>
 
           {/* Expanded Detail Rows */}
-          {Array.from(expandedRows).map((id) => {
-            const log = logs.find((l) => l.id === id);
+          {Array.from(expandedRows).map((id: string) => {
+            const log = logs.find((l: PlatformAuditLogWithUser) => l.id === id);
             if (!log) return null;
             return (
               <div key={`detail-${id}`} className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30 mx-4">

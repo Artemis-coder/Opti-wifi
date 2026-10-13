@@ -99,7 +99,7 @@ export default function PlatformSubscriptionsPage() {
       if (res.ok) {
         toast.success(result.message);
         setSubscriptions((prev) =>
-          prev.map((s) => (s.id === subscription.id ? result.data : s))
+          prev.map((s: SubscriptionWithPlan) => (s.id === subscription.id ? result.data : s))
         );
       } else {
         toast.error(result.error || 'Erreur');
@@ -197,7 +197,7 @@ export default function PlatformSubscriptionsPage() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {STATUS_FILTERS.map((f) => (
+            {STATUS_FILTERS.map((f: { value: string; label: string }) => (
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
@@ -237,7 +237,7 @@ export default function PlatformSubscriptionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {subscriptions.map((sub) => {
+                {subscriptions.map((sub: SubscriptionWithPlan) => {
                   const config = STATUS_CONFIG[sub.status] || { label: sub.status, color: 'neutral' as const };
                   const actionButtons = getActionButtons(sub);
 
@@ -277,7 +277,7 @@ export default function PlatformSubscriptionsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
-                          {actionButtons.map((btn) => (
+                          {actionButtons.map((btn: { label: string; action: string; variant: 'outline' | 'secondary' | 'danger'; icon: React.ReactNode }) => (
                             <Button
                               key={btn.action}
                               variant={btn.variant}

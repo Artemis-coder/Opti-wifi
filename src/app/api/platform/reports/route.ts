@@ -1,14 +1,12 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { Organization, Subscription, Payment, SubscriptionPlan, PlatformAuditLog } from "@/types/platform";
 
 // Helper: create authenticated supabase client
 async function makeSupabase() {
   const cookieStore = await cookies();
-  return createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  return createServerClient(undefined, undefined, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -68,9 +66,9 @@ export async function GET(request: Request) {
     const plans = plansRes.data || [];
 
     // MRR: sum of monthly-equivalent prices for active subscriptions
-    const activeSubs = subs.filter((s) => s.status === 'active' || s.status === 'trialing');
-    const mrr = activeSubs.reduce((acc, s) => {
-      const plan = plans.find((p) => p.id === s.plan_id);
+    const activeSubs = subs.filter((s: Subscription) => s.status === 'active' || s.status === 'trialing');
+    const mrr = activeSubs.reduce((acc: number, s: Subscription) => {
+      const plan = plans.find((p: Payment) => p.id === s.plan_id);
       if (!plan) return acc;
       let monthly = Number(plan.price);
       if (plan.billing_period === 'annual') monthly = monthly / 12;
@@ -83,38 +81,38 @@ export async function GET(request: Request) {
 
     // Churn: subscriptions cancelled this month / subs active at start of month
     const cancelledThisMonth = subs.filter(
-      (s) => s.cancelled_at && s.cancelled_at >= monthStart
+    (s: Subscription) => s.cancelled_at && s.cancelled_at >= monthStart
     ).length;
     const activeAtMonthStart = subs.filter(
-      (s) => s.created_at < monthStart && (s.status === 'active' || s.status === 'trialing')
+    (s: Subscription) => s.created_at < monthStart && (s.status === 'active' || s.status === 'trialing')
     ).length;
     const churnRate = activeAtMonthStart > 0 ? (cancelledThisMonth / activeAtMonthStart) * 100 : 0;
 
     // Revenue this month vs prev month
     const revenueThisMonth = payments
-      .filter((p) => p.status === 'successful' && p.paid_at && p.paid_at >= monthStart)
-      .reduce((acc, p) => acc + Number(p.amount), 0);
+      .filter((p: Payment) => p.status === 'successful' && p.paid_at && p.paid_at >= monthStart)
+      .reduce((acc: number, p: Payment) => acc + Number(p.amount), 0);
 
     const revenuePrevMonth = payments
       .filter(
-        (p) =>
+    (p: Payment) =>
           p.status === 'successful' &&
           p.paid_at &&
           p.paid_at >= prevMonthStart &&
           p.paid_at <= prevMonthEnd
       )
-      .reduce((acc, p) => acc + Number(p.amount), 0);
+      .reduce((acc: number, p: Payment) => acc + Number(p.amount), 0);
 
     const revenueGrowth =
       revenuePrevMonth > 0 ? ((revenueThisMonth - revenuePrevMonth) / revenuePrevMonth) * 100 : 0;
 
     // New subs this month
-    const newSubsThisMonth = subs.filter((s) => s.created_at >= monthStart).length;
+    const newSubsThisMonth = subs.filter((s: Subscription) => s.created_at >= monthStart).length;
 
     // ARPU: Average Revenue Per User (active subs)
     const arpu = activeSubs.length > 0 ? mrr / activeSubs.length : 0;
 
-    const currency = payments.find((p) => p.currency)?.currency || 'XOF';
+    const currency = payments.find((p: Payment) => p.currency)?.currency || 'XOF';
 
     return NextResponse.json({
       data: {
@@ -142,7 +140,7 @@ export async function GET(request: Request) {
     if (!orgs) return NextResponse.json({ error: 'Erreur de récupération' }, { status: 500 });
 
     const headers = ['ID', 'Nom', 'Contact', 'Email', 'Téléphone', 'Statut', 'Devise', 'Date création'];
-    const rows = orgs.map((o) => [
+    const rows = orgs.map((o: Organization) => [
       o.id,
       `"${(o.name || '').replace(/"/g, '""')}"`,
       `"${(o.contact_name || '').replace(/"/g, '""')}"`,
@@ -153,7 +151,7 @@ export async function GET(request: Request) {
       new Date(o.created_at).toLocaleDateString('fr-FR'),
     ]);
 
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map((r: unknown[]) => r.join(','))].join('\n');
     return new Response(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
@@ -172,7 +170,7 @@ export async function GET(request: Request) {
     if (!payments) return NextResponse.json({ error: 'Erreur de récupération' }, { status: 500 });
 
     const headers = ['ID', 'Organisation', 'Montant', 'Devise', 'Méthode', 'Référence', 'Statut', 'Payé le', 'Créé le'];
-    const rows = payments.map((p) => [
+    const rows = payments.map((p: Payment) => [
       p.id,
       p.organization_id || '',
       p.amount,
@@ -184,7 +182,7 @@ export async function GET(request: Request) {
       new Date(p.created_at).toLocaleDateString('fr-FR'),
     ]);
 
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map((r: unknown[]) => r.join(','))].join('\n');
     return new Response(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
@@ -203,7 +201,7 @@ export async function GET(request: Request) {
     if (!subs) return NextResponse.json({ error: 'Erreur de récupération' }, { status: 500 });
 
     const headers = ['ID', 'Organisation', 'Plan', 'Statut', 'Début', 'Fin', 'Fin essai', 'Auto-renew', 'Annulé le', 'Créé le'];
-    const rows = subs.map((s) => [
+    const rows = subs.map((s: Subscription) => [
       s.id,
       s.organization_id || '',
       s.plan_id || '',
@@ -216,7 +214,7 @@ export async function GET(request: Request) {
       new Date(s.created_at).toLocaleDateString('fr-FR'),
     ]);
 
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map((r: unknown[]) => r.join(','))].join('\n');
     return new Response(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
@@ -236,7 +234,7 @@ export async function GET(request: Request) {
     if (!logs) return NextResponse.json({ error: 'Erreur de récupération' }, { status: 500 });
 
     const headers = ['ID', 'Utilisateur', 'Organisation', 'Action', 'Type entité', 'Entité ID', 'IP', 'Date'];
-    const rows = logs.map((l) => [
+    const rows = logs.map((l: PlatformAuditLog) => [
       l.id,
       l.platform_user_id || '',
       l.organization_id || '',
@@ -247,7 +245,7 @@ export async function GET(request: Request) {
       new Date(l.created_at).toLocaleString('fr-FR'),
     ]);
 
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map((r: unknown[]) => r.join(','))].join('\n');
     return new Response(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',

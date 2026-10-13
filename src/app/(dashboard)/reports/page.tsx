@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
-import { Collection, PointOfSale } from '@/types/database';
+import { Collection, CollectionItem, PointOfSale } from '@/types/database';
 
 export default function ReportsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -49,7 +49,7 @@ export default function ReportsPage() {
       setCollectorsCount(collectors || 0);
 
       const { data: itemsData } = await itemsQuery;
-      const sold = itemsData?.reduce((acc, curr) => acc + (curr.quantite_vendue || 0), 0) || 0;
+      const sold = itemsData?.reduce((acc: number, curr: CollectionItem) => acc + (curr.quantite_vendue || 0), 0) || 0;
       setTicketsSold(sold);
 
       if (startDate) collectionsQuery = collectionsQuery.gte('date_collecte', startDate);
@@ -79,7 +79,7 @@ export default function ReportsPage() {
 
   const exportCollectionsCSV = useCallback(() => {
     const header = 'Date,Point de Vente,Collecteur,Montant Attendu,Montant Encaissé,Commission,Écart,Statut\n';
-    const rows = collections.map((c) => {
+    const rows = collections.map((c: Collection) => {
       const date = c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at);
       return [
         date,
@@ -98,7 +98,7 @@ export default function ReportsPage() {
 
   const exportPosCSV = useCallback(() => {
     const header = 'Nom,Ville,Statut,Collecteur,Creation\n';
-    const rows = posList.map((p) => {
+    const rows = posList.map((p: PointOfSale) => {
       return [
         p.nom,
         p.ville,
@@ -228,7 +228,7 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {collections.slice(0, 20).map((c) => (
+                {collections.slice(0, 20).map((c: Collection) => (
                   <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                       {c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}

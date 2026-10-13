@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error(
-    'Supabase environment variables are not configured. ' +
-    'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local or your deployment environment.'
-  );
-}
 
 interface ExchangeItem {
   ticket_type_id: string;
@@ -27,7 +17,7 @@ interface RequestBody {
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
-  return createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  return createServerClient(undefined, undefined, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -94,12 +84,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Accepter à la fois ticket_type_id (snake_case) et ticketTypeId (camelCase)
-    const returnsPayload = body.returns.map((r: any) => ({
+    const returnsPayload = body.returns.map((r: { ticket_type_id?: string; ticketTypeId?: string; quantite?: number | string }) => ({
       ticket_type_id: r.ticket_type_id || r.ticketTypeId,
       quantite: Math.max(0, parseInt(String(r.quantite), 10) || 0),
     }));
 
-    const receivesPayload = body.receives.map((r: any) => ({
+    const receivesPayload = body.receives.map((r: { ticket_type_id?: string; ticketTypeId?: string; quantite?: number | string }) => ({
       ticket_type_id: r.ticket_type_id || r.ticketTypeId,
       quantite: Math.max(0, parseInt(String(r.quantite), 10) || 0),
     }));

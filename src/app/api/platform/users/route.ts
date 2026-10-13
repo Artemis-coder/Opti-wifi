@@ -1,14 +1,11 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/neon/admin';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 export async function GET(request: Request) {
   const cookieStore = await cookies();
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(undefined, undefined, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -39,14 +36,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
   }
 
-  const adminClient = createServerClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll() {},
-    },
-  });
+  const adminClient = createAdminClient();
 
   const { searchParams } = new URL(request.url);
   const orgFilter = searchParams.get('org');
@@ -69,7 +59,7 @@ export async function GET(request: Request) {
   // Fetch auth user status (banned or not)
   const { data: authUsersData } = await adminClient.auth.admin.listUsers();
   const authUserMap = new Map();
-  authUsersData?.users?.forEach((au: { id: string; banned_until?: string }) => {
+  authUsersData?.users?.forEach((au: { id: string; banned_until?: string | null }) => {
     const isBanned = au.banned_until ? new Date(au.banned_until) > new Date() : false;
     authUserMap.set(au.id, isBanned);
   });
@@ -84,7 +74,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   const cookieStore = await cookies();
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(undefined, undefined, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -122,14 +112,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'userId et action requis' }, { status: 400 });
   }
 
-  const adminClient = createServerClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll() {},
-    },
-  });
+  const adminClient = createAdminClient();
 
   switch (action) {
     case 'deactivate': {

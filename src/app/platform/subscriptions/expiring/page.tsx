@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { SubscriptionStatus } from '@/types/platform';
+import { SubscriptionWithPlan, SubscriptionStatus } from '@/types/platform';
 
 const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   active: { label: 'Actif', color: 'warning' },
@@ -83,7 +83,7 @@ export default function PlatformExpiringSubscriptionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {subs.map((sub) => {
+                {subs.map((sub: ExpiringSub) => {
                   const daysLeft = sub.end_date
                     ? Math.ceil((new Date(sub.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
                     : 0;

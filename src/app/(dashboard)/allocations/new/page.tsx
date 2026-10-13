@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { PointOfSale, TicketType } from '@/types/database';
+import { PointOfSale, TicketType, CollectionItem } from '@/types/database';
 
 interface AllocationLine {
   ticketTypeId: string;
@@ -61,7 +61,7 @@ export default function NewAllocationPage() {
     loadData();
   }, [supabase]);
 
-  const selectedPos = posList.find((p) => p.id === posId);
+  const selectedPos = posList.find((p: PointOfSale) => p.id === posId);
 
 const addLine = () => {
     setLines([...lines, { ticketTypeId: ticketTypes[0]?.id || '', quantite: 0 }]);
@@ -77,10 +77,10 @@ const addLine = () => {
     setLines(updated);
   };
   
-  const totalTickets = lines.reduce((sum, l) => sum + (l.quantite || 0), 0);
+  const totalTickets = lines.reduce((sum: number, l: AllocationLine) => sum + (l.quantite || 0), 0);
   
-  const totalMontant = lines.reduce((sum, l) => {
-    const ticket = ticketTypes.find((t) => t.id === l.ticketTypeId);
+  const totalMontant = lines.reduce((sum: number, l: AllocationLine) => {
+    const ticket = ticketTypes.find((t: TicketType) => t.id === l.ticketTypeId);
     return sum + (ticket ? ticket.prix * (l.quantite || 0) : 0);
   }, 0);
 
@@ -91,7 +91,7 @@ const addLine = () => {
       return;
     }
 
-    const validLines = lines.filter((l) => l.ticketTypeId && l.quantite > 0);
+    const validLines = lines.filter((l: AllocationLine) => l.ticketTypeId && l.quantite > 0);
     if (validLines.length === 0) {
       toast.error('Veuillez sélectionner au moins un type de ticket avec une quantité supérieure à 0.');
       return;
@@ -99,7 +99,7 @@ const addLine = () => {
 
     setSubmitting(true);
 
-    const itemsToInsert = validLines.map((l) => ({
+    const itemsToInsert = validLines.map((l: AllocationLine) => ({
       pos_id: posId,
       ticket_type_id: l.ticketTypeId,
       quantite: l.quantite,
@@ -182,7 +182,7 @@ const addLine = () => {
                   onChange={(e) => setPosId(e.target.value)}
                   className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
                 >
-                  {posList.map((p) => (
+                  {posList.map((p: PointOfSale) => (
                     <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
                   ))}
                  </select>
@@ -217,7 +217,7 @@ const addLine = () => {
                         onChange={(e) => updateLine(index, 'ticketTypeId', e.target.value)}
                         className="w-full h-9 px-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium"
                       >
-                        {ticketTypes.map((t) => (
+                        {ticketTypes.map((t: TicketType) => (
                           <option key={t.id} value={t.id}>{t.nom} — {formatCurrencyFCFA(t.prix)}</option>
                         ))}
                       </select>
@@ -288,7 +288,7 @@ const addLine = () => {
                  <div className="space-y-2">
                   <p className="text-[11px] text-slate-500 font-semibold uppercase">Détail par Ticket</p>
                   {lines.map((line, index) => {
-                    const ticket = ticketTypes.find((t) => t.id === line.ticketTypeId);
+                    const ticket = ticketTypes.find((t: TicketType) => t.id === line.ticketTypeId);
                     if (!ticket) return null;
                     return (
                       <div key={index} className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">

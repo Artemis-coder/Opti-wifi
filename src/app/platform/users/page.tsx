@@ -67,7 +67,7 @@ export default function PlatformUsersPage() {
       if (res.ok) {
         toast.success(result.message);
         setUsers((prev) =>
-          prev.map((u) =>
+          prev.map((u: PlatformUserProfile) =>
             u.id === userId
               ? { ...u, is_banned: action === 'deactivate' }
               : u
@@ -130,7 +130,7 @@ export default function PlatformUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {users.map((u) => (
+                {users.map((u: PlatformUserProfile) => (
                   <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">

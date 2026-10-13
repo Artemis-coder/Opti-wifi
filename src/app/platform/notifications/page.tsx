@@ -94,7 +94,7 @@ export default function PlatformNotificationsPage() {
         end_date: string | null;
         organization?: { name: string };
       }> = subsData.data || [];
-      const expiringSoon = subs.filter((s) => {
+      const expiringSoon = subs.filter((s: { id: string; organization_id: string; status: string; end_date: string | null; organization?: { name: string } }) => {
         if (!s.end_date) return false;
         const end = new Date(s.end_date);
         const diff = (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
@@ -114,7 +114,7 @@ export default function PlatformNotificationsPage() {
       }
 
       // 2. Subscriptions already expired
-      const expired = subs.filter((s) => s.status === 'expired');
+      const expired = subs.filter((s: { id: string; organization_id: string; status: string; end_date: string | null; organization?: { name: string } }) => s.status === 'expired');
       if (expired.length > 0) {
         generated.push({
           id: 'already-expired',
@@ -130,13 +130,13 @@ export default function PlatformNotificationsPage() {
       // 3. New clients (last 7 days)
       const orgs: Array<{ id: string; name: string; created_at: string }> = orgsData.data || [];
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const newClients = orgs.filter((o) => o.created_at >= sevenDaysAgo);
+      const newClients = orgs.filter((o: { id: string; name: string; created_at: string }) => o.created_at >= sevenDaysAgo);
       if (newClients.length > 0) {
         generated.push({
           id: 'new-clients',
           type: 'new_client',
           title: `${newClients.length} nouveau(x) client(s) cette semaine`,
-          message: `${newClients.map((o) => o.name).slice(0, 3).join(', ')}${newClients.length > 3 ? '...' : ''} ont rejoint la plateforme.`,
+          message: `${newClients.map((o: { id: string; name: string; created_at: string }) => o.name).slice(0, 3).join(', ')}${newClients.length > 3 ? '...' : ''} ont rejoint la plateforme.`,
           severity: 'success',
           link: '/platform/clients',
           created_at: now.toISOString(),
@@ -145,7 +145,7 @@ export default function PlatformNotificationsPage() {
 
       // 4. Impersonation events in the last 24h (from audit logs)
       const logs: Array<{ id: string; action: string; created_at: string; ip_address?: string }> = logsData.data || [];
-      const impersonations = logs.filter((l) => l.action === 'client.impersonate');
+      const impersonations = logs.filter((l: { id: string; action: string; created_at: string; ip_address?: string }) => l.action === 'client.impersonate');
       if (impersonations.length > 0) {
         generated.push({
           id: 'impersonation-recent',
@@ -182,7 +182,7 @@ export default function PlatformNotificationsPage() {
     buildAlerts();
   }, [buildAlerts]);
 
-  const visibleAlerts = alerts.filter((a) => !dismissed.has(a.id));
+  const visibleAlerts = alerts.filter((a: PlatformAlert) => !dismissed.has(a.id));
   const dismissAlert = (id: string) => {
     setDismissed((prev) => new Set([...prev, id]));
   };
@@ -203,7 +203,7 @@ export default function PlatformNotificationsPage() {
               variant="outline"
               size="sm"
               className="gap-2 text-xs"
-              onClick={() => setDismissed(new Set(alerts.map((a) => a.id)))}
+              onClick={() => setDismissed(new Set(alerts.map((a: PlatformAlert) => a.id)))}
             >
               Tout marquer comme lu
             </Button>
@@ -239,9 +239,9 @@ export default function PlatformNotificationsPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {visibleAlerts.map((alert) => {
-            const cfg = SEVERITY_CONFIG[alert.severity];
-            const TypeIcon = TYPE_ICON[alert.type] || Bell;
+          {visibleAlerts.map((alert: PlatformAlert) => {
+            const cfg = SEVERITY_CONFIG[alert.severity as keyof typeof SEVERITY_CONFIG];
+            const TypeIcon = TYPE_ICON[alert.type as keyof typeof TYPE_ICON] || Bell;
             const SevIcon = cfg.icon;
 
             return (

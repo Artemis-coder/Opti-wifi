@@ -159,7 +159,7 @@ export default function PlatformPlansPage() {
     const result = await res.json();
     if (res.ok && result.data) {
       if (editingPlan) {
-        setPlans(plans.map((p) => (p.id === editingPlan.id ? result.data : p)));
+        setPlans(plans.map((p: SubscriptionPlan) => (p.id === editingPlan.id ? result.data : p)));
         toast.success('Plan mis à jour avec succès');
       } else {
         setPlans([result.data, ...plans]);
@@ -179,7 +179,7 @@ export default function PlatformPlansPage() {
     const res = await fetch(`/api/platform/plans/${plan.id}`, { method: 'DELETE' });
     const result = await res.json();
     if (res.ok) {
-      setPlans(plans.filter((p) => p.id !== plan.id));
+      setPlans(plans.filter((p: SubscriptionPlan) => p.id !== plan.id));
       toast.success('Plan supprimé');
     } else {
       toast.error(result.error || 'Erreur');
@@ -195,14 +195,14 @@ export default function PlatformPlansPage() {
     });
     const result = await res.json();
     if (res.ok && result.data) {
-      setPlans(plans.map((p) => (p.id === plan.id ? result.data : p)));
+      setPlans(plans.map((p: SubscriptionPlan) => (p.id === plan.id ? result.data : p)));
       toast.success(`Plan ${plan.status === 'active' ? 'désactivé' : 'activé'}`);
     } else {
       toast.error(result.error || 'Erreur');
     }
   };
 
-  const filteredPlans = plans.filter((p) =>
+  const filteredPlans = plans.filter((p: SubscriptionPlan) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -253,7 +253,7 @@ export default function PlatformPlansPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPlans.map((plan) => (
+          {filteredPlans.map((plan: SubscriptionPlan) => (
             <Card key={plan.id} className="space-y-4 border-l-4 border-l-amber-500">
               <div className="flex items-start justify-between">
                 <div>
@@ -270,7 +270,7 @@ export default function PlatformPlansPage() {
               </div>
 
               <div className="text-xs text-slate-500 space-y-1">
-                <p><span className="font-semibold">Période :</span> {BILLING_PERIODS.find((p) => p.value === plan.billing_period)?.label || plan.billing_period}</p>
+                <p><span className="font-semibold">Période :</span> {BILLING_PERIODS.find((p: { value: BillingPeriod; label: string }) => p.value === plan.billing_period)?.label || plan.billing_period}</p>
                 {plan.trial_days && plan.trial_days > 0 && (
                   <p><span className="font-semibold">Essai :</span> {plan.trial_days} jours</p>
                 )}
@@ -340,7 +340,7 @@ export default function PlatformPlansPage() {
                 onChange={(e) => setFormCurrency(e.target.value)}
                 className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
               >
-                {CURRENCIES.map((c) => (
+                {CURRENCIES.map((c: { value: string; label: string }) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
@@ -356,7 +356,7 @@ export default function PlatformPlansPage() {
               onChange={(e) => setFormPeriod(e.target.value as BillingPeriod)}
               className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
             >
-              {BILLING_PERIODS.map((p) => (
+              {BILLING_PERIODS.map((p: { value: BillingPeriod; label: string }) => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
             </select>
@@ -400,7 +400,7 @@ export default function PlatformPlansPage() {
               onChange={(e) => setFormStatus(e.target.value as PlanStatus)}
               className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
             >
-              {PLAN_STATUSES.map((s) => (
+              {PLAN_STATUSES.map((s: { value: PlanStatus; label: string }) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>

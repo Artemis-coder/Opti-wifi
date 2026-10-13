@@ -44,9 +44,9 @@ export default function AllocationsPage() {
 
   const filteredAllocations = selectedPosId === 'all'
     ? allocations
-    : allocations.filter((a) => a.pos_id === selectedPosId);
+    : allocations.filter((a: TicketAllocation) => a.pos_id === selectedPosId);
 
-  const allocationsByPos = filteredAllocations.reduce((acc, alloc) => {
+  const allocationsByPos: Record<string, { pos: PointOfSale | undefined; allocations: TicketAllocation[] }> = filteredAllocations.reduce((acc: Record<string, { pos: PointOfSale | undefined; allocations: TicketAllocation[] }>, alloc: TicketAllocation) => {
     const posId = alloc.pos_id;
     if (!acc[posId]) {
       acc[posId] = {
@@ -60,17 +60,17 @@ export default function AllocationsPage() {
 
   const getAllocatorName = (allouePar?: string) => {
     if (!allouePar) return 'Système';
-    const profile = profiles.find((p) => p.id === allouePar);
+    const profile = profiles.find((p: Profile) => p.id === allouePar);
     return profile?.nom || 'Utilisateur inconnu';
   };
 
   const getTicketTypeName = (ticketTypeId: string) => {
-    const ticket = ticketTypes.find((t) => t.id === ticketTypeId);
+    const ticket = ticketTypes.find((t: TicketType) => t.id === ticketTypeId);
     return ticket?.nom || 'Type inconnu';
   };
 
   const getTicketTypePrix = (ticketTypeId: string) => {
-    const ticket = ticketTypes.find((t) => t.id === ticketTypeId);
+    const ticket = ticketTypes.find((t: TicketType) => t.id === ticketTypeId);
     return ticket?.prix || 0;
   };
 
@@ -132,7 +132,7 @@ export default function AllocationsPage() {
               className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
             >
               <option value="all">Tous les points de vente</option>
-              {posList.map((pos) => (
+              {posList.map((pos: PointOfSale) => (
                 <option key={pos.id} value={pos.id}>
                   {pos.nom}
                 </option>
@@ -201,7 +201,7 @@ export default function AllocationsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                    {posAllocations.map((alloc) => {
+                    {posAllocations.map((alloc: TicketAllocation) => {
                       const typeInfo = getAllocationTypeLabel(alloc);
                       const isReturn = alloc.type === 'exchange_return';
                       const isReceive = alloc.type === 'exchange_receive';
@@ -264,7 +264,7 @@ export default function AllocationsPage() {
                 </span>
                 <div className="flex items-center gap-4">
                   <span className="font-bold text-slate-900 dark:text-white">
-                    {posAllocations.reduce((sum, a) => {
+                    {posAllocations.reduce((sum: number, a: TicketAllocation) => {
                       const qty = a.type === 'exchange_return' ? -a.quantite : a.quantite;
                       return sum + qty;
                     }, 0)} tickets net
@@ -272,7 +272,7 @@ export default function AllocationsPage() {
                   <span className="font-bold text-amber-600">
                     {formatCurrencyFCFA(
                       posAllocations.reduce(
-                        (sum, a) => {
+        (sum: number, a: TicketAllocation) => {
                           const qty = a.type === 'exchange_return' ? -a.quantite : a.quantite;
                           return sum + qty * getTicketTypePrix(a.ticket_type_id);
                         },

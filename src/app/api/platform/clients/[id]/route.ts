@@ -1,15 +1,13 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { TicketAllocation, CollectionItem, Collection } from "@/types/database";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const cookieStore = await cookies();
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(undefined, undefined, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -107,12 +105,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   let collectionCount = 0;
 
   if (allocationCountResult.data) {
-    totalAllocated = allocationCountResult.data.reduce((acc, curr) => acc + (Number(curr.quantite) || 0), 0);
+    totalAllocated = allocationCountResult.data.reduce((acc: number, curr: TicketAllocation) => acc + (Number(curr.quantite) || 0), 0);
   }
 
   if (ticketsSoldResult.data) {
     ticketsSold = ticketsSoldResult.data.reduce(
-      (acc, curr) => acc + (Number(curr.quantite_vendue) || 0),
+        (acc: number, curr: CollectionItem) => acc + (Number(curr.quantite_vendue) || 0),
       0
     );
   }
@@ -120,7 +118,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (collectionsResult.data) {
     collectionCount = collectionsResult.data.length;
     revenue = collectionsResult.data.reduce(
-      (acc, curr) => acc + Number(curr.montant_collecte || 0),
+        (acc: number, curr: Collection) => acc + Number(curr.montant_collecte || 0),
       0
     );
   }

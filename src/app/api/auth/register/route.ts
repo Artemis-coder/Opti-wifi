@@ -1,8 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { adminClient } from '@/lib/neon/admin';
 import { NextResponse } from 'next/server';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 // Route POST pour créer un compte et une organisation avec le statut "pending_approval"
 export async function POST(request: Request) {
@@ -24,13 +21,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Initialize Supabase Admin client
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    });
+    const supabaseAdmin = adminClient;
 
     // 1. Check if user already exists
     const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();

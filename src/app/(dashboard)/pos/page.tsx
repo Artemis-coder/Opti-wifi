@@ -47,14 +47,14 @@ async function loadData() {
     loadData();
   }, [supabase]);
 
-  const filteredPos = posList.filter((p) =>
+  const filteredPos = posList.filter((p: PointOfSale) =>
     p.nom.toLowerCase().includes(search.toLowerCase()) ||
     p.ville.toLowerCase().includes(search.toLowerCase())
   );
 
   const totalPos = posList.length;
-  const activePos = posList.filter((p) => p.statut === 'actif').length;
-  const inactivePos = posList.filter((p) => p.statut === 'inactif' || p.statut === 'suspendu').length;
+  const activePos = posList.filter((p: PointOfSale) => p.statut === 'actif').length;
+  const inactivePos = posList.filter((p: PointOfSale) => p.statut === 'inactif' || p.statut === 'suspendu').length;
 
   const handleToggleStatus = async (pos: PointOfSale) => {
     if (!isAdmin) return;
@@ -66,7 +66,7 @@ async function loadData() {
       .eq('id', pos.id);
 
     if (!error) {
-      setPosList((prev) => prev.map((p) => (p.id === pos.id ? { ...p, statut: newStatus } : p)));
+      setPosList((prev) => prev.map((p: PointOfSale) => (p.id === pos.id ? { ...p, statut: newStatus } : p)));
     }
     setTogglingId(null);
   };
@@ -153,7 +153,7 @@ async function loadData() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPos.map((pos) => (
+          {filteredPos.map((pos: PointOfSale) => (
             <Link key={pos.id} href={`/pos/${pos.id}`} className="block group">
               <Card className="space-y-4 hover:border-amber-500/50 transition cursor-pointer h-full">
                 <div className="flex items-start justify-between">
@@ -237,7 +237,7 @@ async function loadData() {
         spaces={spaces}
         onSuccess={(updated) => {
           if (editingPos) {
-            setPosList(posList.map((p) => (p.id === updated.id ? updated : p)));
+            setPosList(posList.map((p: PointOfSale) => (p.id === updated.id ? updated : p)));
           } else {
             setPosList([updated, ...posList]);
           }

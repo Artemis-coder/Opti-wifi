@@ -106,8 +106,8 @@ export default function PlatformSupportPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {tickets.map((t) => {
-            const config = statusConfig[t.status];
+          {tickets.map((t: SupportTicket) => {
+            const config = statusConfig[t.status as keyof typeof statusConfig];
             return (
               <Card key={t.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">

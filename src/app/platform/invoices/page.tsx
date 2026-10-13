@@ -16,7 +16,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { InvoiceStatus } from '@/types/platform';
+import { Invoice, InvoiceStatus } from '@/types/platform';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   draft: { label: 'Brouillon', color: 'neutral' },
@@ -77,8 +77,8 @@ export default function PlatformInvoicesPage() {
   ];
 
   const totalOutstanding = invoices
-    .filter((i) => i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'draft')
-    .reduce((acc, i) => acc + Number(i.amount), 0);
+    .filter((i: InvoiceRecord) => i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'draft')
+    .reduce((acc: number, i: InvoiceRecord) => acc + Number(i.amount), 0);
 
   if (loading) {
     return (
@@ -117,7 +117,7 @@ export default function PlatformInvoicesPage() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {statusFilters.map((f) => (
+            {statusFilters.map((f: { value: string; label: string }) => (
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
@@ -155,8 +155,8 @@ export default function PlatformInvoicesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {invoices.map((inv) => {
-                  const config = STATUS_CONFIG[inv.status] || STATUS_CONFIG.draft;
+                {invoices.map((inv: InvoiceRecord) => {
+                  const config = STATUS_CONFIG[inv.status as InvoiceStatus] || STATUS_CONFIG.draft;
                   return (
                     <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">

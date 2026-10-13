@@ -88,7 +88,7 @@ export default function CollectionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {collections.map((c) => (
+                {collections.map((c: Collection) => (
                   <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{c.pos?.nom || 'POS'}</td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{c.collecteur?.nom || 'Collecteur'}</td>

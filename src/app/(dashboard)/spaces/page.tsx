@@ -47,15 +47,15 @@ export default function WifiSpacesPage() {
     loadAll();
   }, [supabase]);
 
-  const filteredSpaces = spaces.filter((s) =>
+  const filteredSpaces = spaces.filter((s: WifiSpace) =>
     s.nom.toLowerCase().includes(search.toLowerCase()) ||
     (s.ville || '').toLowerCase().includes(search.toLowerCase()) ||
     (s.adresse || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const totalSpaces = spaces.length;
-  const activeSpaces = spaces.filter((s) => s.statut === 'actif').length;
-  const inactiveSpaces = spaces.filter((s) => s.statut === 'inactif' || s.statut === 'suspendu').length;
+  const activeSpaces = spaces.filter((s: WifiSpace) => s.statut === 'actif').length;
+  const inactiveSpaces = spaces.filter((s: WifiSpace) => s.statut === 'inactif' || s.statut === 'suspendu').length;
 
   const resetForm = () => {
     setNom('');
@@ -106,7 +106,7 @@ export default function WifiSpacesPage() {
         toast.error('Erreur lors de la mise à jour de l\'espace');
       } else {
         toast.success('Espace mis à jour avec succès');
-        setSpaces((prev) => prev.map((s) => (s.id === editingSpace.id ? { ...s, ...spaceData } : s)));
+        setSpaces((prev) => prev.map((s: WifiSpace) => (s.id === editingSpace.id ? { ...s, ...spaceData } : s)));
         handleCloseModal();
       }
     } else {
@@ -133,14 +133,14 @@ export default function WifiSpacesPage() {
       .eq('id', space.id);
 
     if (!error) {
-      setSpaces((prev) => prev.map((s) => (s.id === space.id ? { ...s, statut: newStatus } : s)));
+      setSpaces((prev) => prev.map((s: WifiSpace) => (s.id === space.id ? { ...s, statut: newStatus } : s)));
       toast.success(`Espace ${newStatus === 'actif' ? 'activé' : 'désactivé'}`);
     }
     setTogglingId(null);
   };
 
   const handleDelete = async (id: string) => {
-    const linkedCount = allPos.filter((p) => p.space_id === id).length;
+    const linkedCount = allPos.filter((p: PointOfSale) => p.space_id === id).length;
     const message =
       linkedCount > 0
         ? `Supprimer cet espace détachera ${linkedCount} point(s) de vente. Continuer ?`
@@ -149,14 +149,14 @@ export default function WifiSpacesPage() {
 
     if (linkedCount > 0) {
       await supabase.from('points_of_sale').update({ space_id: null }).eq('space_id', id);
-      setAllPos((prev) => prev.map((p) => (p.space_id === id ? { ...p, space_id: undefined } : p)));
+      setAllPos((prev) => prev.map((p: PointOfSale) => (p.space_id === id ? { ...p, space_id: undefined } : p)));
     }
     const { error } = await supabase.from('wifi_spaces').delete().eq('id', id);
     if (error) {
       toast.error('Erreur lors de la suppression de l\'espace');
     } else {
       toast.success('Espace supprimé avec succès');
-      setSpaces((prev) => prev.filter((s) => s.id !== id));
+      setSpaces((prev) => prev.filter((s: WifiSpace) => s.id !== id));
     }
   };
 
@@ -165,7 +165,7 @@ export default function WifiSpacesPage() {
     if (error) {
       toast.error('Erreur lors de l\'attachement du POS');
     } else {
-      setAllPos((prev) => prev.map((p) => (p.id === posId ? { ...p, space_id: spaceId } : p)));
+      setAllPos((prev) => prev.map((p: PointOfSale) => (p.id === posId ? { ...p, space_id: spaceId } : p)));
       toast.success('POS rattaché à l\'espace');
     }
   };
@@ -175,7 +175,7 @@ export default function WifiSpacesPage() {
     if (error) {
       toast.error('Erreur lors du détachement du POS');
     } else {
-      setAllPos((prev) => prev.map((p) => (p.id === posId ? { ...p, space_id: undefined } : p)));
+      setAllPos((prev) => prev.map((p: PointOfSale) => (p.id === posId ? { ...p, space_id: undefined } : p)));
       toast.success('POS détaché de l\'espace');
     }
   };
@@ -272,9 +272,9 @@ export default function WifiSpacesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSpaces.map((space) => {
-            const linkedPos = allPos.filter((p) => p.space_id === space.id);
-            const unlinkedPos = allPos.filter((p) => !p.space_id);
+          {filteredSpaces.map((space: WifiSpace) => {
+            const linkedPos = allPos.filter((p: PointOfSale) => p.space_id === space.id);
+            const unlinkedPos = allPos.filter((p: PointOfSale) => !p.space_id);
             const isManaging = managePosSpaceId === space.id;
 
             return (

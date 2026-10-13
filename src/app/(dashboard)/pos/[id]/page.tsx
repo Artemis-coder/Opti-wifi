@@ -110,7 +110,7 @@ export default function PosDetailPage() {
 
     const summaryByTypeId = new Map<string, AllocationSummary>();
 
-    ticketTypes.forEach((tt) => {
+    ticketTypes.forEach((tt: TicketType) => {
       summaryByTypeId.set(tt.id, {
         ticketType: tt,
         alloue: 0,
@@ -121,7 +121,7 @@ export default function PosDetailPage() {
       });
     });
 
-    allocations.forEach((alloc) => {
+    allocations.forEach((alloc: TicketAllocation) => {
       const tt = alloc.ticket_type;
       if (!tt) return;
       const s = summaryByTypeId.get(tt.id);
@@ -132,11 +132,11 @@ export default function PosDetailPage() {
     });
 
     const allItems: CollectionItem[] = [];
-    collections.forEach((c) => {
+    collections.forEach((c: Collection) => {
       if (c.items) allItems.push(...c.items);
     });
 
-    allItems.forEach((item) => {
+    allItems.forEach((item: CollectionItem) => {
       const tt = item.ticket_type;
       const typeId = item.ticket_type_id;
       const s = summaryByTypeId.get(typeId) || (tt ? summaryByTypeId.get(tt.id) : null);
@@ -148,39 +148,39 @@ export default function PosDetailPage() {
       }
     });
 
-    summaryByTypeId.forEach((s) => {
+    summaryByTypeId.forEach((s: AllocationSummary) => {
       s.restant = s.alloue - s.vendu;
     });
 
-    return Array.from(summaryByTypeId.values()).filter((s) => s.alloue > 0 || s.vendu > 0);
+    return Array.from(summaryByTypeId.values()).filter((s: AllocationSummary) => s.alloue > 0 || s.vendu > 0);
   };
 
   const allocationSummary = computeAllocationSummary();
 
-  const totalAlloue = allocationSummary.reduce((sum, s) => sum + s.alloue, 0);
-  const totalVendu = allocationSummary.reduce((sum, s) => sum + s.vendu, 0);
-  const totalRestant = allocationSummary.reduce((sum, s) => sum + s.restant, 0);
-  const totalCA = allocationSummary.reduce((sum, s) => sum + s.ca, 0);
-  const totalEcarts = allocationSummary.reduce((sum, s) => sum + s.ecarts, 0);
+  const totalAlloue = allocationSummary.reduce((sum: number, s: AllocationSummary) => sum + s.alloue, 0);
+  const totalVendu = allocationSummary.reduce((sum: number, s: AllocationSummary) => sum + s.vendu, 0);
+  const totalRestant = allocationSummary.reduce((sum: number, s: AllocationSummary) => sum + s.restant, 0);
+  const totalCA = allocationSummary.reduce((sum: number, s: AllocationSummary) => sum + s.ca, 0);
+  const totalEcarts = allocationSummary.reduce((sum: number, s: AllocationSummary) => sum + s.ecarts, 0);
 
-  const totalExpected = collections.reduce((sum, c) => sum + Number(c.montant_attendu || 0), 0);
-  const totalCollected = collections.reduce((sum, c) => sum + Number(c.montant_collecte || 0), 0);
+  const totalExpected = collections.reduce((sum: number, c: Collection) => sum + Number(c.montant_attendu || 0), 0);
+  const totalCollected = collections.reduce((sum: number, c: Collection) => sum + Number(c.montant_collecte || 0), 0);
   const totalDifference = totalCollected - totalExpected;
-  const totalCommission = collections.reduce((sum, c) => sum + Number(c.commission || 0), 0);
+  const totalCommission = collections.reduce((sum: number, c: Collection) => sum + Number(c.commission || 0), 0);
 
   const getAllocatorName = (allouePar?: string) => {
     if (!allouePar) return 'Système';
-    const profile = profiles.find((p) => p.id === allouePar);
+    const profile = profiles.find((p: Profile) => p.id === allouePar);
     return profile?.nom || 'Utilisateur inconnu';
   };
 
   const getTicketTypeName = (ticketTypeId: string) => {
-    const ticket = ticketTypes.find((t) => t.id === ticketTypeId);
+    const ticket = ticketTypes.find((t: TicketType) => t.id === ticketTypeId);
     return ticket?.nom || 'Type inconnu';
   };
 
   const getTicketTypePrix = (ticketTypeId: string) => {
-    const ticket = ticketTypes.find((t) => t.id === ticketTypeId);
+    const ticket = ticketTypes.find((t: TicketType) => t.id === ticketTypeId);
     return ticket?.prix || 0;
   };
 
@@ -270,7 +270,7 @@ export default function PosDetailPage() {
             <span className="text-slate-500">Espace Wi-Fi :</span>
             {pos.space_id ? (
               <Link href="/spaces" className="font-semibold text-amber-600 hover:text-amber-700 hover:underline">
-                {pos.space?.nom || spaces.find((s) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
+                {pos.space?.nom || spaces.find((s: WifiSpace) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
               </Link>
             ) : (
               <strong className="text-slate-500 italic">Non rattaché à un espace</strong>
@@ -387,7 +387,7 @@ export default function PosDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {allocationSummary.map((s) => (
+                {allocationSummary.map((s: AllocationSummary) => (
                   <tr key={s.ticketType.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -476,7 +476,7 @@ export default function PosDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {allocations.map((a) => (
+                {allocations.map((a: TicketAllocation) => (
                   <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
@@ -539,7 +539,7 @@ export default function PosDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {collections.map((c) => (
+                {collections.map((c: Collection) => (
                   <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                       {formatDateFR(c.created_at)}

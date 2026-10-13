@@ -21,7 +21,7 @@ import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/form
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { createClient } from '@/lib/supabase/client';
-import { Collection } from '@/types/database';
+import { Collection, CollectionItem, TicketAllocation } from '@/types/database';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -87,7 +87,7 @@ export default function DashboardPage() {
         let totalCollected = 0;
         let totalDiff = 0;
 
-        colData.forEach((c) => {
+        colData.forEach((c: Collection) => {
           totalExpected += Number(c.montant_attendu || 0);
           totalCollected += Number(c.montant_collecte || 0);
           totalDiff += Number(c.difference || 0);
@@ -104,14 +104,14 @@ export default function DashboardPage() {
       }
 
       if (itemsData && itemsData.length > 0) {
-        const totalSold = itemsData.reduce((acc, curr) => acc + (curr.quantite_vendue || 0), 0);
+        const totalSold = itemsData.reduce((acc: number, curr: CollectionItem) => acc + (curr.quantite_vendue || 0), 0);
         setTicketsSoldTotal(totalSold);
       } else {
         setTicketsSoldTotal(0);
       }
 
       if (allocData && allocData.length > 0) {
-        const totalAllocated = allocData.reduce((acc, curr) => acc + (curr.quantite || 0), 0);
+        const totalAllocated = allocData.reduce((acc: number, curr: TicketAllocation) => acc + (curr.quantite || 0), 0);
         setTicketsAllouesTotal(totalAllocated);
       } else {
         setTicketsAllouesTotal(0);
@@ -338,7 +338,7 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                    {collections.slice(0, 5).map((col) => (
+                    {collections.slice(0, 5).map((col: Collection) => (
                       <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                         <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{col.pos?.nom || 'POS'}</td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{col.collecteur?.nom || 'Collecteur'}</td>

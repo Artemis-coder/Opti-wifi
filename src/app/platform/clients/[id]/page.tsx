@@ -468,7 +468,7 @@ export default function ClientDetailPage() {
             <p className="text-xs text-slate-500 text-center py-6">Aucun paiement enregistré.</p>
           ) : (
             <div className="space-y-2">
-              {data.payments.map((p) => (
+              {data.payments.map((p: { id: string; amount: number; currency: string; status: string; paid_at?: string | null; created_at: string; transaction_reference?: string }) => (
                 <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40">
                   <div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -505,7 +505,7 @@ export default function ClientDetailPage() {
             <p className="text-xs text-slate-500 text-center py-6">Aucun utilisateur.</p>
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {data.users.map((u) => (
+              {data.users.map((u: { id: string; nom: string; email: string; role: string; created_at: string; last_login?: string | null }) => (
                 <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40">
                   <div className="w-7 h-7 rounded-full bg-[#0b1a3a] text-amber-400 flex items-center justify-center font-bold text-xs">
                     {u.nom?.[0] || u.email?.[0] || 'U'}
@@ -532,7 +532,7 @@ export default function ClientDetailPage() {
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Points de Vente ({data.pos.length})</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.pos.map((p) => (
+            {data.pos.map((p: { id: string; nom: string; statut: string; created_at: string }) => (
               <div key={p.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
                 <p className="font-semibold text-slate-900 dark:text-white text-sm">{p.nom}</p>
                 <p className="text-xs text-slate-500">{p.created_at ? formatDateFR(p.created_at) : ''}</p>

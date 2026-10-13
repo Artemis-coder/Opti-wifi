@@ -122,12 +122,12 @@ export default function SpaceDashboardPage() {
       );
 
       const spaceItems: CollectionItem[] = [];
-      spaceCollections.forEach((c) => {
+      spaceCollections.forEach((c: Collection) => {
         if (c.items) spaceItems.push(...c.items);
       });
 
       const soldTotal = spaceItems.reduce(
-        (acc, curr) => acc + (curr.quantite_vendue || 0),
+        (acc: number, curr: CollectionItem) => acc + (curr.quantite_vendue || 0),
         0
       );
       setTicketsSoldTotal(soldTotal);
@@ -135,7 +135,7 @@ export default function SpaceDashboardPage() {
       let totalExpected = 0;
       let totalCollected = 0;
       let totalDiff = 0;
-      spaceCollections.forEach((c) => {
+      spaceCollections.forEach((c: Collection) => {
         totalExpected += Number(c.montant_attendu || 0);
         totalCollected += Number(c.montant_collecte || 0);
         totalDiff += Number(c.difference || 0);
@@ -145,13 +145,13 @@ export default function SpaceDashboardPage() {
       setEcartTotal(totalDiff);
 
       const totalAllocated = spaceAllocations.reduce(
-        (acc, curr) => acc + (curr.quantite || 0),
+        (acc: number, curr: TicketAllocation) => acc + (curr.quantite || 0),
         0
       );
       setTicketsAllouesTotal(totalAllocated);
 
       const commissionTotal = spaceCollections.reduce(
-        (acc, curr) => acc + Number(curr.commission || 0),
+        (acc: number, curr: Collection) => acc + Number(curr.commission || 0),
         0
       );
       setTotalCommission(commissionTotal);
@@ -216,7 +216,7 @@ export default function SpaceDashboardPage() {
     if (!error) {
       const updatedPos = { ...posData, space_id: spaceId } as PointOfSale;
       setLinkedPos((prev) => [...prev, updatedPos]);
-      setUnlinkedPos((prev) => prev.filter((p) => p.id !== posId));
+      setUnlinkedPos((prev) => prev.filter((p: PointOfSale) => p.id !== posId));
       toast.success('POS rattaché à l\'espace');
     } else {
       toast.error('Erreur lors du rattachement du POS');
@@ -229,10 +229,10 @@ export default function SpaceDashboardPage() {
       .update({ space_id: null })
       .eq('id', posId);
     if (!error) {
-      const pos = linkedPos.find((p) => p.id === posId);
+      const pos = linkedPos.find((p: PointOfSale) => p.id === posId);
       if (pos) {
         const updatedPos = { ...pos, space_id: undefined };
-        setLinkedPos((prev) => prev.filter((p) => p.id !== posId));
+        setLinkedPos((prev) => prev.filter((p: PointOfSale) => p.id !== posId));
         setUnlinkedPos((prev) => [...prev, updatedPos]);
       }
       toast.success('POS détaché de l\'espace');
@@ -318,7 +318,7 @@ export default function SpaceDashboardPage() {
          <div className="flex items-center justify-between">
            <PosSummary
              linkedPosCount={linkedPos.length}
-             activePosCount={linkedPos.filter((p) => p.statut === 'actif').length}
+             activePosCount={linkedPos.filter((p: PointOfSale) => p.statut === 'actif').length}
            />
            {user?.role === 'administrateur' && (
              <Button
@@ -588,7 +588,7 @@ export default function SpaceDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                    {recentCollections.map((col) => (
+                    {recentCollections.map((col: Collection) => (
                       <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                         <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{col.pos?.nom || 'POS'}</td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{col.collecteur?.nom || 'Collecteur'}</td>
@@ -638,7 +638,7 @@ export default function SpaceDashboardPage() {
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {linkedPos.map((p) => (
+                    {linkedPos.map((p: PointOfSale) => (
                       <div
                         key={p.id}
                         className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800"
@@ -679,7 +679,7 @@ export default function SpaceDashboardPage() {
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {unlinkedPos.map((p) => (
+                    {unlinkedPos.map((p: PointOfSale) => (
                       <div
                         key={p.id}
                         className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800"

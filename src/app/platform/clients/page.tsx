@@ -134,7 +134,7 @@ export default function PlatformClientsPage() {
       const result = await res.json();
       if (res.ok) {
         setClients((prev) =>
-          prev.map((c) =>
+          prev.map((c: ClientOrg) =>
             c.id === orgId
               ? { ...c, status: result.new_status }
               : c
@@ -173,9 +173,9 @@ export default function PlatformClientsPage() {
     return <Badge variant={s.color} className="text-xs font-medium">{s.label}</Badge>;
   };
 
-  const activeCount = clients.filter((c) => c.status === 'active').length;
-  const suspendedCount = clients.filter((c) => c.status === 'suspended').length;
-  const pendingCount = clients.filter((c) => c.status === 'pending_approval').length;
+  const activeCount = clients.filter((c: ClientOrg) => c.status === 'active').length;
+  const suspendedCount = clients.filter((c: ClientOrg) => c.status === 'suspended').length;
+  const pendingCount = clients.filter((c: ClientOrg) => c.status === 'pending_approval').length;
 
 
   return (
@@ -249,7 +249,7 @@ export default function PlatformClientsPage() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {STATUS_FILTERS.map((f) => (
+            {STATUS_FILTERS.map((f: { value: string; label: string }) => (
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
@@ -298,8 +298,8 @@ export default function PlatformClientsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {clients.map((client) => {
-                  const Icon = STATUS_ICONS[client.status] || Building2;
+                {clients.map((client: ClientOrg) => {
+                  const Icon = STATUS_ICONS[client.status as OrganizationStatus] || Building2;
                   const isActionDisabled = actionLoading === client.id;
                   return (
                     <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">

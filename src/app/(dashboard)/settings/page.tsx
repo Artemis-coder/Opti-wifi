@@ -184,7 +184,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <p className="text-sm font-bold text-slate-900 dark:text-white">
-                {CURRENCIES.find((c) => c.value === devise)?.label || 'Franc CFA (XOF)'}
+                {CURRENCIES.find((c: { value: Currency; label: string }) => c.value === devise)?.label || 'Franc CFA (XOF)'}
               </p>
               <p className="text-xs text-slate-500">Code : {devise}</p>
             </div>
