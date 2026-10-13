@@ -69,8 +69,8 @@ function parseNestedSelects(selectStr: string): { mainColumns: string; nested: N
     });
   }
 
-  const main = selectStr.replace(regex, '').replace(/,\s*/g, ',').trim();
-  return { mainColumns: main || '*', nested };
+  const main = selectStr.replace(regex, '').split(',').map(s => s.trim()).filter(Boolean).join(',') || '*';
+  return { mainColumns: main, nested };
 }
 
 export class TableBuilder {
@@ -444,7 +444,11 @@ export class TableBuilder {
     } else {
       mainColumns.split(',').forEach(c => {
         c = c.trim();
-        if (c) selectParts.push(`"${this.tableName}"."${c}"`);
+        if (c === '*') {
+          selectParts.push(`"${this.tableName}".*`);
+        } else if (c) {
+          selectParts.push(`"${this.tableName}"."${c}"`);
+        }
       });
     }
 
