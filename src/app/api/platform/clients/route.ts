@@ -1,21 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { Organization } from "@/types/platform";
-
-interface EnrichedOrg {
-  id: string;
-  name: string;
-  status: string;
-  currency: string;
-  created_at: string;
-  updated_at?: string;
-  subscription?: Record<string, unknown>;
-  plan?: Record<string, unknown>;
-  contact_name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-}
+import type { Organization } from "@/types/platform";
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -84,12 +70,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const enrichedOrgs = (orgs || []).map((org: EnrichedOrg) => {
-    const subList = Array.isArray(org.subscription) ? org.subscription : [org.subscription];
+  const enrichedOrgs = (orgs || []).map((org: Organization & { subscription?: unknown; plan?: unknown }) => {
+   const subList = Array.isArray(org.subscription) ? org.subscription : [org.subscription];
     const sub = subList.find(Boolean); // Get first defined element if any
     
     // Check if the plan name is in sub.plan directly (if object) or an array
-    const planName = sub?.plan?.name || (Array.isArray(sub?.plan) ? sub?.plan[0]?.name : undefined) || org.plan?.name || 'Aucun';
+    const planName = (sub?.plan as Record<string, unknown>)?.[ 'name'] || (Array.isArray(sub?.plan) ? (sub?.plan[0] as Record<string, unknown>)?.[ 'name'] : undefined) || (org.plan as Record<string, unknown>)?.[ 'name'] || 'Aucun';
 
     return {
       id: org.id,

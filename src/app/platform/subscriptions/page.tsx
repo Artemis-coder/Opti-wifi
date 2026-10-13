@@ -118,7 +118,7 @@ export default function PlatformSubscriptionsPage() {
       new Date(sub.end_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) &&
       new Date(sub.end_date) <= new Date();
 
-    const buttons = [];
+    const buttons: { label: string; action: string; variant: string; icon: React.ReactNode }[] = [];
 
     if (status === 'active' && !sub.cancel_at_period_end) {
       buttons.push({
@@ -277,10 +277,10 @@ export default function PlatformSubscriptionsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
-                          {actionButtons.map((btn: { label: string; action: string; variant: 'outline' | 'secondary' | 'danger'; icon: React.ReactNode }) => (
+                          {actionButtons.map((btn: { label: string; action: string; variant: string; icon: React.ReactNode }) => (
                             <Button
                               key={btn.action}
-                              variant={btn.variant}
+                              variant={btn.variant as "primary" | "secondary" | "outline" | "ghost" | "danger"}
                               size="sm"
                               className="text-xs h-7"
                               onClick={() => handleAction(sub, btn.action)}
