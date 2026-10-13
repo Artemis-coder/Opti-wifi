@@ -40,3 +40,21 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 scripts/backups/
+
+# Android build artifacts
+android/.gradle/
+android/app/build/
+android/app/src/main/res/
+android/app/capacitor.build.gradle
+android/app/src/main/assets/
+android/capacitor-cordova-android-plugins/
+android/cordova/
+android/dist/
+android/keystore.properties
+android/local.properties
+android/*.keystore
+android/optiwifi-release.keystore
+
+# Kilo agents and skills
+.agents/
+skills-lock.json

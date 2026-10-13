@@ -9,20 +9,21 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100';
+    const baseStyles = 'md-ripple inline-flex items-center justify-center gap-2 font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
 
     const variants = {
-      primary: 'bg-[#0b1a3a] text-white hover:bg-[#122854] shadow-sm',
-      secondary: 'bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold shadow-sm',
+      primary: 'bg-[#0b1a3a] text-white hover:bg-[#122854] md-elevation-1',
+      secondary: 'bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold md-elevation-1',
       outline: 'border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-900',
-      danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+      danger: 'bg-red-600 text-white hover:bg-red-700 md-elevation-1',
       ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800',
     };
 
+    // Material 3: every touch target stays at or above 48dp on phones.
     const sizes = {
-      sm: 'h-8 px-3 text-xs',
-      md: 'h-10 px-4 text-sm',
-      lg: 'h-12 px-6 text-base',
+      sm: 'h-10 sm:h-8 px-3.5 sm:px-3 text-xs rounded-lg',
+      md: 'h-12 sm:h-10 px-4 text-sm rounded-xl',
+      lg: 'h-14 sm:h-12 px-5 sm:px-6 text-base rounded-xl',
     };
 
     return (
