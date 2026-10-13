@@ -477,7 +477,7 @@ export class TableBuilder {
     if (whereBuild.clause) sql += ` WHERE ${whereBuild.clause}`;
 
     for (const ord of this._order) {
-      sql += ` ORDER BY "${ord.column}" ${ord.ascending ? 'ASC' : 'DESC'}`;
+      sql += ` ORDER BY "${this.tableName}"."${ord.column}" ${ord.ascending ? 'ASC' : 'DESC'}`;
     }
     if (this._limit) sql += ` LIMIT ${this._limit}`;
     if (this._range) {
