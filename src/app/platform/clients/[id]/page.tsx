@@ -507,7 +507,7 @@ export default function ClientDetailPage() {
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {data.users.map((u: { id: string; nom: string; email: string; role: string; created_at: string; last_login?: string | null }) => (
                 <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40">
-                  <div className="w-7 h-7 rounded-full bg-[#0b1a3a] text-amber-400 flex items-center justify-center font-bold text-xs">
+                  <div className="w-7 h-7 rounded-full bg-brand-900 text-brand-400 flex items-center justify-center font-bold text-xs">
                     {u.nom?.[0] || u.email?.[0] || 'U'}
                   </div>
                   <div className="flex-1 min-w-0">

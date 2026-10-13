@@ -126,7 +126,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#0b1a3a] to-[#162e63] p-6 rounded-2xl text-white shadow-lg border border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-brand-900 to-brand-700 p-6 rounded-2xl text-white shadow-lg border border-slate-800">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             Bienvenue dans votre espace, {user?.nom || 'Utilisateur'} 👋

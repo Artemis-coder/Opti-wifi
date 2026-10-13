@@ -143,7 +143,7 @@ export default function TicketTypesPage() {
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-medium">Prix public :</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-extrabold text-[#0b1a3a] dark:text-amber-400">
+                  <span className="text-lg font-extrabold text-brand-900 dark:text-brand-400">
                     {formatCurrencyFCFA(t.prix)}
                   </span>
                   <Button

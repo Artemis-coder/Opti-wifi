@@ -343,7 +343,7 @@ export default function NewCollectionWizard() {
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 3 : Calcul Automatique du Montant Attendu</h3>
               <div className="p-4 bg-blue-900/10 dark:bg-blue-950/40 rounded-xl border border-blue-900/20 text-center space-y-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Montant Théorique à Encaisser</p>
-                <p className="text-3xl font-extrabold text-[#0b1a3a] dark:text-amber-400">{formatCurrencyFCFA(montantAttendu)}</p>
+                <p className="text-3xl font-extrabold text-brand-900 dark:text-brand-400">{formatCurrencyFCFA(montantAttendu)}</p>
               </div>
               <div className="flex justify-between pt-4">
                 <Button variant="ghost" onClick={() => setStep(2)} className="gap-2">

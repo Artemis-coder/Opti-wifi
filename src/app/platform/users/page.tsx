@@ -137,7 +137,7 @@ export default function PlatformUsersPage() {
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border border-amber-500/30 ${
                           u.is_banned
                             ? 'bg-red-100 text-red-600'
-                            : 'bg-[#0b1a3a] text-amber-400'
+                             : 'bg-brand-900 text-brand-400'
                         }`}>
                           {u.nom?.[0] || u.email?.[0] || 'U'}
                         </div>

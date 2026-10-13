@@ -63,12 +63,12 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const filteredNav = navItems.filter((item) => !user?.role || item.roles.includes(user.role));
 
   const content = (
-    <aside className="bg-[#0b1a3a] text-white flex flex-col h-full border-r border-slate-800 shadow-xl">
+    <aside className="bg-brand-900 text-white flex flex-col h-full border-r border-slate-800 shadow-xl">
       {/* Brand Header */}
       <div className="h-16 flex items-center justify-between gap-2 px-4 sm:px-6 border-b border-slate-800/80">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 shrink-0 rounded-lg overflow-hidden relative bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-            <Image src="/assets/logo.jpg" alt="OptiWifi Logo" width={36} height={36} className="object-cover" />
+          <div className="w-9 h-9 shrink-0 rounded-lg overflow-hidden relative bg-brand-500/20 border border-brand-500/30 flex items-center justify-center">
+            <Image src="/assets/logo.jpg" alt="OptiSpace Logo" width={36} height={36} className="object-cover" />
           </div>
           <div className="min-w-0">
             <h1 className="font-bold text-base sm:text-lg leading-tight tracking-wide text-white truncate">
@@ -108,7 +108,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
               className={cn(
                 'md-ripple flex items-center gap-3 min-h-12 px-3 rounded-2xl text-sm font-medium transition-colors duration-150',
                 isActive
-                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  ? 'bg-brand-500 text-brand-on font-bold'
                   : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
               )}
             >
@@ -122,7 +122,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
       {/* Role Badge Footer & Mobile Logout */}
       <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs border border-amber-500/30">
+          <div className="w-8 h-8 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs border border-brand-500/30">
             <UserIcon className="w-4 h-4" />
           </div>
           <div className="flex items-center gap-2 overflow-hidden">
@@ -131,7 +131,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
             {isOnline && <span title="En ligne"><Wifi className="w-4 h-4 text-emerald-500 shrink-0" /></span>}
             <div className="overflow-hidden">
               <p className="text-xs font-bold text-white truncate">{user?.nom || 'Compte Utilisateur'}</p>
-              <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">{user?.role || 'Collecteur'}</p>
+              <p className="text-[10px] text-brand-400 font-semibold uppercase tracking-wider">{user?.role || 'Collecteur'}</p>
             </div>
           </div>
         </div>

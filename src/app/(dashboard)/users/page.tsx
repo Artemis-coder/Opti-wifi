@@ -105,7 +105,7 @@ export default function UsersPage() {
             <Card key={u.id} className="space-y-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#0b1a3a] text-amber-400 font-bold flex items-center justify-center text-sm border border-amber-500/30">
+                  <div className="w-10 h-10 rounded-full bg-brand-900 text-brand-400 font-bold flex items-center justify-center text-sm border border-brand-500/30">
                     {u.nom ? u.nom.slice(0, 2).toUpperCase() : 'US'}
                   </div>
                   <div>

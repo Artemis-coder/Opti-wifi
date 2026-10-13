@@ -272,7 +272,7 @@ export default function SpaceDashboardPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#0b1a3a] to-[#162e63] p-6 rounded-2xl text-white shadow-lg border border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-brand-900 to-brand-700 p-6 rounded-2xl text-white shadow-lg border border-slate-800">
         <div>
           <div className="flex items-center gap-3">
             <Link href="/spaces">
@@ -280,7 +280,7 @@ export default function SpaceDashboardPage() {
                 <ArrowLeft className="w-4 h-4" /> Retour
               </Button>
             </Link>
-            <MapPin className="w-6 h-6 text-amber-400" />
+            <MapPin className="w-6 h-6 text-brand-400" />
             <h1 className="text-2xl font-bold">{space.nom}</h1>
           </div>
           {space.description && (
@@ -298,7 +298,7 @@ export default function SpaceDashboardPage() {
             <>
               <Button
                 onClick={() => setIsEditModalOpen(true)}
-                className="gap-2 font-semibold bg-amber-500 text-slate-900 hover:bg-amber-400"
+                className="gap-2 font-semibold bg-brand-500 text-brand-on hover:bg-brand-600"
               >
                 <Edit className="w-4 h-4" /> Modifier
               </Button>

@@ -39,7 +39,7 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
           <input
             type="text"
             placeholder="Rechercher un client, un utilisateur, une facture..."
-            className="w-64 lg:w-80 h-9 pl-10 pr-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 transition"
+            className="w-64 lg:w-80 h-9 pl-10 pr-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3" />
         </form>
@@ -61,7 +61,7 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
           aria-label="Notifications"
         >
           <Bell className="w-5 h-5" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-brand-500 rounded-full" />
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -73,7 +73,7 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
               {platformUser?.role === 'super_admin' ? '👑 Super Administrateur' : 'Support'}
             </p>
           </div>
-          <div className="w-8 h-8 rounded-full bg-[#0b1a3a] text-amber-400 flex items-center justify-center font-bold text-sm border border-amber-500/30">
+          <div className="w-8 h-8 rounded-full bg-brand-900 text-brand-400 flex items-center justify-center font-bold text-sm border border-brand-500/30">
             {platformUser?.full_name?.[0] || platformUser?.email?.[0] || 'S'}
           </div>
         </div>

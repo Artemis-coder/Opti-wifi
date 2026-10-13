@@ -161,7 +161,7 @@ export default function PlatformAuditLogsPage() {
                       <td className="px-4 py-3">
                         {log.platform_user ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-[#0b1a3a] text-amber-400 flex items-center justify-center font-bold text-xs">
+                            <div className="w-6 h-6 rounded-full bg-brand-900 text-brand-400 flex items-center justify-center font-bold text-xs">
                               {log.platform_user.full_name?.[0] || log.platform_user.email?.[0] || 'S'}
                             </div>
                             <span className="text-slate-900 dark:text-white">
