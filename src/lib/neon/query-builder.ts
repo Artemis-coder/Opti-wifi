@@ -512,11 +512,17 @@ export class TableBuilder {
     }
 
     for (const n of nested) {
+      let cols: string[];
       if (n.columns.length > 0) {
-        n.columns.forEach(col => colSelects.push(`"${n.alias}"."${col}"`));
+        cols = n.columns;
       } else {
-        colSelects.push(`"${n.alias}".*`);
+        const colRes = await query(
+          `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 ORDER BY ordinal_position`,
+          [n.table]
+        );
+        cols = (colRes.rows || []).map(r => r.column_name);
       }
+      cols.forEach(col => colSelects.push(`"${n.alias}"."${col}" AS "${n.alias}_${col}"`));
     }
 
     const params: any[] = [];
