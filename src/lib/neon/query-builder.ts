@@ -5,6 +5,43 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 
 export { query, queryOne };
 
+const _fkCache = new Map<string, { column: string; onParent: boolean } | null>();
+
+async function resolveFk(parentTable: string, childTable: string, childAlias: string): Promise<{ column: string; onParent: boolean } | null> {
+  const cacheKey = `${parentTable}:{${childTable}:${childAlias}}`;
+  if (_fkCache.has(cacheKey)) return _fkCache.get(cacheKey)!;
+
+  const parentFk = `${childAlias}_id`;
+  const singular = parentTable.replace(/s$/, '');
+  const childFk = `${singular}_id`;
+
+  const cols = await query(
+    `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name IN ($2, $3)`,
+    [childTable, parentFk, childFk]
+  );
+
+  let result: { column: string; onParent: boolean } | null = null;
+  for (const row of cols.rows || []) {
+    if (row.column_name === childFk) { result = { column: childFk, onParent: false }; break; }
+    if (row.column_name === parentFk) { result = { column: parentFk, onParent: true }; break; }
+  }
+
+  if (!result) {
+    const parentCols = await query(
+      `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2`,
+      [parentTable, parentFk]
+    );
+    if (parentCols.rows?.length > 0) {
+      result = { column: parentFk, onParent: true };
+    } else {
+      result = { column: childFk, onParent: false };
+    }
+  }
+
+  _fkCache.set(cacheKey, result);
+  return result;
+}
+
 export type SupabaseError = { message: string; code?: string; details?: string; hint?: string };
 export type SupabaseResult<T> = { data: T | null; error: SupabaseError | null };
 export type SupabaseListResult<T> = { data: T[] | null; error: SupabaseError | null; count?: number | null };
@@ -424,56 +461,69 @@ export class TableBuilder {
     const hasCount = this._selectOpts?.count === 'exact';
     const headMode = !!this._selectOpts?.head;
 
-    if (headMode && hasCount) {
-      const params: any[] = [];
-      const whereBuild = this.buildWhereClause(params, 1);
-      let countSql = `SELECT COUNT(*) as count FROM "${this.tableName}"`;
-      if (nested.length > 0) {
-        countSql += ' ' + nested.map(n =>
-          `${n.joinType === 'inner' ? 'INNER' : 'LEFT'} JOIN "${n.table}" AS "${n.alias}" ON "${this.tableName}".${this.fkColumn(n.alias, this.tableName)} = "${n.alias}"."id"`
-        ).join(' ');
-      }
-      if (whereBuild.clause) countSql += ` WHERE ${whereBuild.clause}`;
-      const cr = await query(countSql, whereBuild.params);
-      return { data: null, error: null, count: Number(cr.rows[0]?.count || 0) };
-    }
-
-    const selectParts: string[] = [];
-    if (mainColumns === '*' || mainColumns === '') {
-      selectParts.push(`"${this.tableName}".*`);
-    } else {
-      mainColumns.split(',').forEach(c => {
-        c = c.trim();
-        if (c === '*') {
-          selectParts.push(`"${this.tableName}".*`);
-        } else if (c) {
-          selectParts.push(`"${this.tableName}"."${c}"`);
-        }
-      });
-    }
-
+    const joinClauses: string[] = [];
     const joinAliases: string[] = [];
     const nestedInfos: { alias: string; columns: string[]; table: string }[] = [];
 
     for (const n of nested) {
       const joinType = n.joinType === 'inner' ? 'INNER' : 'LEFT';
-      selectParts.push(`${joinType} JOIN "${n.table}" AS "${n.alias}" ON "${this.tableName}".${this.fkColumn(n.alias, this.tableName)} = "${n.alias}"."id"`);
-      if (n.columns.length > 0) {
-        n.columns.forEach(col => selectParts.push(`"${n.alias}"."${col}"`));
+      const fk = await resolveFk(this.tableName, n.table, n.alias);
+      let onClause: string;
+      if (fk && fk.onParent) {
+        onClause = `"${this.tableName}"."${fk.column}" = "${n.alias}"."id"`;
+      } else if (fk) {
+        onClause = `"${this.tableName}"."id" = "${n.alias}"."${fk.column}"`;
       } else {
-        selectParts.push(`"${n.alias}".*`);
+        onClause = `"${this.tableName}"."${n.alias}_id" = "${n.alias}"."id"`;
+      }
+      joinClauses.push(`${joinType} JOIN "${n.table}" AS "${n.alias}" ON ${onClause}`);
+      if (n.columns.length > 0) {
+        nestedInfos.push({ alias: n.alias, columns: n.columns, table: n.table });
+      } else {
+        nestedInfos.push({ alias: n.alias, columns: [], table: n.table });
       }
       joinAliases.push(n.alias);
-      nestedInfos.push({ alias: n.alias, columns: n.columns, table: n.table });
     }
 
-    const joinClause = selectParts.filter(p => p.startsWith('LEFT JOIN') || p.startsWith('INNER JOIN')).join(' ');
-    const colSelects = selectParts.filter(p => !(p.startsWith('LEFT JOIN') || p.startsWith('INNER JOIN'))).join(', ');
+    const joinClauseStr = joinClauses.join(' ');
+
+    if (headMode && hasCount) {
+      const params: any[] = [];
+      const whereBuild = this.buildWhereClause(params, 1);
+      let countSql = `SELECT COUNT(*) as count FROM "${this.tableName}"`;
+      if (joinClauseStr) countSql += ' ' + joinClauseStr;
+      if (whereBuild.clause) countSql += ` WHERE ${whereBuild.clause}`;
+      const cr = await query(countSql, whereBuild.params);
+      return { data: null, error: null, count: Number(cr.rows[0]?.count || 0) };
+    }
+
+    const colSelects: string[] = [];
+    if (mainColumns === '*' || mainColumns === '') {
+      colSelects.push(`"${this.tableName}".*`);
+    } else {
+      mainColumns.split(',').forEach(c => {
+        c = c.trim();
+        if (c === '*') {
+          colSelects.push(`"${this.tableName}".*`);
+        } else if (c) {
+          colSelects.push(`"${this.tableName}"."${c}"`);
+        }
+      });
+    }
+
+    for (const n of nested) {
+      if (n.columns.length > 0) {
+        n.columns.forEach(col => colSelects.push(`"${n.alias}"."${col}"`));
+      } else {
+        colSelects.push(`"${n.alias}".*`);
+      }
+    }
 
     const params: any[] = [];
     const whereBuild = this.buildWhereClause(params, 1);
 
-    let sql = `SELECT ${colSelects} FROM "${this.tableName}" ${joinClause}`;
+    let sql = `SELECT ${colSelects.join(', ')} FROM "${this.tableName}"`;
+    if (joinClauseStr) sql += ` ${joinClauseStr}`;
     if (whereBuild.clause) sql += ` WHERE ${whereBuild.clause}`;
 
     for (const ord of this._order) {
@@ -488,7 +538,7 @@ export class TableBuilder {
 
     let count: number | undefined;
     if (hasCount) {
-      const countSql = `SELECT COUNT(*) as count FROM "${this.tableName}" ${joinClause}${whereBuild.clause ? ` WHERE ${whereBuild.clause}` : ''}`;
+       const countSql = `SELECT COUNT(*) as count FROM "${this.tableName}" ${joinClauseStr}${whereBuild.clause ? ` WHERE ${whereBuild.clause}` : ''}`;
       const cr = await query(countSql, whereBuild.params);
       count = Number(cr.rows[0]?.count || 0);
     }
@@ -542,20 +592,9 @@ export class TableBuilder {
     return { data: transformedRows, error: null, count };
   }
 
-  private fkColumn(alias: string, tableName?: string): string {
-    // Try {alias}_id first (e.g., pos → pos_id, collecteur → collecteur_id)
-    let col = `${alias}_id`;
-    // If the FK column would be ambiguous or likely invalid, try deriving
-    // from the parent table name (e.g., collections → collection_id)
-    if (tableName && !alias.endsWith('_id') && !alias.includes('_')) {
-      const singular = tableName.replace(/s$/, '');
-      const derived = `${singular}_id`;
-      if (derived !== col) {
-        col = derived;
-      }
-    }
-    return col;
-  }
+   private fkColumn(alias: string): string {
+    return `${alias}_id`;
+   }
 
   private async executeInsert(): Promise<SupabaseResult<any>> {
     const data = this._insertData;
