@@ -315,7 +315,7 @@ export class TableBuilder {
     let idx = startIdx;
     const allParams = [...params];
 
-    const escapeCol = (c: string) => `"${c}"`;
+    const escapeCol = (c: string) => `"${this.tableName}"."${c}"`;
 
     for (const f of andFilters) {
       if (f.operator === 'IN') {
