@@ -430,7 +430,7 @@ export class TableBuilder {
       let countSql = `SELECT COUNT(*) as count FROM "${this.tableName}"`;
       if (nested.length > 0) {
         countSql += ' ' + nested.map(n =>
-          `${n.joinType === 'inner' ? 'INNER' : 'LEFT'} JOIN "${n.table}" AS "${n.alias}" ON "${this.tableName}".${this.fkColumn(n.alias)} = "${n.alias}"."id"`
+          `${n.joinType === 'inner' ? 'INNER' : 'LEFT'} JOIN "${n.table}" AS "${n.alias}" ON "${this.tableName}".${this.fkColumn(n.alias, this.tableName)} = "${n.alias}"."id"`
         ).join(' ');
       }
       if (whereBuild.clause) countSql += ` WHERE ${whereBuild.clause}`;
@@ -457,7 +457,7 @@ export class TableBuilder {
 
     for (const n of nested) {
       const joinType = n.joinType === 'inner' ? 'INNER' : 'LEFT';
-      selectParts.push(`${joinType} JOIN "${n.table}" AS "${n.alias}" ON "${this.tableName}".${this.fkColumn(n.alias)} = "${n.alias}"."id"`);
+      selectParts.push(`${joinType} JOIN "${n.table}" AS "${n.alias}" ON "${this.tableName}".${this.fkColumn(n.alias, this.tableName)} = "${n.alias}"."id"`);
       if (n.columns.length > 0) {
         n.columns.forEach(col => selectParts.push(`"${n.alias}"."${col}"`));
       } else {
@@ -542,8 +542,19 @@ export class TableBuilder {
     return { data: transformedRows, error: null, count };
   }
 
-  private fkColumn(alias: string): string {
-    return `${alias}_id`;
+  private fkColumn(alias: string, tableName?: string): string {
+    // Try {alias}_id first (e.g., pos → pos_id, collecteur → collecteur_id)
+    let col = `${alias}_id`;
+    // If the FK column would be ambiguous or likely invalid, try deriving
+    // from the parent table name (e.g., collections → collection_id)
+    if (tableName && !alias.endsWith('_id') && !alias.includes('_')) {
+      const singular = tableName.replace(/s$/, '');
+      const derived = `${singular}_id`;
+      if (derived !== col) {
+        col = derived;
+      }
+    }
+    return col;
   }
 
   private async executeInsert(): Promise<SupabaseResult<any>> {
