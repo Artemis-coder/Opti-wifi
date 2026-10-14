@@ -221,7 +221,7 @@ const addLine = () => {
                           <option key={t.id} value={t.id}>{t.nom} — {formatCurrencyFCFA(t.prix)}</option>
                         ))}
                       </select>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <Input
                           label="Quantité allouée"
                           type="number"
@@ -231,7 +231,9 @@ const addLine = () => {
                           placeholder="0"
                         />
                         <div className="flex items-end">
-                          <p className="text-[11px] text-slate-500 pb-2">Quantité en gris = information récapitulative</p>
+                          <p className="text-[11px] text-slate-500 pb-2">
+                            Valeur : {formatCurrencyFCFA((line.quantite || 0) * (ticketTypes.find((t: TicketType) => t.id === line.ticketTypeId)?.prix || 0))}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -257,7 +259,7 @@ const addLine = () => {
                 onChange={(e) => setNotes(e.target.value)}
               />
 
-              <div className="pt-2 flex justify-end gap-3">
+              <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-2.5">
                 <Button type="button" variant="ghost" onClick={() => router.back()}>Annuler</Button>
                 <Button type="submit" variant="secondary" className="px-6 font-bold" isLoading={submitting}>
                   Valider l&apos;Allocation

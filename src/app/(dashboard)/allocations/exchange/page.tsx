@@ -324,37 +324,42 @@ export default function ExchangePage() {
       </p>
 
       {/* Step Indicator */}
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-        {stepIndicators.map((s, idx) => {
-          const stepNum = idx + 1;
-          const isCompleted = step > stepNum;
-          const isActive = step === stepNum;
-          return (
-            <div key={s.label} className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                  isCompleted
-                    ? 'bg-emerald-600 text-white'
-                    : isActive
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
-                }`}
-              >
-                {isCompleted ? '✓' : stepNum}
+      <div className="space-y-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="flex items-center justify-between">
+          {stepIndicators.map((s, idx) => {
+            const stepNum = idx + 1;
+            const isCompleted = step > stepNum;
+            const isActive = step === stepNum;
+            return (
+              <div key={s.label} className="flex items-center gap-2">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                    isCompleted
+                      ? 'bg-emerald-600 text-white'
+                      : isActive
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md ring-2 ring-amber-500/30'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {isCompleted ? '✓' : stepNum}
+                </div>
+                <span
+                  className={`hidden sm:inline text-xs font-semibold ${
+                    isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'
+                  }`}
+                >
+                  {s.label}
+                </span>
+                {idx < stepIndicators.length - 1 && (
+                  <ArrowRight className="w-4 h-4 text-slate-300 dark:text-slate-700 hidden sm:inline" />
+                )}
               </div>
-              <span
-                className={`hidden sm:inline text-xs font-semibold ${
-                  isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'
-                }`}
-              >
-                {s.label}
-              </span>
-              {idx < stepIndicators.length - 1 && (
-                <ArrowRight className="w-4 h-4 text-slate-300 dark:text-slate-700 hidden sm:inline" />
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        <p className="sm:hidden text-xs font-bold text-amber-600 dark:text-amber-400 text-center pt-1">
+          Étape {step} sur 4 : {stepIndicators[step - 1]?.label}
+        </p>
       </div>
 
       {submitted ? (
