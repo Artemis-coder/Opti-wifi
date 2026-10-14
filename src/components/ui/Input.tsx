@@ -5,10 +5,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  rightElement?: React.ReactNode;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, id, ...props }, ref) => {
+  ({ className, label, error, helperText, id, rightElement, ...props }, ref) => {
     const generatedId = React.useId();
     const inputId = id ?? generatedId;
 
@@ -19,18 +20,26 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <input
-          id={inputId}
-          ref={ref}
-          className={cn(
-            // Material 3 outlined text field: 56dp on phones, 16px type so
-            // Android never zooms the viewport on focus.
-            'w-full h-14 sm:h-11 px-4 sm:px-3.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition duration-150',
-            error && 'border-red-500 focus:ring-red-500',
-            className
+        <div className="relative flex items-center">
+          <input
+            id={inputId}
+            ref={ref}
+            className={cn(
+              // Material 3 outlined text field: 56dp on phones, 16px type so
+              // Android never zooms the viewport on focus.
+              'w-full h-14 sm:h-11 px-4 sm:px-3.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition duration-150',
+              rightElement && 'pr-12',
+              error && 'border-red-500 focus:ring-red-500',
+              className
+            )}
+            {...props}
+          />
+          {rightElement && (
+            <div className="absolute right-1.5 sm:right-2 flex items-center justify-center">
+              {rightElement}
+            </div>
           )}
-          {...props}
-        />
+        </div>
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         {helperText && !error && <p className="text-xs text-slate-500">{helperText}</p>}
       </div>

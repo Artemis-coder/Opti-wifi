@@ -36,12 +36,10 @@ export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
 
   return (
     <nav
-      aria-label="Navigation principale"
-      // Flex child of the locked app shell, not a fixed overlay: it can never
-      // scroll away, whatever the content height.
-      className="lg:hidden shrink-0 bg-brand-900 text-white md-elevation-3 safe-bottom"
+      aria-label="Navigation principale mobile"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-brand-900/95 backdrop-blur-md text-white border-t border-slate-800/80 shadow-[0_-4px_25px_rgba(0,0,0,0.35)] safe-bottom"
     >
-      <div className="flex items-stretch justify-around h-20 px-1">
+      <div className="flex items-stretch justify-around h-16 sm:h-20 px-1">
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -61,15 +59,15 @@ export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
               {/* Material 3 active indicator: 64x32dp pill behind the icon */}
               <span
                 className={cn(
-                  'flex h-8 w-16 max-w-full items-center justify-center rounded-full transition-colors duration-200',
+                  'flex h-7 w-14 sm:h-8 sm:w-16 max-w-full items-center justify-center rounded-full transition-colors duration-200',
                   isActive ? 'bg-brand-400/25' : 'bg-transparent'
                 )}
               >
-                <Icon className="h-6 w-6 shrink-0" strokeWidth={isActive ? 2.4 : 1.8} />
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" strokeWidth={isActive ? 2.4 : 1.8} />
               </span>
               <span
                 className={cn(
-                  'w-full truncate px-0.5 text-center text-[11px] leading-4',
+                  'w-full truncate px-0.5 text-center text-[10px] sm:text-[11px] leading-3 sm:leading-4',
                   isActive ? 'font-semibold' : 'font-medium'
                 )}
               >
@@ -85,10 +83,10 @@ export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
           aria-label="Ouvrir le menu complet"
           className="md-ripple flex flex-1 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl py-1.5 text-slate-300 transition-colors duration-200"
         >
-          <span className="flex h-8 w-16 max-w-full items-center justify-center rounded-full">
-            <Menu className="h-6 w-6 shrink-0" strokeWidth={1.8} />
+          <span className="flex h-7 w-14 sm:h-8 sm:w-16 max-w-full items-center justify-center rounded-full">
+            <Menu className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" strokeWidth={1.8} />
           </span>
-          <span className="w-full truncate px-0.5 text-center text-[11px] font-medium leading-4">
+          <span className="w-full truncate px-0.5 text-center text-[10px] sm:text-[11px] font-medium leading-3 sm:leading-4">
             Menu
           </span>
         </button>

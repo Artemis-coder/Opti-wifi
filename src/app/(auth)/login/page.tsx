@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { UserRole } from '@/types/database';
+import { Eye, EyeOff } from 'lucide-react';
 
 type Mode = 'login' | 'register' | 'recovery';
 
@@ -65,7 +66,9 @@ export default function LoginPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [recoveryReady, setRecoveryReady] = useState(false);
    const [showLoginPassword, setShowLoginPassword] = useState(false);
+   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
    const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+   const [showRecoveryConfirmPassword, setShowRecoveryConfirmPassword] = useState(false);
 
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
@@ -261,11 +264,22 @@ export default function LoginPage() {
             />
             <Input
               label="Mot de Passe"
-              type="password"
+              type={showLoginPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword((prev) => !prev)}
+                  className="tap-target p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center rounded-lg"
+                  aria-label={showLoginPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  tabIndex={-1}
+                >
+                  {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              }
             />
 
             <a
@@ -292,19 +306,41 @@ export default function LoginPage() {
 
             <Input
               label="Nouveau mot de passe"
-              type="password"
+              type={showRecoveryPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowRecoveryPassword((prev) => !prev)}
+                  className="tap-target p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center rounded-lg"
+                  aria-label={showRecoveryPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  tabIndex={-1}
+                >
+                  {showRecoveryPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              }
             />
             <Input
               label="Confirmer le mot de passe"
-              type="password"
+              type={showRecoveryConfirmPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowRecoveryConfirmPassword((prev) => !prev)}
+                  className="tap-target p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center rounded-lg"
+                  aria-label={showRecoveryConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  tabIndex={-1}
+                >
+                  {showRecoveryConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              }
             />
 
             <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading}>
@@ -349,11 +385,22 @@ export default function LoginPage() {
             />
             <Input
               label="Mot de Passe (6+ caractères)"
-              type="password"
+              type={showRegisterPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterPassword((prev) => !prev)}
+                  className="tap-target p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center rounded-lg"
+                  aria-label={showRegisterPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  tabIndex={-1}
+                >
+                  {showRegisterPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              }
             />
 
             <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading}>
