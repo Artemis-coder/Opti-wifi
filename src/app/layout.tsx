@@ -20,8 +20,12 @@ export const metadata: Metadata = {
   applicationName: "OptiSpace",
   appleWebApp: { capable: true, title: "OptiSpace", statusBarStyle: "black-translucent" },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [
+      { url: "/assets/logo.jpg" },
+      { url: "/icon.png" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/assets/logo.jpg",
     apple: "/assets/logo.jpg",
   },
 };
