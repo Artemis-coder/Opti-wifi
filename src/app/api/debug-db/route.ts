@@ -6,16 +6,24 @@ export async function GET() {
     const databaseUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
     const sql = neon(databaseUrl);
     
+    // Extract host from URL
+    const url = new URL(databaseUrl);
+    const host = url.hostname;
+    
     // Check schema
     const schema = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'conversation_sessions'`;
+    
+    // Check all tables
+    const tables = await sql`SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema = 'public'`;
     
     // Test query
     const result = await sql.query('SELECT * FROM conversation_sessions WHERE chat_id = $1', ['test123']);
     
     return NextResponse.json({ 
       ok: true, 
-      databaseUrl: databaseUrl ? 'SET' : 'NOT SET',
+      databaseHost: host,
       schema: schema,
+      tables: tables,
       queryResult: result
     });
   } catch (error) {
