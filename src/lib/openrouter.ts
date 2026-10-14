@@ -32,7 +32,16 @@ export const FREE_MODELS = {
   // Microsoft Phi
   'microsoft/phi-3-mini-128k-instruct': { name: 'Phi-3 Mini', context: 128000, free: true },
   'microsoft/phi-3-medium-128k-instruct': { name: 'Phi-3 Medium', context: 128000, free: true },
-  
+
+  // Multimodal / Vision models (free)
+  'microsoft/phi-3-vision-128k-instruct': { name: 'Phi-3 Vision', context: 128000, free: true, vision: true },
+  'qwen/qwen-2.5-vl-7b-instruct': { name: 'Qwen 2.5 VL 7B', context: 32768, free: true, vision: true },
+  'meta-llama/llama-3.2-11b-vision-instruct': { name: 'Llama 3.2 11B Vision', context: 131072, free: true, vision: true },
+
+  // Audio/Transcription models (free on OpenRouter)
+  'openai/whisper-large-v3': { name: 'Whisper Large v3', context: 0, free: true, audio: true },
+  'openai/whisper-large-v3-turbo': { name: 'Whisper Large v3 Turbo', context: 0, free: true, audio: true },
+
   // Default recommended
   DEFAULT: 'deepseek/deepseek-chat'
 } as const;
@@ -131,14 +140,16 @@ export class OpenRouterClient {
     return response.json();
   }
 
-  async transcribeAudio(audioBuffer: Buffer, language?: string): Promise<string> {
+  async transcribeAudio(audioBuffer: Buffer, language?: string, model?: string): Promise<string> {
     if (!this.apiKey) {
       throw new Error('OPENROUTER_API_KEY not configured');
     }
 
+    const transcriptionModel = model || 'openai/whisper-large-v3';
+    
     const formData = new FormData();
     formData.append('file', new Blob([audioBuffer], { type: 'audio/ogg' }), 'voice.ogg');
-    formData.append('model', 'openai/whisper-large-v3');
+    formData.append('model', transcriptionModel);
     if (language) formData.append('language', language);
 
     const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {

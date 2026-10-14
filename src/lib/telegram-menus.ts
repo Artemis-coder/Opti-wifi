@@ -12,7 +12,8 @@ export const MAIN_MENU = {
       [{ text: '📊 Statut Projet' }, { text: '🚀 Déployer' }],
       [{ text: '🗄️ Base de Données' }, { text: '🔔 Notifications' }],
       [{ text: '📝 Tâches' }, { text: '👥 Utilisateurs' }],
-      [{ text: '💡 Nouveau Projet' }, { text: '❓ Aide' }],
+      [{ text: '🔒 Sécurité & Audit' }, { text: '💡 Nouveau Projet' }],
+      [{ text: '❓ Aide' }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,
@@ -94,6 +95,20 @@ export const NEW_PROJECT_MENU = {
   },
 };
 
+export const SECURITY_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '🔒 Audit Sécurité Complet' }, { text: '📦 Vulnérabilités Dépendances' }],
+      [{ text: '🛡️ Politiques RLS' }, { text: '🔐 Secrets Exposés' }],
+      [{ text: '📋 Headers Sécurité' }, { text: '👥 Permissions DB' }],
+      [{ text: '🔧 Corriger Issue' }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
 // Inline keyboards for confirmations and actions
 export function createConfirmationInlineKeyboard(action: string, itemId: string) {
   return {
@@ -165,9 +180,19 @@ export function createModelSelectionInlineKeyboard() {
         [{ text: '🧠 DeepSeek R1 (reasoning)', callback_data: 'model:deepseek/deepseek-r1' }],
         [{ text: '🦙 Llama 3.1 8B', callback_data: 'model:meta-llama/llama-3.1-8b-instruct' }],
         [{ text: '🦙 Llama 3.1 70B', callback_data: 'model:meta-llama/llama-3.1-70b-instruct' }],
+        [{ text: '🦙 Llama 3.2 3B', callback_data: 'model:meta-llama/llama-3.2-3b-instruct' }],
         [{ text: '🌪️ Mistral 7B', callback_data: 'model:mistralai/mistral-7b-instruct' }],
+        [{ text: '🌪️ Mixtral 8x7B', callback_data: 'model:mistralai/mixtral-8x7b-instruct' }],
         [{ text: '🐉 Qwen 2.5 7B', callback_data: 'model:qwen/qwen-2.5-7b-instruct' }],
+        [{ text: '🐉 Qwen 2.5 72B', callback_data: 'model:qwen/qwen-2.5-72b-instruct' }],
         [{ text: '💎 Gemma 2 9B', callback_data: 'model:google/gemma-2-9b-it' }],
+        [{ text: '🔮 Phi-3 Mini', callback_data: 'model:microsoft/phi-3-mini-128k-instruct' }],
+        [{ text: '🔮 Phi-3 Medium', callback_data: 'model:microsoft/phi-3-medium-128k-instruct' }],
+        [{ text: '👁️ Phi-3 Vision', callback_data: 'model:microsoft/phi-3-vision-128k-instruct' }],
+        [{ text: '👁️ Qwen 2.5 VL 7B', callback_data: 'model:qwen/qwen-2.5-vl-7b-instruct' }],
+        [{ text: '👁️ Llama 3.2 11B Vision', callback_data: 'model:meta-llama/llama-3.2-11b-vision-instruct' }],
+        [{ text: '🎙️ Whisper Large v3 (transcription)', callback_data: 'model:openai/whisper-large-v3' }],
+        [{ text: '🎙️ Whisper Turbo (transcription)', callback_data: 'model:openai/whisper-large-v3-turbo' }],
       ],
     },
   };
@@ -229,6 +254,8 @@ export function getMenuForCommand(command: string) {
     '/users': USERS_MENU,
     '/nouveau': NEW_PROJECT_MENU,
     '/newproject': NEW_PROJECT_MENU,
+    '/securite': SECURITY_MENU,
+    '/security': SECURITY_MENU,
   };
   
   return menus[command.toLowerCase()] || MAIN_MENU;
@@ -243,7 +270,8 @@ export function getContextualSuggestions(context: string): string[] {
     notifications: ['Envoyer notif', 'Demander validation', 'Validations en attente'],
     users: ['Lister users', 'Créer user', 'Stats espaces'],
     newproject: ['Idées features', 'Créer spec', 'Roadmap court', 'Roadmap long'],
-    general: ['Menu principal', 'Aide', 'Statut projet', 'Nouveau projet'],
+    security: ['Audit complet', 'Vulnérabilités', 'RLS', 'Secrets', 'Headers', 'Permissions DB'],
+    general: ['Menu principal', 'Aide', 'Statut projet', 'Nouveau projet', 'Sécurité'],
   };
   
   return suggestions[context] || suggestions.general;

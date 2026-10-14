@@ -253,6 +253,81 @@ export const FUNCTION_DEFINITIONS = [
         required: ['name', 'description']
       }
     }
+  },
+
+  // Security & Audit
+  {
+    type: 'function',
+    function: {
+      name: 'run_security_audit',
+      description: 'Run a comprehensive security audit on the project',
+      parameters: {
+        type: 'object',
+        properties: {
+          scope: { type: 'string', enum: ['full', 'dependencies', 'code', 'config', 'database', 'auth'], default: 'full' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'check_vulnerabilities',
+      description: 'Check for known vulnerabilities in dependencies',
+      parameters: {
+        type: 'object',
+        properties: {
+          fix: { type: 'boolean', description: 'Automatically fix vulnerabilities if possible', default: false }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'check_rls_policies',
+      description: 'Check Supabase/PostgreSQL Row Level Security policies',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'check_env_secrets',
+      description: 'Scan for exposed secrets in environment variables and code',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'fix_security_issue',
+      description: 'Apply automated fix for a specific security issue',
+      parameters: {
+        type: 'object',
+        properties: {
+          issueType: { type: 'string', enum: ['rls', 'secrets', 'dependencies', 'headers', 'auth'] },
+          details: { type: 'string', description: 'Details about the issue to fix' }
+        },
+        required: ['issueType', 'details']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_security_headers',
+      description: 'Check and suggest security headers for the application',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'audit_database_permissions',
+      description: 'Audit database roles, permissions, and access controls',
+      parameters: { type: 'object', properties: {} }
+    }
   }
 ];
 
@@ -461,6 +536,326 @@ export async function executeFunction(name: string, args: any, chatId: string): 
       const specId = `spec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       // Save to DB in production
       return { success: true, specId, message: 'Spécification créée' };
+    }
+
+    // Security & Audit
+    case 'run_security_audit': {
+      const scope = args.scope || 'full';
+      const results = [];
+      
+      if (scope === 'full' || scope === 'dependencies') {
+        const vulnResult = await executeFunction('check_vulnerabilities', { fix: false }, chatId);
+        results.push({ category: 'dependencies', ...vulnResult });
+      }
+      
+      if (scope === 'full' || scope === 'database') {
+        const rlsResult = await executeFunction('check_rls_policies', {}, chatId);
+        results.push({ category: 'database', ...rlsResult });
+      }
+      
+      if (scope === 'full' || scope === 'config') {
+        const envResult = await executeFunction('check_env_secrets', {}, chatId);
+        results.push({ category: 'config', ...envResult });
+      }
+      
+      if (scope === 'full' || scope === 'auth') {
+        const headersResult = await executeFunction('get_security_headers', {}, chatId);
+        results.push({ category: 'auth', ...headersResult });
+      }
+      
+      return { 
+        success: true, 
+        scope, 
+        timestamp: new Date().toISOString(),
+        results,
+        summary: results.map(r => `${r.category}: ${r.issues?.length || 0} issues`).join(', ')
+      };
+    }
+
+    case 'check_vulnerabilities': {
+      // Run npm audit
+      const { execSync } = await import('child_process');
+      try {
+        const output = execSync('npm audit --json', { encoding: 'utf-8', cwd: process.cwd() });
+        const audit = JSON.parse(output);
+        
+        const vulnerabilities = [];
+        if (audit.vulnerabilities) {
+          for (const [name, vuln] of Object.entries(audit.vulnerabilities)) {
+            const v = vuln as any;
+            if (v.severity === 'high' || v.severity === 'critical') {
+              vulnerabilities.push({
+                package: name,
+                severity: v.severity,
+                title: v.title,
+                url: v.url,
+                fixable: v.fixAvailable
+              });
+            }
+          }
+        }
+        
+        if (args.fix && vulnerabilities.length > 0) {
+          try {
+            execSync('npm audit fix', { encoding: 'utf-8', cwd: process.cwd() });
+            return { success: true, fixed: true, vulnerabilities: vulnerabilities.length, message: 'Vulnérabilités corrigées automatiquement' };
+          } catch {
+            return { success: false, fixed: false, vulnerabilities: vulnerabilities.length, message: 'Certaines vulnérabilités nécessitent une correction manuelle' };
+          }
+        }
+        
+        return { 
+          success: true, 
+          total: audit.metadata?.vulnerabilities?.total || 0,
+          high: audit.metadata?.vulnerabilities?.high || 0,
+          critical: audit.metadata?.vulnerabilities?.critical || 0,
+          moderate: audit.metadata?.vulnerabilities?.moderate || 0,
+          low: audit.metadata?.vulnerabilities?.low || 0,
+          vulnerabilities: vulnerabilities.slice(0, 10)
+        };
+      } catch (error) {
+        return { error: `Erreur audit: ${error.message}` };
+      }
+    }
+
+    case 'check_rls_policies': {
+      const { query } = await import('./neon/db');
+      try {
+        // Check for tables without RLS
+        const tablesWithoutRls = await query(`
+          SELECT 
+            schemaname,
+            tablename,
+            rowsecurity
+          FROM pg_tables
+          WHERE schemaname = 'public'
+          AND rowsecurity = false
+          AND tablename NOT IN ('spatial_ref_sys', 'geometry_columns', 'geography_columns')
+        `);
+        
+        // Check for policies
+        const policies = await query(`
+          SELECT 
+            schemaname,
+            tablename,
+            policyname,
+            permissive,
+            roles,
+            cmd,
+            qual,
+            with_check
+          FROM pg_policies
+          WHERE schemaname = 'public'
+        `);
+        
+        // Check for recursive policies
+        const recursivePolicies = policies.filter((p: any) => 
+          p.qual?.includes('auth.uid()') && p.qual?.includes('EXISTS') && 
+          p.qual?.includes(tablename) // self-reference
+        );
+        
+        return {
+          success: true,
+          tablesWithoutRls: tablesWithoutRls.length,
+          tablesWithoutRlsList: tablesWithoutRls.map((t: any) => t.tablename),
+          totalPolicies: policies.length,
+          policiesByTable: policies.reduce((acc: any, p: any) => {
+            acc[p.tablename] = acc[p.tablename] || [];
+            acc[p.tablename].push({ name: p.policyname, cmd: p.cmd, permissive: p.permissive });
+            return acc;
+          }, {}),
+          recursivePoliciesFound: recursivePolicies.length > 0,
+          recursivePolicies: recursivePolicies.map((p: any) => ({ table: p.tablename, policy: p.policyname }))
+        };
+      } catch (error) {
+        return { error: `Erreur vérification RLS: ${error.message}` };
+      }
+    }
+
+    case 'check_env_secrets': {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const secretPatterns = [
+        { pattern: /sk_live_[a-zA-Z0-9]{24,}/g, type: 'Stripe Secret Key' },
+        { pattern: /sk_test_[a-zA-Z0-9]{24,}/g, type: 'Stripe Test Key' },
+        { pattern: /pk_live_[a-zA-Z0-9]{24,}/g, type: 'Stripe Publishable Key' },
+        { pattern: /AKIA[0-9A-Z]{16}/g, type: 'AWS Access Key' },
+        { pattern: /AIza[0-9A-Za-z\\-_]{35}/g, type: 'Google API Key' },
+        { pattern: /Bearer [a-zA-Z0-9\\-_]{20,}/g, type: 'Bearer Token' },
+        { pattern: /password\s*[=:]\s*['\"][^'\"]{8,}['\"]/gi, type: 'Password in Code' },
+        { pattern: /secret\s*[=:]\s*['\"][^'\"]{8,}['\"]/gi, type: 'Secret in Code' },
+        { pattern: /private_key\s*[=:]\s*['\"][^'\"]{20,}['\"]/gi, type: 'Private Key' },
+        { pattern: /postgres:\/\/[^\\s]+:[^\\s]+@[^\\s]+/g, type: 'Postgres URL with Credentials' },
+        { pattern: /mongodb:\/\/[^\\s]+:[^\\s]+@[^\\s]+/g, type: 'MongoDB URL with Credentials' },
+      ];
+      
+      const findings = [];
+      const scanDirs = ['src', 'scripts', '.'];
+      
+      for (const dir of scanDirs) {
+        try {
+          const files = fs.readdirSync(dir, { recursive: true });
+          for (const file of files) {
+            const filePath = path.join(dir, file);
+            const stat = fs.statSync(filePath);
+            if (stat.isFile() && (filePath.endsWith('.ts') || filePath.endsWith('.tsx') || filePath.endsWith('.js') || filePath.endsWith('.json') || filePath.endsWith('.env'))) {
+              const content = fs.readFileSync(filePath, 'utf-8');
+              for (const { pattern, type } of secretPatterns) {
+                const matches = content.match(pattern);
+                if (matches) {
+                  findings.push({
+                    file: filePath,
+                    type,
+                    count: matches.length,
+                    preview: matches[0].substring(0, 50)
+                  });
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // Directory might not exist
+        }
+      }
+      
+      // Also check .env.local
+      try {
+        const envContent = fs.readFileSync('.env.local', 'utf-8');
+        for (const { pattern, type } of secretPatterns) {
+          const matches = envContent.match(pattern);
+          if (matches) {
+            findings.push({
+              file: '.env.local',
+              type,
+              count: matches.length,
+              preview: '***REDACTED***'
+            });
+          }
+        }
+      } catch (e) {
+        // No .env.local
+      }
+      
+      return {
+        success: true,
+        scanned: scanDirs,
+        findings: findings.length,
+        details: findings.slice(0, 20),
+        critical: findings.filter(f => f.type.includes('Key') || f.type.includes('Token') || f.type.includes('Password') || f.type.includes('Private')).length
+      };
+    }
+
+    case 'fix_security_issue': {
+      const { issueType, details } = args;
+      
+      switch (issueType) {
+        case 'rls': {
+          // This would apply the RLS fix script
+          return { 
+            success: true, 
+            message: 'Pour corriger les politiques RLS, exécutez le script SQL dans supabase/fix_missing_columns.sql via le Supabase Dashboard > SQL Editor. Le script supprime les politiques récursives et recrée des politiques non-récursives avec synchronisation des rôles dans auth.users.' 
+          };
+        }
+        
+        case 'secrets': {
+          return { 
+            success: true, 
+            message: 'Secrets détectés doivent être rotés manuellement : 1) Révoquer les clés exposées 2) Générer de nouvelles clés 3) Mettre à jour .env.local et Vercel Dashboard 4) Ne jamais commiter les secrets dans git' 
+          };
+        }
+        
+        case 'dependencies': {
+          const { execSync } = await import('child_process');
+          try {
+            execSync('npm audit fix', { encoding: 'utf-8', cwd: process.cwd() });
+            return { success: true, message: 'npm audit fix exécuté. Vérifiez les breaking changes.' };
+          } catch (error) {
+            return { success: false, message: `Échec: ${error.message}. Essayez 'npm audit fix --force' manuellement.` };
+          }
+        }
+        
+        case 'headers': {
+          return { 
+            success: true, 
+            message: 'Headers de sécurité recommandés à ajouter dans next.config.ts ou middleware.ts : Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy' 
+          };
+        }
+        
+        case 'auth': {
+          return { 
+            success: true, 
+            message: 'Vérifiez : 1) Better Auth configuré correctement 2) JWT secrets forts 3) Cookies sécurisés (httpOnly, secure, sameSite) 4) Rate limiting sur /api/auth/* 5) 2FA pour admins' 
+          };
+        }
+        
+        default:
+          return { error: `Type d'issue inconnu: ${issueType}` };
+      }
+    }
+
+    case 'get_security_headers': {
+      return {
+        success: true,
+        recommended: {
+          'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.neon.tech wss://*.neon.tech; frame-ancestors 'none';",
+          'X-Frame-Options': 'DENY',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+          'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+          'X-XSS-Protection': '1; mode=block'
+        },
+        current: 'Vérifiez next.config.ts ou middleware.ts pour les headers actuels',
+        implementation: 'Ajoutez dans next.config.ts sous async headers() ou dans middleware.ts'
+      };
+    }
+
+    case 'audit_database_permissions': {
+      const { query } = await import('./neon/db');
+      try {
+        const roles = await query(`
+          SELECT 
+            rolname,
+            rolsuper,
+            rolcreaterole,
+            rolcreatedb,
+            rolcanlogin,
+            rolreplication,
+            rolbypassrls
+          FROM pg_roles
+          WHERE rolname NOT LIKE 'pg_%'
+          AND rolname NOT IN ('neondb_owner', 'cloud_admin')
+        `);
+        
+        const tablePermissions = await query(`
+          SELECT 
+            table_name,
+            grantee,
+            privilege_type
+          FROM information_schema.table_privileges
+          WHERE table_schema = 'public'
+          AND grantee NOT IN ('postgres', 'neondb_owner', 'cloud_admin')
+        `);
+        
+        return {
+          success: true,
+          customRoles: roles,
+          tablePermissions: tablePermissions.reduce((acc: any, p: any) => {
+            acc[p.grantee] = acc[p.grantee] || [];
+            acc[p.grantee].push({ table: p.table_name, privilege: p.privilege_type });
+            return acc;
+          }, {}),
+          recommendations: [
+            'Assurez-vous que seul neondb_owner a des privilèges admin',
+            'Les rôles applicatifs doivent avoir des privilèges minimaux (SELECT, INSERT, UPDATE sur tables spécifiques)',
+            'Activez RLS sur toutes les tables exposées',
+            'Utilisez des rôles séparés pour lecture/écriture si possible'
+          ]
+        };
+      } catch (error) {
+        return { error: `Erreur audit permissions: ${error.message}` };
+      }
     }
 
     default:

@@ -23,6 +23,7 @@ import {
   NOTIFICATIONS_MENU,
   USERS_MENU,
   NEW_PROJECT_MENU,
+  SECURITY_MENU,
   getContextualSuggestions
 } from '@/lib/telegram-menus';
 import { 
@@ -754,6 +755,161 @@ async function handleMenuButton(text: string, chatId: string, userName: string, 
     return true;
   }
   
+  // Security Menu Buttons
+  if (text === '🔒 Sécurité & Audit') {
+    await updateSessionContext(chatId, 'security');
+    await sendMessageWithKeyboard(chatId, '🔒 <b>Sécurité & Audit</b>', SECURITY_MENU);
+    return true;
+  }
+  
+  if (text === '🔒 Audit Sécurité Complet') {
+    const result = await executeFunction('run_security_audit', { scope: 'full' }, chatId);
+    let text = `🔒 <b>Audit Sécurité Complet</b>\n\n`;
+    text += `📋 <b>Portée :</b> ${result.scope}\n`;
+    text += `🕐 <b>Date :</b> ${new Date(result.timestamp).toLocaleString('fr-FR')}\n`;
+    text += `📊 <b>Résumé :</b> ${result.summary}\n\n`;
+    for (const r of result.results) {
+      text += `• <b>${r.category}</b>: ${r.issues?.length || 0} issues\n`;
+      if (r.findings) text += `  🔍 ${r.findings} trouvailles\n`;
+      if (r.tablesWithoutRls) text += `  ⚠️ ${r.tablesWithoutRls} tables sans RLS\n`;
+      if (r.critical) text += `  🚨 ${r.critical} critiques\n`;
+    }
+    await sendMessageWithKeyboard(chatId, text, SECURITY_MENU);
+    return true;
+  }
+  
+  if (text === '📦 Vulnérabilités Dépendances') {
+    const result = await executeFunction('check_vulnerabilities', { fix: false }, chatId);
+    let text = `📦 <b>Vulnérabilités Dépendances</b>\n\n`;
+    if (result.error) {
+      text += `❌ ${result.error}`;
+    } else {
+      text += `📊 <b>Total :</b> ${result.total}\n`;
+      text += `🚨 <b>Critiques :</b> ${result.critical}\n`;
+      text += `🔴 <b>Hautes :</b> ${result.high}\n`;
+      text += `🟡 <b>Modérées :</b> ${result.moderate}\n`;
+      text += `🟢 <b>Faibles :</b> ${result.low}\n\n`;
+      if (result.vulnerabilities && result.vulnerabilities.length > 0) {
+        text += `<b>Top 10 :</b>\n`;
+        for (const v of result.vulnerabilities) {
+          text += `• ${v.package} [${v.severity.toUpperCase()}] - ${v.title}\n`;
+        }
+        text += `\n💡 Utilise "Corriger Issue" → "dependencies" pour tenter un fix auto`;
+      } else {
+        text += `✅ Aucune vulnérabilité critique détectée`;
+      }
+    }
+    await sendMessageWithKeyboard(chatId, text, SECURITY_MENU);
+    return true;
+  }
+  
+  if (text === '🛡️ Politiques RLS') {
+    const result = await executeFunction('check_rls_policies', {}, chatId);
+    let text = `🛡️ <b>Politiques RLS (Row Level Security)</b>\n\n`;
+    if (result.error) {
+      text += `❌ ${result.error}`;
+    } else {
+      text += `📊 <b>Tables sans RLS :</b> ${result.tablesWithoutRls}\n`;
+      if (result.tablesWithoutRlsList.length > 0) {
+        text += `⚠️ ${result.tablesWithoutRlsList.join(', ')}\n`;
+      }
+      text += `📋 <b>Total politiques :</b> ${result.totalPolicies}\n`;
+      text += `🔄 <b>Politiques récursives :</b> ${result.recursivePoliciesFound ? 'OUI ⚠️' : 'Non'}\n`;
+      if (result.recursivePoliciesFound) {
+        text += `\n🚨 <b>Politiques récursives détectées :</b>\n`;
+        for (const p of result.recursivePolicies) {
+          text += `• ${p.table}.${p.policy}\n`;
+        }
+        text += `\n💡 Exécutez supabase/fix_missing_columns.sql dans Supabase Dashboard`;
+      }
+      text += `\n\n📋 <b>Politiques par table :</b>\n`;
+      for (const [table, policies] of Object.entries(result.policiesByTable)) {
+        text += `• ${table}: ${(policies as any[]).length} politiques\n`;
+      }
+    }
+    await sendMessageWithKeyboard(chatId, text, SECURITY_MENU);
+    return true;
+  }
+  
+  if (text === '🔐 Secrets Exposés') {
+    const result = await executeFunction('check_env_secrets', {}, chatId);
+    let text = `🔐 <b>Scan Secrets Exposés</b>\n\n`;
+    if (result.error) {
+      text += `❌ ${result.error}`;
+    } else {
+      text += `📁 <b>Scanné :</b> ${result.scanned.join(', ')}\n`;
+      text += `🔍 <b>Trouvailles :</b> ${result.findings}\n`;
+      text += `🚨 <b>Critiques :</b> ${result.critical}\n\n`;
+      if (result.details && result.details.length > 0) {
+        text += `<b>Détails :</b>\n`;
+        for (const d of result.details) {
+          text += `• ${d.file} - ${d.type} (${d.count})\n`;
+          text += `  <code>${d.preview}</code>\n`;
+        }
+        text += `\n💡 <b>Action requise :</b> Rotation immédiate des clés exposées !`;
+      } else {
+        text += `✅ Aucun secret détecté dans le code`;
+      }
+    }
+    await sendMessageWithKeyboard(chatId, text, SECURITY_MENU);
+    return true;
+  }
+  
+  if (text === '📋 Headers Sécurité') {
+    const result = await executeFunction('get_security_headers', {}, chatId);
+    let text = `📋 <b>Headers de Sécurité Recommandés</b>\n\n`;
+    if (result.error) {
+      text += `❌ ${result.error}`;
+    } else {
+      text += `<b>Headers à implémenter :</b>\n`;
+      for (const [header, value] of Object.entries(result.recommended)) {
+        text += `• <code>${header}</code>: ${value}\n`;
+      }
+      text += `\n${result.implementation}`;
+    }
+    await sendMessageWithKeyboard(chatId, text, SECURITY_MENU);
+    return true;
+  }
+  
+  if (text === '👥 Permissions DB') {
+    const result = await executeFunction('audit_database_permissions', {}, chatId);
+    let text = `👥 <b>Audit Permissions Base de Données</b>\n\n`;
+    if (result.error) {
+      text += `❌ ${result.error}`;
+    } else {
+      text += `<b>Rôles personnalisés :</b> ${result.customRoles.length}\n`;
+      for (const role of result.customRoles) {
+        text += `• ${role.rolname} (login: ${role.rolcanlogin}, super: ${role.rolsuper}, bypassrls: ${role.rolbypassrls})\n`;
+      }
+      text += `\n<b>Permissions tables :</b>\n`;
+      for (const [grantee, perms] of Object.entries(result.tablePermissions)) {
+        text += `• ${grantee}: ${(perms as any[]).map(p => `${p.table}.${p.privilege}`).join(', ')}\n`;
+      }
+      text += `\n<b>Recommandations :</b>\n`;
+      for (const rec of result.recommendations) {
+        text += `• ${rec}\n`;
+      }
+    }
+    await sendMessageWithKeyboard(chatId, text, SECURITY_MENU);
+    return true;
+  }
+  
+  if (text === '🔧 Corriger Issue') {
+    await sendMessageWithKeyboard(chatId,
+      `🔧 <b>Corriger une Issue de Sécurité</b>\n\n` +
+      `Dis-moi : "Corrige [type] : [détails]"\n\n` +
+      `<b>Types disponibles :</b>\n` +
+      `• <code>rls</code> - Politiques RLS récursives\n` +
+      `• <code>secrets</code> - Secrets exposés (guide rotation)\n` +
+      `• <code>dependencies</code> - Vulnérabilités npm (audit fix)\n` +
+      `• <code>headers</code> - Headers sécurité manquants\n` +
+      `• <code>auth</code> - Config auth (guide)\n\n` +
+      `Exemple : "Corrige dependencies : fix auto"`,
+      SECURITY_MENU
+    );
+    return true;
+  }
+  
   // Back to Main Menu
   if (text === '🔙 Menu Principal') {
     await updateSessionContext(chatId, 'general');
@@ -821,6 +977,12 @@ async function handleCommand(text: string, chatId: string, userName: string, ses
       await sendMessageWithKeyboard(chatId, '💡 <b>Nouveau Projet - Idées & Planification</b>', NEW_PROJECT_MENU);
       break;
 
+    case '/securite':
+    case '/security':
+      await updateSessionContext(chatId, 'security');
+      await sendMessageWithKeyboard(chatId, '🔒 <b>Sécurité & Audit</b>', SECURITY_MENU);
+      break;
+
     case '/model':
     case '/modèle':
       await sendMessageWithKeyboard(chatId, '🤖 <b>Choisir le modèle IA :</b>', createModelSelectionInlineKeyboard());
@@ -863,6 +1025,7 @@ async function handleCommand(text: string, chatId: string, userName: string, ses
           `• <code>/tâches</code> - Gestion tâches\n` +
           `• <code>/notifications</code> - Alertes & validations\n` +
           `• <code>/utilisateurs</code> - Users & espaces\n` +
+          `• <code>/securite</code> - Sécurité & Audit\n` +
           `• <code>/nouveau</code> - Nouveau projet\n\n` +
           `<b>Configuration :</b>\n` +
           `• <code>/model</code> - Changer modèle IA\n` +
@@ -871,14 +1034,16 @@ async function handleCommand(text: string, chatId: string, userName: string, ses
           `<b>Fonctionnalités :</b>\n` +
           `• 🎙️ Messages vocaux → transcription auto\n` +
           `• 💬 Conversation naturelle + outils\n` +
-          `• 🔧 Function calling (déploiement, DB, tâches...)\n` +
+          `• 🔧 Function calling (déploiement, DB, tâches, sécurité...)\n` +
           `• 🧠 Mémoire persistante (DB)\n` +
           `• 📋 Menus interactifs\n\n` +
           `<b>Exemples :</b>\n` +
           `• "Déploie le projet"\n` +
           `• "SELECT * FROM users LIMIT 5"\n` +
           `• "Crée une tâche : tests E2E"\n` +
-          `• "Quelles features pour un SaaS ?"`,
+          `• "Quelles features pour un SaaS ?"\n` +
+          `• "Fais un audit sécurité complet"\n` +
+          `• "Corrige les vulnérabilités npm"`,
         parse_mode: 'HTML',
       });
       break;
