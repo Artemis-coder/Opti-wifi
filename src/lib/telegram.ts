@@ -153,7 +153,7 @@ export function formatCustomNotification(data: {
 
 export async function notifyBuild(data: Parameters<typeof formatBuildNotification>[0]) {
   return sendTelegramMessage({
-    chat_id: CHAT_ID!,
+    chat_id: DEFAULT_CHAT_ID!,
     text: formatBuildNotification(data),
     parse_mode: 'HTML',
   });
@@ -161,7 +161,7 @@ export async function notifyBuild(data: Parameters<typeof formatBuildNotificatio
 
 export async function notifyDatabaseAlert(data: Parameters<typeof formatDatabaseAlert>[0]) {
   return sendTelegramMessage({
-    chat_id: CHAT_ID!,
+    chat_id: DEFAULT_CHAT_ID!,
     text: formatDatabaseAlert(data),
     parse_mode: 'HTML',
   });
@@ -169,7 +169,7 @@ export async function notifyDatabaseAlert(data: Parameters<typeof formatDatabase
 
 export async function notifyError(data: Parameters<typeof formatErrorNotification>[0]) {
   return sendTelegramMessage({
-    chat_id: CHAT_ID!,
+    chat_id: DEFAULT_CHAT_ID!,
     text: formatErrorNotification(data),
     parse_mode: 'HTML',
   });
@@ -177,7 +177,7 @@ export async function notifyError(data: Parameters<typeof formatErrorNotificatio
 
 export async function notifyCustom(data: Parameters<typeof formatCustomNotification>[0]) {
   return sendTelegramMessage({
-    chat_id: CHAT_ID!,
+    chat_id: DEFAULT_CHAT_ID!,
     text: formatCustomNotification(data),
     parse_mode: 'HTML',
   });
@@ -185,7 +185,7 @@ export async function notifyCustom(data: Parameters<typeof formatCustomNotificat
 
 export function testTelegramConnection(): Promise<boolean> {
   return sendTelegramMessage({
-    chat_id: CHAT_ID!,
+    chat_id: DEFAULT_CHAT_ID!,
     text: '🤖 <b>Test de connexion OptiWifi</b>\n\nBot Telegram configuré avec succès !',
     parse_mode: 'HTML',
   });

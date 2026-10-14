@@ -6,7 +6,7 @@
 export const FUNCTION_DEFINITIONS = [
   // Deployment
   {
-    type: 'function',
+    type: 'function' as const,
     function: {
       name: 'trigger_deployment',
       description: 'Trigger a new Vercel deployment via deploy hook',
@@ -220,6 +220,32 @@ export const FUNCTION_DEFINITIONS = [
     }
   },
 
+  // ElevenLabs TTS (Text-to-Speech) - Note: ElevenLabs does NOT do transcription (STT)
+  {
+    type: 'function',
+    function: {
+      name: 'elevenlabs_tts',
+      description: 'Generate speech audio from text using ElevenLabs TTS',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to convert to speech' },
+          voiceId: { type: 'string', description: 'ElevenLabs voice ID (default: Rachel)', default: '21m00Tcm4TlvDq8ikWAM' },
+          modelId: { type: 'string', description: 'Model ID (default: eleven_multilingual_v2)', default: 'eleven_multilingual_v2' }
+        },
+        required: ['text']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'elevenlabs_list_voices',
+      description: 'List available ElevenLabs voices',
+      parameters: { type: 'object', properties: {} }
+    }
+  },
+
   // New Project Ideas
   {
     type: 'function',
@@ -329,13 +355,13 @@ export const FUNCTION_DEFINITIONS = [
       parameters: { type: 'object', properties: {} }
     }
   }
-];
+] as const;
 
 // Function executor - maps function names to actual implementations
 export async function executeFunction(name: string, args: any, chatId: string): Promise<any> {
   const { query } = await import('./neon/db');
   const { sendTelegramMessage } = await import('./telegram');
-  const { sendMessageWithKeyboard, createConfirmationInlineKeyboard } = await import('./telegram-menus');
+  const { sendMessageWithKeyboard, createConfirmationInlineKeyboard, createValidationInlineKeyboard } = await import('./telegram-menus');
   const { addMessage } = await import('./conversation-memory');
 
   switch (name) {
@@ -601,8 +627,8 @@ export async function executeFunction(name: string, args: any, chatId: string): 
         
         // Sort by severity (critical first)
         vulnerabilities.sort((a, b) => {
-          const severityOrder = { critical: 0, high: 1, moderate: 2, low: 3 };
-          return severityOrder[a.severity] - severityOrder[b.severity];
+          const severityOrder: Record<string, number> = { critical: 0, high: 1, moderate: 2, low: 3 };
+          return (severityOrder[a.severity] ?? 3) - (severityOrder[b.severity] ?? 3);
         });
         
         if (args.fix && vulnerabilities.length > 0) {
@@ -625,8 +651,8 @@ export async function executeFunction(name: string, args: any, chatId: string): 
           issues: vulnerabilities.slice(0, 20),
           fixableCount: vulnerabilities.filter(v => v.fixable).length
         };
-      } catch (error) {
-        return { error: `Erreur audit: ${error.message}` };
+      } catch (error: any) {
+        return { error: `Erreur audit: ${error?.message || 'Erreur inconnue'}` };
       }
     }
 
@@ -634,7 +660,7 @@ export async function executeFunction(name: string, args: any, chatId: string): 
       const { query } = await import('./neon/db');
       try {
         // Check for tables without RLS
-        const tablesWithoutRls = await query(`
+        const tablesWithoutRlsResult = await query(`
           SELECT 
             schemaname,
             tablename,
@@ -644,9 +670,10 @@ export async function executeFunction(name: string, args: any, chatId: string): 
           AND rowsecurity = false
           AND tablename NOT IN ('spatial_ref_sys', 'geometry_columns', 'geography_columns')
         `);
+        const tablesWithoutRls = tablesWithoutRlsResult.rows;
         
         // Check for policies
-        const policies = await query(`
+        const policiesResult = await query(`
           SELECT 
             schemaname,
             tablename,
@@ -659,6 +686,7 @@ export async function executeFunction(name: string, args: any, chatId: string): 
           FROM pg_policies
           WHERE schemaname = 'public'
         `);
+        const policies = policiesResult.rows;
         
         // Check for recursive policies
         const recursivePolicies = policies.filter((p: any) => 
@@ -720,8 +748,8 @@ export async function executeFunction(name: string, args: any, chatId: string): 
           criticalCount: issues.filter(i => i.severity === 'critical').length,
           highCount: issues.filter(i => i.severity === 'high').length
         };
-      } catch (error) {
-        return { error: `Erreur vérification RLS: ${error.message}` };
+      } catch (error: any) {
+        return { error: `Erreur vérification RLS: ${error?.message || 'Erreur inconnue'}` };
       }
     }
 
@@ -748,7 +776,7 @@ export async function executeFunction(name: string, args: any, chatId: string): 
       
       for (const dir of scanDirs) {
         try {
-          const files = fs.readdirSync(dir, { recursive: true });
+          const files = fs.readdirSync(dir, { recursive: true, encoding: 'utf-8' });
           for (const file of files) {
             const filePath = path.join(dir, file);
             const stat = fs.statSync(filePath);
@@ -823,8 +851,8 @@ export async function executeFunction(name: string, args: any, chatId: string): 
           try {
             execSync('npm audit fix', { encoding: 'utf-8', cwd: process.cwd() });
             return { success: true, message: 'npm audit fix exécuté. Vérifiez les breaking changes.' };
-          } catch (error) {
-            return { success: false, message: `Échec: ${error.message}. Essayez 'npm audit fix --force' manuellement.` };
+          } catch (error: any) {
+            return { success: false, message: `Échec: ${error?.message || 'Erreur inconnue'}. Essayez 'npm audit fix --force' manuellement.` };
           }
         }
         
@@ -867,7 +895,7 @@ export async function executeFunction(name: string, args: any, chatId: string): 
     case 'audit_database_permissions': {
       const { query } = await import('./neon/db');
       try {
-        const roles = await query(`
+        const rolesResult = await query(`
           SELECT 
             rolname,
             rolsuper,
@@ -880,8 +908,9 @@ export async function executeFunction(name: string, args: any, chatId: string): 
           WHERE rolname NOT LIKE 'pg_%'
           AND rolname NOT IN ('neondb_owner', 'cloud_admin')
         `);
+        const roles = rolesResult.rows;
         
-        const tablePermissions = await query(`
+        const tablePermissionsResult = await query(`
           SELECT 
             table_name,
             grantee,
@@ -890,6 +919,7 @@ export async function executeFunction(name: string, args: any, chatId: string): 
           WHERE table_schema = 'public'
           AND grantee NOT IN ('postgres', 'neondb_owner', 'cloud_admin')
         `);
+        const tablePermissions = tablePermissionsResult.rows;
         
         return {
           success: true,
@@ -906,8 +936,38 @@ export async function executeFunction(name: string, args: any, chatId: string): 
             'Utilisez des rôles séparés pour lecture/écriture si possible'
           ]
         };
-      } catch (error) {
-        return { error: `Erreur audit permissions: ${error.message}` };
+      } catch (error: any) {
+        return { error: `Erreur audit permissions: ${error?.message || 'Erreur inconnue'}` };
+      }
+    }
+
+    // ElevenLabs TTS
+    case 'elevenlabs_tts': {
+      const { getElevenLabsClient } = await import('./openrouter');
+      const client = getElevenLabsClient();
+      try {
+        const audioBuffer = await client.textToSpeech(args.text, args.voiceId, args.modelId);
+        // Return base64 encoded audio for Telegram
+        return { 
+          success: true, 
+          audioBase64: audioBuffer.toString('base64'),
+          mimeType: 'audio/mpeg',
+          text: args.text,
+          voiceId: args.voiceId || '21m00Tcm4TlvDq8ikWAM'
+        };
+      } catch (error: any) {
+        return { error: `ElevenLabs TTS error: ${error?.message || 'Erreur inconnue'}` };
+      }
+    }
+
+    case 'elevenlabs_list_voices': {
+      const { getElevenLabsClient } = await import('./openrouter');
+      const client = getElevenLabsClient();
+      try {
+        const voices = await client.getVoices();
+        return { success: true, voices: voices.voices?.map((v: any) => ({ id: v.voice_id, name: v.name, category: v.category, labels: v.labels })) || [] };
+      } catch (error: any) {
+        return { error: `ElevenLabs voices error: ${error?.message || 'Erreur inconnue'}` };
       }
     }
 

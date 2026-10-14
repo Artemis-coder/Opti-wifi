@@ -41,12 +41,13 @@ export const FREE_MODELS = {
   // Audio/Transcription models (free on OpenRouter)
   'openai/whisper-large-v3': { name: 'Whisper Large v3', context: 0, free: true, audio: true },
   'openai/whisper-large-v3-turbo': { name: 'Whisper Large v3 Turbo', context: 0, free: true, audio: true },
-
-  // Default recommended
-  DEFAULT: 'deepseek/deepseek-chat'
 } as const;
 
+export const DEFAULT_MODEL = 'deepseek/deepseek-chat';
+
 export type ModelId = keyof typeof FREE_MODELS;
+
+export type ModelInfo = (typeof FREE_MODELS)[ModelId] & { audio?: boolean; vision?: boolean };
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -107,7 +108,7 @@ export class OpenRouterClient {
   private baseUrl: string;
   private defaultModel: string;
 
-  constructor(apiKey?: string, defaultModel: string = FREE_MODELS.DEFAULT) {
+  constructor(apiKey?: string, defaultModel: string = DEFAULT_MODEL) {
     this.apiKey = apiKey || OPENROUTER_API_KEY || '';
     this.baseUrl = OPENROUTER_BASE_URL;
     this.defaultModel = defaultModel;
@@ -140,16 +141,18 @@ export class OpenRouterClient {
     return response.json();
   }
 
-  async transcribeAudio(audioBuffer: Buffer, language?: string, model?: string): Promise<string> {
+async transcribeAudio(audioBuffer: Buffer, language?: string, model?: string): Promise<string> {
     if (!this.apiKey) {
       throw new Error('OPENROUTER_API_KEY not configured');
     }
 
     const transcriptionModel = model || 'openai/whisper-large-v3';
-    
+
     const formData = new FormData();
     // Telegram voice messages are OGG/Opus - use correct MIME type
-    formData.append('file', new Blob([audioBuffer], { type: 'audio/ogg; codecs=opus' }), 'voice.oga');
+    // Buffer can be used directly with Blob in Node.js 18+
+    const audioBlob = new Blob([audioBuffer as unknown as BlobPart], { type: 'audio/ogg; codecs=opus' });
+    formData.append('file', audioBlob, 'voice.oga');
     formData.append('model', transcriptionModel);
     if (language) formData.append('language', language);
     formData.append('response_format', 'json');
@@ -172,7 +175,7 @@ export class OpenRouterClient {
   }
 
   getModelInfo(modelId: string) {
-    return FREE_MODELS[modelId as ModelId] || FREE_MODELS.DEFAULT;
+    return FREE_MODELS[modelId as ModelId] || { name: DEFAULT_MODEL, context: 32768, free: true };
   }
 }
 
@@ -188,4 +191,79 @@ export function getOpenRouterClient(): OpenRouterClient {
 
 export function setOpenRouterApiKey(apiKey: string) {
   openRouterClient = new OpenRouterClient(apiKey);
+}
+
+// ElevenLabs TTS Client (Text-to-Speech)
+// Note: ElevenLabs does NOT provide transcription (STT), only TTS
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
+
+export class ElevenLabsClient {
+  private apiKey: string;
+
+  constructor(apiKey?: string) {
+    this.apiKey = apiKey || ELEVENLABS_API_KEY || '';
+  }
+
+  async textToSpeech(text: string, voiceId: string = '21m00Tcm4TlvDq8ikWAM', modelId: string = 'eleven_multilingual_v2'): Promise<Buffer> {
+    if (!this.apiKey) {
+      throw new Error('ELEVENLABS_API_KEY not configured');
+    }
+
+    const response = await fetch(`${ELEVENLABS_BASE_URL}/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': this.apiKey,
+      },
+      body: JSON.stringify({
+        text,
+        model_id: modelId,
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.0,
+          use_speaker_boost: true,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`ElevenLabs TTS error: ${response.status} - ${error}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
+  async getVoices() {
+    if (!this.apiKey) {
+      throw new Error('ELEVENLABS_API_KEY not configured');
+    }
+
+    const response = await fetch(`${ELEVENLABS_BASE_URL}/voices`, {
+      headers: { 'xi-api-key': this.apiKey },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`ElevenLabs voices error: ${response.status} - ${error}`);
+    }
+
+    return response.json();
+  }
+}
+
+let elevenLabsClient: ElevenLabsClient | null = null;
+
+export function getElevenLabsClient(): ElevenLabsClient {
+  if (!elevenLabsClient) {
+    elevenLabsClient = new ElevenLabsClient();
+  }
+  return elevenLabsClient;
+}
+
+export function setElevenLabsApiKey(apiKey: string) {
+  elevenLabsClient = new ElevenLabsClient(apiKey);
 }

@@ -13,7 +13,7 @@ export const MAIN_MENU = {
       [{ text: '🗄️ Base de Données' }, { text: '🔔 Notifications' }],
       [{ text: '📝 Tâches' }, { text: '👥 Utilisateurs' }],
       [{ text: '🔒 Sécurité & Audit' }, { text: '💡 Nouveau Projet' }],
-      [{ text: '❓ Aide' }],
+      [{ text: '🗣️ ElevenLabs TTS' }, { text: '❓ Aide' }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,
@@ -109,6 +109,18 @@ export const SECURITY_MENU = {
   },
 };
 
+export const ELEVENLABS_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '🗣️ Générer Audio (TTS)' }, { text: '🎭 Lister Voix Disponibles' }],
+      [{ text: '🎤 Test Voix (Rachel)' }, { text: '🎤 Test Voix (Adam)' }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
 // Inline keyboards for confirmations and actions
 export function createConfirmationInlineKeyboard(action: string, itemId: string) {
   return {
@@ -194,6 +206,18 @@ export function createModelSelectionInlineKeyboard() {
         [{ text: '🎙️ Whisper Large v3 (transcription)', callback_data: 'model:openai/whisper-large-v3' }],
         [{ text: '🎙️ Whisper Turbo (transcription)', callback_data: 'model:openai/whisper-large-v3-turbo' }],
       ],
+    },
+  };
+}
+
+export function createElevenLabsVoicesInlineKeyboard(voices: any[]) {
+  const voiceButtons = voices.slice(0, 10).map(v => 
+    [{ text: `🗣️ ${v.name} (${v.category || 'custom'})`, callback_data: `elevenlabs_voice:${v.id}` }]
+  );
+  voiceButtons.push([{ text: '🔙 Modèles IA', callback_data: 'model_menu' }]);
+  return {
+    reply_markup: {
+      inline_keyboard: voiceButtons,
     },
   };
 }

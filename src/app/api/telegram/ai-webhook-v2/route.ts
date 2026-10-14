@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOpenRouterClient, FREE_MODELS } from '@/lib/openrouter';
+import { getOpenRouterClient, FREE_MODELS, DEFAULT_MODEL, type ModelInfo } from '@/lib/openrouter';
 import { 
   sendTelegramMessage 
 } from '@/lib/telegram';
@@ -16,6 +16,7 @@ import {
   createValidationInlineKeyboard,
   createDeployInlineKeyboard,
   createModelSelectionInlineKeyboard,
+  createElevenLabsVoicesInlineKeyboard,
   MAIN_MENU,
   PROJECT_MENU,
   DATABASE_MENU,
@@ -24,6 +25,7 @@ import {
   USERS_MENU,
   NEW_PROJECT_MENU,
   SECURITY_MENU,
+  ELEVENLABS_MENU,
   getContextualSuggestions
 } from '@/lib/telegram-menus';
 import { 
@@ -136,7 +138,8 @@ async function handleVoiceMessage(message: any, chatId: string, session: any) {
     
     // Use session's preferred transcription model
     const transcriptionModel = session.transcription_model || 'openai/whisper-large-v3';
-    const modelName = FREE_MODELS[transcriptionModel as keyof typeof FREE_MODELS]?.name || transcriptionModel;
+    const modelInfo = FREE_MODELS[transcriptionModel as keyof typeof FREE_MODELS] as ModelInfo | undefined;
+    const modelName = modelInfo?.name || transcriptionModel;
     
     // Transcribe
     const contextMenu = getContextualMenu(session.context);
@@ -185,9 +188,9 @@ async function handleTextMessage(text: string, chatId: string, userName: string,
   try {
     // Call LLM with function calling
     const response = await client.chatCompletion({
-      model: session.model || FREE_MODELS.DEFAULT,
+      model: session.model || DEFAULT_MODEL,
       messages,
-      tools: (await import('@/lib/bot-functions')).FUNCTION_DEFINITIONS,
+      tools: (await import('@/lib/bot-functions')).FUNCTION_DEFINITIONS as any,
       tool_choice: 'auto',
       temperature: 0.7,
       max_tokens: 4000,
@@ -217,10 +220,10 @@ async function handleTextMessage(text: string, chatId: string, userName: string,
     const contextMenu = getContextualMenu(session.context);
     await sendMessageWithKeyboard(chatId, responseText, contextMenu);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('LLM error:', error);
     const contextMenu = getContextualMenu(session.context);
-    await sendMessageWithKeyboard(chatId, `❌ Erreur IA : ${error.message}. Réessaie ou tape /menu.`, contextMenu);
+    await sendMessageWithKeyboard(chatId, `❌ Erreur IA : ${error?.message || 'Erreur inconnue'}. Réessaie ou tape /menu.`, contextMenu);
   }
 }
 
@@ -229,7 +232,7 @@ async function handleToolCalls(toolCalls: any[], chatId: string, messages: any[]
   await addMessage({ 
     chat_id: chatId, 
     role: 'assistant', 
-    content: null,
+    content: '', // Empty string for tool calls
     tool_calls: toolCalls 
   });
 
@@ -251,11 +254,11 @@ async function handleToolCalls(toolCalls: any[], chatId: string, messages: any[]
         content: JSON.stringify(result),
         tool_call_id: toolCall.id 
       });
-    } catch (error) {
+    } catch (error: any) {
       toolResults.push({
         tool_call_id: toolCall.id,
         role: 'tool' as const,
-        content: JSON.stringify({ error: error.message }),
+        content: JSON.stringify({ error: error?.message || 'Erreur inconnue' }),
       });
     }
   }
@@ -264,7 +267,7 @@ async function handleToolCalls(toolCalls: any[], chatId: string, messages: any[]
   const finalMessages = [...messages, { role: 'assistant' as const, content: null, tool_calls: toolCalls }, ...toolResults];
   
   const finalResponse = await client.chatCompletion({
-    model: session.model || FREE_MODELS.DEFAULT,
+    model: session.model || DEFAULT_MODEL,
     messages: finalMessages,
     temperature: 0.7,
     max_tokens: 4000,
@@ -902,6 +905,67 @@ async function handleMenuButton(text: string, chatId: string, userName: string, 
     return true;
   }
   
+  // ElevenLabs TTS Menu Buttons
+  if (text === '🗣️ ElevenLabs TTS') {
+    await updateSessionContext(chatId, 'elevenlabs');
+    await sendMessageWithKeyboard(chatId, '🗣️ <b>ElevenLabs Text-to-Speech</b>\n\n⚠️ Note: ElevenLabs fait du TTS (texte→voix), PAS de transcription (voix→texte).\nPour la transcription, utilisez les modèles Whisper.', ELEVENLABS_MENU);
+    return true;
+  }
+  
+  if (text === '🗣️ Générer Audio (TTS)') {
+    await sendMessageWithKeyboard(chatId,
+      `🗣️ <b>Générer Audio avec ElevenLabs</b>\n\n` +
+      `Dis-moi : "Parle : [ton texte]"\n\n` +
+      `Exemple : "Parle : Bienvenue sur OptiWifi, votre plateforme de gestion WiFi"\n\n` +
+      `Le bot répondra avec un message vocal généré par ElevenLabs.`,
+      ELEVENLABS_MENU
+    );
+    return true;
+  }
+  
+  if (text === '🎭 Lister Voix Disponibles') {
+    const result = await executeFunction('elevenlabs_list_voices', {}, chatId);
+    let text = `🎭 <b>Voix ElevenLabs Disponibles</b>\n\n`;
+    if (result.error) {
+      text += `❌ ${result.error}\n\n💡 Configure ELEVENLABS_API_KEY sur Vercel Dashboard`;
+    } else if (result.voices && result.voices.length > 0) {
+      for (const v of result.voices.slice(0, 15)) {
+        text += `• <b>${v.name}</b> (<code>${v.id}</code>) - ${v.category || 'custom'}\n`;
+      }
+      text += `\n💡 Pour utiliser une voix : "Parle avec la voix [nom] : [texte]"`;
+    } else {
+      text += `Aucune voix trouvée. Vérifiez la clé API ElevenLabs.`;
+    }
+    await sendMessageWithKeyboard(chatId, text, ELEVENLABS_MENU);
+    return true;
+  }
+  
+  if (text === '🎤 Test Voix (Rachel)') {
+    const result = await executeFunction('elevenlabs_tts', { 
+      text: 'Bonjour ! Je suis Rachel, une voix ElevenLabs. Bienvenue sur OptiWifi !', 
+      voiceId: '21m00Tcm4TlvDq8ikWAM' 
+    }, chatId);
+    if (result.success) {
+      await sendMessageWithKeyboard(chatId, `🎤 <b>Test voix Rachel généré</b>\n\nLe fichier audio est prêt (base64). Dans Telegram, il serait envoyé comme message vocal.`, ELEVENLABS_MENU);
+    } else {
+      await sendMessageWithKeyboard(chatId, `❌ Erreur: ${result.error}`, ELEVENLABS_MENU);
+    }
+    return true;
+  }
+  
+  if (text === '🎤 Test Voix (Adam)') {
+    const result = await executeFunction('elevenlabs_tts', { 
+      text: 'Salut ! Je suis Adam, une voix masculine ElevenLabs. OptiWifi gère vos espaces WiFi.', 
+      voiceId: 'pNInz6obpgDQGcFmaJgB' 
+    }, chatId);
+    if (result.success) {
+      await sendMessageWithKeyboard(chatId, `🎤 <b>Test voix Adam généré</b>\n\nLe fichier audio est prêt (base64). Dans Telegram, il serait envoyé comme message vocal.`, ELEVENLABS_MENU);
+    } else {
+      await sendMessageWithKeyboard(chatId, `❌ Erreur: ${result.error}`, ELEVENLABS_MENU);
+    }
+    return true;
+  }
+  
   // Back to Main Menu
   if (text === '🔙 Menu Principal') {
     await updateSessionContext(chatId, 'general');
@@ -922,7 +986,7 @@ async function handleCommand(text: string, chatId: string, userName: string, ses
       await updateSessionContext(chatId, 'general');
       await sendMessageWithKeyboard(chatId, 
         `👋 Bonjour ${userName} ! Je suis ton assistant OptiWifi IA.\n\n` +
-        `🤖 <b>Modèle actuel :</b> ${FREE_MODELS[session.model as keyof typeof FREE_MODELS]?.name || session.model}\n\n` +
+        `🤖 <b>Modèle actuel :</b> ${(FREE_MODELS[session.model as keyof typeof FREE_MODELS] as ModelInfo | undefined)?.name || session.model}\n\n` +
         `Choisis une action ci-dessous ou parle-moi naturellement !`,
         MAIN_MENU
       );
@@ -1058,7 +1122,7 @@ async function handleCallbackQuery(callbackQuery: any) {
   switch (action) {
     case 'model': {
       const model = params.join(':');
-      const modelInfo = FREE_MODELS[model as keyof typeof FREE_MODELS];
+      const modelInfo = FREE_MODELS[model as keyof typeof FREE_MODELS] as ModelInfo | undefined;
       const modelName = modelInfo?.name || model;
       
       // Check if it's a transcription model

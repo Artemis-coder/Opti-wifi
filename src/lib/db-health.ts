@@ -60,7 +60,7 @@ export async function checkDatabaseHealth(): Promise<HealthCheckResult> {
 
 export async function checkSlowQueries(thresholdMs = 1000) {
   try {
-    const result = await Neon_run_sql(`
+    const result = await query(`
       SELECT query, mean_exec_time, calls, total_exec_time
       FROM pg_stat_statements
       WHERE mean_exec_time > ${thresholdMs}
@@ -83,7 +83,7 @@ export async function checkSlowQueries(thresholdMs = 1000) {
 
 export async function checkConnectionPool() {
   try {
-    const result = await Neon_run_sql(`
+    const result = await query(`
       SELECT 
         count(*) as total_connections,
         count(*) filter (where state = 'active') as active_connections,
