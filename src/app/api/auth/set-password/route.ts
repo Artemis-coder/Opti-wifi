@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/neon/auth';
 import { query } from '@/lib/neon/db';
 import { hash } from 'bcryptjs';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,8 +41,20 @@ export async function POST(request: NextRequest) {
       [hashedPassword, payload.sub]
     );
 
+    // Also update Supabase Auth user password to keep in sync
+    try {
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      await supabaseAdmin.auth.admin.updateUserById(payload.sub, { password });
+    } catch (supabaseError) {
+      // Log but don't fail the request - Neon update succeeded
+      console.error('Failed to update Supabase Auth user password:', supabaseError);
+    }
+
     return NextResponse.json({ 
-      success: true, 
+      success: true,
       message: 'Mot de passe mis à jour avec succès' 
     });
   } catch (err: unknown) {
