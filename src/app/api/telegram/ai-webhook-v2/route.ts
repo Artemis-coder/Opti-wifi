@@ -100,10 +100,7 @@ async function handleMessage(message: any) {
   const authorizedChatId = process.env.TELEGRAM_CHAT_ID;
 
   if (chatId !== authorizedChatId) {
-    await sendTelegramMessage({
-      chat_id: chatId,
-      text: '❌ Non autorisé. Ce bot est privé.',
-    });
+    await sendMessageWithKeyboard(chatId, '❌ Non autorisé. Ce bot est privé.', MAIN_MENU);
     return;
   }
 
@@ -142,28 +139,19 @@ async function handleVoiceMessage(message: any, chatId: string, session: any) {
     const modelName = FREE_MODELS[transcriptionModel as keyof typeof FREE_MODELS]?.name || transcriptionModel;
     
     // Transcribe
-    await sendTelegramMessage({
-      chat_id: chatId,
-      text: `🎙️ Transcription en cours avec <b>${modelName}</b>...`,
-      parse_mode: 'HTML',
-    });
+    const contextMenu = getContextualMenu(session.context);
+    await sendMessageWithKeyboard(chatId, `🎙️ Transcription en cours avec <b>${modelName}</b>...`, contextMenu, 'HTML');
     
     const transcript = await client.transcribeAudio(audioBuffer, 'fr', transcriptionModel);
     
-    await sendTelegramMessage({
-      chat_id: chatId,
-      text: `🎙️ <b>Transcription (${modelName}) :</b>\n\n${transcript}`,
-      parse_mode: 'HTML',
-    });
+    await sendMessageWithKeyboard(chatId, `🎙️ <b>Transcription (${modelName}) :</b>\n\n${transcript}`, contextMenu, 'HTML');
     
     // Process as text message
     await handleTextMessage(transcript, chatId, message.from?.first_name || 'Utilisateur', session);
     
   } catch (error) {
-    await sendTelegramMessage({
-      chat_id: chatId,
-      text: `❌ Erreur transcription : ${error}`,
-    });
+    const contextMenu = getContextualMenu(session.context);
+    await sendMessageWithKeyboard(chatId, `❌ Erreur transcription : ${error}`, contextMenu);
   }
 }
 
@@ -231,10 +219,8 @@ async function handleTextMessage(text: string, chatId: string, userName: string,
 
   } catch (error) {
     console.error('LLM error:', error);
-    await sendTelegramMessage({
-      chat_id: chatId,
-      text: `❌ Erreur IA : ${error.message}. Réessaie ou tape /menu.`,
-    });
+    const contextMenu = getContextualMenu(session.context);
+    await sendMessageWithKeyboard(chatId, `❌ Erreur IA : ${error.message}. Réessaie ou tape /menu.`, contextMenu);
   }
 }
 
@@ -997,61 +983,52 @@ async function handleCommand(text: string, chatId: string, userName: string, ses
     case '/historique':
     case '/history':
       const stats = await getConversationStats(chatId);
-      await sendTelegramMessage({
-        chat_id: chatId,
-        text: `📊 <b>Historique Conversation</b>\n\n` +
-          `💬 Messages total : ${stats.total_messages}\n` +
-          `👤 Tes messages : ${stats.user_messages}\n` +
-          `🤖 Mes réponses : ${stats.assistant_messages}\n` +
-          `🔧 Appels outils : ${stats.tool_messages}\n` +
-          `📅 Premier msg : ${stats.first_message ? new Date(stats.first_message).toLocaleString('fr-FR') : 'N/A'}\n` +
-          `📅 Dernier msg : ${stats.last_message ? new Date(stats.last_message).toLocaleString('fr-FR') : 'N/A'}`,
-        parse_mode: 'HTML',
-      });
+      await sendMessageWithKeyboard(chatId, 
+        `📊 <b>Historique Conversation</b>\n\n` +
+        `💬 Messages total : ${stats.total_messages}\n` +
+        `👤 Tes messages : ${stats.user_messages}\n` +
+        `🤖 Mes réponses : ${stats.assistant_messages}\n` +
+        `🔧 Appels outils : ${stats.tool_messages}\n` +
+        `📅 Premier msg : ${stats.first_message ? new Date(stats.first_message).toLocaleString('fr-FR') : 'N/A'}\n` +
+        `📅 Dernier msg : ${stats.last_message ? new Date(stats.last_message).toLocaleString('fr-FR') : 'N/A'}`, MAIN_MENU, 'HTML');
       break;
 
     case '/effacer':
     case '/clear':
       await clearConversationHistory(chatId);
-      await sendTelegramMessage({
-        chat_id: chatId,
-        text: '🗑️ Historique effacé. Nouvelle conversation !',
-      });
+      await sendMessageWithKeyboard(chatId, '🗑️ Historique effacé. Nouvelle conversation !', MAIN_MENU);
       break;
 
     case '/aide':
     case '/help':
-      await sendTelegramMessage({
-        chat_id: chatId,
-        text: `🤖 <b>OptiWifi Bot IA - Commandes</b>\n\n` +
-          `<b>Menus Principaux :</b>\n` +
-          `• <code>/menu</code> - Menu principal\n` +
-          `• <code>/projet</code> - Gestion projet\n` +
-          `• <code>/database</code> - Base de données\n` +
-          `• <code>/tâches</code> - Gestion tâches\n` +
-          `• <code>/notifications</code> - Alertes & validations\n` +
-          `• <code>/utilisateurs</code> - Users & espaces\n` +
-          `• <code>/securite</code> - Sécurité & Audit\n` +
-          `• <code>/nouveau</code> - Nouveau projet\n\n` +
-          `<b>Configuration :</b>\n` +
-          `• <code>/model</code> - Changer modèle IA\n` +
-          `• <code>/historique</code> - Stats conversation\n` +
-          `• <code>/effacer</code> - Reset conversation\n\n` +
-          `<b>Fonctionnalités :</b>\n` +
-          `• 🎙️ Messages vocaux → transcription auto\n` +
-          `• 💬 Conversation naturelle + outils\n` +
-          `• 🔧 Function calling (déploiement, DB, tâches, sécurité...)\n` +
-          `• 🧠 Mémoire persistante (DB)\n` +
-          `• 📋 Menus interactifs\n\n` +
-          `<b>Exemples :</b>\n` +
-          `• "Déploie le projet"\n` +
-          `• "SELECT * FROM users LIMIT 5"\n` +
-          `• "Crée une tâche : tests E2E"\n` +
-          `• "Quelles features pour un SaaS ?"\n` +
-          `• "Fais un audit sécurité complet"\n` +
-          `• "Corrige les vulnérabilités npm"`,
-        parse_mode: 'HTML',
-      });
+      await sendMessageWithKeyboard(chatId, 
+        `🤖 <b>OptiWifi Bot IA - Commandes</b>\n\n` +
+        `<b>Menus Principaux :</b>\n` +
+        `• <code>/menu</code> - Menu principal\n` +
+        `• <code>/projet</code> - Gestion projet\n` +
+        `• <code>/database</code> - Base de données\n` +
+        `• <code>/tâches</code> - Gestion tâches\n` +
+        `• <code>/notifications</code> - Alertes & validations\n` +
+        `• <code>/utilisateurs</code> - Users & espaces\n` +
+        `• <code>/securite</code> - Sécurité & Audit\n` +
+        `• <code>/nouveau</code> - Nouveau projet\n\n` +
+        `<b>Configuration :</b>\n` +
+        `• <code>/model</code> - Changer modèle IA\n` +
+        `• <code>/historique</code> - Stats conversation\n` +
+        `• <code>/effacer</code> - Reset conversation\n\n` +
+        `<b>Fonctionnalités :</b>\n` +
+        `• 🎙️ Messages vocaux → transcription auto\n` +
+        `• 💬 Conversation naturelle + outils\n` +
+        `• 🔧 Function calling (déploiement, DB, tâches, sécurité...)\n` +
+        `• 🧠 Mémoire persistante (DB)\n` +
+        `• 📋 Menus interactifs\n\n` +
+        `<b>Exemples :</b>\n` +
+        `• "Déploie le projet"\n` +
+        `• "SELECT * FROM users LIMIT 5"\n` +
+        `• "Crée une tâche : tests E2E"\n` +
+        `• "Quelles features pour un SaaS ?"\n` +
+        `• "Fais un audit sécurité complet"\n` +
+        `• "Corrige les vulnérabilités npm"`, MAIN_MENU, 'HTML');
       break;
 
     default:
@@ -1106,10 +1083,7 @@ async function handleCallbackQuery(callbackQuery: any) {
     case 'deploy': {
       if (params[0] === 'now') {
         const res = await fetch('https://api.vercel.com/v1/integrations/deploy/prj_sYLBGlV8d7PBEEiDbwJbq9qm9fdy/xsZKyhGwr2', { method: 'POST' });
-        await sendTelegramMessage({
-          chat_id: chatId,
-          text: res.ok ? '🚀 Déploiement déclenché !' : '❌ Erreur déploiement',
-        });
+        await sendMessageWithKeyboard(chatId, res.ok ? '🚀 Déploiement déclenché !' : '❌ Erreur déploiement', PROJECT_MENU);
       } else if (params[0] === 'status') {
         const token = process.env.VERCEL_TOKEN;
         if (token) {
@@ -1119,19 +1093,16 @@ async function handleCallbackQuery(callbackQuery: any) {
           const data = await res.json();
           const dep = data.deployments?.[0];
           if (dep) {
-            await sendTelegramMessage({
-              chat_id: chatId,
-              text: `📋 <b>Dernier Déploiement</b>\n\n` +
-                `🆔 ${dep.uid}\n` +
-                `📦 ${dep.name}\n` +
-                `⚡ ${dep.state}\n` +
-                `🕐 ${new Date(dep.createdAt).toLocaleString('fr-FR')}\n` +
-                `🔗 <a href="${dep.url}">Voir</a>`,
-              parse_mode: 'HTML',
-            });
+            await sendMessageWithKeyboard(chatId,
+              `📋 <b>Dernier Déploiement</b>\n\n` +
+              `🆔 ${dep.uid}\n` +
+              `📦 ${dep.name}\n` +
+              `⚡ ${dep.state}\n` +
+              `🕐 ${new Date(dep.createdAt).toLocaleString('fr-FR')}\n` +
+              `🔗 <a href="${dep.url}">Voir</a>`, PROJECT_MENU, 'HTML');
           }
         } else {
-          await sendTelegramMessage({ chat_id: chatId, text: '❌ VERCEL_TOKEN non configuré' });
+          await sendMessageWithKeyboard(chatId, '❌ VERCEL_TOKEN non configuré', PROJECT_MENU);
         }
       }
       break;
@@ -1139,39 +1110,30 @@ async function handleCallbackQuery(callbackQuery: any) {
 
     case 'confirm': {
       const [actionType, itemId] = params;
-      await sendTelegramMessage({
-        chat_id: chatId,
-        text: `✅ Confirmé : ${actionType} pour ${itemId}`,
-      });
+      await sendMessageWithKeyboard(chatId, `✅ Confirmé : ${actionType} pour ${itemId}`, MAIN_MENU);
       break;
     }
 
     case 'cancel': {
       const [actionType, itemId] = params;
-      await sendTelegramMessage({
-        chat_id: chatId,
-        text: `❌ Annulé : ${actionType} pour ${itemId}`,
-      });
+      await sendMessageWithKeyboard(chatId, `❌ Annulé : ${actionType} pour ${itemId}`, MAIN_MENU);
       break;
     }
 
     case 'task': {
       const [taskAction, taskId] = params;
-      await sendTelegramMessage({
-        chat_id: chatId,
-        text: `📝 Tâche ${taskId} : ${taskAction}`,
-      });
+      await sendMessageWithKeyboard(chatId, `📝 Tâche ${taskId} : ${taskAction}`, TASKS_MENU);
       break;
     }
 
     case 'val': {
       const [valAction, valId] = params;
       if (valAction === 'approve') {
-        await sendTelegramMessage({ chat_id: chatId, text: `✅ Validation ${valId} approuvée !` });
+        await sendMessageWithKeyboard(chatId, `✅ Validation ${valId} approuvée !`, NOTIFICATIONS_MENU);
       } else if (valAction === 'reject') {
-        await sendTelegramMessage({ chat_id: chatId, text: `❌ Validation ${valId} refusée.` });
+        await sendMessageWithKeyboard(chatId, `❌ Validation ${valId} refusée.`, NOTIFICATIONS_MENU);
       } else if (valAction === 'reply') {
-        await sendTelegramMessage({ chat_id: chatId, text: `💬 Réponds à ce message pour donner ton avis sur ${valId}` });
+        await sendMessageWithKeyboard(chatId, `💬 Réponds à ce message pour donner ton avis sur ${valId}`, NOTIFICATIONS_MENU);
       }
       break;
     }

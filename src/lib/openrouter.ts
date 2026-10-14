@@ -148,9 +148,11 @@ export class OpenRouterClient {
     const transcriptionModel = model || 'openai/whisper-large-v3';
     
     const formData = new FormData();
-    formData.append('file', new Blob([audioBuffer], { type: 'audio/ogg' }), 'voice.ogg');
+    // Telegram voice messages are OGG/Opus - use correct MIME type
+    formData.append('file', new Blob([audioBuffer], { type: 'audio/ogg; codecs=opus' }), 'voice.oga');
     formData.append('model', transcriptionModel);
     if (language) formData.append('language', language);
+    formData.append('response_format', 'json');
 
     const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {
       method: 'POST',
@@ -166,7 +168,7 @@ export class OpenRouterClient {
     }
 
     const result = await response.json();
-    return result.text;
+    return result.text || result.transcription || '';
   }
 
   getModelInfo(modelId: string) {
