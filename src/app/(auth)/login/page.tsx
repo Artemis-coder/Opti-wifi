@@ -75,60 +75,30 @@ export default function LoginPage() {
     setError('');
     setSuccessMsg('');
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (authError) {
-      setError(authError.message || 'Email ou mot de passe incorrect.');
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Identifiants invalides.');
+        setLoading(false);
+        return;
+      }
+
+      // data contains { user, session }
+      const { user } = data;
+      setUser(user);
+
+      // Redirect to dashboard after login
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Une erreur est survenue.');
       setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profile) {
-        setUser(profile);
-      } else {
-        // The profile query failed or returned no rows.
-        // Determine the correct role from auth metadata instead of defaulting to collecteur.
-        const authRole = data.user.user_metadata?.role || data.user.app_metadata?.role;
-        const isAdminFromAuth = authRole === 'administrateur';
-
-        const fallbackProfile = {
-          id: data.user.id,
-          nom: data.user.email?.split('@')[0] || 'Utilisateur',
-          email: data.user.email || '',
-          role: (isAdminFromAuth ? 'administrateur' : 'collecteur') as UserRole,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        console.warn('Profile not found in DB for user:', data.user.id, '- falling back to auth metadata role:', fallbackProfile.role);
-        console.warn('Profile query error:', profileError?.message);
-
-        setUser(fallbackProfile);
-      }
-
-      // Check if user is a platform super admin
-      const { data: platformUser } = await supabase
-        .from('platform_users')
-        .select('role')
-        .eq('auth_user_id', data.user.id)
-        .eq('is_active', true)
-        .single();
-
-      if (platformUser && (platformUser.role === 'super_admin' || platformUser.role === 'platform_support')) {
-        router.push('/platform/dashboard');
-      } else {
-        router.push('/dashboard');
-      }
     }
   };
 
