@@ -583,24 +583,35 @@ export async function executeFunction(name: string, args: any, chatId: string): 
         if (audit.vulnerabilities) {
           for (const [name, vuln] of Object.entries(audit.vulnerabilities)) {
             const v = vuln as any;
-            if (v.severity === 'high' || v.severity === 'critical') {
+            if (v.severity === 'high' || v.severity === 'critical' || v.severity === 'moderate') {
               vulnerabilities.push({
+                id: `vuln_${name.replace(/[^a-zA-Z0-9]/g, '_')}`,
                 package: name,
                 severity: v.severity,
                 title: v.title,
                 url: v.url,
-                fixable: v.fixAvailable
+                fixable: v.fixAvailable,
+                category: 'dependencies',
+                recommended: v.severity === 'critical' || v.severity === 'high',
+                fixCommand: v.fixAvailable ? 'npm audit fix' : 'Manual update required'
               });
             }
           }
         }
         
+        // Sort by severity (critical first)
+        vulnerabilities.sort((a, b) => {
+          const severityOrder = { critical: 0, high: 1, moderate: 2, low: 3 };
+          return severityOrder[a.severity] - severityOrder[b.severity];
+        });
+        
         if (args.fix && vulnerabilities.length > 0) {
+          const toFix = args.fix === 'all' ? vulnerabilities : vulnerabilities.filter(v => args.fixIds?.includes(v.id));
           try {
             execSync('npm audit fix', { encoding: 'utf-8', cwd: process.cwd() });
-            return { success: true, fixed: true, vulnerabilities: vulnerabilities.length, message: 'Vulnérabilités corrigées automatiquement' };
+            return { success: true, fixed: true, fixedCount: toFix.length, fixedIds: toFix.map(v => v.id), message: `${toFix.length} vulnérabilités corrigées automatiquement` };
           } catch {
-            return { success: false, fixed: false, vulnerabilities: vulnerabilities.length, message: 'Certaines vulnérabilités nécessitent une correction manuelle' };
+            return { success: false, fixed: false, message: 'Certaines vulnérabilités nécessitent une correction manuelle' };
           }
         }
         
@@ -611,7 +622,8 @@ export async function executeFunction(name: string, args: any, chatId: string): 
           critical: audit.metadata?.vulnerabilities?.critical || 0,
           moderate: audit.metadata?.vulnerabilities?.moderate || 0,
           low: audit.metadata?.vulnerabilities?.low || 0,
-          vulnerabilities: vulnerabilities.slice(0, 10)
+          issues: vulnerabilities.slice(0, 20),
+          fixableCount: vulnerabilities.filter(v => v.fixable).length
         };
       } catch (error) {
         return { error: `Erreur audit: ${error.message}` };
@@ -651,8 +663,46 @@ export async function executeFunction(name: string, args: any, chatId: string): 
         // Check for recursive policies
         const recursivePolicies = policies.filter((p: any) => 
           p.qual?.includes('auth.uid()') && p.qual?.includes('EXISTS') && 
-          p.qual?.includes(tablename) // self-reference
+          p.qual?.includes(p.tablename) // self-reference
         );
+        
+        // Build structured issues array
+        const issues = [];
+        
+        // Tables without RLS
+        for (const t of tablesWithoutRls) {
+          issues.push({
+            id: `rls_missing_${t.tablename}`,
+            category: 'database',
+            type: 'missing_rls',
+            severity: 'high',
+            title: `Table "${t.tablename}" n'a pas RLS activé`,
+            description: `La table ${t.tablename} dans le schéma public n'a pas Row Level Security activé. Les données sont accessibles sans restriction.`,
+            table: t.tablename,
+            fixable: true,
+            fixAction: 'enable_rls',
+            fixCommand: `ALTER TABLE public.${t.tablename} ENABLE ROW LEVEL SECURITY;`,
+            recommended: true
+          });
+        }
+        
+        // Recursive policies
+        for (const p of recursivePolicies) {
+          issues.push({
+            id: `rls_recursive_${p.tablename}_${p.policyname}`,
+            category: 'database',
+            type: 'recursive_policy',
+            severity: 'critical',
+            title: `Politique récursive détectée: ${p.policyname} sur ${p.tablename}`,
+            description: `La politique ${p.policyname} sur la table ${p.tablename} contient une référence circulaire qui peut causer des boucles infinies.`,
+            table: p.tablename,
+            policy: p.policyname,
+            fixable: true,
+            fixAction: 'fix_recursive_rls',
+            fixCommand: `Exécutez supabase/fix_missing_columns.sql dans Supabase Dashboard`,
+            recommended: true
+          });
+        }
         
         return {
           success: true,
@@ -665,7 +715,10 @@ export async function executeFunction(name: string, args: any, chatId: string): 
             return acc;
           }, {}),
           recursivePoliciesFound: recursivePolicies.length > 0,
-          recursivePolicies: recursivePolicies.map((p: any) => ({ table: p.tablename, policy: p.policyname }))
+          recursivePolicies: recursivePolicies.map((p: any) => ({ table: p.tablename, policy: p.policyname })),
+          issues: issues.slice(0, 20),
+          criticalCount: issues.filter(i => i.severity === 'critical').length,
+          highCount: issues.filter(i => i.severity === 'high').length
         };
       } catch (error) {
         return { error: `Erreur vérification RLS: ${error.message}` };

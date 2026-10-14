@@ -33,6 +33,7 @@ import {
   getConversationHistory,
   updateSessionContext,
   updateSessionModel,
+  updateSessionTranscriptionModel,
   clearConversationHistory,
   getConversationStats
 } from '@/lib/conversation-memory';
@@ -136,17 +137,22 @@ async function handleVoiceMessage(message: any, chatId: string, session: any) {
     const audioRes = await fetch(fileUrl);
     const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
     
+    // Use session's preferred transcription model
+    const transcriptionModel = session.transcription_model || 'openai/whisper-large-v3';
+    const modelName = FREE_MODELS[transcriptionModel as keyof typeof FREE_MODELS]?.name || transcriptionModel;
+    
     // Transcribe
     await sendTelegramMessage({
       chat_id: chatId,
-      text: '🎙️ Transcription en cours...',
+      text: `🎙️ Transcription en cours avec <b>${modelName}</b>...`,
+      parse_mode: 'HTML',
     });
     
-    const transcript = await client.transcribeAudio(audioBuffer, 'fr');
+    const transcript = await client.transcribeAudio(audioBuffer, 'fr', transcriptionModel);
     
     await sendTelegramMessage({
       chat_id: chatId,
-      text: `🎙️ <b>Transcription :</b>\n\n${transcript}`,
+      text: `🎙️ <b>Transcription (${modelName}) :</b>\n\n${transcript}`,
       parse_mode: 'HTML',
     });
     
@@ -1075,13 +1081,25 @@ async function handleCallbackQuery(callbackQuery: any) {
   switch (action) {
     case 'model': {
       const model = params.join(':');
-      await updateSessionModel(chatId, model);
-      const modelName = FREE_MODELS[model as keyof typeof FREE_MODELS]?.name || model;
-      await sendTelegramMessage({
-        chat_id: chatId,
-        text: `✅ Modèle changé pour : <b>${modelName}</b>`,
-        parse_mode: 'HTML',
-      });
+      const modelInfo = FREE_MODELS[model as keyof typeof FREE_MODELS];
+      const modelName = modelInfo?.name || model;
+      
+      // Check if it's a transcription model
+      if (modelInfo?.audio) {
+        await updateSessionTranscriptionModel(chatId, model);
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: `✅ Modèle de transcription changé pour : <b>${modelName}</b>\n\nLes prochains messages vocaux utiliseront ce modèle.`,
+          parse_mode: 'HTML',
+        });
+      } else {
+        await updateSessionModel(chatId, model);
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: `✅ Modèle de chat changé pour : <b>${modelName}</b>`,
+          parse_mode: 'HTML',
+        });
+      }
       break;
     }
 

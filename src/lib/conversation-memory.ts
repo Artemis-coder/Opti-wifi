@@ -18,6 +18,7 @@ interface ConversationMessage {
 interface ConversationSession {
   chat_id: string;
   model: string;
+  transcription_model: string;
   context: string; // 'project', 'general', 'new_project', etc.
   created_at: Date;
   updated_at: Date;
@@ -30,6 +31,7 @@ export async function initConversationTables() {
     CREATE TABLE IF NOT EXISTS conversation_sessions (
       chat_id VARCHAR(255) PRIMARY KEY,
       model VARCHAR(100) DEFAULT 'deepseek/deepseek-chat',
+      transcription_model VARCHAR(100) DEFAULT 'openai/whisper-large-v3',
       context VARCHAR(50) DEFAULT 'general',
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW(),
@@ -73,8 +75,8 @@ export async function getOrCreateSession(chatId: string): Promise<ConversationSe
   }
 
   const newSession = await query(
-    `INSERT INTO conversation_sessions (chat_id, model, context)
-     VALUES ($1, 'deepseek/deepseek-chat', 'general')
+    `INSERT INTO conversation_sessions (chat_id, model, transcription_model, context)
+     VALUES ($1, 'deepseek/deepseek-chat', 'openai/whisper-large-v3', 'general')
      RETURNING *`,
     [chatId]
   );
@@ -95,6 +97,15 @@ export async function updateSessionModel(chatId: string, model: string) {
   await query(
     `UPDATE conversation_sessions 
      SET model = $1, updated_at = NOW() 
+     WHERE chat_id = $2`,
+    [model, chatId]
+  );
+}
+
+export async function updateSessionTranscriptionModel(chatId: string, model: string) {
+  await query(
+    `UPDATE conversation_sessions 
+     SET transcription_model = $1, updated_at = NOW() 
      WHERE chat_id = $2`,
     [model, chatId]
   );
