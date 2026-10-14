@@ -1,0 +1,250 @@
+/**
+ * Telegram Keyboard Menus - Inline & Reply Keyboards
+ * Provides interactive menus for the bot
+ */
+
+import { sendTelegramMessage } from './telegram';
+
+// Menu structure
+export const MAIN_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '📊 Statut Projet' }, { text: '🚀 Déployer' }],
+      [{ text: '🗄️ Base de Données' }, { text: '🔔 Notifications' }],
+      [{ text: '📝 Tâches' }, { text: '👥 Utilisateurs' }],
+      [{ text: '💡 Nouveau Projet' }, { text: '❓ Aide' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+    input_field_placeholder: 'Choisissez une action ou écrivez-moi...',
+  },
+};
+
+export const PROJECT_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '📈 Statut Complet' }, { text: '🔄 Redéployer' }],
+      [{ text: '📋 Voir Logs Déploiement' }, { text: '⚙️ Variables Env' }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
+export const DATABASE_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '🏥 Health Check' }, { text: '🐌 Requêtes Lentes' }],
+      [{ text: '🔌 Pool Connexions' }, { text: '📊 Stats Espaces' }],
+      [{ text: '🔍 Requête SQL Personnalisée' }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
+export const TASKS_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '📝 Créer Tâche' }, { text: '📋 Lister Tâches' }],
+      [{ text: '✅ Terminer Tâche' }, { text: '🚫 Bloquer Tâche' }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
+export const NOTIFICATIONS_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '🔔 Envoyer Notification' }, { text: '⏳ Demander Validation' }],
+      [{ text: '⏳ Validations En Attente' }, { text: '🧪 Test Notification' }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
+export const USERS_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '👥 Lister Utilisateurs' }, { text: '➕ Créer Utilisateur' }],
+      [{ text: '📊 Stats Espaces WiFi' }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
+export const NEW_PROJECT_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '💡 Idées Fonctionnalités' }, { text: '📋 Créer Spec Projet' }],
+      [{ text: '🎯 Roadmap Court Terme' }, { text: '🚀 Roadmap Long Terme' }],
+      [{ text: '💰 Estimation Coûts' }, { text: '🛠️ Stack Technique' }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
+// Inline keyboards for confirmations and actions
+export function createConfirmationInlineKeyboard(action: string, itemId: string) {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '✅ Confirmer', callback_data: `confirm:${action}:${itemId}` },
+          { text: '❌ Annuler', callback_data: `cancel:${action}:${itemId}` },
+        ],
+      ],
+    },
+  };
+}
+
+export function createTaskActionInlineKeyboard(taskId: string) {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '▶️ Commencer', callback_data: `task:start:${taskId}` },
+          { text: '✅ Terminer', callback_data: `task:done:${taskId}` },
+        ],
+        [
+          { text: '🚫 Bloquer', callback_data: `task:block:${taskId}` },
+          { text: '🗑️ Supprimer', callback_data: `task:delete:${taskId}` },
+        ],
+        [
+          { text: '📝 Modifier', callback_data: `task:edit:${taskId}` },
+        ],
+      ],
+    },
+  };
+}
+
+export function createValidationInlineKeyboard(validationId: string) {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '✅ Approuver', callback_data: `val:approve:${validationId}` },
+          { text: '❌ Refuser', callback_data: `val:reject:${validationId}` },
+        ],
+        [
+          { text: '💬 Répondre', callback_data: `val:reply:${validationId}` },
+        ],
+      ],
+    },
+  };
+}
+
+export function createDeployInlineKeyboard() {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '🚀 Déployer Maintenant', callback_data: 'deploy:now' },
+          { text: '📋 Voir Statut', callback_data: 'deploy:status' },
+        ],
+      ],
+    },
+  };
+}
+
+export function createModelSelectionInlineKeyboard() {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '🤖 DeepSeek Chat (défaut)', callback_data: 'model:deepseek/deepseek-chat' }],
+        [{ text: '🧠 DeepSeek R1 (reasoning)', callback_data: 'model:deepseek/deepseek-r1' }],
+        [{ text: '🦙 Llama 3.1 8B', callback_data: 'model:meta-llama/llama-3.1-8b-instruct' }],
+        [{ text: '🦙 Llama 3.1 70B', callback_data: 'model:meta-llama/llama-3.1-70b-instruct' }],
+        [{ text: '🌪️ Mistral 7B', callback_data: 'model:mistralai/mistral-7b-instruct' }],
+        [{ text: '🐉 Qwen 2.5 7B', callback_data: 'model:qwen/qwen-2.5-7b-instruct' }],
+        [{ text: '💎 Gemma 2 9B', callback_data: 'model:google/gemma-2-9b-it' }],
+      ],
+    },
+  };
+}
+
+// Helper to send message with keyboard
+export async function sendMessageWithKeyboard(
+  chatId: string | number,
+  text: string,
+  keyboard: any = MAIN_MENU,
+  parseMode: 'HTML' | 'MarkdownV2' = 'HTML'
+) {
+  return sendTelegramMessage({
+    chat_id: chatId,
+    text,
+    parse_mode: parseMode,
+    reply_markup: keyboard.reply_markup,
+  });
+}
+
+// Helper to edit message with inline keyboard
+export async function editMessageWithInlineKeyboard(
+  chatId: string | number,
+  messageId: number,
+  text: string,
+  inlineKeyboard: any,
+  parseMode: 'HTML' | 'MarkdownV2' = 'HTML'
+) {
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
+  
+  const response = await fetch(`${API_URL}/editMessageText`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      parse_mode: parseMode,
+      reply_markup: inlineKeyboard.reply_markup,
+    }),
+  });
+  
+  return response.json();
+}
+
+// Menu navigation handler
+export function getMenuForCommand(command: string) {
+  const menus: Record<string, any> = {
+    '/menu': MAIN_MENU,
+    '/projet': PROJECT_MENU,
+    '/database': DATABASE_MENU,
+    '/db': DATABASE_MENU,
+    '/tâches': TASKS_MENU,
+    '/tasks': TASKS_MENU,
+    '/notifications': NOTIFICATIONS_MENU,
+    '/notifs': NOTIFICATIONS_MENU,
+    '/utilisateurs': USERS_MENU,
+    '/users': USERS_MENU,
+    '/nouveau': NEW_PROJECT_MENU,
+    '/newproject': NEW_PROJECT_MENU,
+  };
+  
+  return menus[command.toLowerCase()] || MAIN_MENU;
+}
+
+// Quick reply suggestions based on context
+export function getContextualSuggestions(context: string): string[] {
+  const suggestions: Record<string, string[]> = {
+    project: ['Statut complet', 'Redéployer', 'Voir logs', 'Variables env'],
+    database: ['Health check', 'Requêtes lentes', 'Pool connexions', 'Stats espaces'],
+    tasks: ['Créer tâche', 'Lister tâches', 'Terminer tâche', 'Bloquer tâche'],
+    notifications: ['Envoyer notif', 'Demander validation', 'Validations en attente'],
+    users: ['Lister users', 'Créer user', 'Stats espaces'],
+    newproject: ['Idées features', 'Créer spec', 'Roadmap court', 'Roadmap long'],
+    general: ['Menu principal', 'Aide', 'Statut projet', 'Nouveau projet'],
+  };
+  
+  return suggestions[context] || suggestions.general;
+}
