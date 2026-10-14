@@ -19,14 +19,17 @@ import {
   Ticket,
   User,
   FileText,
+  Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from '../edit-pos-modal';
+import { ResetPosModal } from './reset-pos-modal';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 interface AllocationSummary {
   ticketType: TicketType;
@@ -48,8 +51,12 @@ export default function PosDetailPage() {
   const [allocations, setAllocations] = useState<TicketAllocation[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [spaces, setSpaces] = useState<WifiSpace[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'administrateur';
 
   const supabase = createClient();
 
@@ -103,6 +110,11 @@ export default function PosDetailPage() {
 
   const handlePosUpdated = (updated: PointOfSale) => {
     setPos(updated);
+  };
+
+  const handleResetSuccess = () => {
+    setAllocations([]);
+    setCollections([]);
   };
 
   const computeAllocationSummary = (): AllocationSummary[] => {
@@ -223,9 +235,22 @@ export default function PosDetailPage() {
             {pos.nom}
           </h1>
         </div>
-        <Button onClick={() => setIsEditModalOpen(true)} className="gap-2 font-semibold">
-          <Edit className="w-4 h-4" /> Modifier le POS
-        </Button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              onClick={() => setIsResetModalOpen(true)}
+              className="gap-2 font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50"
+              title="Vider toutes les données de ce POS"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Vider les données</span>
+            </Button>
+          )}
+          <Button onClick={() => setIsEditModalOpen(true)} className="gap-2 font-semibold">
+            <Edit className="w-4 h-4" /> Modifier le POS
+          </Button>
+        </div>
       </div>
 
       {/* POS Info Card */}
@@ -615,6 +640,17 @@ export default function PosDetailPage() {
         spaces={spaces}
         onSuccess={handlePosUpdated}
       />
+
+      {/* Reset POS Modal */}
+      {isAdmin && (
+        <ResetPosModal
+          isOpen={isResetModalOpen}
+          posId={posId}
+          posName={pos?.nom || ''}
+          onClose={() => setIsResetModalOpen(false)}
+          onSuccess={handleResetSuccess}
+        />
+      )}
     </div>
   );
 }
