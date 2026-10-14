@@ -248,18 +248,20 @@ export default function PosDetailPage() {
         <div className="flex items-center gap-2 self-stretch sm:self-auto">
           {isAdmin && (
             <Button
-              variant="ghost"
+              variant="outline"
+              size="sm"
               onClick={() => setIsResetModalOpen(true)}
-              className="flex-1 sm:flex-initial gap-1.5 font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-xs sm:text-sm px-3"
-              title="Vider toutes les données de ce POS"
+              className="flex-1 sm:flex-initial text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300"
+              title="Vider les données de ce POS"
             >
               <Trash2 className="w-4 h-4 shrink-0" />
               <span>Vider</span>
             </Button>
           )}
           <Button
+            size="sm"
             onClick={() => setIsEditModalOpen(true)}
-            className="flex-1 sm:flex-initial gap-1.5 font-semibold text-xs sm:text-sm px-3"
+            className="flex-1 sm:flex-initial"
           >
             <Edit className="w-4 h-4 shrink-0" /> <span>Modifier</span>
           </Button>
