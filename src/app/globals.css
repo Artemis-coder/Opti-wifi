@@ -115,10 +115,16 @@
   to { transform: translateX(0); }
 }
 
+@keyframes md-drawer-slide-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 .md-anim-fade { animation: md-fade-in 200ms ease-out both; }
 .md-anim-sheet { animation: md-sheet-up 280ms cubic-bezier(0.2, 0, 0, 1) both; }
 .md-anim-scale { animation: md-scale-in 180ms cubic-bezier(0.2, 0, 0, 1) both; }
 .md-anim-slide-right { animation: md-slide-in-right 240ms cubic-bezier(0.2, 0, 0, 1) both; }
+.md-anim-drawer { animation: md-drawer-slide-left 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 
 @layer components {
   /* Network pill: fixed on the right, just above the 80dp navigation bar, so
