@@ -13,6 +13,8 @@ import {
   Loader2,
   Inbox,
   Package,
+  User,
+  Calendar,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -339,34 +341,100 @@ export default function DashboardPage() {
               </Link>
             </Card>
           ) : (
-            <Card className="p-0 overflow-hidden">
-              <div className="overflow-x-auto">
+            <Card className="p-0 overflow-hidden border-slate-200 dark:border-slate-800">
+              {/* Desktop Table View (hidden on mobile, visible from md upwards) */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                     <tr>
                       <th className="px-4 py-3">Point de Vente</th>
                       <th className="px-4 py-3">Collecteur</th>
-                      <th className="px-4 py-3">Montant Encaissé</th>
-                      <th className="px-4 py-3">Statut</th>
+                      <th className="px-4 py-3 text-right">Montant Encaissé</th>
+                      <th className="px-4 py-3 text-center">Statut</th>
                       <th className="px-4 py-3">Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                     {collections.slice(0, 5).map((col: Collection) => (
                       <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{col.pos?.nom || 'POS'}</td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{col.collecteur?.nom || 'Collecteur'}</td>
-                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(col.montant_collecte)}</td>
                         <td className="px-4 py-3">
-                          <Badge variant={col.statut === 'validee' ? 'success' : 'warning'}>
-                            {col.statut === 'validee' ? 'Validée' : 'Brouillon'}
+                          <div className="flex items-center gap-2">
+                            <Store className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
+                            <span className="font-semibold text-slate-900 dark:text-white">
+                              {col.pos?.nom || 'POS'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                          {col.collecteur?.nom || 'Collecteur'}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
+                          {formatCurrencyFCFA(col.montant_collecte)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Badge
+                            variant={col.statut === 'validee' ? 'success' : col.statut === 'annulee' ? 'danger' : 'warning'}
+                          >
+                            {col.statut === 'validee' ? 'Validée' : col.statut === 'annulee' ? 'Annulée' : 'Brouillon'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-slate-500">{formatDateFR(col.created_at)}</td>
+                        <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                          {col.date_collecte ? formatDateFR(col.date_collecte) : formatDateFR(col.created_at)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card Layout (visible on mobile, hidden from md upwards) */}
+              <div className="md:hidden p-3 space-y-2.5">
+                {collections.slice(0, 5).map((col: Collection) => (
+                  <div
+                    key={`dashboard-col-${col.id}`}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs"
+                  >
+                    {/* Header: POS + Status */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
+                          <Store className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                            {col.pos?.nom || 'POS'}
+                          </h4>
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <User className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="truncate">{col.collecteur?.nom || 'Collecteur'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <Badge
+                        variant={col.statut === 'validee' ? 'success' : col.statut === 'annulee' ? 'danger' : 'warning'}
+                        className="text-[10px] px-2 py-0.5 shrink-0"
+                      >
+                        {col.statut === 'validee' ? 'Validée' : col.statut === 'annulee' ? 'Annulée' : 'Brouillon'}
+                      </Badge>
+                    </div>
+
+                    {/* Financial Inset & Date */}
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                        <Calendar className="w-3.5 h-3.5 shrink-0" />
+                        <span>{col.date_collecte ? formatDateFR(col.date_collecte) : formatDateFR(col.created_at)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
+                          Encaissé
+                        </span>
+                        <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrencyFCFA(col.montant_collecte)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </Card>
           )}

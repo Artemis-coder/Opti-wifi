@@ -209,29 +209,39 @@ export default function NewCollectionWizard() {
         <p className="text-xs text-slate-500">Enregistrement direct et sécurisé dans la base de données.</p>
       </div>
 
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-        {[1, 2, 3, 4, 5].map((s: number) => (
-          <div key={s} className="flex items-center gap-2">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                step === s
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
-                  : step > s
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
-              }`}
-            >
-              {step > s ? '✓' : s}
+      <div className="space-y-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="flex items-center justify-between">
+          {[1, 2, 3, 4, 5].map((s: number) => (
+            <div key={s} className="flex items-center gap-2">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                  step === s
+                    ? 'bg-amber-500 text-slate-950 font-bold shadow-md ring-2 ring-amber-500/30'
+                    : step > s
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                }`}
+              >
+                {step > s ? '✓' : s}
+              </div>
+              <span className={`hidden sm:inline text-xs font-semibold ${step === s ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                {s === 1 && 'Point de Vente'}
+                {s === 2 && 'Quantités Vendues'}
+                {s === 3 && 'Calcul Attendu'}
+                {s === 4 && 'Montant Réel'}
+                {s === 5 && 'Validation'}
+              </span>
             </div>
-            <span className={`hidden sm:inline text-xs font-semibold ${step === s ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
-              {s === 1 && 'Point de Vente'}
-              {s === 2 && 'Quantités Vendues'}
-              {s === 3 && 'Calcul Attendu'}
-              {s === 4 && 'Montant Réel'}
-              {s === 5 && 'Validation'}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
+        <p className="sm:hidden text-xs font-bold text-amber-600 dark:text-amber-400 text-center pt-1">
+          Étape {step}/5 :{' '}
+          {step === 1 && 'Point de Vente'}
+          {step === 2 && 'Quantités Vendues'}
+          {step === 3 && 'Calcul Attendu'}
+          {step === 4 && 'Montant Réel'}
+          {step === 5 && 'Validation & Bilan'}
+        </p>
       </div>
 
       {loading ? (
@@ -246,7 +256,7 @@ export default function NewCollectionWizard() {
           <p className="text-xs text-slate-500">L&apos;encaissement a été validé et archivé dans la base de données.</p>
         </Card>
       ) : (
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           {step === 1 && (
             <div className="space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
@@ -263,7 +273,7 @@ export default function NewCollectionWizard() {
                 </select>
               </div>
               <div className="flex justify-end pt-4">
-                <Button onClick={() => setStep(2)} className="gap-2">
+                <Button onClick={() => setStep(2)} className="w-full sm:w-auto gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -302,23 +312,40 @@ export default function NewCollectionWizard() {
                     if (available <= 0) return null;
 
                     return (
-                      <div key={t.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
-                        <div>
+                      <div
+                        key={t.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800"
+                      >
+                        <div className="space-y-0.5">
                           <p className="text-sm font-bold text-slate-900 dark:text-white">{t.nom}</p>
                           <p className="text-xs text-slate-500">Prix unitaire : {formatCurrencyFCFA(t.prix)}</p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            Alloué: {allocated} — Déjà vendu: {sold} — Restant: {Math.max(0, available)}
-                          </p>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/60 font-medium">
+                              Alloué: {allocated}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-blue-100/70 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-medium">
+                              Vendu: {sold}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-emerald-100/70 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                              Restant: {Math.max(0, available)}
+                            </span>
+                          </div>
                         </div>
-                        <div className="w-28">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={Math.max(0, available)}
-                            value={quantities[t.id] || ''}
-                            onChange={(e) => handleQtyChange(t.id, e.target.value)}
-                            placeholder="0"
-                          />
+                        <div className="w-full sm:w-28 flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-700/60">
+                          <span className="sm:hidden text-xs font-semibold text-slate-600 dark:text-slate-400">
+                            Quantité vendue :
+                          </span>
+                          <div className="w-24 sm:w-28">
+                            <Input
+                              type="number"
+                              min="0"
+                              max={Math.max(0, available)}
+                              value={quantities[t.id] || ''}
+                              onChange={(e) => handleQtyChange(t.id, e.target.value)}
+                              placeholder="0"
+                              className="text-center font-bold"
+                            />
+                          </div>
                         </div>
                       </div>
                     );
