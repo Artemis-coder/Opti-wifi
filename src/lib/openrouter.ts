@@ -10,37 +10,37 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 // Free models available on OpenRouter (as of 2024)
 export const FREE_MODELS = {
   // DeepSeek models
-  'deepseek/deepseek-chat': { name: 'DeepSeek Chat', context: 32768, free: true },
-  'deepseek/deepseek-r1': { name: 'DeepSeek R1', context: 32768, free: true },
+  'deepseek/deepseek-chat': { name: 'DeepSeek Chat', context: 32768, free: true, tags: ['general', 'coding', 'chat'] },
+  'deepseek/deepseek-r1': { name: 'DeepSeek R1', context: 32768, free: true, tags: ['reasoning', 'complex', 'analysis'] },
   
   // Llama models
-  'meta-llama/llama-3.1-8b-instruct': { name: 'Llama 3.1 8B', context: 131072, free: true },
-  'meta-llama/llama-3.1-70b-instruct': { name: 'Llama 3.1 70B', context: 131072, free: true },
-  'meta-llama/llama-3.2-3b-instruct': { name: 'Llama 3.2 3B', context: 131072, free: true },
+  'meta-llama/llama-3.1-8b-instruct': { name: 'Llama 3.1 8B', context: 131072, free: true, tags: ['general', 'fast', 'long_context'] },
+  'meta-llama/llama-3.1-70b-instruct': { name: 'Llama 3.1 70B', context: 131072, free: true, tags: ['general', 'coding', 'quality', 'long_context'] },
+  'meta-llama/llama-3.2-3b-instruct': { name: 'Llama 3.2 3B', context: 131072, free: true, tags: ['general', 'fast', 'long_context', 'lightweight'] },
   
   // Mistral models
-  'mistralai/mistral-7b-instruct': { name: 'Mistral 7B', context: 32768, free: true },
-  'mistralai/mixtral-8x7b-instruct': { name: 'Mixtral 8x7B', context: 32768, free: true },
+  'mistralai/mistral-7b-instruct': { name: 'Mistral 7B', context: 32768, free: true, tags: ['general', 'fast', 'coding'] },
+  'mistralai/mixtral-8x7b-instruct': { name: 'Mixtral 8x7B', context: 32768, free: true, tags: ['general', 'quality', 'multilingual'] },
   
   // Qwen models
-  'qwen/qwen-2.5-7b-instruct': { name: 'Qwen 2.5 7B', context: 32768, free: true },
-  'qwen/qwen-2.5-72b-instruct': { name: 'Qwen 2.5 72B', context: 32768, free: true },
+  'qwen/qwen-2.5-7b-instruct': { name: 'Qwen 2.5 7B', context: 32768, free: true, tags: ['general', 'multilingual', 'coding'] },
+  'qwen/qwen-2.5-72b-instruct': { name: 'Qwen 2.5 72B', context: 32768, free: true, tags: ['general', 'quality', 'multilingual', 'coding'] },
   
   // Google Gemma
-  'google/gemma-2-9b-it': { name: 'Gemma 2 9B', context: 8192, free: true },
+  'google/gemma-2-9b-it': { name: 'Gemma 2 9B', context: 8192, free: true, tags: ['general', 'fast', 'lightweight'] },
   
   // Microsoft Phi
-  'microsoft/phi-3-mini-128k-instruct': { name: 'Phi-3 Mini', context: 128000, free: true },
-  'microsoft/phi-3-medium-128k-instruct': { name: 'Phi-3 Medium', context: 128000, free: true },
+  'microsoft/phi-3-mini-128k-instruct': { name: 'Phi-3 Mini', context: 128000, free: true, tags: ['general', 'fast', 'long_context', 'lightweight'] },
+  'microsoft/phi-3-medium-128k-instruct': { name: 'Phi-3 Medium', context: 128000, free: true, tags: ['general', 'quality', 'long_context'] },
 
   // Multimodal / Vision models (free)
-  'microsoft/phi-3-vision-128k-instruct': { name: 'Phi-3 Vision', context: 128000, free: true, vision: true },
-  'qwen/qwen-2.5-vl-7b-instruct': { name: 'Qwen 2.5 VL 7B', context: 32768, free: true, vision: true },
-  'meta-llama/llama-3.2-11b-vision-instruct': { name: 'Llama 3.2 11B Vision', context: 131072, free: true, vision: true },
+  'microsoft/phi-3-vision-128k-instruct': { name: 'Phi-3 Vision', context: 128000, free: true, vision: true, tags: ['vision', 'image_analysis', 'ocr', 'long_context'] },
+  'qwen/qwen-2.5-vl-7b-instruct': { name: 'Qwen 2.5 VL 7B', context: 32768, free: true, vision: true, tags: ['vision', 'image_analysis', 'video_understanding'] },
+  'meta-llama/llama-3.2-11b-vision-instruct': { name: 'Llama 3.2 11B Vision', context: 131072, free: true, vision: true, tags: ['vision', 'image_analysis', 'long_context'] },
 
   // Audio/Transcription models (free on OpenRouter)
-  'openai/whisper-large-v3': { name: 'Whisper Large v3', context: 0, free: true, audio: true },
-  'openai/whisper-large-v3-turbo': { name: 'Whisper Large v3 Turbo', context: 0, free: true, audio: true },
+  'openai/whisper-large-v3': { name: 'Whisper Large v3', context: 0, free: true, audio: true, tags: ['transcription', 'speech_to_text', 'multilingual'] },
+  'openai/whisper-large-v3-turbo': { name: 'Whisper Large v3 Turbo', context: 0, free: true, audio: true, tags: ['transcription', 'speech_to_text', 'fast'] },
 } as const;
 
 export const DEFAULT_MODEL = 'deepseek/deepseek-chat';
@@ -48,6 +48,69 @@ export const DEFAULT_MODEL = 'deepseek/deepseek-chat';
 export type ModelId = keyof typeof FREE_MODELS;
 
 export type ModelInfo = (typeof FREE_MODELS)[ModelId] & { audio?: boolean; vision?: boolean };
+
+// Auto-model selection based on task analysis
+export function selectBestModel(
+  userMessage: string, 
+  hasImage: boolean = false, 
+  hasAudio: boolean = false,
+  context: string = 'general'
+): ModelId {
+  const msg = userMessage.toLowerCase();
+  
+  // Audio transcription -> Whisper
+  if (hasAudio) {
+    return 'openai/whisper-large-v3';
+  }
+  
+  // Image analysis -> Vision model
+  if (hasImage) {
+    // Prefer Phi-3 Vision for long context, Qwen VL for general vision
+    return 'microsoft/phi-3-vision-128k-instruct';
+  }
+  
+  // Complex reasoning tasks -> DeepSeek R1
+  const reasoningKeywords = ['raisonne', 'réfléchis', 'analyse', 'complexe', 'étape par étape', 'pense', 'reasoning', 'step by step', 'analyse en profondeur', 'déduis'];
+  if (reasoningKeywords.some(k => msg.includes(k))) {
+    return 'deepseek/deepseek-r1';
+  }
+  
+  // Coding/technical tasks -> DeepSeek Chat or Llama 3.1 70B
+  const codingKeywords = ['code', 'programme', 'function', 'fonction', 'api', 'database', 'sql', 'typescript', 'javascript', 'python', 'react', 'nextjs', 'vercel', 'deploy', 'debug', 'erreur', 'bug', 'fix', 'corrige'];
+  if (codingKeywords.some(k => msg.includes(k))) {
+    return 'deepseek/deepseek-chat';
+  }
+  
+  // Long context needed -> Llama 3.1 70B or Phi-3 Medium
+  const longContextKeywords = ['long', 'détail', 'complet', 'exhaustif', 'tout l\'historique', 'contexte complet'];
+  if (longContextKeywords.some(k => msg.includes(k)) || userMessage.length > 2000) {
+    return 'meta-llama/llama-3.1-70b-instruct';
+  }
+  
+  // Quick/simple tasks -> Lightweight models
+  const simpleKeywords = ['bonjour', 'salut', 'merci', 'ok', 'oui', 'non', 'hello', 'hi'];
+  if (simpleKeywords.some(k => msg === k || msg.startsWith(k + ' ')) && userMessage.length < 50) {
+    return 'microsoft/phi-3-mini-128k-instruct';
+  }
+  
+  // Context-specific defaults
+  switch (context) {
+    case 'database':
+    case 'deployment':
+    case 'security':
+      return 'deepseek/deepseek-chat'; // Good for technical tasks
+    case 'tasks':
+    case 'project':
+      return 'meta-llama/llama-3.1-70b-instruct'; // Good for planning
+    default:
+      return DEFAULT_MODEL;
+  }
+}
+
+// Get model info with tags
+export function getModelTags(modelId: ModelId): string[] {
+  return FREE_MODELS[modelId]?.tags || [];
+}
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';

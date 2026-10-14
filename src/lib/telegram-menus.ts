@@ -13,7 +13,8 @@ export const MAIN_MENU = {
       [{ text: '🗄️ Base de Données' }, { text: '🔔 Notifications' }],
       [{ text: '📝 Tâches' }, { text: '👥 Utilisateurs' }],
       [{ text: '🔒 Sécurité & Audit' }, { text: '💡 Nouveau Projet' }],
-      [{ text: '🗣️ ElevenLabs TTS' }, { text: '❓ Aide' }],
+      [{ text: '🤖 Modèles IA' }, { text: '🗣️ ElevenLabs TTS' }],
+      [{ text: '❓ Aide' }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,
@@ -115,6 +116,20 @@ export const ELEVENLABS_MENU = {
       [{ text: '🗣️ Générer Audio (TTS)' }, { text: '🎭 Lister Voix Disponibles' }],
       [{ text: '🎤 Test Voix (Rachel)' }, { text: '🎤 Test Voix (Adam)' }],
       [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
+export const MODEL_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: '🤖 Modèle Actuel' }, { text: '🔄 Mode Auto (Recommandé)' }],
+      [{ text: '🧠 Reasoning (DeepSeek R1)' }, { text: '⚡ Rapide (Phi-3 Mini)' }],
+      [{ text: '💻 Code/Tech (DeepSeek Chat)' }, { text: '📝 Long Contexte (Llama 70B)' }],
+      [{ text: '👁️ Vision (Phi-3 Vision)' }, { text: '🎙️ Transcription (Whisper)' }],
+      [{ text: '📋 Voir Tous Modèles' }, { text: '🔙 Menu Principal' }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,

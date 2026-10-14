@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOpenRouterClient, FREE_MODELS, DEFAULT_MODEL, type ModelInfo } from '@/lib/openrouter';
+import { getOpenRouterClient, FREE_MODELS, DEFAULT_MODEL, type ModelInfo, selectBestModel } from '@/lib/openrouter';
 import { 
   sendTelegramMessage 
 } from '@/lib/telegram';
@@ -26,6 +26,7 @@ import {
   NEW_PROJECT_MENU,
   SECURITY_MENU,
   ELEVENLABS_MENU,
+  MODEL_MENU,
   getContextualSuggestions
 } from '@/lib/telegram-menus';
 import { 
@@ -963,6 +964,101 @@ async function handleMenuButton(text: string, chatId: string, userName: string, 
     } else {
       await sendMessageWithKeyboard(chatId, `❌ Erreur: ${result.error}`, ELEVENLABS_MENU);
     }
+    return true;
+  }
+  
+  // Model Menu Buttons
+  if (text === '🤖 Modèles IA') {
+    await updateSessionContext(chatId, 'models');
+    const modelInfo = (FREE_MODELS[session.model as keyof typeof FREE_MODELS] as ModelInfo | undefined);
+    await sendMessageWithKeyboard(chatId, 
+      `🤖 <b>Gestion Modèles IA</b>\n\n` +
+      `📌 <b>Modèle actuel :</b> ${modelInfo?.name || session.model}\n` +
+      `🎯 <b>Mode :</b> ${session.auto_model ? 'Auto (choix intelligent)' : 'Manuel'}\n\n` +
+      `Choisissez un modèle ou activez le mode Auto pour que le bot choisisse le meilleur selon la tâche :`,
+      MODEL_MENU
+    );
+    return true;
+  }
+  
+  if (text === '🤖 Modèle Actuel') {
+    const modelInfo = (FREE_MODELS[session.model as keyof typeof FREE_MODELS] as ModelInfo | undefined);
+    await sendMessageWithKeyboard(chatId,
+      `🤖 <b>Modèle Actuel</b>\n\n` +
+      `<b>Nom :</b> ${modelInfo?.name || session.model}\n` +
+      `<b>ID :</b> <code>${session.model}</code>\n` +
+      `<b>Contexte :</b> ${modelInfo?.context || 'N/A'} tokens\n` +
+      `<b>Gratuit :</b> ${modelInfo?.free ? '✅ Oui' : '❌ Non'}\n` +
+      `<b>Vision :</b> ${modelInfo?.vision ? '✅ Oui' : '❌ Non'}\n` +
+      `<b>Audio/Transcription :</b> ${modelInfo?.audio ? '✅ Oui' : '❌ Non'}\n` +
+      `<b>Tags :</b> ${modelInfo?.tags?.join(', ') || 'N/A'}\n\n` +
+      `Mode Auto : ${session.auto_model ? '✅ Activé' : '❌ Désactivé'}`,
+      MODEL_MENU
+    );
+    return true;
+  }
+  
+  if (text === '🔄 Mode Auto (Recommandé)') {
+    const { query } = await import('@/lib/neon/db');
+    await query(`
+      UPDATE conversation_sessions 
+      SET auto_model = true, updated_at = NOW() 
+      WHERE chat_id = $1
+    `, [chatId]);
+    await sendMessageWithKeyboard(chatId,
+      `✅ <b>Mode Auto activé</b>\n\n` +
+      `Le bot choisira automatiquement le meilleur modèle selon :\n` +
+      `• 🎙️ <b>Audio</b> → Whisper Large v3\n` +
+      `• 👁️ <b>Images</b> → Phi-3 Vision\n` +
+      `• 🧠 <b>Raisonnement complexe</b> → DeepSeek R1\n` +
+      `• 💻 <b>Code/Technique</b> → DeepSeek Chat\n` +
+      `• 📝 <b>Long contexte</b> → Llama 3.1 70B\n` +
+      `• ⚡ <b>Réponses rapides</b> → Phi-3 Mini\n` +
+      `• 💬 <b>Général</b> → DeepSeek Chat (défaut)\n\n` +
+      `Vous pouvez toujours forcer un modèle via le menu ou en disant "utilise le modèle X"`,
+      MODEL_MENU
+    );
+    return true;
+  }
+  
+  if (text === '🧠 Reasoning (DeepSeek R1)') {
+    await updateSessionModel(chatId, 'deepseek/deepseek-r1');
+    await sendMessageWithKeyboard(chatId, '✅ Modèle changé pour <b>DeepSeek R1</b> (Reasoning complexe)', MODEL_MENU);
+    return true;
+  }
+  
+  if (text === '⚡ Rapide (Phi-3 Mini)') {
+    await updateSessionModel(chatId, 'microsoft/phi-3-mini-128k-instruct');
+    await sendMessageWithKeyboard(chatId, '✅ Modèle changé pour <b>Phi-3 Mini</b> (Rapide, 128k contexte)', MODEL_MENU);
+    return true;
+  }
+  
+  if (text === '💻 Code/Tech (DeepSeek Chat)') {
+    await updateSessionModel(chatId, 'deepseek/deepseek-chat');
+    await sendMessageWithKeyboard(chatId, '✅ Modèle changé pour <b>DeepSeek Chat</b> (Code, général)', MODEL_MENU);
+    return true;
+  }
+  
+  if (text === '📝 Long Contexte (Llama 70B)') {
+    await updateSessionModel(chatId, 'meta-llama/llama-3.1-70b-instruct');
+    await sendMessageWithKeyboard(chatId, '✅ Modèle changé pour <b>Llama 3.1 70B</b> (Qualité, 131k contexte)', MODEL_MENU);
+    return true;
+  }
+  
+  if (text === '👁️ Vision (Phi-3 Vision)') {
+    await updateSessionModel(chatId, 'microsoft/phi-3-vision-128k-instruct');
+    await sendMessageWithKeyboard(chatId, '✅ Modèle changé pour <b>Phi-3 Vision</b> (Analyse images, 128k contexte)', MODEL_MENU);
+    return true;
+  }
+  
+  if (text === '🎙️ Transcription (Whisper)') {
+    await updateSessionTranscriptionModel(chatId, 'openai/whisper-large-v3');
+    await sendMessageWithKeyboard(chatId, '✅ Modèle de transcription changé pour <b>Whisper Large v3</b>', MODEL_MENU);
+    return true;
+  }
+  
+  if (text === '📋 Voir Tous Modèles') {
+    await sendMessageWithKeyboard(chatId, '📋 <b>Tous les modèles disponibles</b>\n\nCliquez pour sélectionner :', createModelSelectionInlineKeyboard());
     return true;
   }
   

@@ -396,7 +396,67 @@ export async function executeFunction(name: string, args: any, chatId: string): 
       return data.deployments || [];
     }
 
-    // Database
+    case 'get_deployment_logs': {
+      const token = process.env.VERCEL_TOKEN;
+      if (!token || token === 'your_vercel_token_here') return { error: 'VERCEL_TOKEN non configuré sur Vercel Dashboard' };
+      
+      const deploymentId = args.deploymentId;
+      if (!deploymentId) return { error: 'deploymentId requis' };
+      
+      const res = await fetch(`https://api.vercel.com/v6/deployments/${deploymentId}/logs`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      return data;
+    }
+
+    case 'get_vercel_project_info': {
+      const token = process.env.VERCEL_TOKEN;
+      if (!token || token === 'your_vercel_token_here') return { error: 'VERCEL_TOKEN non configuré sur Vercel Dashboard' };
+      
+      const res = await fetch('https://api.vercel.com/v9/projects/prj_sYLBGlV8d7PBEEiDbwJbq9qm9fdy', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return await res.json();
+    }
+
+    case 'get_vercel_env_vars': {
+      const token = process.env.VERCEL_TOKEN;
+      if (!token || token === 'your_vercel_token_here') return { error: 'VERCEL_TOKEN non configuré sur Vercel Dashboard' };
+      
+      const res = await fetch('https://api.vercel.com/v10/projects/prj_sYLBGlV8d7PBEEiDbwJbq9qm9fdy/env', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      // Filter sensitive values
+      return data.envs?.map((e: any) => ({ key: e.key, target: e.target, type: e.type, comment: e.comment })) || [];
+    }
+
+    case 'get_vercel_domains': {
+      const token = process.env.VERCEL_TOKEN;
+      if (!token || token === 'your_vercel_token_here') return { error: 'VERCEL_TOKEN non configuré sur Vercel Dashboard' };
+      
+      const res = await fetch('https://api.vercel.com/v9/projects/prj_sYLBGlV8d7PBEEiDbwJbq9qm9fdy/domains', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return await res.json();
+    }
+
+    case 'vercel_rollback': {
+      const token = process.env.VERCEL_TOKEN;
+      if (!token || token === 'your_vercel_token_here') return { error: 'VERCEL_TOKEN non configuré sur Vercel Dashboard' };
+      
+      const deploymentId = args.deploymentId;
+      if (!deploymentId) return { error: 'deploymentId requis pour le rollback' };
+      
+      const res = await fetch(`https://api.vercel.com/v13/deployments/${deploymentId}/cancel`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      return { success: res.ok, message: res.ok ? 'Rollback initié' : 'Erreur rollback' };
+    }
+
+    // Database - Enhanced
     case 'run_health_check': {
       const res = await fetch('https://www.optiwifi.site/api/cron/health-check', {
         headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
@@ -446,6 +506,252 @@ export async function executeFunction(name: string, args: any, chatId: string): 
         FROM wifi_spaces
       `);
       return result;
+    }
+
+    case 'get_db_schema': {
+      // Get all tables with columns
+      const tablesResult = await query(`
+        SELECT 
+          table_name,
+          column_name,
+          data_type,
+          is_nullable,
+          column_default,
+          character_maximum_length
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        ORDER BY table_name, ordinal_position
+      `);
+      
+      // Get indexes
+      const indexesResult = await query(`
+        SELECT 
+          tablename,
+          indexname,
+          indexdef
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+      `);
+      
+      // Get table sizes
+      const sizesResult = await query(`
+        SELECT 
+          relname as table_name,
+          pg_size_pretty(pg_total_relation_size(relid)) as total_size,
+          pg_size_pretty(pg_relation_size(relid)) as table_size,
+          pg_size_pretty(pg_total_relation_size(relid) - pg_relation_size(relid)) as index_size,
+          n_live_tup as row_count
+        FROM pg_stat_user_tables
+        WHERE schemaname = 'public'
+        ORDER BY pg_total_relation_size(relid) DESC
+      `);
+      
+      return {
+        tables: tablesResult.rows,
+        indexes: indexesResult.rows,
+        sizes: sizesResult.rows
+      };
+    }
+
+    case 'get_db_performance': {
+      const [
+        cacheHitRatio,
+        tableStats,
+        indexUsage,
+        longQueries
+      ] = await Promise.all([
+        query(`SELECT 
+          sum(heap_blks_hit) / nullif(sum(heap_blks_hit) + sum(heap_blks_read), 0) as cache_hit_ratio
+        FROM pg_statio_user_tables`),
+        query(`
+          SELECT 
+            relname as table_name,
+            n_live_tup as live_rows,
+            n_dead_tup as dead_rows,
+            last_vacuum,
+            last_autovacuum,
+            vacuum_count,
+            autovacuum_count
+          FROM pg_stat_user_tables
+          WHERE schemaname = 'public'
+          ORDER BY n_dead_tup DESC
+        `),
+        query(`
+          SELECT 
+            relname as table_name,
+            indexrelname as index_name,
+            idx_scan as scans,
+            idx_tup_read,
+            idx_tup_fetch
+          FROM pg_stat_user_indexes
+          WHERE schemaname = 'public'
+          ORDER BY idx_scan DESC
+        `),
+        query(`
+          SELECT query, mean_exec_time, calls, total_exec_time
+          FROM pg_stat_statements
+          WHERE mean_exec_time > 100
+          ORDER BY mean_exec_time DESC
+          LIMIT 20
+        `)
+      ]);
+      
+      return {
+        cacheHitRatio: cacheHitRatio.rows[0]?.cache_hit_ratio || 0,
+        tableStats: tableStats.rows,
+        indexUsage: indexUsage.rows,
+        longQueries: longQueries.rows
+      };
+    }
+
+    case 'analyze_table': {
+      const tableName = args.tableName;
+      if (!tableName) return { error: 'tableName requis' };
+      
+      const result = await query(`ANALYZE ${tableName}`);
+      return { success: true, message: `Table ${tableName} analysée` };
+    }
+
+    case 'vacuum_table': {
+      const tableName = args.tableName;
+      if (!tableName) return { error: 'tableName requis' };
+      
+      const result = await query(`VACUUM ANALYZE ${tableName}`);
+      return { success: true, message: `Table ${tableName} vacuumée` };
+    }
+
+    // Learning/Memory functions
+    case 'learn_fact': {
+      const { chat_id, fact, category, importance } = args;
+      const { query } = await import('./neon/db');
+      
+      // Store learned fact in database
+      const result = await query(`
+        INSERT INTO bot_learned_facts (chat_id, fact, category, importance, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (chat_id, fact) DO UPDATE SET 
+          importance = GREATEST(bot_learned_facts.importance, EXCLUDED.importance),
+          updated_at = NOW()
+        RETURNING id
+      `, [chat_id || 'global', fact, category || 'general', importance || 5]);
+      
+      return { success: true, factId: result.rows[0]?.id, message: 'Fait appris et stocké' };
+    }
+
+    case 'recall_facts': {
+      const { chat_id, category, limit } = args;
+      const { query } = await import('./neon/db');
+      
+      let sql = `SELECT fact, category, importance, created_at FROM bot_learned_facts WHERE 1=1`;
+      const params: any[] = [];
+      
+      if (chat_id) {
+        params.push(chat_id);
+        sql += ` AND (chat_id = $${params.length} OR chat_id = 'global')`;
+      }
+      if (category) {
+        params.push(category);
+        sql += ` AND category = $${params.length}`;
+      }
+      sql += ` ORDER BY importance DESC, created_at DESC LIMIT $${params.length + 1}`;
+      params.push(limit || 20);
+      
+      const result = await query(sql, params);
+      return result.rows;
+    }
+
+    case 'get_user_preferences': {
+      const { chat_id } = args;
+      const { query } = await import('./neon/db');
+      
+      const result = await query(`
+        SELECT key, value, updated_at FROM bot_user_preferences
+        WHERE chat_id = $1
+      `, [chat_id]);
+      
+      const prefs: Record<string, any> = {};
+      for (const row of result.rows) {
+        try {
+          prefs[row.key] = JSON.parse(row.value);
+        } catch {
+          prefs[row.key] = row.value;
+        }
+      }
+      return prefs;
+    }
+
+    case 'set_user_preference': {
+      const { chat_id, key, value } = args;
+      const { query } = await import('./neon/db');
+      
+      const result = await query(`
+        INSERT INTO bot_user_preferences (chat_id, key, value, updated_at)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (chat_id, key) DO UPDATE SET 
+          value = EXCLUDED.value,
+          updated_at = NOW()
+        RETURNING *
+      `, [chat_id, key, JSON.stringify(value)]);
+      
+      return { success: true, preference: result.rows[0] };
+    }
+
+    case 'log_interaction': {
+      const { chat_id, user_message, bot_response, tools_used, success, context } = args;
+      const { query } = await import('./neon/db');
+      
+      const result = await query(`
+        INSERT INTO bot_interactions (chat_id, user_message, bot_response, tools_used, success, context, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        RETURNING id
+      `, [chat_id, user_message, bot_response, JSON.stringify(tools_used || []), success ?? true, context || 'general']);
+      
+      return { success: true, interactionId: result.rows[0]?.id };
+    }
+
+    case 'get_interaction_stats': {
+      const { chat_id, days } = args;
+      const { query } = await import('./neon/db');
+      
+      const result = await query(`
+        SELECT 
+          COUNT(*) as total_interactions,
+          COUNT(*) FILTER (WHERE success) as successful,
+          COUNT(*) FILTER (WHERE NOT success) as failed,
+          COUNT(DISTINCT context) as contexts_used,
+          json_agg(DISTINCT tools_used) as all_tools
+        FROM bot_interactions
+        WHERE chat_id = $1 AND created_at > NOW() - INTERVAL '${days || 30} days'
+      `, [chat_id]);
+      
+      return result.rows[0];
+    }
+
+    case 'auto_improve_response': {
+      // Analyze failed interactions and suggest improvements
+      const { chat_id } = args;
+      const { query } = await import('./neon/db');
+      
+      const failedResult = await query(`
+        SELECT user_message, bot_response, context, created_at
+        FROM bot_interactions
+        WHERE chat_id = $1 AND success = false
+        ORDER BY created_at DESC
+        LIMIT 10
+      `, [chat_id]);
+      
+      const patterns = failedResult.rows.map((r: any) => ({
+        message: r.user_message,
+        response: r.bot_response,
+        context: r.context
+      }));
+      
+      return {
+        failedPatterns: patterns,
+        suggestions: patterns.length > 0 
+          ? 'Considérez ajouter des faits appris pour ces cas, ou améliorer les prompts système'
+          : 'Aucun échec récent détecté'
+      };
     }
 
     // Notifications
