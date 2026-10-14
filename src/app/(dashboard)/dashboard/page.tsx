@@ -40,88 +40,102 @@ export default function DashboardPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadDashboardData() {
       setLoading(true);
 
-      let posQuery = supabase.from('points_of_sale').select('id', { count: 'exact' });
-      if (currentSpaceId) {
-        posQuery = posQuery.eq('space_id', currentSpaceId);
+      try {
+        let posQuery = supabase.from('points_of_sale').select('id', { count: 'exact' });
+        if (currentSpaceId) {
+          posQuery = posQuery.eq('space_id', currentSpaceId);
+        }
+
+        let colQuery = supabase
+          .from('collections')
+          .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
+          .order('created_at', { ascending: false });
+        if (currentSpaceId) {
+          colQuery = colQuery.eq('space_id', currentSpaceId);
+        }
+
+        let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
+        if (currentSpaceId) {
+          itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
+        }
+
+        let allocQuery = supabase.from('ticket_allocations').select('quantite');
+        if (currentSpaceId) {
+          allocQuery = allocQuery.eq('space_id', currentSpaceId);
+        }
+
+        const [posRes, colRes, itemsRes, allocRes] = await Promise.all([
+          posQuery,
+          colQuery,
+          itemsQuery,
+          allocQuery,
+        ]);
+
+        if (!isMounted) return;
+
+        const posData = posRes.data;
+        const colData = colRes.data;
+        const itemsData = itemsRes.data;
+        const allocData = allocRes.data;
+
+        setPosActifsCount(posData?.length || 0);
+
+        if (colData && colData.length > 0) {
+          setCollections(colData);
+
+          let totalExpected = 0;
+          let totalCollected = 0;
+          let totalDiff = 0;
+
+          colData.forEach((c: Collection) => {
+            totalExpected += Number(c.montant_attendu || 0);
+            totalCollected += Number(c.montant_collecte || 0);
+            totalDiff += Number(c.difference || 0);
+          });
+
+          setChiffreAffairesTotal(totalExpected);
+          setMontantCollecteTotal(totalCollected);
+          setEcartTotal(totalDiff);
+        } else {
+          setCollections([]);
+          setChiffreAffairesTotal(0);
+          setMontantCollecteTotal(0);
+          setEcartTotal(0);
+        }
+
+        if (itemsData && itemsData.length > 0) {
+          const totalSold = itemsData.reduce((acc: number, curr: CollectionItem) => acc + (curr.quantite_vendue || 0), 0);
+          setTicketsSoldTotal(totalSold);
+        } else {
+          setTicketsSoldTotal(0);
+        }
+
+        if (allocData && allocData.length > 0) {
+          const totalAllocated = allocData.reduce((acc: number, curr: TicketAllocation) => acc + (curr.quantite || 0), 0);
+          setTicketsAllouesTotal(totalAllocated);
+        } else {
+          setTicketsAllouesTotal(0);
+        }
+      } catch (err) {
+        console.error('Erreur de chargement du tableau de bord:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-
-      let colQuery = supabase
-        .from('collections')
-        .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
-        .order('created_at', { ascending: false });
-      if (currentSpaceId) {
-        colQuery = colQuery.eq('space_id', currentSpaceId);
-      }
-
-      let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
-      if (currentSpaceId) {
-        itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
-      }
-
-      let allocQuery = supabase.from('ticket_allocations').select('quantite');
-      if (currentSpaceId) {
-        allocQuery = allocQuery.eq('space_id', currentSpaceId);
-      }
-
-      const [posRes, colRes, itemsRes, allocRes] = await Promise.all([
-        posQuery,
-        colQuery,
-        itemsQuery,
-        allocQuery,
-      ]);
-
-      const posData = posRes.data;
-      const colData = colRes.data;
-      const itemsData = itemsRes.data;
-      const allocData = allocRes.data;
-
-      setPosActifsCount(posData?.length || 0);
-
-      if (colData && colData.length > 0) {
-        setCollections(colData);
-
-        let totalExpected = 0;
-        let totalCollected = 0;
-        let totalDiff = 0;
-
-        colData.forEach((c: Collection) => {
-          totalExpected += Number(c.montant_attendu || 0);
-          totalCollected += Number(c.montant_collecte || 0);
-          totalDiff += Number(c.difference || 0);
-        });
-
-        setChiffreAffairesTotal(totalExpected);
-        setMontantCollecteTotal(totalCollected);
-        setEcartTotal(totalDiff);
-      } else {
-        setCollections([]);
-        setChiffreAffairesTotal(0);
-        setMontantCollecteTotal(0);
-        setEcartTotal(0);
-      }
-
-      if (itemsData && itemsData.length > 0) {
-        const totalSold = itemsData.reduce((acc: number, curr: CollectionItem) => acc + (curr.quantite_vendue || 0), 0);
-        setTicketsSoldTotal(totalSold);
-      } else {
-        setTicketsSoldTotal(0);
-      }
-
-      if (allocData && allocData.length > 0) {
-        const totalAllocated = allocData.reduce((acc: number, curr: TicketAllocation) => acc + (curr.quantite || 0), 0);
-        setTicketsAllouesTotal(totalAllocated);
-      } else {
-        setTicketsAllouesTotal(0);
-      }
-
-      setLoading(false);
     }
 
     loadDashboardData();
-  }, [currentSpaceId, supabase]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentSpaceId]);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">

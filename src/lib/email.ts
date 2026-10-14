@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 interface EmailOptions {
   to: string;
@@ -7,9 +8,9 @@ interface EmailOptions {
   text?: string;
 }
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
-function getTransporter(): nodemailer.Transporter {
+function getTransporter(): Transporter {
   if (transporter) return transporter;
 
   const smtpHost = process.env.SMTP_HOST;
@@ -39,7 +40,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
   try {
     const transporter = getTransporter();
 
-    const fromEmail = process.env.SMTP_FROM || smtpUser;
+    const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
     const fromName = process.env.SMTP_FROM_NAME || 'OptiSpace';
 
     const info = await transporter.sendMail({
@@ -51,9 +52,10 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     });
 
     return { success: true, messageId: info.messageId };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Email sending failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: message };
   }
 }
 

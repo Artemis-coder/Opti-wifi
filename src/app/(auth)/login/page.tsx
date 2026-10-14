@@ -64,6 +64,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [recoveryReady, setRecoveryReady] = useState(false);
+   const [showLoginPassword, setShowLoginPassword] = useState(false);
+   const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
 
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
@@ -95,9 +97,11 @@ export default function LoginPage() {
       setUser(user);
 
       // Redirect to dashboard after login
+      router.refresh();
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Une erreur est survenue.';
+      setError(message);
       setLoading(false);
     }
   };

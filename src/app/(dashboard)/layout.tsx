@@ -7,18 +7,13 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { createClient } from '@/lib/supabase/client';
+import { Profile } from '@/types/database';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const router = useRouter();
-  const { user, isLoading, setUser, setIsLoading } = useAuthStore();
+  const { user, isLoading, setUser } = useAuthStore();
   const supabase = createClient();
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isLoading, router]);
 
   const [orgStatus, setOrgStatus] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string | null>(null);
@@ -27,21 +22,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     let isMounted = true;
 
-    async function refreshProfile() {
-      if (!user) {
-        if (isMounted) setCheckingOrg(false);
-        return;
+    // Safety timeout: never stay in loading state longer than 4 seconds
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
+        setCheckingOrg(false);
       }
+    }, 4000);
 
+    async function initUserAndProfile() {
       try {
+        let currentUser = user;
+
+        // If user is not yet loaded in Zustand store (e.g. page refresh), check cookie session
+        if (!currentUser) {
+          const { data } = await supabase.auth.getUser();
+          if (data?.user) {
+            currentUser = data.user as unknown as Profile;
+            setUser(currentUser);
+          } else if (!isLoading) {
+            if (isMounted) {
+              setCheckingOrg(false);
+              router.push('/login');
+            }
+            return;
+          }
+        }
+
+        if (!currentUser) return;
+
         const { data: refreshedProfile } = await supabase
           .from('profiles')
           .select('*, organization:organizations(id, name, status)')
-          .eq('id', user.id)
+          .eq('id', currentUser.id)
           .single();
 
         if (isMounted && refreshedProfile) {
-          if (refreshedProfile.role !== user.role) {
+          if (refreshedProfile.role !== currentUser.role) {
             setUser(refreshedProfile);
           }
           if (refreshedProfile.organization) {
@@ -59,22 +75,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     }
 
-    refreshProfile();
+    initUserAndProfile();
 
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimer);
     };
-  }, [user, supabase, setUser]);
+  }, [user?.id, isLoading, router, setUser]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    useAuthStore.getState().logout();
     router.push('/login');
   };
 
-  if (isLoading || checkingOrg) {
+  if ((isLoading && !user) || (checkingOrg && !user)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-sm text-slate-500 font-medium">Chargement...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
+          <div className="text-sm text-slate-500 font-medium">Chargement du tableau de bord...</div>
+        </div>
       </div>
     );
   }

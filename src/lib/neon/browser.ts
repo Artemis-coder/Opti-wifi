@@ -10,7 +10,9 @@ export interface BrowserAuthSession {
 
 const AUTH_COOKIE_NAME = 'neon-auth-token';
 
-export function createBrowserClient() {
+let _singletonClient: any = null;
+
+function initBrowserClient() {
   const auth = {
     getUser: async (): Promise<{ data: { user: AuthUser | null }; error: null }> => {
       try {
@@ -189,3 +191,14 @@ export function createBrowserClient() {
     },
   };
 }
+
+export function createBrowserClient() {
+  if (typeof window === 'undefined') {
+    return initBrowserClient();
+  }
+  if (!_singletonClient) {
+    _singletonClient = initBrowserClient();
+  }
+  return _singletonClient;
+}
+

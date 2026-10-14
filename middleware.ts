@@ -1,5 +1,5 @@
-import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { AUTH_COOKIE_NAME, verifyNeonToken } from '@/lib/neon/jwt-edge';
 
 const PROTECTED_CLIENT_ROUTES = [
   '/dashboard',
@@ -14,54 +14,13 @@ const PROTECTED_CLIENT_ROUTES = [
 ];
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll().map(c => ({
-            name: c.name,
-            value: c.value,
-          }));
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set({
-              name,
-              value,
-              ...options,
-            });
-          });
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) => {
-            supabaseResponse.cookies.set({
-              name,
-              value,
-              ...options,
-            });
-          });
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { pathname } = request.nextUrl;
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const user = token ? await verifyNeonToken(token) : null;
 
-  const isClientRoute =
-    PROTECTED_CLIENT_ROUTES.some(route =>
-      pathname === route || pathname.startsWith(route + '/')
-    );
+  const isClientRoute = PROTECTED_CLIENT_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
 
   const isPlatformRoute =
     pathname === '/platform' || pathname.startsWith('/platform/');
@@ -75,41 +34,25 @@ export async function middleware(request: NextRequest) {
 
     // Redirect root to login if no session
     if (!user && (isPlatformLogin || isPlatformRoot)) {
-      // allow access to login page without user session
       if (isPlatformLogin) {
-        return supabaseResponse;
+        return NextResponse.next();
       }
-      // Redirect /platform to /platform/login
       return NextResponse.redirect(new URL('/platform/login', request.url));
     }
 
     if (user && isPlatformLogin) {
-      // Check if user is a platform super admin
-      const { data: platformUser, error } = await supabase
-        .from('platform_users')
-        .select('role, is_active')
-        .eq('auth_user_id', user.id)
-        .single();
-
-      if (error || !platformUser || !platformUser.is_active) {
-        // Not a platform user — redirect to client dashboard
+      const isSuperAdmin =
+        user.role === 'super_admin' || user.app_metadata?.role === 'super_admin';
+      if (!isSuperAdmin) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
-
-      // Valid platform login — send to dashboard
       return NextResponse.redirect(new URL('/platform/dashboard', request.url));
     }
 
     if (user && !isPlatformLogin) {
-      // Verify platform user access
-      const { data: platformUser, error } = await supabase
-        .from('platform_users')
-        .select('role, is_active')
-        .eq('auth_user_id', user.id)
-        .single();
-
-      if (error || !platformUser || !platformUser.is_active) {
-        // Not authorized for platform — redirect to client dashboard
+      const isSuperAdmin =
+        user.role === 'super_admin' || user.app_metadata?.role === 'super_admin';
+      if (!isSuperAdmin) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     }
@@ -118,7 +61,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/platform/login', request.url));
     }
 
-    return supabaseResponse;
+    return NextResponse.next();
   }
 
   // --- Client app routes ---
@@ -130,7 +73,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {
