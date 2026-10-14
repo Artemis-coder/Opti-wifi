@@ -294,13 +294,12 @@ export default function LoginPage() {
               required
             />
 
-            <button
-              type="button"
-              onClick={() => { setMode('recovery'); setError(''); setSuccessMsg(''); }}
-              className="md-ripple text-brand-600 hover:text-brand-700 font-semibold text-sm py-3 px-2 -ml-2"
+            <a
+              href="/forgot-password"
+              className="md-ripple text-brand-600 hover:text-brand-700 font-semibold text-sm py-3 px-2 -ml-2 block text-center"
             >
               Mot de passe oublié ?
-            </button>
+            </a>
 
             <Button type="submit" className="w-full h-12 sm:h-11 text-sm font-bold" isLoading={loading}>
               Se connecter à mon espace
