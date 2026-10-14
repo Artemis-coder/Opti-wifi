@@ -123,7 +123,13 @@ export default function SpaceDashboardPage() {
 
       const spaceItems: CollectionItem[] = [];
       spaceCollections.forEach((c: Collection) => {
-        if (c.items) spaceItems.push(...c.items);
+        if (c.items) {
+          if (Array.isArray(c.items)) {
+            spaceItems.push(...c.items);
+          } else if (typeof c.items === 'object') {
+            spaceItems.push(c.items as CollectionItem);
+          }
+        }
       });
 
       const soldTotal = spaceItems.reduce(

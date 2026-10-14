@@ -135,11 +135,10 @@ export default function ExchangePage() {
         const soldMap: Record<string, number> = {};
         if (collectionsData) {
           collectionsData.forEach((c: Collection) => {
-            if (c.items) {
-              c.items!.forEach((item: CollectionItem) => {
-                soldMap[item.ticket_type_id] = (soldMap[item.ticket_type_id] || 0) + item.quantite_vendue;
-              });
-            }
+            const items = Array.isArray(c.items) ? c.items : c.items ? [c.items] : [];
+            items.forEach((item: CollectionItem) => {
+              soldMap[item.ticket_type_id] = (soldMap[item.ticket_type_id] || 0) + item.quantite_vendue;
+            });
           });
         }
 

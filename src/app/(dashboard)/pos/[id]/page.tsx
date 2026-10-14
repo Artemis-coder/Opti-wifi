@@ -67,7 +67,7 @@ export default function PosDetailPage() {
 
       const { data: posData } = await supabase
         .from('points_of_sale')
-        .select('*, collecteur:profiles(*)')
+        .select('*, collecteur:profiles(*), space:wifi_spaces(*)')
         .eq('id', posId)
         .single();
 
@@ -106,7 +106,7 @@ export default function PosDetailPage() {
     }
 
     loadData();
-  }, [posId, supabase]);
+  }, [posId]);
 
   const handlePosUpdated = (updated: PointOfSale) => {
     setPos(updated);
@@ -145,18 +145,28 @@ export default function PosDetailPage() {
 
     const allItems: CollectionItem[] = [];
     collections.forEach((c: Collection) => {
-      if (c.items) allItems.push(...c.items);
+      if (c.items) {
+        if (Array.isArray(c.items)) {
+          allItems.push(...c.items);
+        } else if (typeof c.items === 'object') {
+          allItems.push(c.items as CollectionItem);
+        }
+      }
     });
 
     allItems.forEach((item: CollectionItem) => {
+      if (!item) return;
       const tt = item.ticket_type;
       const typeId = item.ticket_type_id;
       const s = summaryByTypeId.get(typeId) || (tt ? summaryByTypeId.get(tt.id) : null);
       if (s) {
-        s.vendu += item.quantite_vendue;
-        s.ca += Number(item.montant_total || 0);
-        const expected = item.quantite_vendue * (tt ? tt.prix : s.ticketType.prix);
-        s.ecarts += Number(item.montant_total || 0) - expected;
+        const qtyVendu = Number(item.quantite_vendue || 0);
+        const montantTotal = Number(item.montant_total || 0);
+        const unitPrix = Number(tt ? tt.prix : s.ticketType.prix || 0);
+        s.vendu += qtyVendu;
+        s.ca += montantTotal;
+        const expected = qtyVendu * unitPrix;
+        s.ecarts += montantTotal - expected;
       }
     });
 

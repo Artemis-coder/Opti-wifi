@@ -463,12 +463,13 @@ export class TableBuilder {
 
     const joinClauses: string[] = [];
     const joinAliases: string[] = [];
-    const nestedInfos: { alias: string; columns: string[]; table: string }[] = [];
+    const nestedInfos: { alias: string; columns: string[]; table: string; isArray: boolean }[] = [];
 
     for (const n of nested) {
       const joinType = n.joinType === 'inner' ? 'INNER' : 'LEFT';
       const fk = await resolveFk(this.tableName, n.table, n.alias);
       let onClause: string;
+      const isArray = fk ? !fk.onParent : false;
       if (fk && fk.onParent) {
         onClause = `"${this.tableName}"."${fk.column}" = "${n.alias}"."id"`;
       } else if (fk) {
@@ -477,11 +478,12 @@ export class TableBuilder {
         onClause = `"${this.tableName}"."${n.alias}_id" = "${n.alias}"."id"`;
       }
       joinClauses.push(`${joinType} JOIN "${n.table}" AS "${n.alias}" ON ${onClause}`);
-      if (n.columns.length > 0) {
-        nestedInfos.push({ alias: n.alias, columns: n.columns, table: n.table });
-      } else {
-        nestedInfos.push({ alias: n.alias, columns: [], table: n.table });
-      }
+      nestedInfos.push({
+        alias: n.alias,
+        columns: n.columns.length > 0 ? n.columns : [],
+        table: n.table,
+        isArray,
+      });
       joinAliases.push(n.alias);
     }
 
@@ -552,39 +554,116 @@ export class TableBuilder {
     const result = await query(sql, whereBuild.params);
     const rows = result.rows || [];
 
-    const transformedRows = rows.map(row => {
-      const mainObj: any = {};
-      const nestedData: Record<string, any> = {};
+    const hasArrayRelation = nestedInfos.some(n => n.isArray);
+    let transformedRows: any[];
 
-      for (const key of Object.keys(row)) {
-        let matched = false;
-        for (const na of joinAliases) {
-          const prefix = `${na}_`;
-          if (key.startsWith(prefix)) {
-            const nestedKey = key.slice(prefix.length);
-            if (!nestedData[na]) nestedData[na] = {};
+    if (!hasArrayRelation) {
+      transformedRows = rows.map(row => {
+        const mainObj: any = {};
+        const nestedData: Record<string, any> = {};
 
-            const info = nestedInfos.find(n => n.alias === na);
-            if (info && info.columns.length > 0 && !info.columns.includes(nestedKey)) {
+        for (const key of Object.keys(row)) {
+          let matched = false;
+          for (const na of joinAliases) {
+            const prefix = `${na}_`;
+            if (key.startsWith(prefix)) {
+              const nestedKey = key.slice(prefix.length);
+              if (!nestedData[na]) nestedData[na] = {};
+
+              const info = nestedInfos.find(n => n.alias === na);
+              if (info && info.columns.length > 0 && !info.columns.includes(nestedKey)) {
+                matched = true;
+                break;
+              }
+              nestedData[na][nestedKey] = row[key];
               matched = true;
               break;
             }
-            nestedData[na][nestedKey] = row[key];
-            matched = true;
-            break;
+          }
+          if (!matched) {
+            mainObj[key] = row[key];
           }
         }
-        if (!matched) {
-          mainObj[key] = row[key];
+
+        for (const na of joinAliases) {
+          const obj = nestedData[na];
+          const allNull = !obj || Object.values(obj).every(v => v === null);
+          mainObj[na] = allNull ? null : obj;
+        }
+
+        return mainObj;
+      });
+    } else {
+      const groupedMap = new Map<string, { mainObj: any; arrayMap: Record<string, any[]> }>();
+
+      for (const row of rows) {
+        const mainObj: any = {};
+        const nestedData: Record<string, any> = {};
+
+        for (const key of Object.keys(row)) {
+          let matched = false;
+          for (const na of joinAliases) {
+            const prefix = `${na}_`;
+            if (key.startsWith(prefix)) {
+              const nestedKey = key.slice(prefix.length);
+              if (!nestedData[na]) nestedData[na] = {};
+
+              const info = nestedInfos.find(n => n.alias === na);
+              if (info && info.columns.length > 0 && !info.columns.includes(nestedKey)) {
+                matched = true;
+                break;
+              }
+              nestedData[na][nestedKey] = row[key];
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) {
+            mainObj[key] = row[key];
+          }
+        }
+
+        const parentKey = mainObj.id ?? JSON.stringify(mainObj);
+        let entry = groupedMap.get(parentKey);
+        if (!entry) {
+          entry = {
+            mainObj: { ...mainObj },
+            arrayMap: {},
+          };
+          for (const info of nestedInfos) {
+            if (info.isArray) {
+              entry.arrayMap[info.alias] = [];
+            } else {
+              const obj = nestedData[info.alias];
+              const allNull = !obj || Object.values(obj).every(v => v === null);
+              entry.mainObj[info.alias] = allNull ? null : obj;
+            }
+          }
+          groupedMap.set(parentKey, entry);
+        }
+
+        for (const info of nestedInfos) {
+          if (info.isArray) {
+            const item = nestedData[info.alias];
+            const allNull = !item || Object.values(item).every(v => v === null);
+            if (!allNull) {
+              const existingList = entry.arrayMap[info.alias];
+              const isDuplicate = item.id ? existingList.some(existing => existing.id === item.id) : false;
+              if (!isDuplicate) {
+                existingList.push(item);
+              }
+            }
+          }
         }
       }
 
-      for (const na of joinAliases) {
-        mainObj[na] = nestedData[na] || null;
-      }
-
-      return mainObj;
-    });
+      transformedRows = Array.from(groupedMap.values()).map(entry => {
+        for (const [alias, list] of Object.entries(entry.arrayMap)) {
+          entry.mainObj[alias] = list;
+        }
+        return entry.mainObj;
+      });
+    }
 
     if (this._single) {
       if (transformedRows.length === 0) return { data: null, error: makeError('Row not found', 'PGRST116'), count };
