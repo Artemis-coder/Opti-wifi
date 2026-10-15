@@ -109,7 +109,7 @@ export function selectBestModel(
 
 // Get model info with tags
 export function getModelTags(modelId: ModelId): string[] {
-  return FREE_MODELS[modelId]?.tags || [];
+  return [...(FREE_MODELS[modelId]?.tags || [])];
 }
 
 interface ChatMessage {

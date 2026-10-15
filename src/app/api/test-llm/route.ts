@@ -12,6 +12,7 @@ export async function GET() {
     return NextResponse.json({ ok: true, response: response.choices[0].message.content });
   } catch (error) {
     console.error('Test LLM error:', error);
-    return NextResponse.json({ ok: false, error: error.message });
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ ok: false, error: message });
   }
 }

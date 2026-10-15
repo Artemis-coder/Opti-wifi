@@ -13,10 +13,68 @@ const PROTECTED_CLIENT_ROUTES = [
   '/settings',
 ];
 
+const CSRF_EXEMPT_ROUTES = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/reset-password',
+  '/api/auth/set-password',
+  '/api/telegram/webhook',
+  '/api/telegram/ai-webhook',
+  '/api/telegram/ai-webhook-v2',
+  '/api/telegram/notify',
+  '/api/telegram/test',
+  '/api/telegram/vercel',
+  '/api/cron/health-check',
+  '/api/ai/validation',
+  '/api/ai/notify',
+];
+
+function isCSRFExempt(pathname: string): boolean {
+  return CSRF_EXEMPT_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'));
+}
+
+function checkCSRF(request: NextRequest): boolean {
+  const method = request.method;
+  if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+    return true;
+  }
+
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+
+  if (origin) {
+    const originUrl = new URL(origin);
+    const host = request.headers.get('host');
+    if (originUrl.host !== host) {
+      return false;
+    }
+  }
+
+  if (referer) {
+    const refererUrl = new URL(referer);
+    const host = request.headers.get('host');
+    if (refererUrl.host !== host) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const user = token ? await verifyNeonToken(token) : null;
+
+  // CSRF protection for state-changing requests
+  if (!isCSRFExempt(pathname)) {
+    if (!checkCSRF(request)) {
+      return NextResponse.json(
+        { error: 'CSRF validation failed' },
+        { status: 403 }
+      );
+    }
+  }
 
   const isClientRoute = PROTECTED_CLIENT_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(route + '/')

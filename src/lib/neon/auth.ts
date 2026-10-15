@@ -5,7 +5,11 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { query, queryOne } from './db';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'optiwifi-neon-secret-key-change-me';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is not configured. Set JWT_SECRET in your environment variables.');
+}
+const JWT_SECRET_Typed: string = JWT_SECRET;
 const JWT_EXPIRES_IN = '24h';
 export const AUTH_COOKIE_NAME = 'neon-auth-token';
 
@@ -39,14 +43,14 @@ export function signToken(user: NeonUser): string {
       user_metadata: user.user_metadata,
       app_metadata: user.app_metadata,
     },
-    JWT_SECRET,
+    JWT_SECRET_Typed,
     { expiresIn: JWT_EXPIRES_IN, algorithm: 'HS256' }
   );
 }
 
 export function verifyToken(token: string): { sub: string; email: string; role: string; organization_id?: string | null } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as any;
+    return jwt.verify(token, JWT_SECRET_Typed) as any;
   } catch {
     return null;
   }

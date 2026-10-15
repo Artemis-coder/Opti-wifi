@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       data: {
         message_id: 'sent',
-        reset_url: resetUrl,
       },
     });
   } catch (err: unknown) {

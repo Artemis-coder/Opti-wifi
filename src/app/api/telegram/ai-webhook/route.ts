@@ -31,13 +31,13 @@ OUTILS DISPONIBLES : ${JSON.stringify(AVAILABLE_TOOLS, null, 2)}`;
 async function executeTool(name: string, args: any): Promise<any> {
   switch (name) {
     case 'trigger_deployment':
-      const deployRes = await fetch('https://api.vercel.com/v1/integrations/deploy/prj_sYLBGlV8d7PBEEiDbwJbq9qm9fdy/xsZKyhGwr2', {
+      const deployRes = await fetch(`https://api.vercel.com/v1/integrations/deploy/${process.env.VERCEL_PROJECT_ID}/${process.env.VERCEL_DEPLOY_TOKEN}`, {
         method: 'POST',
       });
       return { success: deployRes.ok, message: 'Déploiement déclenché' };
 
     case 'check_deployment_status':
-      const listRes = await fetch('https://api.vercel.com/v6/deployments?projectId=prj_sYLBGlV8d7PBEEiDbwJbq9qm9fdy&limit=1', {
+      const listRes = await fetch(`https://api.vercel.com/v6/deployments?projectId=${process.env.VERCEL_PROJECT_ID}&limit=1`, {
         headers: { 'Authorization': `Bearer ${process.env.VERCEL_TOKEN || ''}` }
       });
       const deployments = await listRes.json();

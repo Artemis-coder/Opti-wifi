@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { adminClient } from '@/lib/neon/admin';
+import { createHash } from 'crypto';
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -75,16 +76,17 @@ export async function POST(request: Request) {
 
   const targetUserId = adminProfile?.id || user.id;
 
-  // Generate a temporary access link with a signed URL
-  // This creates a one-time impersonation link
-  const impersonationToken = Buffer.from(
-    JSON.stringify({
-      target_user_id: targetUserId,
-      source_platform_user_id: platformUser.id,
-      organization_id: organizationId,
-      created_at: new Date().toISOString(),
-    })
-  ).toString('base64url');
+  // Generate a signed impersonation token using HMAC
+  const payload = JSON.stringify({
+    target_user_id: targetUserId,
+    source_platform_user_id: platformUser.id,
+    organization_id: organizationId,
+    created_at: new Date().toISOString(),
+  });
+  const signature = createHash('sha256')
+    .update(payload + (process.env.JWT_SECRET || ''))
+    .digest('hex');
+  const impersonationToken = Buffer.from(payload).toString('base64url') + '.' + signature;
 
   return NextResponse.json({
     success: true,

@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOpenRouterClient, FREE_MODELS, DEFAULT_MODEL, type ModelInfo, selectBestModel } from '@/lib/openrouter';
+import { freeLLMClient, selectBestAvailableModel, getModelInfo, FREE_MODELS, type ModelId, type ModelInfo } from '@/lib/free-llm';
 import { 
   sendTelegramMessage 
 } from '@/lib/telegram';
@@ -123,7 +123,7 @@ async function handleMessage(message: any) {
 }
 
 async function handleVoiceMessage(message: any, chatId: string, session: any) {
-  const client = getOpenRouterClient();
+  const client = freeLLMClient;
   
   try {
     // Download voice file
@@ -137,18 +137,19 @@ async function handleVoiceMessage(message: any, chatId: string, session: any) {
     const audioRes = await fetch(fileUrl);
     const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
     
-    // Use session's preferred transcription model
-    const transcriptionModel = session.transcription_model || 'openai/whisper-large-v3';
-    const modelInfo = FREE_MODELS[transcriptionModel as keyof typeof FREE_MODELS] as ModelInfo | undefined;
-    const modelName = modelInfo?.name || transcriptionModel;
+    // Use free LLM client for transcription (will try OpenRouter then Groq)
+    const transcriptionModelKey = session.transcription_model || 'openrouter/whisper';
+    const modelInfo = getModelInfo(transcriptionModelKey as ModelId);
+    const actualModelName = modelInfo?.model || 'openai/whisper-large-v3';
+    const modelDisplayName = modelInfo?.name || 'Whisper';
     
     // Transcribe
     const contextMenu = getContextualMenu(session.context);
-    await sendMessageWithKeyboard(chatId, `🎙️ Transcription en cours avec <b>${modelName}</b>...`, contextMenu, 'HTML');
+    await sendMessageWithKeyboard(chatId, `🎙️ Transcription en cours avec <b>${modelDisplayName}</b>...`, contextMenu, 'HTML');
     
-    const transcript = await client.transcribeAudio(audioBuffer, 'fr', transcriptionModel);
+    const transcript = await client.transcribeAudio(audioBuffer, 'fr', actualModelName);
     
-    await sendMessageWithKeyboard(chatId, `🎙️ <b>Transcription (${modelName}) :</b>\n\n${transcript}`, contextMenu, 'HTML');
+    await sendMessageWithKeyboard(chatId, `🎙️ <b>Transcription (${modelDisplayName}) :</b>\n\n${transcript}`, contextMenu, 'HTML');
     
     // Process as text message
     await handleTextMessage(transcript, chatId, message.from?.first_name || 'Utilisateur', session);
@@ -160,7 +161,13 @@ async function handleVoiceMessage(message: any, chatId: string, session: any) {
 }
 
 async function handleTextMessage(text: string, chatId: string, userName: string, session: any) {
-  const client = getOpenRouterClient();
+  // Use free LLM client with auto model selection
+  const client = freeLLMClient;
+  
+  // Determine best model based on context and message
+  const selectedModel = session.auto_model 
+    ? selectBestAvailableModel(text, false, false, session.context)
+    : (session.model as ModelId);
   
   // Handle commands
   if (text.startsWith('/')) {
@@ -187,9 +194,9 @@ async function handleTextMessage(text: string, chatId: string, userName: string,
   ];
 
   try {
-    // Call LLM with function calling
+    // Call LLM with function calling using auto-selected model
     const response = await client.chatCompletion({
-      model: session.model || DEFAULT_MODEL,
+      model: selectedModel,
       messages,
       tools: (await import('@/lib/bot-functions')).FUNCTION_DEFINITIONS as any,
       tool_choice: 'auto',
@@ -207,14 +214,14 @@ async function handleTextMessage(text: string, chatId: string, userName: string,
     }
 
     // Regular response
-    const responseText = assistantMessage.content || 'Je n\'ai pas de réponse.';
+    const responseText = assistantMessage.content || "Je n'ai pas de réponse.";
     
     // Add to history
     await addMessage({ 
       chat_id: chatId, 
       role: 'assistant', 
       content: responseText,
-      metadata: { model: session.model, tokens: response.usage?.total_tokens }
+      metadata: { model: selectedModel, tokens: response.usage?.total_tokens }
     });
 
     // Send with appropriate menu
@@ -264,11 +271,16 @@ async function handleToolCalls(toolCalls: any[], chatId: string, messages: any[]
     }
   }
 
-  // Get final response from LLM with tool results
+  // Get final response from LLM with tool results using freeLLMClient
+  const freeClient = freeLLMClient;
+  const selectedModel = session.auto_model 
+    ? selectBestAvailableModel('Tool results processing', false, false, session.context)
+    : (session.model as ModelId);
+  
   const finalMessages = [...messages, { role: 'assistant' as const, content: null, tool_calls: toolCalls }, ...toolResults];
   
-  const finalResponse = await client.chatCompletion({
-    model: session.model || DEFAULT_MODEL,
+  const finalResponse = await freeClient.chatCompletion({
+    model: selectedModel,
     messages: finalMessages,
     temperature: 0.7,
     max_tokens: 4000,
@@ -280,7 +292,7 @@ async function handleToolCalls(toolCalls: any[], chatId: string, messages: any[]
     chat_id: chatId, 
     role: 'assistant', 
     content: finalText,
-    metadata: { model: session.model, tokens: finalResponse.usage?.total_tokens }
+    metadata: { model: selectedModel, tokens: finalResponse.usage?.total_tokens }
   });
 
   const contextMenu = getContextualMenu(session.context);
@@ -988,10 +1000,9 @@ async function handleMenuButton(text: string, chatId: string, userName: string, 
       `<b>Nom :</b> ${modelInfo?.name || session.model}\n` +
       `<b>ID :</b> <code>${session.model}</code>\n` +
       `<b>Contexte :</b> ${modelInfo?.context || 'N/A'} tokens\n` +
-      `<b>Gratuit :</b> ${modelInfo?.free ? '✅ Oui' : '❌ Non'}\n` +
       `<b>Vision :</b> ${modelInfo?.vision ? '✅ Oui' : '❌ Non'}\n` +
       `<b>Audio/Transcription :</b> ${modelInfo?.audio ? '✅ Oui' : '❌ Non'}\n` +
-      `<b>Tags :</b> ${modelInfo?.tags?.join(', ') || 'N/A'}\n\n` +
+      `<b>Provider :</b> ${modelInfo?.provider || 'N/A'}\n\n` +
       `Mode Auto : ${session.auto_model ? '✅ Activé' : '❌ Désactivé'}`,
       MODEL_MENU
     );

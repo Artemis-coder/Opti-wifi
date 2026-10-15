@@ -14,9 +14,16 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: 'Le mot de passe doit contenir au moins 6 caractères.' },
+        { error: 'Le mot de passe doit contenir au moins 8 caractères.' },
+        { status: 400 }
+      );
+    }
+
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.' },
         { status: 400 }
       );
     }

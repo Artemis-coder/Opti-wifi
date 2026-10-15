@@ -623,6 +623,135 @@ END;
 $$;
 
 -- ============================================================
+-- ROW LEVEL SECURITY (RLS)
+-- ============================================================
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE wifi_spaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE points_of_sale ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_allocations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE collection_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
+
+-- Users can only access their own data
+CREATE POLICY IF NOT EXISTS "users_own_access" ON users
+  FOR ALL USING (id = public.current_user_id());
+
+-- Profiles: users can access profiles in their organization
+CREATE POLICY IF NOT EXISTS "profiles_org_access" ON profiles
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR id = public.current_user_id()
+  );
+
+-- Organizations: users can access their own organization
+CREATE POLICY IF NOT EXISTS "organizations_own_access" ON organizations
+  FOR ALL USING (
+    id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- WiFi spaces: scoped to organization
+CREATE POLICY IF NOT EXISTS "wifi_spaces_org_access" ON wifi_spaces
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Points of sale: scoped to organization
+CREATE POLICY IF NOT EXISTS "pos_org_access" ON points_of_sale
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Ticket types: scoped to organization
+CREATE POLICY IF NOT EXISTS "ticket_types_org_access" ON ticket_types
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Ticket allocations: scoped to organization
+CREATE POLICY IF NOT EXISTS "ticket_allocations_org_access" ON ticket_allocations
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Collections: scoped to organization
+CREATE POLICY IF NOT EXISTS "collections_org_access" ON collections
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Collection items: scoped to organization
+CREATE POLICY IF NOT EXISTS "collection_items_org_access" ON collection_items
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Subscriptions: scoped to organization
+CREATE POLICY IF NOT EXISTS "subscriptions_org_access" ON subscriptions
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Payments: scoped to organization
+CREATE POLICY IF NOT EXISTS "payments_org_access" ON payments
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Invoices: scoped to organization
+CREATE POLICY IF NOT EXISTS "invoices_org_access" ON invoices
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Audit logs: scoped to organization
+CREATE POLICY IF NOT EXISTS "audit_logs_org_access" ON audit_logs
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Support tickets: scoped to organization
+CREATE POLICY IF NOT EXISTS "support_tickets_org_access" ON support_tickets
+  FOR ALL USING (
+    organization_id = public.current_org_id()
+    OR public.is_platform_super_admin()
+  );
+
+-- Platform users: only super admins
+CREATE POLICY IF NOT EXISTS "platform_users_admin_only" ON platform_users
+  FOR ALL USING (public.is_platform_super_admin());
+
+-- Platform audit logs: only super admins
+CREATE POLICY IF NOT EXISTS "platform_audit_logs_admin_only" ON platform_audit_logs
+  FOR ALL USING (public.is_platform_super_admin());
+
+-- Platform settings: only super admins
+CREATE POLICY IF NOT EXISTS "platform_settings_admin_only" ON platform_settings
+  FOR ALL USING (public.is_platform_super_admin());
+
+-- ============================================================
 -- INITIAL DATA
 -- ============================================================
 -- Default data is inserted by migration script from backup or

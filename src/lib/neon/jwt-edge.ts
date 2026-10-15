@@ -1,6 +1,9 @@
 export const AUTH_COOKIE_NAME = 'neon-auth-token';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'optiwifi-neon-secret-key-change-me';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is not configured. Set JWT_SECRET in your environment variables.');
+}
 
 export interface JwtPayload {
   sub: string;
