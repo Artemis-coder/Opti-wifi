@@ -6,6 +6,18 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 export { query, queryOne };
 
 const _fkCache = new Map<string, { column: string; onParent: boolean } | null>();
+const _tableColCache = new Map<string, string[]>();
+
+async function getTableColumns(table: string): Promise<string[]> {
+  if (_tableColCache.has(table)) return _tableColCache.get(table)!;
+  const cols = await query(
+    `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 ORDER BY ordinal_position`,
+    [table]
+  );
+  const colNames = (cols.rows || []).map(r => r.column_name);
+  _tableColCache.set(table, colNames);
+  return colNames;
+}
 
 async function resolveFk(parentTable: string, childTable: string, childAlias: string): Promise<{ column: string; onParent: boolean } | null> {
   const cacheKey = `${parentTable}:{${childTable}:${childAlias}}`;
@@ -500,13 +512,19 @@ export class TableBuilder {
     }
 
     const colSelects: string[] = [];
+    const mainTableCols = await getTableColumns(this.tableName);
+    const mainColSet = new Set(mainTableCols);
     if (mainColumns === '*' || mainColumns === '') {
-      colSelects.push(`"${this.tableName}".*`);
+      for (const col of mainTableCols) {
+        colSelects.push(`"${this.tableName}"."${col}"`);
+      }
     } else {
       mainColumns.split(',').forEach(c => {
         c = c.trim();
         if (c === '*') {
-          colSelects.push(`"${this.tableName}".*`);
+          for (const col of mainTableCols) {
+            colSelects.push(`"${this.tableName}"."${col}"`);
+          }
         } else if (c) {
           colSelects.push(`"${this.tableName}"."${c}"`);
         }
@@ -524,7 +542,11 @@ export class TableBuilder {
         );
         cols = (colRes.rows || []).map(r => r.column_name);
       }
-      cols.forEach(col => colSelects.push(`"${n.alias}"."${col}" AS "${n.alias}_${col}"`));
+      cols.forEach(col => {
+        const aliasCol = `${n.alias}_${col}`;
+        if (mainColSet.has(aliasCol)) return;
+        colSelects.push(`"${n.alias}"."${col}" AS "${aliasCol}"`);
+      });
     }
 
     const params: any[] = [];
@@ -566,7 +588,7 @@ export class TableBuilder {
           let matched = false;
           for (const na of joinAliases) {
             const prefix = `${na}_`;
-            if (key.startsWith(prefix)) {
+            if (key.startsWith(prefix) && !mainColSet.has(key)) {
               const nestedKey = key.slice(prefix.length);
               if (!nestedData[na]) nestedData[na] = {};
 
@@ -604,7 +626,7 @@ export class TableBuilder {
           let matched = false;
           for (const na of joinAliases) {
             const prefix = `${na}_`;
-            if (key.startsWith(prefix)) {
+            if (key.startsWith(prefix) && !mainColSet.has(key)) {
               const nestedKey = key.slice(prefix.length);
               if (!nestedData[na]) nestedData[na] = {};
 
