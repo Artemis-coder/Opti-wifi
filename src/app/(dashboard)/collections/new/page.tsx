@@ -32,7 +32,7 @@ export default function NewCollectionWizard() {
   const [loadingAllocations, setLoadingAllocations] = useState(false);
 
   const [posId, setPosId] = useState('');
-  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
+  const [remainingTickets, setRemainingTickets] = useState<{ [key: string]: number }>({});
   const [montantCollecte, setMontantCollecte] = useState('');
   const [commission, setCommission] = useState('');
   const [dateCollecte, setDateCollecte] = useState(() => new Date().toISOString().split('T')[0]);
@@ -62,7 +62,7 @@ export default function NewCollectionWizard() {
 
   const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPosId(e.target.value);
-    setQuantities({});
+    setRemainingTickets({});
   };
 
   useEffect(() => {
@@ -133,16 +133,18 @@ export default function NewCollectionWizard() {
   }, [posId, currentSpaceId, supabase]);
 
   const montantAttendu = allocatedTickets.reduce((sum: number, t: TicketType) => {
-    const q = quantities[t.id] || 0;
-    return sum + q * t.prix;
+    const remaining = remainingTickets[t.id] || 0;
+    const available = availableQtyMap[t.id] || 0;
+    const sold = Math.max(0, available - remaining);
+    return sum + sold * t.prix;
   }, 0);
 
   const collecteNum = parseFloat(montantCollecte) || 0;
   const difference = collecteNum - montantAttendu;
 
-  const handleQtyChange = (id: string, value: string) => {
+  const handleRemainingChange = (id: string, value: string) => {
     const val = parseInt(value) || 0;
-    setQuantities({ ...quantities, [id]: val });
+    setRemainingTickets({ ...remainingTickets, [id]: val });
   };
 
   const handleFinish = async (e: React.FormEvent) => {
@@ -150,10 +152,10 @@ export default function NewCollectionWizard() {
     setSubmitting(true);
 
     for (const t of allocatedTickets) {
-      const entered = quantities[t.id] || 0;
+      const entered = remainingTickets[t.id] || 0;
       const available = availableQtyMap[t.id] || 0;
       if (entered > available) {
-        toast.error(`Quantité invalide pour ${t.nom}: ${entered} > ${available} disponible(s)`);
+        toast.error(`Tickets invalides pour ${t.nom}: ${entered} > ${available} disponible(s)`);
         setSubmitting(false);
         return;
       }
@@ -177,15 +179,24 @@ export default function NewCollectionWizard() {
 
     if (collection) {
       const itemsToInsert = allocatedTickets
-        .filter((t: TicketType) => (quantities[t.id] || 0) > 0)
-        .map((t: TicketType) => ({
-          collection_id: collection.id,
-          ticket_type_id: t.id,
-          stock_debut: 0,
-          quantite_vendue: quantities[t.id] || 0,
-          prix_unitaire: t.prix,
-          space_id: currentSpaceId || null,
-        }));
+        .filter((t: TicketType) => {
+          const remaining = remainingTickets[t.id] || 0;
+          const available = availableQtyMap[t.id] || 0;
+          return available - remaining > 0;
+        })
+        .map((t: TicketType) => {
+          const remaining = remainingTickets[t.id] || 0;
+          const available = availableQtyMap[t.id] || 0;
+          const sold = available - remaining;
+          return {
+            collection_id: collection.id,
+            ticket_type_id: t.id,
+            stock_debut: 0,
+            quantite_vendue: sold,
+            prix_unitaire: t.prix,
+            space_id: currentSpaceId || null,
+          };
+        });
 
       if (itemsToInsert.length > 0) {
         await supabase.from('collection_items').insert(itemsToInsert);
@@ -224,20 +235,20 @@ export default function NewCollectionWizard() {
               >
                 {step > s ? '✓' : s}
               </div>
-              <span className={`hidden sm:inline text-xs font-semibold ${step === s ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
-                {s === 1 && 'Point de Vente'}
-                {s === 2 && 'Quantités Vendues'}
-                {s === 3 && 'Calcul Attendu'}
-                {s === 4 && 'Montant Réel'}
-                {s === 5 && 'Validation'}
-              </span>
+<span className={`hidden sm:inline text-xs font-semibold ${step === s ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                 {s === 1 && 'Point de Vente'}
+                 {s === 2 && 'Tickets Restants'}
+                 {s === 3 && 'Calcul Attendu'}
+                 {s === 4 && 'Montant Réel'}
+                 {s === 5 && 'Validation'}
+               </span>
             </div>
           ))}
         </div>
         <p className="sm:hidden text-xs font-bold text-amber-600 dark:text-amber-400 text-center pt-1">
           Étape {step}/5 :{' '}
           {step === 1 && 'Point de Vente'}
-          {step === 2 && 'Quantités Vendues'}
+          {step === 2 && 'Tickets Restants'}
           {step === 3 && 'Calcul Attendu'}
           {step === 4 && 'Montant Réel'}
           {step === 5 && 'Validation & Bilan'}
@@ -282,7 +293,7 @@ export default function NewCollectionWizard() {
 
           {step === 2 && (
             <div className="space-y-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 2 : Saisie des Quantités Vendues</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 2 : Saisie des Tickets Restants</h3>
 
               {loadingAllocations ? (
                 <div className="py-8 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
@@ -333,15 +344,15 @@ export default function NewCollectionWizard() {
                         </div>
                         <div className="w-full sm:w-28 flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-700/60">
                           <span className="sm:hidden text-xs font-semibold text-slate-600 dark:text-slate-400">
-                            Quantité vendue :
+                            Tickets restants :
                           </span>
                           <div className="w-24 sm:w-28">
                             <Input
                               type="number"
                               min="0"
                               max={Math.max(0, available)}
-                              value={quantities[t.id] || ''}
-                              onChange={(e) => handleQtyChange(t.id, e.target.value)}
+                              value={remainingTickets[t.id] || ''}
+                              onChange={(e) => handleRemainingChange(t.id, e.target.value)}
                               placeholder="0"
                               className="text-center font-bold"
                             />
