@@ -177,11 +177,12 @@ const addLine = () => {
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Point de Vente Cible
                 </label>
-                <select
-                  value={posId}
-                  onChange={(e) => setPosId(e.target.value)}
-                  className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
-                >
+                <div className="relative">
+                  <select
+                    value={posId}
+                    onChange={(e) => setPosId(e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-medium appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22><path stroke=%22%236B7280%22 stroke-width=%221.5%22 d=%22M6 8l4 4 4-4%22/%3E</svg>')] bg-right-2.5 bg-center bg-no-repeat"
+                  >
                   {posList.map((p: PointOfSale) => (
                     <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
                   ))}

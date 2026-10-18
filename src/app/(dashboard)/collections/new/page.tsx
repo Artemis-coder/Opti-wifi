@@ -268,28 +268,30 @@ export default function NewCollectionWizard() {
         </Card>
       ) : (
         <Card className="p-4 sm:p-6">
-          {step === 1 && (
-            <div className="space-y-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Point de Vente concerné</label>
-                <select
-                  value={posId}
-                  onChange={handlePosChange}
-                  className="w-full h-11 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium"
-                >
-                  {posList.map((p: PointOfSale) => (
-                    <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-end pt-4">
-                <Button onClick={() => setStep(2)} className="w-full sm:w-auto gap-2">
-                  Suivant <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+{step === 1 && (
+  <div className="space-y-4">
+    <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
+    <div className="space-y-2">
+      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Point de Vente concerné</label>
+      <div className="relative">
+        <select
+          value={posId}
+          onChange={handlePosChange}
+          className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-medium appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22><path stroke=%22%236B7280%22 stroke-width=%221.5%22 d=%22M6 8l4 4 4-4%22/%3E</svg>')] bg-right-2.5 bg-center bg-no-repeat"
+        >
+          {posList.map((p: PointOfSale) => (
+            <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
+          ))}
+        </select>
+      </div>
+    </div>
+    <div className="flex justify-end pt-4">
+      <Button onClick={() => setStep(2)} className="w-full sm:w-auto gap-2">
+        Suivant <ArrowRight className="w-4 h-4" />
+      </Button>
+    </div>
+  </div>
+)}
 
           {step === 2 && (
             <div className="space-y-4">
@@ -346,7 +348,7 @@ export default function NewCollectionWizard() {
                           <span className="sm:hidden text-xs font-semibold text-slate-600 dark:text-slate-400">
                             Tickets restants :
                           </span>
-                          <div className="w-24 sm:w-28">
+                          <div className="w-full sm:w-28">
                             <Input
                               type="number"
                               min="0"
@@ -354,7 +356,7 @@ export default function NewCollectionWizard() {
                               value={remainingTickets[t.id] || ''}
                               onChange={(e) => handleRemainingChange(t.id, e.target.value)}
                               placeholder="0"
-                              className="text-center font-bold"
+                              className="text-center font-bold rounded-xl px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
                             />
                           </div>
                         </div>
