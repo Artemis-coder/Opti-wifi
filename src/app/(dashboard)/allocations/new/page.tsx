@@ -186,10 +186,11 @@ const addLine = () => {
                   {posList.map((p: PointOfSale) => (
                     <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
                   ))}
-                 </select>
-               </div>
+</select>
+                </div>
+              </div>
 
-               <div className="space-y-1.5">
+              <div className="space-y-1.5">
                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                    Date d&apos;Allocation
                  </label>
@@ -221,7 +222,7 @@ const addLine = () => {
                         {ticketTypes.map((t: TicketType) => (
                           <option key={t.id} value={t.id}>{t.nom} — {formatCurrencyFCFA(t.prix)}</option>
                         ))}
-                      </select>
+                  </select>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <Input
                           label="Quantité allouée"
