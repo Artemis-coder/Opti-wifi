@@ -42,15 +42,16 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
       aria-modal="true"
       aria-label={title}
       onClick={onClose}
-      className="fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center sm:p-4 bg-slate-950/70 backdrop-blur-sm md-anim-fade"
+      className="fixed inset-0 flex flex-col justify-end sm:justify-center items-center p-3 sm:p-4 modal-bottom-gap bg-slate-950/70 backdrop-blur-sm md-anim-fade"
+      style={{ zIndex: 45 }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          'w-full bg-white dark:bg-slate-900 flex flex-col overflow-hidden safe-bottom',
-          // Material 3: modal bottom sheet on phones, dialog from sm upwards
-          'max-h-[92dvh] rounded-t-3xl md-elevation-3 md-anim-sheet',
-          'sm:max-w-lg sm:rounded-3xl sm:max-h-[88vh] sm:md-anim-scale',
+          'w-full max-w-lg bg-white dark:bg-slate-900 flex flex-col overflow-hidden',
+          // Floating card elevated with gap above mobile navigation bar
+          'rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 md-anim-scale',
+          'max-h-[calc(100dvh-11rem)] sm:max-h-[88vh]',
           className
         )}
       >

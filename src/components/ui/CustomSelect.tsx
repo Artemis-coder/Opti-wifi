@@ -169,26 +169,27 @@ export function CustomSelect({
         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{helperText}</p>
       )}
 
-      {/* Modal / Bottom Sheet rendered into document.body via Portal to guarantee it sits above all page elements & BottomNav */}
+      {/* Modal / Bottom Sheet rendered into document.body via Portal */}
       {isOpen && mounted && createPortal(
         <div
           role="dialog"
           aria-modal="true"
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-sm md-anim-fade"
+          className="fixed inset-0 flex flex-col justify-end sm:justify-center items-center p-3 sm:p-4 modal-bottom-gap bg-slate-950/70 backdrop-blur-sm md-anim-fade"
+          style={{ zIndex: 45 }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              'w-full bg-white dark:bg-slate-900 flex flex-col overflow-hidden',
-              // On mobile: generous, touch-first bottom sheet (75vh height)
-              'h-[75dvh] max-h-[90dvh] rounded-t-3xl shadow-2xl md-anim-sheet',
-              // On tablet/desktop: centered dialog
-              'sm:h-auto sm:max-h-[82vh] sm:max-w-lg sm:rounded-2xl sm:md-anim-scale'
+              'w-full max-w-lg bg-white dark:bg-slate-900 flex flex-col overflow-hidden',
+              // On mobile: floating card elevated with visible gap above BottomNav
+              'rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 md-anim-scale',
+              // Dynamic height: hugs content when few options, scrolls smoothly when many
+              'h-auto max-h-[calc(100dvh-11rem)] sm:max-h-[82vh]'
             )}
           >
             {/* Header */}
-            <div className="relative flex items-center justify-between gap-3 px-4 sm:px-6 pt-3 sm:pt-4 pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <div className="relative flex items-center justify-between gap-3 px-4 sm:px-6 pt-3.5 sm:pt-4 pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
               {/* Drag handle for mobile */}
               <div
                 aria-hidden
@@ -238,8 +239,8 @@ export function CustomSelect({
               </div>
             )}
 
-            {/* Options List with generous height and bottom padding */}
-            <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 space-y-2 pb-16 sm:pb-4 md-scroll">
+            {/* Options List with balanced padding */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-2 pb-3.5 sm:pb-4 md-scroll">
               {filteredOptions.length === 0 ? (
                 <div className="py-12 text-center space-y-2">
                   <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">

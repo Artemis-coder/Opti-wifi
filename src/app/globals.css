@@ -138,6 +138,16 @@
     bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
   }
 
+  /* Modal / Sheet floating gap above the mobile 80dp bottom navigation bar */
+  .modal-bottom-gap {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem);
+  }
+  @media (min-width: 640px) {
+    .modal-bottom-gap {
+      padding-bottom: 1rem;
+    }
+  }
+
   /* Status chip anchored just below the 64dp app bar (plus any safe area).
      The WebView is inset for the system bars, so the top inset is 0 inside
      the Android app but stays correct on notched browsers. */
