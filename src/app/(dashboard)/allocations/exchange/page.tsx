@@ -17,11 +17,13 @@ import {
   Receipt,
   Plus,
   Trash2,
+  Store,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
@@ -86,8 +88,8 @@ export default function ExchangePage() {
     loadOptions();
   }, [supabase, currentSpaceId]);
 
-  const handlePosChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPosId(e.target.value);
+  const handlePosChange = (newPosId: string) => {
+    setPosId(newPosId);
     setReturns([]);
     setReceives([]);
     setPosStockInfo({});
@@ -377,20 +379,20 @@ export default function ExchangePage() {
             <Card className="p-6 space-y-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Point de Vente concerné
-                </label>
-                <div className="relative">
-                  <select
-                    value={posId}
-                    onChange={handlePosChange}
-                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-medium appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22><path stroke=%22%236B7280%22 stroke-width=%221.5%22 d=%22M6 8l4 4 4-4%22/%3E</svg>')] bg-right-2.5 bg-center bg-no-repeat"
-                  >
-                  {posList.map((p: PointOfSale) => (
-                    <option key={p.id} value={p.id}>{p.nom} ({p.ville})</option>
-                  ))}
-                </select>
-                </div>
+                <CustomSelect
+                  label="Point de Vente concerné"
+                  value={posId}
+                  onChange={handlePosChange}
+                  options={posList.map((p: PointOfSale) => ({
+                    value: p.id,
+                    label: p.nom,
+                    sublabel: p.ville ? `Ville : ${p.ville}` : (p.adresse ? p.adresse : undefined),
+                  }))}
+                  placeholder="Sélectionner un point de vente..."
+                  title="Point de Vente concerné"
+                  searchPlaceholder="Rechercher par nom ou ville..."
+                  leadingIcon={<Store className="w-4 h-4 text-amber-500" />}
+                />
               </div>
 
               <div className="pt-4 flex justify-end">
@@ -539,22 +541,20 @@ export default function ExchangePage() {
                   return (
                     <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
                       <div className="flex-1 space-y-2">
-                        <div className="relative">
-                        <select
+                        <CustomSelect
                           value={line.ticketTypeId}
-                          onChange={(e) => updateReceive(index, 'ticketTypeId', e.target.value)}
-                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg font-medium appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22><path stroke=%22%236B7280%22 stroke-width=%221.5%22 d=%22M6 8l4 4 4-4%22/%3E</svg>')] bg-right-2 bg-center bg-no-repeat text-xs font-medium"
-                        >
-                          <option value="">Sélectionner un type</option>
-                          {ticketTypes
+                          onChange={(val) => updateReceive(index, 'ticketTypeId', val)}
+                          options={ticketTypes
                             .filter((t: TicketType) => !receives.some((r, i) => r.ticketTypeId === t.id && i !== index))
-                            .map((t: TicketType) => (
-                              <option key={t.id} value={t.id}>
-                                {t.nom} — {formatCurrencyFCFA(Number(t.prix))}
-                              </option>
-                            ))}
-                        </select>
-                        </div>
+                            .map((t: TicketType) => ({
+                              value: t.id,
+                              label: t.nom,
+                              sublabel: formatCurrencyFCFA(Number(t.prix)),
+                            }))}
+                          placeholder="Sélectionner un type..."
+                          title="Ticket à Recevoir"
+                          size="sm"
+                        />
                         <div className="grid grid-cols-2 gap-2">
                           <Input
                             label="Quantité à recevoir"

@@ -13,7 +13,6 @@ import {
   FileText,
   Repeat,
   Search,
-  Package,
   DollarSign,
   TrendingUp,
 } from 'lucide-react';
@@ -21,6 +20,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
@@ -233,24 +233,24 @@ export default function AllocationsPage() {
       <Card className="p-3.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">
-              Filtrer par Point de Vente
-            </label>
-            <div className="relative">
-              <select
-                value={selectedPosId}
-                onChange={(e) => setSelectedPosId(e.target.value)}
-                className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-medium appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22><path stroke=%22%236B7280%22 stroke-width=%221.5%22 d=%22M6 8l4 4 4-4%22/%3E</svg>')] bg-right-2.5 bg-center bg-no-repeat"
-              >
-              <option value="all">Tous les points de vente</option>
-              {posList.map((pos: PointOfSale) => (
-                <option key={pos.id} value={pos.id}>
-                  {pos.nom}
-                </option>
-              ))}
-            </select>
+            <CustomSelect
+              label="Filtrer par Point de Vente"
+              value={selectedPosId}
+              onChange={(val) => setSelectedPosId(val)}
+              options={[
+                { value: 'all', label: 'Tous les points de vente' },
+                ...posList.map((pos: PointOfSale) => ({
+                  value: pos.id,
+                  label: pos.nom,
+                  sublabel: pos.ville ? `Ville : ${pos.ville}` : (pos.adresse ? pos.adresse : undefined),
+                }))
+              ]}
+              placeholder="Tous les points de vente"
+              title="Filtrer par Point de Vente"
+              searchPlaceholder="Rechercher par nom ou ville..."
+              leadingIcon={<Store className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+            />
           </div>
-        </div>
 
           <div className="flex-1">
             <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">
