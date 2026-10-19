@@ -42,7 +42,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
       aria-modal="true"
       aria-label={title}
       onClick={onClose}
-      className="fixed inset-0 flex flex-col justify-end sm:justify-center items-center p-3 sm:p-4 modal-bottom-gap bg-slate-950/70 backdrop-blur-sm md-anim-fade"
+      className="fixed inset-0 flex flex-col justify-end sm:justify-center items-center px-3.5 sm:px-4 bg-slate-950/70 backdrop-blur-sm md-anim-fade"
       style={{ zIndex: 45 }}
     >
       <div
@@ -51,7 +51,8 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
           'w-full max-w-lg bg-white dark:bg-slate-900 flex flex-col overflow-hidden',
           // Floating card elevated with gap above mobile navigation bar
           'rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 md-anim-scale',
-          'max-h-[calc(100dvh-11rem)] sm:max-h-[88vh]',
+          'max-h-[calc(100dvh-12rem)] sm:max-h-[88vh]',
+          'elevate-above-bottom-nav',
           className
         )}
       >

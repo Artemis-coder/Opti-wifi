@@ -175,7 +175,7 @@ export function CustomSelect({
           role="dialog"
           aria-modal="true"
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 flex flex-col justify-end sm:justify-center items-center p-3 sm:p-4 modal-bottom-gap bg-slate-950/70 backdrop-blur-sm md-anim-fade"
+          className="fixed inset-0 flex flex-col justify-end sm:justify-center items-center px-3.5 sm:px-4 bg-slate-950/70 backdrop-blur-sm md-anim-fade"
           style={{ zIndex: 45 }}
         >
           <div
@@ -185,7 +185,9 @@ export function CustomSelect({
               // On mobile: floating card elevated with visible gap above BottomNav
               'rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 md-anim-scale',
               // Dynamic height: hugs content when few options, scrolls smoothly when many
-              'h-auto max-h-[calc(100dvh-11rem)] sm:max-h-[82vh]'
+              'h-auto max-h-[calc(100dvh-12rem)] sm:max-h-[82vh]',
+              // Elevate above the fixed bottom navigation bar with an intentional gap
+              'elevate-above-bottom-nav'
             )}
           >
             {/* Header */}
