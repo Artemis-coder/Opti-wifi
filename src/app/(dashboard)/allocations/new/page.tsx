@@ -214,15 +214,17 @@ const addLine = () => {
                 {lines.map((line, index) => (
                   <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
                     <div className="flex-1 space-y-2">
+                      <div className="relative">
                       <select
                         value={line.ticketTypeId}
                         onChange={(e) => updateLine(index, 'ticketTypeId', e.target.value)}
-                        className="w-full h-9 px-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg font-medium appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22><path stroke=%22%236B7280%22 stroke-width=%221.5%22 d=%22M6 8l4 4 4-4%22/%3E</svg>')] bg-right-2 bg-center bg-no-repeat text-xs font-medium"
                       >
                         {ticketTypes.map((t: TicketType) => (
                           <option key={t.id} value={t.id}>{t.nom} — {formatCurrencyFCFA(t.prix)}</option>
                         ))}
-                  </select>
+                      </select>
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <Input
                           label="Quantité allouée"
