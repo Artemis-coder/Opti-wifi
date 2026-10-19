@@ -1,6 +1,13 @@
-import React, { useEffect } from 'react';
+'use client';
+
+import React, { useEffect, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,6 +18,8 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -25,15 +34,15 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-4 bg-slate-950/60 md-anim-fade"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center sm:p-4 bg-slate-950/70 backdrop-blur-sm md-anim-fade"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -62,6 +71,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
         </div>
         <div className="md-scroll flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
