@@ -28,7 +28,7 @@ import { formatCurrencyFCFA, toDateInputValue } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
-import { PointOfSale, TicketType, Collection, CollectionInsert, CollectionItem, TicketAllocation } from '@/types/database';
+import { PointOfSale, TicketType, Collection, CollectionInsert, CollectionItem, CollectionItemInsert, TicketAllocation } from '@/types/database';
 
 export default function NewCollectionWizard() {
   const router = useRouter();
@@ -402,6 +402,7 @@ export default function NewCollectionWizard() {
         pos_id: posId,
         collecteur_id: user?.id || '00000000-0000-0000-0000-000000000000',
         space_id: currentSpaceId || null,
+        organization_id: user?.organization_id || null,
         statut: 'validee',
         montant_attendu: montantAttendu,
         montant_collecte: collecteNum,
@@ -421,8 +422,11 @@ export default function NewCollectionWizard() {
       }
 
       // Insert collection items for sold tickets
-      const itemsToInsert = availableTickets
-        .map((t: TicketType) => {
+      // `montant_total` est une colonne générée en base
+      // (GENERATED ALWAYS AS (quantite_vendue * prix_unitaire) STORED) :
+      // PostgreSQL la calcule, elle ne doit pas être fournie.
+      const itemsToInsert: CollectionItemInsert[] = availableTickets
+        .map((t: TicketType): CollectionItemInsert => {
           const remaining = remainingTickets[t.id] ?? 0;
           const available = availableQtyMap[t.id] || 0;
           const sold = Math.max(0, available - remaining);
@@ -432,8 +436,8 @@ export default function NewCollectionWizard() {
             stock_debut: available,
             quantite_vendue: sold,
             prix_unitaire: t.prix,
-            montant_total: sold * t.prix,
             space_id: currentSpaceId || null,
+            organization_id: user?.organization_id || null,
           };
         })
         .filter((item) => item.quantite_vendue > 0);

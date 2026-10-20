@@ -117,6 +117,21 @@ export interface CollectionItem {
   ticket_type?: TicketType;
 }
 
+/**
+ * Colonnes acceptées à l'insertion d'un item de collecte.
+ * `montant_total` en est volontairement absente : en base elle est
+ * GENERATED ALWAYS AS (quantite_vendue * prix_unitaire) STORED.
+ */
+export interface CollectionItemInsert {
+  collection_id: string;
+  ticket_type_id: string;
+  stock_debut?: number;
+  quantite_vendue: number;
+  prix_unitaire: number;
+  space_id?: string | null;
+  organization_id?: string | null;
+}
+
 export interface DashboardKpis {
   ticketsVendusTotal: number;
   chiffreAffairesTotal: number;
