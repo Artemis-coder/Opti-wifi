@@ -48,15 +48,42 @@
     /* Android WebView: prevent rubber-band revealing white behind the app */
     background-color: #1b3f2b;
     -webkit-tap-highlight-color: transparent;
-    /* Native date/time pickers (input[type=date]) render their own widget.
+    /* Native date/time pickers (input[type=date]) draw their own widget.
        Without an explicit color-scheme the browser keeps the light theme,
-       so the calendar icon and the segmented date text stay unreadable on
-       the dark surface. */
+       so the calendar glyph and the segmented date text stay unreadable on
+       the dark surface. The app follows the OS preference (Tailwind v4
+       `dark:` = prefers-color-scheme), so the media query below mirrors it
+       exactly - there is no `.dark` class in this codebase. */
     color-scheme: light;
   }
 
-  .dark {
-    color-scheme: dark;
+  @media (prefers-color-scheme: dark) {
+    html {
+      color-scheme: dark;
+    }
+  }
+
+  /* The calendar glyph is drawn by the engine, not by the author styles.
+     color-scheme already recolours it on modern browsers; these rules keep
+     it legible and tappable on the phones that matter (Android WebView
+     ignores the glyph hint on some OEM builds). */
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator,
+  input[type='month']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    width: 20px;
+    height: 20px;
+    padding: 1px;
+    transition: opacity 150ms ease;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator:hover,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator:hover,
+  input[type='month']::-webkit-calendar-picker-indicator:hover,
+  input[type='time']::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
   }
 
   body {

@@ -531,6 +531,17 @@ export class TableBuilder {
       });
     }
 
+    // Mapping: nested alias -> { SQL alias -> key inside the nested object }.
+    // The nested object must always expose the real column names (id, nom,
+    // prix...). The prefixed alias can collide with a column of the main
+    // table (e.g. ticket_allocations.ticket_type_id vs ticket_types.id).
+    // The colliding column used to be dropped from the SELECT, which
+    // silently removed `id` from the nested object and broke every lookup
+    // by nested id (KPI "stock alloué" stuck at 0). We now pick a unique
+    // SQL alias instead and keep the key intact.
+    const nestedAliasMap: Record<string, Record<string, string>> = {};
+    const usedAliases = new Set<string>(mainColSet);
+
     for (const n of nested) {
       let cols: string[];
       if (n.columns.length > 0) {
@@ -542,10 +553,20 @@ export class TableBuilder {
         );
         cols = (colRes.rows || []).map(r => r.column_name);
       }
+      const aliasMap: Record<string, string> = {};
+      nestedAliasMap[n.alias] = aliasMap;
       cols.forEach(col => {
-        const aliasCol = `${n.alias}_${col}`;
-        if (mainColSet.has(aliasCol)) return;
-        colSelects.push(`"${n.alias}"."${col}" AS "${aliasCol}"`);
+        let sqlAlias = `${n.alias}_${col}`;
+        if (usedAliases.has(sqlAlias)) {
+          sqlAlias = `${n.alias}__${col}`;
+          let suffix = 2;
+          while (usedAliases.has(sqlAlias)) {
+            sqlAlias = `${n.alias}__${col}_${suffix++}`;
+          }
+        }
+        usedAliases.add(sqlAlias);
+        aliasMap[sqlAlias] = col;
+        colSelects.push(`"${n.alias}"."${col}" AS "${sqlAlias}"`);
       });
     }
 
@@ -587,20 +608,15 @@ export class TableBuilder {
         for (const key of Object.keys(row)) {
           let matched = false;
           for (const na of joinAliases) {
-            const prefix = `${na}_`;
-            if (key.startsWith(prefix) && !mainColSet.has(key)) {
-              const nestedKey = key.slice(prefix.length);
-              if (!nestedData[na]) nestedData[na] = {};
+            const aliasMap = nestedAliasMap[na];
+            if (!aliasMap) continue;
+            const nestedKey = aliasMap[key];
+            if (nestedKey === undefined) continue;
 
-              const info = nestedInfos.find(n => n.alias === na);
-              if (info && info.columns.length > 0 && !info.columns.includes(nestedKey)) {
-                matched = true;
-                break;
-              }
-              nestedData[na][nestedKey] = row[key];
-              matched = true;
-              break;
-            }
+            if (!nestedData[na]) nestedData[na] = {};
+            nestedData[na][nestedKey] = row[key];
+            matched = true;
+            break;
           }
           if (!matched) {
             mainObj[key] = row[key];
@@ -625,20 +641,15 @@ export class TableBuilder {
         for (const key of Object.keys(row)) {
           let matched = false;
           for (const na of joinAliases) {
-            const prefix = `${na}_`;
-            if (key.startsWith(prefix) && !mainColSet.has(key)) {
-              const nestedKey = key.slice(prefix.length);
-              if (!nestedData[na]) nestedData[na] = {};
+            const aliasMap = nestedAliasMap[na];
+            if (!aliasMap) continue;
+            const nestedKey = aliasMap[key];
+            if (nestedKey === undefined) continue;
 
-              const info = nestedInfos.find(n => n.alias === na);
-              if (info && info.columns.length > 0 && !info.columns.includes(nestedKey)) {
-                matched = true;
-                break;
-              }
-              nestedData[na][nestedKey] = row[key];
-              matched = true;
-              break;
-            }
+            if (!nestedData[na]) nestedData[na] = {};
+            nestedData[na][nestedKey] = row[key];
+            matched = true;
+            break;
           }
           if (!matched) {
             mainObj[key] = row[key];
