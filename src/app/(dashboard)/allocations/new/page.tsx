@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
-import { formatCurrencyFCFA } from '@/lib/utils/format';
+import { formatCurrencyFCFA, toDateInputValue } from '@/lib/utils/format';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PointOfSale, TicketType } from '@/types/database';
@@ -28,7 +28,7 @@ export default function NewAllocationPage() {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 
   const [posId, setPosId] = useState('');
-  const [dateAllocation, setDateAllocation] = useState(() => new Date().toISOString().split('T')[0]);
+  const [dateAllocation, setDateAllocation] = useState(() => toDateInputValue());
   const [lines, setLines] = useState<AllocationLine[]>([{ ticketTypeId: '', quantite: 0 }]);
   const [notes, setNotes] = useState('');
 
@@ -106,7 +106,7 @@ const addLine = () => {
       quantite: l.quantite,
       notes,
       space_id: selectedPos?.space_id || null,
-      date_allocation: dateAllocation || new Date().toISOString().split('T')[0],
+      date_allocation: dateAllocation || toDateInputValue(),
     }));
 
     const { error } = await supabase.from('ticket_allocations').insert(itemsToInsert);

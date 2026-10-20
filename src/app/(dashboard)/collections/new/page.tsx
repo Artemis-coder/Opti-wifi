@@ -24,11 +24,11 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
-import { formatCurrencyFCFA } from '@/lib/utils/format';
+import { formatCurrencyFCFA, toDateInputValue } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
-import { PointOfSale, TicketType, Collection, CollectionItem, TicketAllocation } from '@/types/database';
+import { PointOfSale, TicketType, Collection, CollectionInsert, CollectionItem, TicketAllocation } from '@/types/database';
 
 export default function NewCollectionWizard() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export default function NewCollectionWizard() {
   const [remainingTickets, setRemainingTickets] = useState<{ [key: string]: number }>({});
   const [montantCollecte, setMontantCollecte] = useState('');
   const [commission, setCommission] = useState('');
-  const [dateCollecte, setDateCollecte] = useState(() => new Date().toISOString().split('T')[0]);
+  const [dateCollecte, setDateCollecte] = useState(() => toDateInputValue());
   const [notes, setNotes] = useState('');
 
   const supabase = useMemo(() => createClient(), []);
@@ -332,7 +332,11 @@ export default function NewCollectionWizard() {
     if (!dateCollecte) {
       errs.dateCollecte = 'La date de la collecte est obligatoire.';
     } else {
-      const selected = new Date(dateCollecte);
+      // "YYYY-MM-DD" est interprété en UTC par new Date(), ce qui décale le
+      // jour selon le fuseau du collecteur. On compare donc sur les parties
+      // de la date uniquement.
+      const [year, month, day] = dateCollecte.split('-').map(Number);
+      const selected = new Date(year, month - 1, day);
       const today = new Date();
       today.setHours(23, 59, 59, 999);
       if (selected > today) {
@@ -391,20 +395,24 @@ export default function NewCollectionWizard() {
     setSubmitting(true);
 
     try {
+      // `difference` est une colonne générée en base
+      // (GENERATED ALWAYS AS (montant_collecte - montant_attendu) STORED) :
+      // elle est calculée par PostgreSQL et ne doit pas figurer dans l'INSERT.
+      const collectionPayload: CollectionInsert = {
+        pos_id: posId,
+        collecteur_id: user?.id || '00000000-0000-0000-0000-000000000000',
+        space_id: currentSpaceId || null,
+        statut: 'validee',
+        montant_attendu: montantAttendu,
+        montant_collecte: collecteNum,
+        commission: commissionNum,
+        date_collecte: dateCollecte || toDateInputValue(),
+        notes: notes.trim() || null,
+      };
+
       const { data: collection, error: colError } = await supabase
         .from('collections')
-        .insert({
-          pos_id: posId,
-          collecteur_id: user?.id || '00000000-0000-0000-0000-000000000000',
-          space_id: currentSpaceId || null,
-          statut: 'validee',
-          montant_attendu: montantAttendu,
-          montant_collecte: collecteNum,
-          difference: difference,
-          commission: commissionNum,
-          date_collecte: dateCollecte || new Date().toISOString().split('T')[0],
-          notes: notes.trim() || null,
-        })
+        .insert(collectionPayload)
         .select('id')
         .single();
 
@@ -928,6 +936,7 @@ export default function NewCollectionWizard() {
                     label="Date effective de collecte *"
                     type="date"
                     value={dateCollecte}
+                    max={toDateInputValue()}
                     onChange={(e) => {
                       setDateCollecte(e.target.value);
                       if (errors.dateCollecte) {
@@ -937,6 +946,7 @@ export default function NewCollectionWizard() {
                       }
                     }}
                     error={errors.dateCollecte}
+                    helperText="La date ne peut pas être dans le futur."
                   />
                 </div>
               </div>

@@ -85,6 +85,26 @@ export interface Collection {
   items?: CollectionItem[];
 }
 
+/**
+ * Colonnes acceptées à l'insertion d'une collecte.
+ * `difference` en est volontairement absente : en base elle est
+ * GENERATED ALWAYS AS (montant_collecte - montant_attendu) STORED, donc
+ * PostgreSQL refuse toute valeur explicite ("cannot insert a non-default
+ * value into column 'difference'").
+ */
+export interface CollectionInsert {
+  pos_id: string;
+  collecteur_id: string;
+  space_id?: string | null;
+  organization_id?: string | null;
+  statut?: CollectionStatus;
+  montant_attendu: number;
+  montant_collecte: number;
+  commission?: number;
+  date_collecte?: string | null;
+  notes?: string | null;
+}
+
 export interface CollectionItem {
   id: string;
   collection_id: string;

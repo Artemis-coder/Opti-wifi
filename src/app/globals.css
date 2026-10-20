@@ -48,6 +48,15 @@
     /* Android WebView: prevent rubber-band revealing white behind the app */
     background-color: #1b3f2b;
     -webkit-tap-highlight-color: transparent;
+    /* Native date/time pickers (input[type=date]) render their own widget.
+       Without an explicit color-scheme the browser keeps the light theme,
+       so the calendar icon and the segmented date text stay unreadable on
+       the dark surface. */
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
   }
 
   body {
