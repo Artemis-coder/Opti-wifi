@@ -128,6 +128,13 @@ async function createBackup() {
  * Restaure une sauvegarde
  */
 async function restoreBackup(filepath) {
+  if (process.env.CONFIRM_RESTORE !== 'yes') {
+    console.error('⚠️ [GUARDRAIL] La restauration va écraser des données dans la base de données.');
+    console.error('Pour confirmer cette opération destructive, lancez la commande avec CONFIRM_RESTORE=yes :');
+    console.error(`  CONFIRM_RESTORE=yes node scripts/backup.js --restore=${filepath}`);
+    process.exit(1);
+  }
+
   if (!fs.existsSync(filepath)) {
     console.error(`❌ Fichier de sauvegarde introuvable: ${filepath}`);
     process.exit(1);

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
+import { getEnvironmentSummary, validateDatabaseConnection } from '@/lib/env-guard';
 
 export async function GET(request: Request) {
   try {
@@ -19,6 +20,8 @@ export async function GET(request: Request) {
     if (!databaseUrl) {
       return NextResponse.json({ ok: false, error: 'DATABASE_URL not configured' }, { status: 500 });
     }
+
+    validateDatabaseConnection(databaseUrl);
     const sql = neon(databaseUrl);
 
     // Check schema (limited - no host exposure)
@@ -32,6 +35,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       ok: true,
+      environment: getEnvironmentSummary(databaseUrl),
       schema: schema,
       tables: tables,
       queryResult: result
