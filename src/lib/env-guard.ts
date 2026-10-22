@@ -20,7 +20,7 @@ export interface EnvironmentSummary {
 
 // Signatures connues des clusters Neon du projet
 const NEON_PROD_HOST_SIGNATURE = 'ep-flat-term-aymd9rhb';
-const NEON_DEV_HOST_SIGNATURE = 'ep-crimson-shape-ayvbw15x';
+const NEON_DEV_HOST_SIGNATURES = ['ep-misty-night-ayhq9iik', 'ep-crimson-shape-ayvbw15x'];
 
 /**
  * Détermine l'environnement d'exécution actuel en se basant sur les variables Vercel et Node.
@@ -70,7 +70,7 @@ export function validateDatabaseConnection(connectionString?: string): void {
   const env = getRuntimeEnvironment();
   const host = extractDatabaseHost(connectionString);
   const isProdHost = host.includes(NEON_PROD_HOST_SIGNATURE);
-  const isDevHost = host.includes(NEON_DEV_HOST_SIGNATURE);
+  const isDevHost = NEON_DEV_HOST_SIGNATURES.some(sig => host.includes(sig));
 
   // Règle 1 : Un environnement de test, local dev ou Vercel Preview ne doit JAMAIS toucher la base de production
   if ((env === 'preview' || env === 'development' || env === 'test') && isProdHost) {
@@ -78,7 +78,7 @@ export function validateDatabaseConnection(connectionString?: string): void {
     if (!allowOverride) {
       const msg = `[SECURITY GUARDRAIL] ALERTE SÉCURITÉ : Tentative de connexion à la base de données Neon de PRODUCTION depuis un environnement non-production (${env}). ` +
         `Host détecté: ${maskHost(host)}. L'opération a été bloquée pour protéger les données réelles. ` +
-        `Veuillez configurer DATABASE_URL vers la base Neon de développement (branche vercel-dev).`;
+        `Veuillez configurer DATABASE_URL vers la base Neon de développement (branche develop).`;
       console.error(msg);
       throw new Error(msg);
     } else {
@@ -105,7 +105,7 @@ export function getEnvironmentSummary(connectionString?: string): EnvironmentSum
   const isPreview = runtimeEnv === 'preview';
   const isDevelopment = runtimeEnv === 'development' || runtimeEnv === 'test';
   const isProductionDatabase = host.includes(NEON_PROD_HOST_SIGNATURE);
-  const isDevelopmentDatabase = host.includes(NEON_DEV_HOST_SIGNATURE);
+  const isDevelopmentDatabase = NEON_DEV_HOST_SIGNATURES.some(sig => host.includes(sig));
 
   // La base est isolée si elle est en dev pour du dev/preview, ou en prod pour de la prod
   const isIsolated = (isPreview || isDevelopment) ? isDevelopmentDatabase : isProductionDatabase;
