@@ -23,31 +23,77 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
-import { Collection } from '@/types/database';
+import { Collection, CollectionItem } from '@/types/database';
+import { createClient } from '@/lib/supabase/client';
 
 export default function CollectionDetailPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [collection, setCollection] = useState<Collection | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const supabase = createClient();
+
+  const collectionId = typeof params?.id === 'string'
+    ? params.id
+    : Array.isArray(params?.id)
+    ? params.id[0]
+    : '';
 
   useEffect(() => {
-    if (!params?.id) return;
+    if (!collectionId) return;
+
     async function loadDetail() {
       setLoading(true);
-      const res = await fetch(`/api/collections/${params.id}`);
-      if (!res.ok) {
+      setNotFound(false);
+
+      try {
+        // 1. Charger la collecte avec son POS et son collecteur
+        const { data: colData, error: colError } = await supabase
+          .from('collections')
+          .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
+          .eq('id', collectionId)
+          .single();
+
+        if (colError || !colData) {
+          console.warn('[CollectionDetailPage] Erreur client Supabase, tentative API route:', colError);
+          // Fallback vers l'API route
+          const res = await fetch(`/api/collections/${collectionId}`);
+          if (!res.ok) {
+            setNotFound(true);
+            setLoading(false);
+            return;
+          }
+          const data = await res.json();
+          setCollection(data);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Charger les items de la collecte avec leur type de ticket
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('collection_items')
+          .select('*, ticket_type:ticket_types(*)')
+          .eq('collection_id', collectionId);
+
+        if (itemsError) {
+          console.warn('[CollectionDetailPage] Erreur items:', itemsError);
+        }
+
+        setCollection({
+          ...(colData as Collection),
+          items: (itemsData as CollectionItem[]) || [],
+        });
+      } catch (err) {
+        console.error('[CollectionDetailPage] Exception au chargement:', err);
         setNotFound(true);
+      } finally {
         setLoading(false);
-        return;
       }
-      const data = await res.json();
-      setCollection(data);
-      setLoading(false);
     }
+
     loadDetail();
-  }, [params?.id]);
+  }, [collectionId, supabase]);
 
   /* ── helpers ── */
   const statusConfig = {
