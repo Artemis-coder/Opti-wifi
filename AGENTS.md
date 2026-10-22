@@ -22,6 +22,7 @@ Avant toute intervention, **tout assistant de développement (agent IA ou humain
 8. **Préserver l'historique Git** : Pas de `git reset --hard` ni de push forcé sur les branches partagées. Utiliser des procédures de merge ou de fast-forward propres.
 9. **Vérifier les garde-fous** : Vérifier que `src/lib/env-guard.ts` est respecté et tester l'isolation avec `/api/debug-db` sur les déploiements Preview.
 10. **Demander l'autorisation préalable** : Dès qu'une opération présente un risque pour la production, une ambiguïté ou un risque de perte de données, stopper et demander confirmation à l'utilisateur.
+11. **Vérification systématique du déploiement Vercel Preview sur `develop`** : À chaque push sur la branche `develop`, l'assistant DOIT s'assurer que Vercel publie la version en Preview (vérification via `vercel ls` / `vercel --yes`), vérifier que le build compile sans erreur et que le statut est bien `● Ready` sur l'environnement de développement (`https://dev.optiwifi.site`), afin que l'utilisateur puisse immédiatement tester ses changements.
 
 ---
 
