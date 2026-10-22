@@ -20,8 +20,9 @@ async function getSupabaseServerClient() {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await getSupabaseServerClient();
 
   const { data: collection, error } = await supabase
@@ -35,7 +36,7 @@ export async function GET(
          ticket_type:ticket_types(*)
        )`
     )
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !collection) {
