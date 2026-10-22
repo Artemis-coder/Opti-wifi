@@ -22,29 +22,42 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const supabase = await getSupabaseServerClient();
+  try {
+    const { id } = await params;
+    const supabase = await getSupabaseServerClient();
 
-  const { data: collection, error } = await supabase
-    .from('collections')
-    .select(
-      `*,
-       pos:points_of_sale(*),
-       collecteur:profiles(*),
-       items:collection_items(
-         *,
-         ticket_type:ticket_types(*)
-       )`
-    )
-    .eq('id', id)
-    .single();
+    // 1. Charger la collecte avec POS et collecteur
+    const { data: collection, error: colError } = await supabase
+      .from('collections')
+      .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
+      .eq('id', id)
+      .single();
 
-  if (error || !collection) {
-    return NextResponse.json(
-      { error: 'Collecte introuvable' },
-      { status: 404 }
-    );
+    if (colError || !collection) {
+      console.error('[API /collections/[id]] Erreur collecte:', colError);
+      return NextResponse.json(
+        { error: 'Collecte introuvable', details: colError?.message },
+        { status: 404 }
+      );
+    }
+
+    // 2. Charger les items avec le type de ticket
+    const { data: items, error: itemsError } = await supabase
+      .from('collection_items')
+      .select('*, ticket_type:ticket_types(*)')
+      .eq('collection_id', id);
+
+    if (itemsError) {
+      console.warn('[API /collections/[id]] Erreur items:', itemsError);
+    }
+
+    return NextResponse.json({
+      ...collection,
+      items: items || [],
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Erreur interne';
+    console.error('[API /collections/[id]] Exception:', err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json(collection);
 }
