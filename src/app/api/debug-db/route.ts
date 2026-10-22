@@ -1,47 +1,44 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
 import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
-import { getEnvironmentSummary, validateDatabaseConnection } from '@/lib/env-guard';
 
+/**
+ * Ce endpoint est réservé aux administrateurs authentifiés.
+ * Il ne doit PAS être accessible en production ou par des utilisateurs non admin.
+ */
 export async function GET(request: Request) {
+  // Bloquer en production
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+    return NextResponse.json({ error: 'Endpoint désactivé en production.' }, { status: 404 });
+  }
+
   try {
-    // Require authentication
     const cookieHeader = request.headers.get('cookie');
     const token = cookieHeader
       ?.split(';')
       .find(c => c.trim().startsWith(AUTH_COOKIE_NAME + '='))
       ?.split('=')[1];
 
-    if (!token || !verifyToken(token)) {
-      return NextResponse.json({ ok: false, error: 'Non authentifié' }, { status: 401 });
+    if (!token) {
+      return NextResponse.json({ ok: false, error: 'Non authentifié.' }, { status: 401 });
     }
 
-    const databaseUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
-    if (!databaseUrl) {
-      return NextResponse.json({ ok: false, error: 'DATABASE_URL not configured' }, { status: 500 });
+    const payload = verifyToken(token);
+    if (!payload) {
+      return NextResponse.json({ ok: false, error: 'Session invalide.' }, { status: 401 });
     }
 
-    validateDatabaseConnection(databaseUrl);
-    const sql = neon(databaseUrl);
+    if (payload.role !== 'administrateur') {
+      return NextResponse.json({ ok: false, error: 'Accès réservé aux administrateurs.' }, { status: 403 });
+    }
 
-    // Check schema (limited - no host exposure)
-    const schema = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'conversation_sessions'`;
-
-    // Check all tables
-    const tables = await sql`SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema = 'public'`;
-
-    // Test query
-    const result = await sql.query('SELECT * FROM conversation_sessions WHERE chat_id = $1', ['test123']);
-
+    // Réponse minimale — no schema, no table list, no host info
     return NextResponse.json({
       ok: true,
-      environment: getEnvironmentSummary(databaseUrl),
-      schema: schema,
-      tables: tables,
-      queryResult: result
+      env: process.env.VERCEL_ENV || 'development',
+      message: 'Base de données accessible.',
     });
   } catch (error) {
-    console.error('Debug DB error:', error);
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    // Ne pas exposer les détails d'erreur
+    return NextResponse.json({ ok: false, error: 'Erreur de diagnostic.' }, { status: 500 });
   }
 }
