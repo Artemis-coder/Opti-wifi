@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Receipt,
   Plus,
@@ -25,6 +26,7 @@ import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { Collection } from '@/types/database';
 
 export default function CollectionsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,14 +213,15 @@ export default function CollectionsPage() {
                   <th className="px-4 py-3 text-center">Écart (Diff)</th>
                   <th className="px-4 py-3 text-center">Statut</th>
                   <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                 {filteredCollections.map((c: Collection) => (
-                  <tr 
-                    key={c.id} 
+                  <tr
+                    key={c.id}
+                    onClick={() => router.push(`/collections/${c.id}`)}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer group"
-                    onClick={() => window.location.href = `/collections/${c.id}`}
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -265,6 +268,9 @@ export default function CollectionsPage() {
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                       {c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}
                     </td>
+                    <td className="px-4 py-3">
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition" />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -274,10 +280,13 @@ export default function CollectionsPage() {
           {/* Mobile Card Layout (visible on mobile, hidden from md upwards) */}
           <div className="md:hidden p-3 space-y-3">
             {filteredCollections.map((c: Collection) => (
-              <Link
-                href={`/collections/${c.id}`}
+              <div
                 key={`mobile-col-${c.id}`}
-                className="block p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-3 shadow-xs hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/collections/${c.id}`)}
+                onKeyDown={(e) => e.key === 'Enter' && router.push(`/collections/${c.id}`)}
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-3 shadow-xs cursor-pointer hover:border-brand-500/50 hover:shadow-sm transition active:scale-[0.99]"
               >
                 {/* Header: POS + Status Badge */}
                 <div className="flex items-start justify-between gap-2">
@@ -360,7 +369,7 @@ export default function CollectionsPage() {
                     &laquo; {c.notes} &raquo;
                   </p>
                 )}
-              </Link>
+              </div>
             ))}
           </div>
         </Card>
