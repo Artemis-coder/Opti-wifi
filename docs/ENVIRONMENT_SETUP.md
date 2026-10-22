@@ -56,17 +56,17 @@ Le projet Neon associé est `opti-wifi-db` (`young-firefly-47620691`, AWS us-eas
   - Aucune commande de développement ou de test ne doit cibler cette base.
   - Les migrations manuelles doivent être précédées d'une sauvegarde (`npm run backup`).
 
-### 3.2. Branche Développement & Preview (Zone de Test Isolée)
-- **ID :** `br-nameless-term-ayycr1gs`
-- **Nom :** `develop`
+### 3.2. Branche Preview & Développement (Zone de Test & Sandbox Isolée)
+- **ID :** `br-round-morning-ayizlajz`
+- **Nom :** `preview`
 - **Branche parente :** `production`
-- **Statut :** Branche dédiée isolée
-- **Signature d'hôte :** `ep-misty-night-ayhq9iik`
-- **Rôle :** Base de données dédiée aux tests locaux, au développement quotidien sur `develop`, et aux déploiements Vercel Preview.
-- **Règles :**
-  - Données isolées créées par copie instantanée de la production.
-  - Tout ajout de feature, migration ou test s'exécute exclusivement sur cette base.
-  - Aucune incidence sur la production.
+- **Signature d'hôte :** `ep-silent-queen-ay7uwkso`
+- **Rôle :** Base de données dédiée aux tests Vercel Preview et au développement local.
+- **État des données :**
+  - Données d'accès préservées (comptes administrateurs et profils pour pouvoir se connecter).
+  - Données transactionnelles et d'exploitation entièrement vidées et isolées (`collections`, `collection_items`, `ticket_allocations` à 0).
+  - Points de vente configurés en mode "POS Sandbox".
+  - Les nouveaux tests et créations restent confinés à 100% dans cette base sans jamais toucher la production.
 
 ---
 

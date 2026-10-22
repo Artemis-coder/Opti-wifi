@@ -20,7 +20,7 @@ export interface EnvironmentSummary {
 
 // Signatures connues des clusters Neon du projet
 const NEON_PROD_HOST_SIGNATURE = 'ep-flat-term-aymd9rhb';
-const NEON_DEV_HOST_SIGNATURES = ['ep-misty-night-ayhq9iik', 'ep-crimson-shape-ayvbw15x'];
+const NEON_DEV_HOST_SIGNATURES = ['ep-silent-queen-ay7uwkso', 'ep-misty-night-ayhq9iik', 'ep-crimson-shape-ayvbw15x'];
 
 /**
  * Détermine l'environnement d'exécution actuel en se basant sur les variables Vercel et Node.
