@@ -11,6 +11,13 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
+const PROD_HOST = 'ep-flat-term-aymd9rhb';
+if (DATABASE_URL.includes(PROD_HOST) && process.env.CONFIRM_MIGRATE_PROD !== 'yes') {
+  console.error('⚠️ [GUARDRAIL] DATABASE_URL pointe vers la base de données Neon de PRODUCTION.');
+  console.error('Pour exécuter ce script de migration sur la production, définissez explicitement CONFIRM_MIGRATE_PROD=yes.');
+  process.exit(1);
+}
+
 const sql = neon(DATABASE_URL);
 
 const BACKUP_FILE = path.join(process.cwd(), 'scripts', 'backups', 'backup-2026-10-13T00-04-30-916Z.json');

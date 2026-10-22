@@ -1,17 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { neon } from '@neondatabase/serverless';
 import type { NeonQueryFunction } from '@neondatabase/serverless';
-
-const NEON_DATABASE_URL = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+import { validateDatabaseConnection } from '@/lib/env-guard';
 
 let sqlInstance: NeonQueryFunction<any, any> | null = null;
 
 export function getSql(): NeonQueryFunction<any, any> {
+  const url = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL is not configured. Set DATABASE_URL in your environment variables.');
+  }
+
   if (!sqlInstance) {
-    if (!NEON_DATABASE_URL) {
-      throw new Error('DATABASE_URL is not configured. Set DATABASE_URL in your environment variables.');
-    }
-    sqlInstance = neon(NEON_DATABASE_URL);
+    validateDatabaseConnection(url);
+    sqlInstance = neon(url);
   }
   return sqlInstance;
 }

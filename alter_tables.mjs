@@ -6,6 +6,13 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
+const PROD_HOST = 'ep-flat-term-aymd9rhb';
+if (databaseUrl.includes(PROD_HOST) && process.env.CONFIRM_PROD !== 'yes') {
+  console.error('⚠️ [GUARDRAIL] DATABASE_URL pointe vers la base de données Neon de PRODUCTION.');
+  console.error('Pour exécuter ce script sur la production, définissez explicitement CONFIRM_PROD=yes.');
+  process.exit(1);
+}
+
 const sql = neon(databaseUrl);
 
 async function alter() {

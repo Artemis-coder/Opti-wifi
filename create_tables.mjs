@@ -1,9 +1,15 @@
 import { neon } from '@neondatabase/serverless';
 
-// Use the DATABASE_URL from Vercel production environment
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   console.error('DATABASE_URL not set');
+  process.exit(1);
+}
+
+const PROD_HOST = 'ep-flat-term-aymd9rhb';
+if (databaseUrl.includes(PROD_HOST) && process.env.CONFIRM_PROD !== 'yes') {
+  console.error('⚠️ [GUARDRAIL] DATABASE_URL pointe vers la base de données Neon de PRODUCTION.');
+  console.error('Pour exécuter ce script sur la production, définissez explicitement CONFIRM_PROD=yes.');
   process.exit(1);
 }
 

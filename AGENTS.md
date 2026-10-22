@@ -8,6 +8,23 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+# Workflow Git & Environnements Neon / Vercel (OBLIGATOIRE POUR TOUTE SESSION IA)
+
+Avant toute intervention, **tout assistant de développement (agent IA ou humain) DOIT impérativement respecter les règles suivantes** :
+
+1. **Consulter la documentation du workflow** : Lire [`docs/DEVELOPMENT_WORKFLOW.md`](file:///Users/kedakeyaoboris/Desktop/Opti%20Wifi/docs/DEVELOPMENT_WORKFLOW.md) et [`docs/ENVIRONMENT_SETUP.md`](file:///Users/kedakeyaoboris/Desktop/Opti%20Wifi/docs/ENVIRONMENT_SETUP.md) avant toute modification structurante.
+2. **Vérifier l'état Git et les changements locaux** : Exécuter `git status` et inspecter les modifications locales avant toute opération. Ne jamais écraser ou réinitialiser de travail non commité.
+3. **Travailler sur `develop` ou `feature/*`** : Ne JAMAIS développer, commiter ou pousser directement sur `main`. `main` est exclusivement réservé aux déploiements validés de production.
+4. **Isoler la base de données (Neon DEV)** : Le développement local et les déploiements Vercel Preview doivent TOUJOURS pointer vers la base Neon de développement (`vercel-dev`, hôte `ep-crimson-shape-ayvbw15x...`).
+5. **Protéger la base de production** : Ne jamais exécuter de migrations manuelles, de scripts de seed, de vidage ou d'opérations destructives sur la base de production sans autorisation explicite de l'utilisateur et sauvegarde préalable (`npm run backup`).
+6. **Ne jamais exposer ni remplacer de secrets** : Ne jamais commiter de fichiers `.env*` réels dans Git. Ne jamais remplacer des secrets de production par des valeurs de test.
+7. **Pas de merge automatique vers `main`** : Toute intégration vers `main` exige une validation explicite et une revue des changements.
+8. **Préserver l'historique Git** : Pas de `git reset --hard` ni de push forcé sur les branches partagées. Utiliser des procédures de merge ou de fast-forward propres.
+9. **Vérifier les garde-fous** : Vérifier que `src/lib/env-guard.ts` est respecté et tester l'isolation avec `/api/debug-db` sur les déploiements Preview.
+10. **Demander l'autorisation préalable** : Dès qu'une opération présente un risque pour la production, une ambiguïté ou un risque de perte de données, stopper et demander confirmation à l'utilisateur.
+
+---
+
 # Security Guidelines
 
 These rules are mandatory for every code change, commit, and push in this repository.
