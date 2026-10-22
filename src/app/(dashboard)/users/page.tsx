@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Mail, Loader2 } from 'lucide-react';
+import { Users, Plus, Mail, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +22,8 @@ export default function UsersPage() {
   const [role, setRole] = useState<UserRole>('collecteur');
   const [telephone, setTelephone] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
+
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
 
   const supabase = createClient();
 
@@ -69,6 +71,23 @@ export default function UsersPage() {
       toast.error(result.error || 'Erreur lors de la création de l\'utilisateur.');    }
   };
 
+  const handleDeleteUser = async (user: Profile) => {
+    const res = await fetch(`/api/users/${user.id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const result = await res.json();
+
+    if (res.ok && result.success) {
+      setUsers(users.map(u => u.id === user.id ? { ...u, is_active: false, deleted_at: new Date().toISOString() } : u));
+      toast.success(result.message || 'Utilisateur supprimé avec succès.');
+    } else {
+      toast.error(result.error || 'Erreur lors de la suppression.');
+    }
+    setDeleteTarget(null);
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -103,27 +122,42 @@ export default function UsersPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {users.map((u: Profile) => (
             <Card key={u.id} className="space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-brand-900 text-brand-400 font-bold flex items-center justify-center text-sm border border-brand-500/30">
-                    {u.nom ? u.nom.slice(0, 2).toUpperCase() : 'US'}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">{u.nom}</h3>
-                    <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
-                      <Mail className="w-3 h-3" />
-                      <span>{u.email}</span>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-brand-900 text-brand-400 font-bold flex items-center justify-center text-sm border border-brand-500/30">
+                      {u.nom ? u.nom.slice(0, 2).toUpperCase() : 'US'}
                     </div>
-                    {u.telephone && (
-                      <p className="text-xs text-slate-500 mt-0.5">{u.telephone}</p>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white">{u.nom}</h3>
+                      <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                        <Mail className="w-3 h-3" />
+                        <span>{u.email}</span>
+                      </div>
+                      {u.telephone && (
+                        <p className="text-xs text-slate-500 mt-0.5">{u.telephone}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {u.is_active === false && (
+                      <Badge variant="neutral" className="text-xs">Inactif</Badge>
                     )}
+                    <Badge variant={u.role === 'administrateur' ? 'warning' : 'info'}>
+                      {u.role}
+                    </Badge>
                   </div>
                 </div>
-                <Badge variant={u.role === 'administrateur' ? 'warning' : 'info'}>
-                  {u.role}
-                </Badge>
-              </div>
-            </Card>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center gap-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
+                  onClick={() => setDeleteTarget(u)}
+                  disabled={u.is_active === false}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Supprimer de l'équipe
+                </Button>
+              </Card>
           ))}
         </div>
       )}
@@ -148,6 +182,26 @@ export default function UsersPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Supprimer l'utilisateur">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          Êtes-vous sûr de vouloir supprimer <strong className="font-bold text-slate-900 dark:text-white">{deleteTarget?.nom}</strong> de l'équipe ?
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+          Toutes les collectes et allocations historiques conserveront les noms d'utilisateur d'origine, mais cet utilisateur ne pourra plus se connecter ni être affecté à de nouvelles tâches.
+        </p>
+        <div className="flex justify-end gap-3 pt-4">
+          <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>Annuler</Button>
+          <Button
+            onClick={() => handleDeleteUser(deleteTarget!)}
+            variant="danger"
+            disabled={isSubmitting}
+          >
+            Supprimer
+          </Button>
+        </div>
       </Modal>
     </div>
   );
