@@ -18,11 +18,12 @@ import {
   Hash,
   DollarSign,
   ShoppingBag,
+  Clock,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
+import { formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import { Collection, CollectionItem } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 
@@ -169,8 +170,8 @@ export default function CollectionDetailPage() {
 
       {/* ── Summary Card ── */}
       <Card className="p-4 sm:p-6 border-slate-200 dark:border-slate-800 space-y-4">
-        {/* POS + Collecteur + Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* POS + Collecteur + Date d'opération + Enregistrement Système */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
               <Store className="w-4 h-4" />
@@ -201,7 +202,21 @@ export default function CollectionDetailPage() {
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Date de collecte</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{displayDate}</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                {formatDateOnlyFR(collection.date_collecte || collection.created_at)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Enregistré dans le système</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                {formatDateFR(collection.created_at)}
+              </p>
             </div>
           </div>
         </div>

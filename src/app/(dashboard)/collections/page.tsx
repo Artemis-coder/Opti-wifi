@@ -212,7 +212,7 @@ export default function CollectionsPage() {
                   <th className="px-4 py-3 text-right">Commission</th>
                   <th className="px-4 py-3 text-center">Écart (Diff)</th>
                   <th className="px-4 py-3 text-center">Statut</th>
-                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Enregistré le</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -266,7 +266,7 @@ export default function CollectionsPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                      {c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}
+                      {formatDateFR(c.created_at)}
                     </td>
                     <td className="px-4 py-3">
                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition" />
@@ -344,7 +344,7 @@ export default function CollectionsPage() {
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 dark:border-slate-800/80">
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                     <Calendar className="w-3.5 h-3.5 shrink-0" />
-                    <span>{c.date_collecte ? formatDateFR(c.date_collecte) : formatDateFR(c.created_at)}</span>
+                    <span>{formatDateFR(c.created_at)}</span>
                   </div>
 
                   <div>
