@@ -42,7 +42,6 @@ export default function SubscriptionPage() {
     async function loadData() {
       setLoading(true);
       try {
-        // Load all active plans
         const { data: plansData } = await supabase
           .from('subscription_plans')
           .select('*')
@@ -50,34 +49,26 @@ export default function SubscriptionPage() {
           .order('price', { ascending: true });
         if (plansData) setAllPlans(plansData);
 
-        // Try to find subscription for current user's organization
-        if (user?.organisation_id) {
+        let orgId: string | undefined = (user as any)?.organization_id || (user as any)?.organisation_id;
+        
+        if (!orgId && user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('id', user.id)
+            .single();
+          orgId = profile?.organization_id;
+        }
+        
+        if (orgId) {
           const { data: subData } = await supabase
             .from('subscriptions')
             .select('*, plan:subscription_plans(*)')
-            .eq('organization_id', user.organisation_id)
+            .eq('organization_id', orgId)
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
           if (subData) setSubscription(subData);
-        } else {
-          // Fallback: get from user's org via profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('organisation_id')
-            .eq('id', user?.id)
-            .single();
-          
-          if (profile?.organisation_id) {
-            const { data: subData } = await supabase
-              .from('subscriptions')
-              .select('*, plan:subscription_plans(*)')
-              .eq('organization_id', profile.organisation_id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (subData) setSubscription(subData);
-          }
         }
       } catch (error) {
         console.error('Error loading subscription:', error);
@@ -97,9 +88,9 @@ export default function SubscriptionPage() {
       case 'past_due':
         return <Badge variant="danger" className="gap-1"><AlertCircle className="w-3.5 h-3.5" /> Impayé</Badge>;
       case 'cancelled':
-        return <Badge variant="outline">Annulé</Badge>;
+        return <Badge variant="neutral">Annulé</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="neutral">{status}</Badge>;
     }
   };
 
@@ -137,7 +128,6 @@ export default function SubscriptionPage() {
         </p>
       </div>
 
-      {/* Current Subscription */}
       {subscription ? (
         <Card className="p-6 space-y-4">
           <div className="flex items-center justify-between">
@@ -208,7 +198,6 @@ export default function SubscriptionPage() {
         </Card>
       )}
 
-      {/* Available Plans */}
       <div>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Tous les forfaits disponibles</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
