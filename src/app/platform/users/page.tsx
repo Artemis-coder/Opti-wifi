@@ -12,6 +12,9 @@ import {
   Clock,
   Shield,
   Building2,
+  Plus,
+  X,
+  UserPlus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
@@ -33,9 +36,31 @@ export default function PlatformUsersPage() {
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const [orgsLoading, setOrgsLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    nom: '',
+    password: '',
+    telephone: '',
+    devise: 'XOF',
+    organization_id: '',
+    role: 'administrateur' as 'administrateur' | 'collecteur',
+  });
+  const [creating, setCreating] = useState(false);
+  const [changeRoleUser, setChangeRoleUser] = useState<PlatformUserProfile | null>(null);
+  const [newRoleValue, setNewRoleValue] = useState<'administrateur' | 'collecteur'>('administrateur');
+  const [newOrgIdValue, setNewOrgIdValue] = useState<string>('');
+  const [savingRole, setSavingRole] = useState(false);
+
   useEffect(() => {
     loadUsers();
   }, [search]);
+
+  useEffect(() => {
+    if (showCreateModal || changeRoleUser) loadOrganizations();
+  }, [showCreateModal, changeRoleUser]);
 
   async function loadUsers() {
     setLoading(true);
@@ -53,7 +78,23 @@ export default function PlatformUsersPage() {
     }
   }
 
+  async function loadOrganizations() {
+    setOrgsLoading(true);
+    try {
+      const res = await fetch('/api/platform/clients?limit=200');
+      const result = await res.json();
+      if (res.ok) {
+        setOrganizations(result.data || []);
+      }
+    } catch {
+      toast.error('Erreur de chargement des organisations');
+    } finally {
+      setOrgsLoading(false);
+    }
+  }
+
   const handleAction = async (userId: string, action: string, label: string) => {
+    if (action === 'change_role') return;
     if (!window.confirm(`Voulez-vous vraiment ${label} cet utilisateur ?`)) return;
 
     setActionLoading(userId);
@@ -83,6 +124,97 @@ export default function PlatformUsersPage() {
     }
   };
 
+  const handleCreateAdmin = async () => {
+    if (!createForm.email || !createForm.nom || !createForm.organization_id) {
+      toast.error('Email, nom et organisation requis.');
+      return;
+    }
+    if (createForm.password.length > 0 && createForm.password.length < 6) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const res = await fetch('/api/platform/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: createForm.email,
+          nom: createForm.nom,
+          password: createForm.password || undefined,
+          telephone: createForm.telephone || undefined,
+          devise: createForm.devise,
+          organization_id: createForm.organization_id,
+          role: createForm.role,
+        }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        toast.success(result.message);
+        if (result.temporary_password) {
+          toast.warning(`Mot de passe temporaire : ${result.temporary_password}`, { duration: 10000 });
+        }
+        setShowCreateModal(false);
+        setCreateForm({
+          email: '', nom: '', password: '', telephone: '', devise: 'XOF', organization_id: '', role: 'administrateur',
+        });
+        loadUsers();
+      } else {
+        toast.error(result.error || 'Erreur');
+      }
+    } catch {
+      toast.error('Erreur réseau');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const openChangeRole = (u: PlatformUserProfile) => {
+    setChangeRoleUser(u);
+    setNewRoleValue(u.role);
+    setNewOrgIdValue(u.organization_id || '');
+  };
+
+  const handleChangeRoleSave = async () => {
+    if (!changeRoleUser || !newRoleValue) return;
+    setSavingRole(true);
+    try {
+      const res = await fetch('/api/platform/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: changeRoleUser.id,
+          action: 'change_role',
+          role: newRoleValue,
+          organization_id: newOrgIdValue || undefined,
+        }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        toast.success(result.message);
+        setUsers((prev) =>
+          prev.map((u: PlatformUserProfile) =>
+            u.id === changeRoleUser.id
+              ? {
+                  ...u,
+                  role: result.data?.role || newRoleValue,
+                  organization_id: result.data?.organization_id || u.organization_id,
+                }
+              : u
+          )
+        );
+        setChangeRoleUser(null);
+      } else {
+        toast.error(result.error || 'Erreur');
+      }
+    } catch {
+      toast.error('Erreur réseau');
+    } finally {
+      setSavingRole(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -90,6 +222,10 @@ export default function PlatformUsersPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Utilisateurs Clients</h1>
           <p className="text-xs text-slate-500">Tous les utilisateurs de la plateforme, par organisation.</p>
         </div>
+        <Button onClick={() => setShowCreateModal(true)} className="h-9">
+          <Plus className="w-4 h-4 mr-2" />
+          Créer un administrateur
+        </Button>
       </div>
 
       <Card className="p-4">
@@ -206,6 +342,16 @@ export default function PlatformUsersPage() {
                         >
                           <KeyRound className="w-3.5 h-3.5" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-1 h-7 text-amber-600 hover:text-amber-700"
+                          onClick={() => openChangeRole(u)}
+                          disabled={actionLoading === u.id || savingRole}
+                          title="Changer le rôle / l'organisation"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                        </Button>
                         {u.organization && (
                           <Link href={`/platform/clients/${u.organization.id}`}>
                             <Button variant="ghost" size="sm" className="p-1 h-7 text-blue-600 hover:text-blue-700" title="Voir l'organisation">
@@ -221,6 +367,167 @@ export default function PlatformUsersPage() {
             </table>
           </div>
         </Card>
+      )}
+
+      {/* Create Admin Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Créer un administrateur</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowCreateModal(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Email *</label>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value.toLowerCase() })}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="admin@organisation.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nom complet *</label>
+                <input
+                  type="text"
+                  value={createForm.nom}
+                  onChange={(e) => setCreateForm({ ...createForm, nom: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="Jean Dupont"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Mot de passe (laissé vide = auto-généré)</label>
+                <input
+                  type="password"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="Laisser vide pour générer"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Téléphone</label>
+                <input
+                  type="tel"
+                  value={createForm.telephone}
+                  onChange={(e) => setCreateForm({ ...createForm, telephone: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="+225 XX XX XX XX"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Devise</label>
+                <select
+                  value={createForm.devise}
+                  onChange={(e) => setCreateForm({ ...createForm, devise: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="XOF">XOF (Franc CFA)</option>
+                  <option value="EUR">EUR (Euro)</option>
+                  <option value="USD">USD (Dollar US)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Rôle</label>
+                <select
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as 'administrateur' | 'collecteur' })}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="administrateur">Administrateur</option>
+                  <option value="collecteur">Collecteur</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Organisation *</label>
+                {orgsLoading ? (
+                  <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-500 animate-pulse">Chargement...</div>
+                ) : (
+                  <select
+                    value={createForm.organization_id}
+                    onChange={(e) => setCreateForm({ ...createForm, organization_id: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    required
+                  >
+                    <option value="">Sélectionner une organisation</option>
+                    {organizations.map((org) => (
+                      <option key={org.id} value={org.id}>{org.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => setShowCreateModal(false)} disabled={creating}>
+                Annuler
+              </Button>
+              <Button onClick={handleCreateAdmin} disabled={creating}>
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
+                {creating ? 'Création...' : 'Créer'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Change Role Modal */}
+      {changeRoleUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Modifier le rôle / l'organisation</h2>
+              <Button variant="ghost" size="sm" onClick={() => setChangeRoleUser(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Utilisateur : <span className="font-medium">{changeRoleUser.nom || changeRoleUser.email}</span>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nouveau rôle</label>
+                <select
+                  value={newRoleValue}
+                  onChange={(e) => setNewRoleValue(e.target.value as 'administrateur' | 'collecteur')}
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="administrateur">Administrateur</option>
+                  <option value="collecteur">Collecteur</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nouvelle organisation</label>
+                {orgsLoading ? (
+                  <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-500 animate-pulse">Chargement...</div>
+                ) : (
+                  <select
+                    value={newOrgIdValue}
+                    onChange={(e) => setNewOrgIdValue(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="">— Conserver l'actuelle —</option>
+                    {organizations.map((org) => (
+                      <option key={org.id} value={org.id}>{org.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => setChangeRoleUser(null)} disabled={savingRole}>
+                Annuler
+              </Button>
+              <Button onClick={handleChangeRoleSave} disabled={savingRole}>
+                {savingRole ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enregistrer'}
+              </Button>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
