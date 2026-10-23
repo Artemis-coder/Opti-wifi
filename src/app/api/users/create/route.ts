@@ -2,6 +2,7 @@ import { adminClient } from '@/lib/neon/admin';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,40 +27,14 @@ export async function POST(request: NextRequest) {
     });
 
     const { data: { user: callerUser } } = await clientSupabase.auth.getUser();
-    let orgId: string | null = null;
+    const orgId = callerUser ? await getUserOrganizationId(clientSupabase) : null;
 
-    if (callerUser) {
-      const { data: callerProfile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', callerUser.id)
-        .single();
-
-      orgId = callerProfile?.organization_id || null;
-
-      if (orgId) {
-        // Check active subscription quota
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('*, plan:subscription_plans(*)')
-          .eq('organization_id', orgId)
-          .in('status', ['active', 'trialing'])
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (sub?.plan && typeof sub.plan.max_users === 'number') {
-          const { count } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('organization_id', orgId);
-
-          if (count !== null && count >= sub.plan.max_users) {
-            return NextResponse.json({
-              error: `Limite d'utilisateurs atteinte (${count}/${sub.plan.max_users}) pour le forfait "${sub.plan.name}". Veuillez mettre à niveau votre abonnement pour ajouter d'autres membres.`
-            }, { status: 403 });
-          }
-        }
+    if (orgId) {
+      const quotaCheck = await checkQuota(clientSupabase, orgId, 'users');
+      if (!quotaCheck.allowed) {
+        return NextResponse.json({
+          error: quotaCheck.message
+        }, { status: 403 });
       }
     }
 

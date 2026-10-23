@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeftRight,
   Plus,
@@ -15,6 +16,7 @@ import {
   Search,
   DollarSign,
   TrendingUp,
+  ChevronRight,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +28,7 @@ import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/data
 import { createClient } from '@/lib/supabase/client';
 
 export default function AllocationsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [allocations, setAllocations] = useState<TicketAllocation[]>([]);
   const [posList, setPosList] = useState<PointOfSale[]>([]);
@@ -329,13 +332,14 @@ export default function AllocationsPage() {
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                       <tr>
-                        <th className="px-4 py-3">Date</th>
+                        <th className="px-4 py-3">Enregistré le</th>
                         <th className="px-4 py-3">Nature</th>
                         <th className="px-4 py-3">Type de Ticket</th>
                         <th className="px-4 py-3 text-right">Quantité</th>
                         <th className="px-4 py-3 text-right">Montant</th>
                         <th className="px-4 py-3">Alloué par</th>
                         <th className="px-4 py-3">Notes</th>
+                        <th className="px-4 py-3" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
@@ -344,7 +348,11 @@ export default function AllocationsPage() {
                         const isReturn = alloc.type === 'exchange_return';
                         const isReceive = alloc.type === 'exchange_receive';
                         return (
-                          <tr key={alloc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                          <tr
+                            key={alloc.id}
+                            onClick={() => router.push(`/allocations/${alloc.id}`)}
+                            className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer group"
+                          >
                             <td className="px-4 py-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                                 <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -396,6 +404,9 @@ export default function AllocationsPage() {
                                 <span className="text-slate-400">—</span>
                               )}
                             </td>
+                            <td className="px-4 py-3">
+                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition" />
+                            </td>
                           </tr>
                         );
                       })}
@@ -415,7 +426,11 @@ export default function AllocationsPage() {
                     return (
                       <div
                         key={`mobile-alloc-${alloc.id}`}
-                        className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => router.push(`/allocations/${alloc.id}`)}
+                        onKeyDown={(e) => e.key === 'Enter' && router.push(`/allocations/${alloc.id}`)}
+                        className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs cursor-pointer hover:border-brand-500/50 hover:shadow-sm transition active:scale-[0.99]"
                       >
                         {/* Header: Ticket Name + Nature Badge */}
                         <div className="flex items-start justify-between gap-2">
