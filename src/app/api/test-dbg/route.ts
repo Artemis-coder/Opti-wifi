@@ -9,3 +9,4 @@ export async function GET() {
     node_env: process.env.NODE_ENV,
   });
 }
+
