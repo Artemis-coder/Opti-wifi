@@ -13,6 +13,7 @@ import {
   Calendar,
   DollarSign,
   Search,
+  ChevronRight,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -214,7 +215,11 @@ export default function CollectionsPage() {
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                 {filteredCollections.map((c: Collection) => (
-                  <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                  <tr 
+                    key={c.id} 
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer group"
+                    onClick={() => window.location.href = `/collections/${c.id}`}
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Store className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
@@ -269,9 +274,10 @@ export default function CollectionsPage() {
           {/* Mobile Card Layout (visible on mobile, hidden from md upwards) */}
           <div className="md:hidden p-3 space-y-3">
             {filteredCollections.map((c: Collection) => (
-              <div
+              <Link
+                href={`/collections/${c.id}`}
                 key={`mobile-col-${c.id}`}
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-3 shadow-xs"
+                className="block p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-3 shadow-xs hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
               >
                 {/* Header: POS + Status Badge */}
                 <div className="flex items-start justify-between gap-2">
@@ -354,7 +360,7 @@ export default function CollectionsPage() {
                     &laquo; {c.notes} &raquo;
                   </p>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         </Card>
