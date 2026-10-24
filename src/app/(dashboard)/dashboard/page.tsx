@@ -356,7 +356,11 @@ export default function DashboardPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                     {collections.slice(0, 5).map((col: Collection) => (
-                      <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <tr 
+                        key={col.id} 
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer"
+                        onClick={() => window.location.href = `/collections/${col.id}`}
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Store className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
@@ -390,9 +394,10 @@ export default function DashboardPage() {
               {/* Mobile Card Layout (visible on mobile, hidden from md upwards) */}
               <div className="md:hidden p-3 space-y-2.5">
                 {collections.slice(0, 5).map((col: Collection) => (
-                  <div
+                  <Link
+                    href={`/collections/${col.id}`}
                     key={`dashboard-col-${col.id}`}
-                    className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs"
+                    className="block p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs hover:border-brand-300 transition-colors"
                   >
                     {/* Header: POS + Status */}
                     <div className="flex items-start justify-between gap-2">
@@ -433,7 +438,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </Card>
