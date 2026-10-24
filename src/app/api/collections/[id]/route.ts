@@ -22,29 +22,35 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const supabase = await getSupabaseServerClient();
+  try {
+    const { id } = await params;
+    const supabase = await getSupabaseServerClient();
 
-  const { data: collection, error } = await supabase
-    .from('collections')
-    .select(
-      `*,
-       pos:points_of_sale(*),
-       collecteur:profiles(*),
-       items:collection_items(
-         *,
-         ticket_type:ticket_types(*)
-       )`
-    )
-    .eq('id', id)
-    .single();
+    const { data: collection, error } = await supabase
+      .from('collections')
+      .select(
+        `*,
+         pos:points_of_sale(*),
+         collecteur:profiles(*),
+         items:collection_items(
+           *,
+           ticket_type:ticket_types(*)
+         )`
+      )
+      .eq('id', id)
+      .single();
 
-  if (error || !collection) {
-    return NextResponse.json(
-      { error: 'Collecte introuvable' },
-      { status: 404 }
-    );
+    if (error || !collection) {
+      console.error('Collection detail error:', error);
+      return NextResponse.json(
+        { error: 'Collecte introuvable', details: error?.message },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(collection);
+  } catch (e: any) {
+    console.error('Collection detail exception:', e);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
-
-  return NextResponse.json(collection);
 }

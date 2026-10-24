@@ -33,8 +33,9 @@ export async function GET(
       .single();
 
     if (allocError || !allocation) {
+      console.error('Allocation detail error:', allocError);
       return NextResponse.json(
-        { error: 'Allocation introuvable' },
+        { error: 'Allocation introuvable', details: allocError?.message },
         { status: 404 }
       );
     }
@@ -65,6 +66,7 @@ export async function GET(
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erreur interne';
+    console.error('Allocation detail exception:', err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
