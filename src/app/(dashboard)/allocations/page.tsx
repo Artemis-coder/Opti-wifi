@@ -344,7 +344,11 @@ export default function AllocationsPage() {
                         const isReturn = alloc.type === 'exchange_return';
                         const isReceive = alloc.type === 'exchange_receive';
                         return (
-                          <tr key={alloc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                          <tr 
+                            key={alloc.id} 
+                            className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer"
+                            onClick={() => window.location.href = `/allocations/${alloc.id}`}
+                          >
                             <td className="px-4 py-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                                 <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -413,9 +417,10 @@ export default function AllocationsPage() {
                     const totalPrice = alloc.quantite * unitPrice;
 
                     return (
-                      <div
+                      <Link
+                        href={`/allocations/${alloc.id}`}
                         key={`mobile-alloc-${alloc.id}`}
-                        className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs"
+                        className="block p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
                       >
                         {/* Header: Ticket Name + Nature Badge */}
                         <div className="flex items-start justify-between gap-2">
@@ -482,7 +487,7 @@ export default function AllocationsPage() {
                             &laquo; {alloc.notes} &raquo;
                           </p>
                         )}
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>

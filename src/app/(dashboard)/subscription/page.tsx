@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
+import { toast } from 'sonner';
 
 interface SubscriptionPlan {
   id: string;
@@ -33,6 +35,7 @@ interface Subscription {
 
 export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
+  const [renewing, setRenewing] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [allPlans, setAllPlans] = useState<SubscriptionPlan[]>([]);
   const { user } = useAuthStore();
@@ -104,9 +107,50 @@ export default function SubscriptionPage() {
     }
   };
 
+  const getDurationMonths = (period: string): number => {
+    switch (period) {
+      case 'monthly': return 1;
+      case 'quarterly': return 3;
+      case 'semiannual': return 6;
+      case 'annual': return 12;
+      default: return 1;
+    }
+  };
+
   const daysRemaining = subscription?.end_date 
     ? Math.max(0, Math.ceil((new Date(subscription.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : null;
+
+  const isExpired = subscription ? (subscription.status === 'expired' || (subscription.end_date && new Date(subscription.end_date).getTime() < new Date().getTime())) : false;
+  const isExpiringSoon = subscription && !isExpired && daysRemaining !== null && daysRemaining <= 7;
+
+  const handleRenew = async () => {
+    if (!subscription) return;
+    setRenewing(true);
+    try {
+      const res = await fetch('/api/subscriptions/renew', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Échec du renouvellement');
+        return;
+      }
+      toast.success('Abonnement renouvelé avec succès !');
+      // Recharger les données
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('*, plan:subscription_plans(*)')
+        .eq('organization_id', subscription.organization_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (subData) setSubscription(subData);
+    } catch (error) {
+      console.error('Renew error:', error);
+      toast.error('Erreur lors du renouvellement');
+    } finally {
+      setRenewing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -129,7 +173,34 @@ export default function SubscriptionPage() {
       </div>
 
       {subscription ? (
-        <Card className="p-6 space-y-4">
+        <Card className={`p-6 space-y-4 ${isExpired ? 'border-red-200 dark:border-red-900/40' : ''}`}>
+          {isExpired && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 rounded-xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-red-800 dark:text-red-200">
+                  Votre abonnement a expiré
+                </p>
+                <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
+                  Vous n&apos;avez plus accès à votre espace tant que vous n&apos;aurez pas renouvelé votre abonnement.
+                </p>
+              </div>
+            </div>
+          )}
+          {!isExpired && isExpiringSoon && (
+            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/40 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                  Votre abonnement expire bientôt
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                  il vous reste {daysRemaining} jour{daysRemaining && daysRemaining > 1 ? 's' : ''} avant expiration.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Mon forfait actuel</h2>
@@ -140,7 +211,7 @@ export default function SubscriptionPage() {
             {getStatusBadge(subscription.status)}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-brand-500/10 flex items-center justify-center">
                 <Package className="w-5 h-5 text-brand-600 dark:text-brand-400" />
@@ -177,7 +248,7 @@ export default function SubscriptionPage() {
                 </div>
               </div>
             )}
-            {daysRemaining !== null && (
+            {daysRemaining !== null && daysRemaining > 0 && !isExpired && (
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
                   <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -190,7 +261,41 @@ export default function SubscriptionPage() {
                 </div>
               </div>
             )}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Durée du forfait</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {subscription.plan ? `${getDurationMonths(subscription.plan.billing_period)} mois` : '-'}
+                </p>
+              </div>
+            </div>
           </div>
+
+          {(isExpired || isExpiringSoon || daysRemaining === null) && subscription.plan && (
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+              <Button
+                variant={isExpired ? 'danger' : 'primary'}
+                size="sm"
+                onClick={handleRenew}
+                disabled={renewing}
+              >
+                {renewing ? (
+                  <>
+                    <RotateCcw className="w-4 h-4 animate-spin" />
+                    <span className="ml-2">Renouvellement...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="ml-2">{isExpired ? "Renouveler mon abonnement" : "Renouveler maintenant"}</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </Card>
       ) : (
         <Card className="p-6 text-center">
