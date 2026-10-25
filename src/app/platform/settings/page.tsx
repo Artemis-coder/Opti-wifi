@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { PlatformSettings } from '@/types/platform';
+import { NotificationChannelsTest } from '@/components/platform/NotificationChannelsTest';
 
 type SettingValue = string | number | boolean;
 
@@ -324,6 +325,8 @@ export default function PlatformSettingsPage() {
           />
         </div>
       </Card>
+
+      <NotificationChannelsTest />
 
       {/* Security */}
       <Card className="space-y-6">

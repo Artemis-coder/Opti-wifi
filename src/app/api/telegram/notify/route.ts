@@ -1,37 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { notifyBuild, notifyDatabaseAlert, notifyError, notifyCustom } from '@/lib/telegram';
+import { sendTelegramNotificationByType } from '@/lib/telegram';
+import { isInternalOrSuperAdmin } from '@/lib/telegram-auth';
 
+const TYPES = ['build', 'database', 'error', 'custom'];
+
+// Envoi d'une notification Telegram : appels internes (Bearer CRON_SECRET) ou super admin uniquement.
 export async function POST(request: NextRequest) {
+  if (!(await isInternalOrSuperAdmin(request))) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  }
   try {
     const body = await request.json();
     const { type, ...data } = body;
-
-    let success = false;
-
-    switch (type) {
-      case 'build':
-        success = await notifyBuild(data);
-        break;
-      case 'database':
-        success = await notifyDatabaseAlert(data);
-        break;
-      case 'error':
-        success = await notifyError(data);
-        break;
-      case 'custom':
-        success = await notifyCustom(data);
-        break;
-      default:
-        return NextResponse.json({ error: 'Type de notification inconnu' }, { status: 400 });
+    if (!TYPES.includes(type)) {
+      return NextResponse.json({ error: 'Type de notification inconnu' }, { status: 400 });
     }
-
-    if (success) {
-      return NextResponse.json({ ok: true });
-    } else {
-      return NextResponse.json({ error: 'Échec envoi Telegram' }, { status: 500 });
-    }
+    const success = await sendTelegramNotificationByType(type, data);
+    return success
+      ? NextResponse.json({ ok: true })
+      : NextResponse.json({ error: 'Échec envoi Telegram' }, { status: 500 });
   } catch (error) {
-    console.error('Telegram webhook error:', error);
+    console.error('Telegram notify error:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -14,13 +14,20 @@ self.addEventListener('push', (event) => {
   }
   const title = data.title || 'OptiSpace';
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body: data.body || '',
-      icon: '/icon.png',
-      badge: '/icon.png',
-      tag: data.tag || undefined,
-      data: { url: data.url || '/' },
-    })
+    Promise.all([
+      self.registration.showNotification(title, {
+        body: data.body || '',
+        icon: '/icon.png',
+        badge: '/icon.png',
+        tag: data.tag || undefined,
+        renotify: Boolean(data.tag),
+        data: { url: data.url || '/' },
+      }),
+      // Onglets ouverts : la cloche se met à jour immédiatement, sans attendre le rafraîchissement périodique
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+        windows.forEach((client) => client.postMessage({ type: 'optispace:notification' }));
+      }),
+    ])
   );
 });
 

@@ -1,3 +1,4 @@
+import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
 /**
  * Advanced AI Telegram Webhook with OpenRouter LLM + Function Calling
  * Supports: Free models (DeepSeek, Llama, Mistral, etc.), Voice transcription, Menus, Memory
@@ -75,6 +76,9 @@ async function initializeDB() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isTelegramWebhookAuthorized(request)) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  }
   await initializeDB();
   
   try {

@@ -1,8 +1,12 @@
+import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramMessage, formatCustomNotification } from '@/lib/telegram';
 import { getValidation, updateValidation, getPendingValidations } from '@/app/api/ai/validation/route';
 
 export async function POST(request: NextRequest) {
+  if (!isTelegramWebhookAuthorized(request)) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  }
   try {
     const body = await request.json();
     const message = body.message;

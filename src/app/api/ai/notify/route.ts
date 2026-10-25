@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
+import { isInternalOrSuperAdmin } from '@/lib/telegram-auth';
 import { notifyCustom, notifyError } from '@/lib/telegram';
 
 /**
@@ -7,14 +7,9 @@ import { notifyCustom, notifyError } from '@/lib/telegram';
  * Requiert une authentification valide pour éviter le spam.
  */
 export async function POST(request: NextRequest) {
-  // ── Authentification ──────────────────────────────────────────────────────
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) {
-    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
-  }
-  const payload = verifyToken(token);
-  if (!payload) {
-    return NextResponse.json({ error: 'Session invalide.' }, { status: 401 });
+  // ── Authentification : appel interne (Bearer CRON_SECRET) ou super admin ──
+  if (!(await isInternalOrSuperAdmin(request))) {
+    return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
   }
 
   try {
