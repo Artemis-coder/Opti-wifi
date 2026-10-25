@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { SubscriptionWithPlan, SubscriptionStatus } from '@/types/platform';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   active: { label: 'Actif', color: 'warning' },
@@ -71,7 +72,7 @@ export default function PlatformExpiringSubscriptionsPage() {
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -125,7 +126,7 @@ export default function PlatformExpiringSubscriptionsPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </Card>
       )}
     </div>

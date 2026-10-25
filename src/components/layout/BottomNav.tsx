@@ -13,22 +13,33 @@ import {
 import { useAuthStore } from '@/lib/stores/authStore';
 import { cn } from '@/lib/utils/cn';
 
-interface BottomNavProps {
-  onOpenMobileMenu: () => void;
+export interface BottomNavItem {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  adminOnly?: boolean;
+  /** Actif uniquement sur l'adresse exacte (page d'accueil d'un espace). */
+  exact?: boolean;
 }
 
-const primaryItems = [
-  { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard },
+interface BottomNavProps {
+  onOpenMobileMenu: () => void;
+  /** Entrées de la barre ; par défaut celles de l'espace client. */
+  items?: BottomNavItem[];
+}
+
+const primaryItems: BottomNavItem[] = [
+  { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard, exact: true },
   { label: 'POS', href: '/pos', icon: Store },
   { label: 'Collectes', href: '/collections', icon: Receipt },
   { label: 'Allocations', href: '/allocations', icon: ArrowLeftRight, adminOnly: true },
 ];
 
-export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
+export function BottomNav({ onOpenMobileMenu, items = primaryItems }: BottomNavProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
 
-  const filteredItems = primaryItems.filter(
+  const filteredItems = items.filter(
     (item) => !item.adminOnly || user?.role === 'administrateur'
   );
 
@@ -41,8 +52,7 @@ export function BottomNav({ onOpenMobileMenu }: BottomNavProps) {
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive =
-            pathname === item.href ||
-            (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            pathname === item.href || (!item.exact && pathname.startsWith(item.href + '/'));
 
           return (
             <Link

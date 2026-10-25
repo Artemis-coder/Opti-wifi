@@ -41,6 +41,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { PosSummary } from '@/components/ui/PosSummary';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 export default function SpaceDashboardPage() {
   const params = useParams();
@@ -279,15 +280,18 @@ export default function SpaceDashboardPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-brand-900 to-brand-700 p-6 rounded-2xl text-white shadow-lg border border-slate-800">
-        <div>
-          <div className="flex items-center gap-3">
-            <Link href="/spaces">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="w-4 h-4" /> Retour
-              </Button>
+        <div className="min-w-0">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <Link
+              href="/spaces"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 -ml-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition"
+            >
+              <ArrowLeft className="w-4 h-4" /> Retour
             </Link>
-            <MapPin className="w-6 h-6 text-brand-400" />
-            <h1 className="text-2xl font-bold">{space.nom}</h1>
+            <div className="flex items-center gap-2 min-w-0">
+              <MapPin className="w-6 h-6 shrink-0 text-brand-400" />
+              <h1 className="text-xl sm:text-2xl font-bold break-words">{space.nom}</h1>
+            </div>
           </div>
           {space.description && (
             <p className="text-sm text-slate-300 mt-1">{space.description}</p>
@@ -582,7 +586,7 @@ export default function SpaceDashboardPage() {
             </Card>
           ) : (
             <Card className="p-0 overflow-hidden">
-              <div className="overflow-x-auto">
+              <ResponsiveTable>
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                     <tr>
@@ -609,7 +613,7 @@ export default function SpaceDashboardPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ResponsiveTable>
             </Card>
           )}
         </div>

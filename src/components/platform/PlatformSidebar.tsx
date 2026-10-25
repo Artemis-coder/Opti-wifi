@@ -73,6 +73,27 @@ const sidebarItems = [
   },
 ];
 
+/** Barre de navigation mobile du back-office (le bouton Menu ouvre la liste complète). */
+export const PLATFORM_BOTTOM_NAV = [
+  { label: 'Accueil', href: '/platform/dashboard', icon: LayoutDashboard, exact: true },
+  { label: 'Inscriptions', href: '/platform/registrations', icon: UserPlus },
+  { label: 'Demandes', href: '/platform/license-requests', icon: Inbox },
+  { label: 'Clients', href: '/platform/clients', icon: Building2 },
+];
+
+/** Titre de la page courante du back-office (en-tête mobile). */
+export function getPlatformPageTitle(pathname: string): string {
+  if (/^\/platform\/clients\/[^/]+/.test(pathname)) return 'Fiche client';
+  let best = { href: '', label: 'Super Admin' };
+  for (const group of sidebarItems) {
+    const items = 'items' in group && group.items ? group.items : [group as { label: string; href: string }];
+    for (const item of items) {
+      if ((pathname === item.href || pathname.startsWith(item.href + '/')) && item.href.length > best.href.length) best = item;
+    }
+  }
+  return best.label;
+}
+
 const ALL_HREFS = sidebarItems.flatMap((g) => ('items' in g && g.items ? g.items.map((i) => i.href) : [g.href!]));
 
 // Un lien est actif sur sa page et ses sous-pages, sauf si un lien plus précis correspond.

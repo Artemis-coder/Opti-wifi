@@ -7,6 +7,8 @@ import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
 import { PlatformSidebar } from '@/components/platform/PlatformSidebar';
 import { PlatformHeader } from '@/components/platform/PlatformHeader';
+import { BottomNav } from '@/components/layout/BottomNav';
+import { PLATFORM_BOTTOM_NAV } from '@/components/platform/PlatformSidebar';
 import { Loader2 } from 'lucide-react';
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
@@ -68,6 +70,8 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           {children}
         </main>
       </div>
+
+      <BottomNav items={PLATFORM_BOTTOM_NAV} onOpenMobileMenu={() => setIsMobileOpen(true)} />
     </div>
   );
 }

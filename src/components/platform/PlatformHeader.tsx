@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Menu, Search, LogOut } from 'lucide-react';
+import { getPlatformPageTitle } from '@/components/platform/PlatformSidebar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils/cn';
@@ -13,8 +14,8 @@ interface PlatformHeaderProps {
 }
 
 export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
-  const [searchOpen, setSearchOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { platformUser, logout } = usePlatformAuthStore();
   const supabase = createClient();
 
@@ -26,7 +27,7 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
 
   return (
     <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
           type="button"
           onClick={onOpenMobileMenu}
@@ -45,14 +46,7 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
           <Search className="w-4 h-4 text-slate-400 absolute left-3" />
         </form>
 
-        <button
-          type="button"
-          onClick={() => setSearchOpen(!searchOpen)}
-          className="sm:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition"
-          aria-label="Rechercher"
-        >
-          <Search className="w-5 h-5" />
-        </button>
+        <h1 className="sm:hidden text-base font-bold text-slate-900 dark:text-white truncate">{getPlatformPageTitle(pathname)}</h1>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">

@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { formatDateFR } from '@/lib/utils/format';
 import { PlatformUser } from '@/types/platform';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 interface PlatformUserProfile {
   id: string;
@@ -281,7 +282,7 @@ interface CreateFormState {
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -412,7 +413,7 @@ interface CreateFormState {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </Card>
       )}
 

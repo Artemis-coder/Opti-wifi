@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { formatDateFR } from '@/lib/utils/format';
 import { PlatformAuditLogWithUser } from '@/types/platform';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 export default function PlatformAuditLogsPage() {
   const [logs, setLogs] = useState<PlatformAuditLogWithUser[]>([]);
@@ -137,7 +138,7 @@ export default function PlatformAuditLogsPage() {
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -202,7 +203,7 @@ export default function PlatformAuditLogsPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
 
           {/* Expanded Detail Rows */}
           {Array.from(expandedRows).map((id: string) => {
