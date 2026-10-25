@@ -21,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [checkingOrg, setCheckingOrg] = useState(true);
   const [checkingSub, setCheckingSub] = useState(true);
   const [subscription, setSubscription] = useState<{ status: string; end_date: string | null } | null>(null);
+  const [renewState, setRenewState] = useState<'idle' | 'sending' | 'pending'>('idle');
 
   useEffect(() => {
     let isMounted = true;
@@ -101,6 +102,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
     }, [user?.id, isLoading, router, setUser]);
 
+  const isSubscriptionExpired =
+    subscription?.status === 'expired' || (!!subscription?.end_date && new Date(subscription.end_date) < new Date());
+
+  useEffect(() => {
+    if (!isSubscriptionExpired) return;
+    fetch('/api/subscriptions/renew')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (res?.data?.pendingRequest) setRenewState('pending');
+      })
+      .catch(() => {});
+  }, [isSubscriptionExpired]);
+
+  const handleRenewRequest = async () => {
+    setRenewState('sending');
+    try {
+      const res = await fetch('/api/subscriptions/renew', { method: 'POST' });
+      // 409 = une demande est déjà en attente
+      setRenewState(res.ok || res.status === 409 ? 'pending' : 'idle');
+    } catch {
+      setRenewState('idle');
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     useAuthStore.getState().logout();
@@ -161,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   // Suspended screen
-  if (orgStatus === 'suspended') {
+  if (orgStatus === 'suspended' || orgStatus === 'cancelled' || orgStatus === 'archived') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-center">
         <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-red-200 dark:border-red-900/40 p-8 space-y-6">
@@ -171,9 +196,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-red-600 dark:text-red-400">Compte Suspendu</h1>
+            <h1 className="text-xl font-bold text-red-600 dark:text-red-400">
+              {orgStatus === 'suspended' ? 'Espace désactivé' : 'Inscription refusée'}
+            </h1>
             <p className="text-xs text-slate-500 mt-2">
-              L&apos;accès pour l&apos;organisation <strong className="text-slate-800 dark:text-slate-200">{orgName}</strong> a été temporairement suspendu.
+              {orgStatus === 'suspended' ? (
+                <>L&apos;accès pour l&apos;organisation <strong className="text-slate-800 dark:text-slate-200">{orgName}</strong> a été désactivé.</>
+              ) : (
+                <>L&apos;inscription de l&apos;organisation <strong className="text-slate-800 dark:text-slate-200">{orgName}</strong> n&apos;a pas été validée.</>
+              )}
             </p>
             <p className="text-xs text-slate-400 mt-1">
               Veuillez contacter le support pour réactiver votre compte.
@@ -191,7 +222,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   // Expired subscription screen
-  if (subscription?.status === 'expired' || (subscription?.end_date && new Date(subscription.end_date) < new Date())) {
+  if (isSubscriptionExpired) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-center">
         <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-red-200 dark:border-red-900/40 p-8 space-y-6">
@@ -206,16 +237,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Votre abonnement a expiré. Vous n&apos;avez plus accès à votre espace.
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Renouvelez votre abonnement pour retrouver l&apos;accès à vos outils.
+              {renewState === 'pending'
+                ? 'Votre demande de renouvellement est en attente de validation. Votre accès sera rétabli dès son activation.'
+                : 'Demandez le renouvellement : votre accès sera rétabli dès validation par l\'équipe OptiWifi.'}
             </p>
           </div>
           <div className="pt-2 flex flex-col gap-2">
-            <Button
-              onClick={() => router.push('/subscription')}
-              className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs transition"
-            >
-              Renouveler
-            </Button>
+            {renewState !== 'pending' && (
+              <Button
+                onClick={handleRenewRequest}
+                isLoading={renewState === 'sending'}
+                className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs transition"
+              >
+                Demander le renouvellement
+              </Button>
+            )}
             <button
               onClick={handleSignOut}
               className="w-full py-2.5 px-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold text-xs transition"

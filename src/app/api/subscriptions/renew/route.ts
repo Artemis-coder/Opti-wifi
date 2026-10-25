@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { query } from '@/lib/neon/db';
+
+// Le client ne prolonge plus son abonnement lui-même : il envoie une demande de licence
+// que le super admin valide (POST /api/platform/licenses) ou refuse.
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function getBillingPeriodMonths(period: string): number {
   switch (period) {
-    case 'monthly':
-      return 1;
     case 'quarterly':
       return 3;
     case 'semiannual':
@@ -17,112 +21,122 @@ function getBillingPeriodMonths(period: string): number {
   }
 }
 
-async function getSupabaseServerClient() {
+async function getCurrentUserOrg() {
   const cookieStore = await cookies();
-  return createServerClient(undefined, undefined, {
+  const supabase = createServerClient(undefined, undefined, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
-      setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      },
+      setAll() {},
     },
   });
-}
-
-async function getCurrentSubscription(supabase: any, user: any) {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile?.organization_id) return { subscription: null, error: 'Aucune organisation associée' };
-
-  const { data: subscription, error } = await supabase
-    .from('subscriptions')
-    .select('*, plan:subscription_plans(*)')
-    .eq('organization_id', profile.organization_id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  return { subscription, error };
-}
-
-export async function GET(request: NextRequest) {
-  const supabase = await getSupabaseServerClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return { error: 'Non authentifié', status: 401 } as const;
 
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  const profile = await query('SELECT organization_id FROM profiles WHERE id = $1', [user.id]);
+  const organizationId = profile.rows[0]?.organization_id as string | undefined;
+  if (!organizationId) return { error: 'Aucune organisation associée', status: 404 } as const;
+
+  return { userId: user.id, organizationId };
+}
+
+async function getRequestState(organizationId: string) {
+  const [subRes, reqRes] = await Promise.all([
+    query(
+      `SELECT s.id, s.status, s.start_date, s.end_date, s.plan_id, p.name AS plan_name, p.billing_period
+         FROM subscriptions s LEFT JOIN subscription_plans p ON p.id = s.plan_id
+        WHERE s.organization_id = $1
+        ORDER BY s.end_date DESC NULLS LAST, s.created_at DESC
+        LIMIT 1`,
+      [organizationId]
+    ),
+    query(
+      `SELECT r.id, r.type, r.status, r.duration_months, r.admin_note, r.created_at, r.processed_at,
+              p.name AS plan_name
+         FROM license_requests r LEFT JOIN subscription_plans p ON p.id = r.plan_id
+        WHERE r.organization_id = $1
+        ORDER BY r.created_at DESC
+        LIMIT 1`,
+      [organizationId]
+    ),
+  ]);
+  const lastRequest = reqRes.rows[0] || null;
+  return {
+    subscription: subRes.rows[0] || null,
+    pendingRequest: lastRequest?.status === 'pending' ? lastRequest : null,
+    lastRequest,
+  };
+}
+
+export async function GET() {
+  const ctx = await getCurrentUserOrg();
+  if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+
+  try {
+    const state = await getRequestState(ctx.organizationId);
+    return NextResponse.json({ success: true, data: { ...state, canRequest: !state.pendingRequest } });
+  } catch (err) {
+    console.error('Renew request GET error:', err);
+    return NextResponse.json({ error: 'Erreur lors du chargement' }, { status: 500 });
   }
-
-  const { subscription, error } = await getCurrentSubscription(supabase, user);
-
-  if (error || !subscription) {
-    return NextResponse.json({ error: error || 'Abonnement introuvable' }, { status: 404 });
-  }
-
-  const durationMonths = getBillingPeriodMonths(subscription.plan?.billing_period || 'monthly');
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      subscription,
-      durationMonths,
-      canRenew: true,
-    },
-  });
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await getSupabaseServerClient();
+  const ctx = await getCurrentUserOrg();
+  if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  const body = await request.json().catch(() => ({}));
+  const { planId, message } = body as { planId?: string; message?: string };
+  if (planId && !UUID_RE.test(planId)) {
+    return NextResponse.json({ error: 'Forfait invalide' }, { status: 400 });
   }
 
-  const { subscription, error } = await getCurrentSubscription(supabase, user);
+  try {
+    const state = await getRequestState(ctx.organizationId);
+    if (state.pendingRequest) {
+      return NextResponse.json(
+        { error: 'Une demande est déjà en attente de validation', data: state.pendingRequest },
+        { status: 409 }
+      );
+    }
 
-  if (error || !subscription) {
-    return NextResponse.json({ error: error || 'Abonnement introuvable' }, { status: 404 });
+    const targetPlanId = planId || state.subscription?.plan_id || null;
+    if (!targetPlanId) {
+      return NextResponse.json({ error: 'Choisissez un forfait' }, { status: 400 });
+    }
+    const planRes = await query(
+      `SELECT id, billing_period FROM subscription_plans WHERE id = $1 AND status = 'active'`,
+      [targetPlanId]
+    );
+    if (!planRes.rows[0]) {
+      return NextResponse.json({ error: 'Forfait introuvable ou inactif' }, { status: 404 });
+    }
+
+    const type = !state.subscription ? 'new' : targetPlanId === state.subscription.plan_id ? 'renewal' : 'upgrade';
+    const months = getBillingPeriodMonths(planRes.rows[0].billing_period);
+    const note = typeof message === 'string' ? message.trim().slice(0, 500) || null : null;
+
+    const { rows } = await query(
+      `INSERT INTO license_requests (organization_id, plan_id, duration_months, type, message, requested_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, type, status, duration_months, created_at`,
+      [ctx.organizationId, targetPlanId, months, type, note, ctx.userId]
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: 'Demande envoyée. Votre licence sera activée après validation.',
+      data: rows[0],
+    });
+  } catch (err) {
+    // Index unique : une seule demande en attente par organisation (requêtes concurrentes).
+    if (err instanceof Error && /uq_license_requests_one_pending/.test(err.message)) {
+      return NextResponse.json({ error: 'Une demande est déjà en attente de validation' }, { status: 409 });
+    }
+    console.error('Renew request POST error:', err);
+    return NextResponse.json({ error: "Erreur lors de l'envoi de la demande" }, { status: 500 });
   }
-
-  const durationMonths = getBillingPeriodMonths(subscription.plan?.billing_period || 'monthly');
-  const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
-  const newEndDate = new Date(Date.now() + durationMonths * oneMonthMs);
-
-  const { error: updateError } = await supabase
-    .from('subscriptions')
-    .update({
-      status: 'active',
-      start_date: new Date().toISOString(),
-      end_date: newEndDate.toISOString(),
-      cancel_at_period_end: false,
-      cancelled_at: null,
-      auto_renew: true,
-    })
-    .eq('id', subscription.id);
-
-  if (updateError) {
-    console.error('Subscription renew error:', updateError);
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
-  }
-
-  return NextResponse.json({
-    success: true,
-    message: 'Abonnement renouvelé avec succès',
-    newEndDate: newEndDate.toISOString(),
-  });
 }

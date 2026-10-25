@@ -1,100 +1,67 @@
-import { createServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { Organization } from "@/types/platform";
+import { getPlatformUserFromSession } from '@/lib/supabase/platform';
+import { query } from '@/lib/neon/db';
+
+const ORG_STATUSES = [
+  'pending_approval',
+  'trial',
+  'active',
+  'expiring',
+  'expired',
+  'suspended',
+  'cancelled',
+  'archived',
+];
 
 export async function GET(request: Request) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(undefined, undefined, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
-
-  const { data: platformUser, error: puError } = await supabase
-    .from('platform_users')
-    .select('role, is_active')
-    .eq('auth_user_id', user.id)
-    .single();
-
-  if (puError || !platformUser || !platformUser.is_active) {
+  const auth = await getPlatformUserFromSession();
+  if (!auth.authenticated) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search') || '';
-  const statusFilter = searchParams.get('status') || 'all';
-  const limit = parseInt(searchParams.get('limit') || '100');
-  const offset = parseInt(searchParams.get('offset') || '0');
+  const search = (searchParams.get('search') || '').trim().slice(0, 100);
+  const statusParam = searchParams.get('status') || 'all';
+  const status = ORG_STATUSES.includes(statusParam) ? statusParam : null;
+  const limit = Math.min(500, Math.max(1, Number.parseInt(searchParams.get('limit') || '100', 10) || 100));
+  const offset = Math.max(0, Number.parseInt(searchParams.get('offset') || '0', 10) || 0);
+  // Échapper les jokers LIKE saisis par l'utilisateur.
+  const pattern = search ? `%${search.replace(/[\\%_]/g, (m) => `\\${m}`)}%` : null;
 
-    let query = supabase
-      .from('organizations')
-      .select(`
-        *,
-        subscription:subscriptions(
-          plan:subscription_plans(name),
-          status,
-          start_date,
-          end_date,
-          trial_end
-        )
-      `, { count: 'exact' })
-      .order('created_at', { ascending: false });
+  try {
+    // Licence affichée : la plus récente (date de fin la plus lointaine).
+    const { rows } = await query(
+      `SELECT o.id, o.name, o.contact_name, o.email, o.phone, o.status, o.currency, o.created_at,
+              COALESCE(p.name, 'Aucun') AS plan_name,
+              COALESCE(s.status::text, 'none') AS subscription_status,
+              s.end_date AS subscription_end_date,
+              s.trial_end AS subscription_trial_end,
+              COUNT(*) OVER() AS total_count
+         FROM organizations o
+         LEFT JOIN LATERAL (
+           SELECT status, end_date, trial_end, plan_id FROM subscriptions
+            WHERE organization_id = o.id
+            ORDER BY end_date DESC NULLS LAST, created_at DESC
+            LIMIT 1
+         ) s ON true
+         LEFT JOIN subscription_plans p ON p.id = s.plan_id
+        WHERE ($1::text IS NULL OR o.status::text = $1)
+          AND ($2::text IS NULL OR o.name ILIKE $2 OR o.contact_name ILIKE $2 OR o.email ILIKE $2 OR o.phone ILIKE $2)
+        ORDER BY o.created_at DESC
+        LIMIT $3 OFFSET $4`,
+      [status, pattern, limit, offset]
+    );
 
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,contact_name.ilike.%${search}%,email.ilike.%${search}%`);
+    const count = Number(rows[0]?.total_count || 0);
+    const data = rows.map((row) => {
+      const rest = { ...row };
+      delete rest.total_count;
+      return rest;
+    });
+
+    return NextResponse.json({ data, count });
+  } catch (err) {
+    console.error('Platform clients list error:', err);
+    return NextResponse.json({ error: 'Erreur lors du chargement des clients' }, { status: 500 });
   }
-
-  if (statusFilter !== 'all') {
-    query = query.eq('status', statusFilter);
-  }
-
-  const { data: orgs, error, count } = await query.range(offset, offset + limit - 1);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const enrichedOrgs = (orgs || []).map((org: Organization & { subscription?: unknown; plan?: unknown }) => {
-   const subList = Array.isArray(org.subscription) ? org.subscription : [org.subscription];
-    const sub = subList.find(Boolean); // Get first defined element if any
-    
-    // Check if the plan name is in sub.plan directly (if object) or an array
-    const planName = (sub?.plan as Record<string, unknown>)?.[ 'name'] || (Array.isArray(sub?.plan) ? (sub?.plan[0] as Record<string, unknown>)?.[ 'name'] : undefined) || (org.plan as Record<string, unknown>)?.[ 'name'] || 'Aucun';
-
-    return {
-      id: org.id,
-      name: org.name,
-      contact_name: org.contact_name,
-      email: org.email,
-      phone: org.phone,
-      status: org.status,
-      currency: org.currency,
-      created_at: org.created_at,
-      plan_name: planName,
-      subscription_status: sub?.status || 'none',
-      subscription_end_date: sub?.end_date || null,
-      subscription_trial_end: sub?.trial_end || null,
-    };
-  });
-
-  return NextResponse.json({
-    data: enrichedOrgs,
-    count,
-  });
 }

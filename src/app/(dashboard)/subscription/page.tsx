@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -33,11 +33,24 @@ interface Subscription {
   organization?: { name: string };
 }
 
+interface LicenseRequestInfo {
+  id: string;
+  type: 'renewal' | 'new' | 'upgrade';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  duration_months: number;
+  admin_note: string | null;
+  created_at: string;
+  processed_at: string | null;
+  plan_name: string | null;
+}
+
 export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [renewing, setRenewing] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [allPlans, setAllPlans] = useState<SubscriptionPlan[]>([]);
+  const [pendingRequest, setPendingRequest] = useState<LicenseRequestInfo | null>(null);
+  const [lastRequest, setLastRequest] = useState<LicenseRequestInfo | null>(null);
   const { user } = useAuthStore();
   const supabase = createClient();
 
@@ -52,7 +65,8 @@ export default function SubscriptionPage() {
           .order('price', { ascending: true });
         if (plansData) setAllPlans(plansData);
 
-        let orgId: string | undefined = (user as any)?.organization_id || (user as any)?.organisation_id;
+        const userOrg = user as { organization_id?: string | null; organisation_id?: string | null } | null;
+        let orgId: string | undefined = userOrg?.organization_id || userOrg?.organisation_id || undefined;
         
         if (!orgId && user?.id) {
           const { data: profile } = await supabase
@@ -73,6 +87,7 @@ export default function SubscriptionPage() {
             .maybeSingle();
           if (subData) setSubscription(subData);
         }
+        await loadRequestState();
       } catch (error) {
         console.error('Error loading subscription:', error);
       } finally {
@@ -81,6 +96,14 @@ export default function SubscriptionPage() {
     }
     loadData();
   }, [user, supabase]);
+
+  async function loadRequestState() {
+    const res = await fetch('/api/subscriptions/renew');
+    if (!res.ok) return;
+    const { data } = await res.json();
+    setPendingRequest(data?.pendingRequest || null);
+    setLastRequest(data?.lastRequest || null);
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -124,29 +147,24 @@ export default function SubscriptionPage() {
   const isExpired = subscription ? (subscription.status === 'expired' || (subscription.end_date && new Date(subscription.end_date).getTime() < new Date().getTime())) : false;
   const isExpiringSoon = subscription && !isExpired && daysRemaining !== null && daysRemaining <= 7;
 
-  const handleRenew = async () => {
-    if (!subscription) return;
+  const handleRequest = async (planId?: string) => {
     setRenewing(true);
     try {
-      const res = await fetch('/api/subscriptions/renew', { method: 'POST' });
+      const res = await fetch('/api/subscriptions/renew', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(planId ? { planId } : {}),
+      });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || 'Échec du renouvellement');
+        toast.error(data.error || "Échec de l'envoi de la demande");
         return;
       }
-      toast.success('Abonnement renouvelé avec succès !');
-      // Recharger les données
-      const { data: subData } = await supabase
-        .from('subscriptions')
-        .select('*, plan:subscription_plans(*)')
-        .eq('organization_id', subscription.organization_id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (subData) setSubscription(subData);
+      toast.success(data.message || 'Demande envoyée');
+      await loadRequestState();
     } catch (error) {
-      console.error('Renew error:', error);
-      toast.error('Erreur lors du renouvellement');
+      console.error('Renew request error:', error);
+      toast.error("Erreur lors de l'envoi de la demande");
     } finally {
       setRenewing(false);
     }
@@ -171,6 +189,30 @@ export default function SubscriptionPage() {
           Gérez votre abonnement et découvrez nos forfaits
         </p>
       </div>
+
+      {pendingRequest && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/40 rounded-xl flex items-start gap-3">
+          <Hourglass className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Demande en attente de validation</p>
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+              {pendingRequest.plan_name || 'Forfait'} · {pendingRequest.duration_months} mois — envoyée le {formatDateFR(pendingRequest.created_at)}.
+              Votre licence sera activée dès validation par l&apos;équipe OptiWifi.
+            </p>
+          </div>
+        </div>
+      )}
+      {!pendingRequest && lastRequest?.status === 'rejected' && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 rounded-xl flex items-start gap-3">
+          <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red-800 dark:text-red-200">Votre dernière demande a été refusée</p>
+            {lastRequest.admin_note && (
+              <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">Motif : {lastRequest.admin_note}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {subscription ? (
         <Card className={`p-6 space-y-4 ${isExpired ? 'border-red-200 dark:border-red-900/40' : ''}`}>
@@ -241,7 +283,7 @@ export default function SubscriptionPage() {
                   <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Date d'expiration</p>
+                  <p className="text-xs text-slate-500">Date d&apos;expiration</p>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">
                     {formatDateFR(subscription.end_date)}
                   </p>
@@ -274,23 +316,23 @@ export default function SubscriptionPage() {
             </div>
           </div>
 
-          {(isExpired || isExpiringSoon || daysRemaining === null) && subscription.plan && (
+          {subscription.plan && !pendingRequest && (
             <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
               <Button
                 variant={isExpired ? 'danger' : 'primary'}
                 size="sm"
-                onClick={handleRenew}
+                onClick={() => handleRequest()}
                 disabled={renewing}
               >
                 {renewing ? (
                   <>
                     <RotateCcw className="w-4 h-4 animate-spin" />
-                    <span className="ml-2">Renouvellement...</span>
+                    <span className="ml-2">Envoi...</span>
                   </>
                 ) : (
                   <>
                     <RotateCcw className="w-4 h-4" />
-                    <span className="ml-2">{isExpired ? "Renouveler mon abonnement" : "Renouveler maintenant"}</span>
+                    <span className="ml-2">Demander le renouvellement</span>
                   </>
                 )}
               </Button>
@@ -299,7 +341,7 @@ export default function SubscriptionPage() {
         </Card>
       ) : (
         <Card className="p-6 text-center">
-          <p className="text-slate-500">Aucun abonnement actif trouvé</p>
+          <p className="text-slate-500">Aucune licence active. Choisissez un forfait ci-dessous pour en faire la demande.</p>
         </Card>
       )}
 
@@ -349,6 +391,11 @@ export default function SubscriptionPage() {
                   </div>
                 )}
               </div>
+              {!pendingRequest && subscription?.plan_id !== plan.id && (
+                <Button variant="outline" size="sm" className="w-full" onClick={() => handleRequest(plan.id)} disabled={renewing}>
+                  Demander ce forfait
+                </Button>
+              )}
             </Card>
           ))}
         </div>

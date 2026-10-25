@@ -19,12 +19,6 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   const supabase = createClient();
 
   useEffect(() => {
-    if (!platformUser && !isLoading && !isLoginPage) {
-      router.push('/platform/login');
-    }
-  }, [platformUser, isLoading, router, isLoginPage]);
-
-  useEffect(() => {
     async function checkSession() {
       const {
         data: { user },

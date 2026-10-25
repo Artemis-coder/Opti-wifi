@@ -179,44 +179,11 @@ export interface DashboardKpis {
   revenue_this_month: number;
   revenue_this_year: number;
   currency: string;
+  pending_registrations?: number;
+  pending_license_requests?: number;
+  expiring_7d?: number;
+  clients_without_license?: number;
 }
-
-export interface OperationsKpis {
-  spaces: number;
-  pos_total: number;
-  pos_active: number;
-  users_total: number;
-  tickets_allocated: number;
-  tickets_sold: number;
-  collections_count: number;
-  amount_collected: number;
-  amount_expected: number;
-  commissions: number;
-  shortfall: number;
-}
-
-export interface OperationsChartDataPoint {
-  date: string;
-  amount: number;
-  tickets: number;
-}
-
-export interface TopClient {
-  id: string;
-  name: string;
-  status: OrganizationStatus;
-  amount: number;
-  collections_count: number;
-}
-
-export interface InactiveClient {
-  id: string;
-  name: string;
-  status: OrganizationStatus;
-  last_collection: string | null;
-}
-
-export type ExplorerEntity = 'spaces' | 'pos' | 'ticket_types' | 'collections' | 'allocations' | 'users';
 
 export interface ChartDataPoint {
   date: string;

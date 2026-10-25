@@ -5,18 +5,13 @@ import {
   Building2,
   UserCheck,
   PauseCircle,
-  TrendingUp,
-  Calendar,
   BarChart3,
   PieChart as PieChartIcon,
   Loader2,
   Clock,
-  MapPin,
-  Store,
-  Users,
-  Ticket,
-  Wallet,
-  Percent,
+  UserPlus,
+  Inbox,
+  KeyRound,
   AlertTriangle,
   ArrowRight,
 } from 'lucide-react';
@@ -34,10 +29,6 @@ import {
   SubscriptionChartDataPoint,
   RevenueChartDataPoint,
   PlanDistributionData,
-  OperationsKpis,
-  OperationsChartDataPoint,
-  TopClient,
-  InactiveClient,
 } from '@/types/platform';
 import {
   LineChart,
@@ -53,19 +44,21 @@ import {
   Cell,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
 } from 'recharts';
 
-interface OperationsData {
-  kpis: OperationsKpis;
-  chart: OperationsChartDataPoint[];
-  top_clients: TopClient[];
-  inactive_clients: InactiveClient[];
-  inactivity_days: number;
+type TimeRange = '7d' | '30d' | '90d' | '6m' | '1y';
+
+interface TodoData {
+  pending_registrations: { id: string; name: string; contact_name: string | null; phone: string | null; created_at: string }[];
+  pending_license_requests: { id: string; type: string; organization_id: string; organization_name: string; plan_name: string | null; duration_months: number; created_at: string }[];
+  upcoming_expirations: { id: string; organization_id: string; organization_name: string; plan_name: string | null; end_date: string }[];
 }
 
-type TimeRange = '7d' | '30d' | '90d' | '6m' | '1y';
+const REQUEST_TYPE_LABELS: Record<string, string> = {
+  renewal: 'Renouvellement',
+  new: 'Nouvelle licence',
+  upgrade: 'Changement de forfait',
+};
 
 const TIME_RANGES: { value: TimeRange; label: string }[] = [
   { value: '7d', label: '7 jours' },
@@ -82,7 +75,7 @@ export default function PlatformDashboardPage() {
   const [subscriptionsChart, setSubscriptionsChart] = useState<SubscriptionChartDataPoint[]>([]);
   const [revenueChart, setRevenueChart] = useState<RevenueChartDataPoint[]>([]);
   const [planDistribution, setPlanDistribution] = useState<PlanDistributionData[]>([]);
-  const [operations, setOperations] = useState<OperationsData | null>(null);
+  const [todo, setTodo] = useState<TodoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
 
@@ -99,7 +92,7 @@ export default function PlatformDashboardPage() {
           setSubscriptionsChart(result.charts?.subscriptions || []);
           setRevenueChart(result.charts?.revenue || []);
           setPlanDistribution(result.charts?.planDistribution || []);
-          setOperations(result.operations || null);
+          setTodo(result.todo || null);
         }
       } catch (err) {
         console.warn('Dashboard fetch error:', err);
@@ -118,41 +111,89 @@ export default function PlatformDashboardPage() {
       icon: Building2,
       color: 'bg-blue-900/10 text-blue-900 dark:text-blue-400',
       border: 'border-l-blue-900',
+      href: '/platform/clients',
     },
     {
-      label: 'Clients Actifs',
+      label: 'Espaces actifs',
       value: kpis?.active_clients ?? 0,
       icon: UserCheck,
       color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
       border: 'border-l-emerald-500',
+      href: '/platform/clients',
     },
     {
-      label: 'Clients Suspendus',
+      label: 'Espaces désactivés',
       value: kpis?.suspended_clients ?? 0,
       icon: PauseCircle,
       color: 'bg-red-500/10 text-red-600 dark:text-red-400',
       border: 'border-l-red-500',
+      href: '/platform/clients',
     },
     {
-      label: 'Nouveaux (7j)',
-      value: kpis?.new_clients_this_week ?? 0,
-      icon: TrendingUp,
-      color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-      border: 'border-l-purple-500',
-    },
-    {
-      label: 'Abonnements Actifs',
+      label: 'Licences actives',
       value: kpis?.active_subscriptions ?? 0,
-      icon: Calendar,
+      icon: KeyRound,
       color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
       border: 'border-l-amber-500',
+      href: '/platform/subscriptions',
     },
     {
-      label: 'Expirations (30j)',
+      label: 'Expirent sous 30 j',
       value: kpis?.expiring_subscriptions ?? 0,
       icon: Clock,
       color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
       border: 'border-l-orange-500',
+      href: '/platform/subscriptions/expiring',
+    },
+    {
+      label: 'Sans licence active',
+      value: kpis?.clients_without_license ?? 0,
+      icon: AlertTriangle,
+      color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+      border: 'border-l-purple-500',
+      href: '/platform/clients',
+    },
+  ];
+
+  const todoColumns = [
+    {
+      title: 'Inscriptions à valider',
+      count: kpis?.pending_registrations ?? 0,
+      icon: UserPlus,
+      href: '/platform/registrations',
+      empty: 'Aucune inscription en attente',
+      items: (todo?.pending_registrations || []).map((r) => ({
+        key: r.id,
+        href: `/platform/clients/${r.id}`,
+        title: r.name,
+        sub: `${r.contact_name || r.phone || ''} · ${formatDateOnlyFR(r.created_at)}`,
+      })),
+    },
+    {
+      title: 'Demandes de licence',
+      count: kpis?.pending_license_requests ?? 0,
+      icon: Inbox,
+      href: '/platform/license-requests',
+      empty: 'Aucune demande en attente',
+      items: (todo?.pending_license_requests || []).map((r) => ({
+        key: r.id,
+        href: '/platform/license-requests',
+        title: r.organization_name,
+        sub: `${REQUEST_TYPE_LABELS[r.type] || 'Demande'} · ${r.plan_name || 'Forfait'} · ${r.duration_months} mois`,
+      })),
+    },
+    {
+      title: 'Licences qui expirent (30 j)',
+      count: kpis?.expiring_subscriptions ?? 0,
+      icon: Clock,
+      href: '/platform/subscriptions/expiring',
+      empty: 'Aucune expiration prochaine',
+      items: (todo?.upcoming_expirations || []).map((r) => ({
+        key: r.id,
+        href: `/platform/clients/${r.organization_id}`,
+        title: r.organization_name,
+        sub: `${r.plan_name || 'Forfait'} · fin le ${formatDateOnlyFR(r.end_date)}`,
+      })),
     },
   ];
 
@@ -161,18 +202,6 @@ export default function PlatformDashboardPage() {
     { label: '7 jours', value: kpis?.revenue_this_week ?? 0, period: 'week' as const },
     { label: 'Ce mois', value: kpis?.revenue_this_month ?? 0, period: 'month' as const },
     { label: 'Cette année', value: kpis?.revenue_this_year ?? 0, period: 'year' as const },
-  ];
-
-  const ops = operations?.kpis;
-  const operationCards = [
-    { label: 'Espaces WiFi', value: formatNumber(ops?.spaces ?? 0), icon: MapPin },
-    { label: 'POS actifs', value: `${formatNumber(ops?.pos_active ?? 0)} / ${formatNumber(ops?.pos_total ?? 0)}`, icon: Store },
-    { label: 'Utilisateurs clients', value: formatNumber(ops?.users_total ?? 0), icon: Users },
-    { label: 'Tickets alloués', value: formatNumber(ops?.tickets_allocated ?? 0), icon: Ticket },
-    { label: 'Tickets vendus', value: formatNumber(ops?.tickets_sold ?? 0), icon: Ticket },
-    { label: 'Montant encaissé', value: formatCurrencyFCFA(ops?.amount_collected ?? 0), icon: Wallet },
-    { label: 'Commissions', value: formatCurrencyFCFA(ops?.commissions ?? 0), icon: Percent },
-    { label: 'Écarts négatifs', value: formatCurrencyFCFA(ops?.shortfall ?? 0), icon: AlertTriangle, danger: (ops?.shortfall ?? 0) < 0 },
   ];
 
   if (loading && !kpis) {
@@ -203,28 +232,48 @@ export default function PlatformDashboardPage() {
         </div>
       </div>
 
-      {/* Time Range Selector */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-slate-500 uppercase">Période :</span>
-        {TIME_RANGES.map((r) => (
-          <Button
-            key={r.value}
-            variant={timeRange === r.value ? 'primary' : 'outline'}
-            size="sm"
-            className="text-xs font-medium"
-            onClick={() => setTimeRange(r.value)}
-          >
-            {r.label}
-          </Button>
-        ))}
-      </div>
+      {/* À traiter */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {todoColumns.map((col) => {
+          const Icon = col.icon;
+          return (
+            <Card key={col.title} className={cn('border-t-4', col.count > 0 ? 'border-t-amber-500' : 'border-t-emerald-500')}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Icon className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">{col.title}</h2>
+                </div>
+                <Badge variant={col.count > 0 ? 'warning' : 'success'} className="text-xs">{col.count}</Badge>
+              </div>
+              {col.items.length === 0 ? (
+                <p className="text-xs text-slate-500 py-4 text-center">{col.empty}</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {col.items.map((it) => (
+                    <li key={it.key}>
+                      <Link href={it.href} className="block py-2 px-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{it.title}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{it.sub}</p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Link href={col.href} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-500">
+                Tout voir <ArrowRight className="w-3 h-3" />
+              </Link>
+            </Card>
+          );
+        })}
+      </section>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpiCards.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <Card key={kpi.label} className={cn('border-l-4', kpi.border)}>
+            <Link key={kpi.label} href={kpi.href}>
+            <Card className={cn('border-l-4 h-full hover:shadow-md transition', kpi.border)}>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   {kpi.label}
@@ -237,6 +286,7 @@ export default function PlatformDashboardPage() {
                 {formatNumber(kpi.value)}
               </p>
             </Card>
+            </Link>
           );
         })}
       </div>
@@ -260,122 +310,21 @@ export default function PlatformDashboardPage() {
         ))}
       </div>
 
-      {/* Operations (all clients) */}
-      {operations && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Activité opérationnelle</h2>
-              <p className="text-xs text-slate-500">
-                Tous clients confondus · {ops?.collections_count ?? 0} encaissement(s) validé(s) sur la période
-              </p>
-            </div>
-            <Link href="/platform/explorer">
-              <Button variant="outline" size="sm" className="text-xs">
-                Explorer les données <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Button>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {operationCards.map((c) => {
-              const Icon = c.icon;
-              return (
-                <Card key={c.label} className={cn('border-l-4', c.danger ? 'border-l-red-500' : 'border-l-sky-500')}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{c.label}</span>
-                    <div className={cn('p-2 rounded-lg', c.danger ? 'bg-red-500/10 text-red-600' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400')}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                  </div>
-                  <p className={cn('text-xl font-extrabold mt-3', c.danger ? 'text-red-600' : 'text-slate-900 dark:text-white')}>
-                    {c.value}
-                  </p>
-                </Card>
-              );
-            })}
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2">
-              <ChartCard title="Encaissements quotidiens (tous clients)">
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={operations.chart}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3a3' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3a3' }} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                      labelStyle={{ fontSize: 11 }}
-                      formatter={(value: unknown, name: unknown) =>
-                        name === 'amount'
-                          ? [formatCurrencyFCFA(Number(value)), 'Montant']
-                          : [formatNumber(Number(value)), 'Tickets']
-                      }
-                    />
-                    <Bar dataKey="amount" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            </div>
-
-            <ChartCard title="Top clients (montant encaissé)">
-              {operations.top_clients.length > 0 ? (
-                <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {operations.top_clients.map((c, idx) => (
-                    <li key={c.id}>
-                      <Link
-                        href={`/platform/clients/${c.id}`}
-                        className="flex items-center justify-between py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded px-1"
-                      >
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}</span>
-                          <span className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{c.name}</span>
-                        </span>
-                        <span className="text-right shrink-0">
-                          <span className="block text-sm font-semibold text-slate-900 dark:text-white">
-                            {formatCurrencyFCFA(c.amount)}
-                          </span>
-                          <span className="block text-[10px] text-slate-500">{c.collections_count} encaissement(s)</span>
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
-                  Aucun encaissement sur la période
-                </div>
-              )}
-            </ChartCard>
-          </div>
-
-          {operations.inactive_clients.length > 0 && (
-            <Card className="border-l-4 border-l-orange-500">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Clients actifs sans encaissement depuis {operations.inactivity_days} jours
-                </h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {operations.inactive_clients.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/platform/clients/${c.id}`}
-                    className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-orange-400 text-slate-700 dark:text-slate-300"
-                  >
-                    <span className="font-semibold">{c.name}</span>
-                    <span className="text-slate-500 ml-1.5">
-                      {c.last_collection ? `dernier : ${formatDateOnlyFR(c.last_collection)}` : 'jamais'}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </Card>
-          )}
-        </section>
-      )}
+      {/* Time Range Selector */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold text-slate-500 uppercase">Période :</span>
+        {TIME_RANGES.map((r) => (
+          <Button
+            key={r.value}
+            variant={timeRange === r.value ? 'primary' : 'outline'}
+            size="sm"
+            className="text-xs font-medium"
+            onClick={() => setTimeRange(r.value)}
+          >
+            {r.label}
+          </Button>
+        ))}
+      </div>
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

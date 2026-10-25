@@ -12,7 +12,9 @@ import {
   Wallet,
   FileText,
   Users,
-  BarChart3,
+  UserPlus,
+  Inbox,
+  KeyRound,
   Bell,
   Settings,
   History,
@@ -23,7 +25,6 @@ import {
   Wifi,
   WifiOff,
   AlertTriangle,
-  Database,
 } from 'lucide-react';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
@@ -36,20 +37,21 @@ interface SidebarProps {
 }
 
 const sidebarItems = [
-  { label: 'Dashboard', href: '/platform/dashboard', icon: LayoutDashboard },
+  { label: 'Tableau de bord', href: '/platform/dashboard', icon: LayoutDashboard },
   {
     section: 'CLIENTS',
     items: [
+      { label: 'Inscriptions', href: '/platform/registrations', icon: UserPlus },
       { label: 'Tous les clients', href: '/platform/clients', icon: Building2 },
-      { label: 'Explorateur de données', href: '/platform/explorer', icon: Database },
     ],
   },
   {
-    section: 'ABONNEMENTS',
+    section: 'LICENCES',
     items: [
-      { label: 'Tous les abonnements', href: '/platform/subscriptions', icon: Receipt },
-      { label: 'Plans tarifaires', href: '/platform/plans', icon: Wallet },
+      { label: 'Demandes de licence', href: '/platform/license-requests', icon: Inbox },
+      { label: 'Abonnements', href: '/platform/subscriptions', icon: KeyRound },
       { label: 'Expirations', href: '/platform/subscriptions/expiring', icon: History },
+      { label: 'Forfaits', href: '/platform/plans', icon: Wallet },
     ],
   },
   {
@@ -63,14 +65,22 @@ const sidebarItems = [
     section: 'AUTRES',
     items: [
       { label: 'Utilisateurs', href: '/platform/users', icon: Users },
-      { label: 'Rapports', href: '/platform/reports', icon: BarChart3 },
       { label: 'Notifications', href: '/platform/notifications', icon: Bell },
-      { label: 'Journal d\'audit', href: '/platform/audit-logs', icon: History },
       { label: 'Support', href: '/platform/support', icon: LifeBuoy },
+      { label: 'Journal d\'audit', href: '/platform/audit-logs', icon: History },
       { label: 'Paramètres', href: '/platform/settings', icon: Settings },
     ],
   },
 ];
+
+const ALL_HREFS = sidebarItems.flatMap((g) => ('items' in g && g.items ? g.items.map((i) => i.href) : [g.href!]));
+
+// Un lien est actif sur sa page et ses sous-pages, sauf si un lien plus précis correspond.
+function isLinkActive(pathname: string, href: string) {
+  if (pathname === href) return true;
+  if (!pathname.startsWith(href + '/')) return false;
+  return !ALL_HREFS.some((h) => h !== href && h.startsWith(href + '/') && (pathname === h || pathname.startsWith(h + '/')));
+}
 
 export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
@@ -118,7 +128,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
                 </p>
                 {group.items!.map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                  const isActive = isLinkActive(pathname, item.href);
                   return (
                     <Link
                       key={item.href}
@@ -140,7 +150,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
             );
           }
           const Icon = group.icon;
-          const isActive = pathname === group.href || pathname.startsWith(group.href + '/');
+          const isActive = isLinkActive(pathname, group.href!);
           return (
             <Link
               key={group.href}
