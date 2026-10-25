@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { PlatformUser } from '@/types/platform';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
@@ -10,19 +10,10 @@ import { PlatformHeader } from '@/components/platform/PlatformHeader';
 import { Loader2 } from 'lucide-react';
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isLoginPage = pathname === '/platform/login';
-
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const router = useRouter();
   const { platformUser, isLoading, setPlatformUser, logout } = usePlatformAuthStore();
   const supabase = createClient();
-
-  useEffect(() => {
-    if (!platformUser && !isLoading && !isLoginPage) {
-      router.push('/platform/login');
-    }
-  }, [platformUser, isLoading, router, isLoginPage]);
 
   useEffect(() => {
     async function checkSession() {
@@ -40,24 +31,20 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
         if (pu) {
           setPlatformUser(pu as unknown as PlatformUser);
-        } else if (!isLoginPage) {
+        } else {
           logout();
-          router.push('/platform/login');
+          router.push('/dashboard');
         }
-      } else if (!isLoginPage) {
+      } else {
         logout();
-        router.push('/platform/login');
+        router.push('/login');
       }
     }
 
-    if (!platformUser && !isLoading && !isLoginPage) {
+    if (!platformUser && !isLoading) {
       checkSession();
     }
-  }, [platformUser, isLoading, supabase, setPlatformUser, logout, router, isLoginPage]);
-
-  if (isLoginPage) {
-    return <>{children}</>;
-  }
+  }, [platformUser, isLoading, supabase, setPlatformUser, logout, router]);
 
   if (isLoading || !platformUser) {
     return (

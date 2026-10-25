@@ -61,7 +61,7 @@ function checkCSRF(request: NextRequest): boolean {
   return true;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const user = token ? await verifyNeonToken(token) : null;
@@ -86,45 +86,28 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = pathname.startsWith('/login') || pathname === '/';
 
   // --- Platform back-office routes ---
+  // Page de connexion unique (/login) : le back-office n'a plus sa propre page de connexion.
   if (isPlatformRoute) {
-    const isPlatformLogin = pathname === '/platform/login';
-    const isPlatformRoot = pathname === '/platform';
-
-    // Redirect root to login if no session
-    if (!user && (isPlatformLogin || isPlatformRoot)) {
-      if (isPlatformLogin) {
-        return NextResponse.next();
-      }
-      return NextResponse.redirect(new URL('/platform/login', request.url));
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-
-    if (user && isPlatformLogin) {
-      const isSuperAdmin =
-        user.role === 'super_admin' || user.app_metadata?.role === 'super_admin';
-      if (!isSuperAdmin) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
+    const isSuperAdmin =
+      user.role === 'super_admin' || user.app_metadata?.role === 'super_admin';
+    if (!isSuperAdmin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    if (pathname === '/platform' || pathname === '/platform/login') {
       return NextResponse.redirect(new URL('/platform/dashboard', request.url));
     }
-
-    if (user && !isPlatformLogin) {
-      const isSuperAdmin =
-        user.role === 'super_admin' || user.app_metadata?.role === 'super_admin';
-      if (!isSuperAdmin) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    }
-
-    if (!user && !isPlatformLogin) {
-      return NextResponse.redirect(new URL('/platform/login', request.url));
-    }
-
     return NextResponse.next();
   }
 
   // --- Client app routes ---
+  // Utilisateur déjà connecté sur / ou /login : le super admin va au back-office, les clients à leur espace.
   if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const isSuperAdmin =
+      user.role === 'super_admin' || user.app_metadata?.role === 'super_admin';
+    return NextResponse.redirect(new URL(isSuperAdmin ? '/platform/dashboard' : '/dashboard', request.url));
   }
 
   if (isClientRoute && !user) {

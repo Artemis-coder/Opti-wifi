@@ -6,8 +6,12 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function createSuperAdmin() {
-  const email = 'kedakeyaoboris@gmail.com';
-  const password = '20071995@94119427';
+  const email = process.env.SUPERADMIN_EMAIL || 'kedakeyaoboris@gmail.com';
+  const password = process.env.SUPERADMIN_PASSWORD;
+  if (!password) {
+    console.error('SUPERADMIN_PASSWORD est requis (variable d\'environnement).');
+    process.exit(1);
+  }
 
   try {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({

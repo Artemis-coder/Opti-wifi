@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
+import { Button } from '@/components/ui/Button';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -18,6 +19,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [orgStatus, setOrgStatus] = useState<string | null>(null);
   const [orgName, setOrgName] = useState<string | null>(null);
   const [checkingOrg, setCheckingOrg] = useState(true);
+  const [checkingSub, setCheckingSub] = useState(true);
+  const [subscription, setSubscription] = useState<{ status: string; end_date: string | null } | null>(null);
+  const [renewState, setRenewState] = useState<'idle' | 'sending' | 'pending'>('idle');
 
   useEffect(() => {
     let isMounted = true;
@@ -29,51 +33,66 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     }, 4000);
 
-    async function initUserAndProfile() {
-      try {
-        let currentUser = user;
+        async function initUserAndProfile() {
+          try {
+            let currentUser = user;
 
-        // If user is not yet loaded in Zustand store (e.g. page refresh), check cookie session
-        if (!currentUser) {
-          const { data } = await supabase.auth.getUser();
-          if (data?.user) {
-            currentUser = data.user as unknown as Profile;
-            setUser(currentUser);
-          } else if (!isLoading) {
+            // If user is not yet loaded in Zustand store (e.g. page refresh), check cookie session
+            if (!currentUser) {
+              const { data } = await supabase.auth.getUser();
+              if (data?.user) {
+                currentUser = data.user as unknown as Profile;
+                setUser(currentUser);
+              } else if (!isLoading) {
+                if (isMounted) {
+                  setCheckingOrg(false);
+                  setCheckingSub(false);
+                  router.push('/login');
+                }
+                return;
+              }
+            }
+
+            if (!currentUser) return;
+
+            const { data: refreshedProfile } = await supabase
+              .from('profiles')
+              .select('*, organization:organizations(id, name, status)')
+              .eq('id', currentUser.id)
+              .single();
+
+            if (isMounted && refreshedProfile) {
+              if (refreshedProfile.role !== currentUser.role) {
+                setUser(refreshedProfile);
+              }
+              if (refreshedProfile.organization) {
+                const org = refreshedProfile.organization as { id: string; name: string; status: string };
+                setOrgStatus(org.status);
+                setOrgName(org.name);
+
+                // Check subscription status for this organization
+                const { data: subscription } = await supabase
+                  .from('subscriptions')
+                  .select('status, end_date')
+                  .eq('organization_id', org.id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (isMounted) {
+                  setCheckingSub(false);
+                  if (subscription) setSubscription(subscription);
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('Could not refresh profile:', err);
+          } finally {
             if (isMounted) {
               setCheckingOrg(false);
-              router.push('/login');
+              setCheckingSub(false);
             }
-            return;
           }
         }
-
-        if (!currentUser) return;
-
-        const { data: refreshedProfile } = await supabase
-          .from('profiles')
-          .select('*, organization:organizations(id, name, status)')
-          .eq('id', currentUser.id)
-          .single();
-
-        if (isMounted && refreshedProfile) {
-          if (refreshedProfile.role !== currentUser.role) {
-            setUser(refreshedProfile);
-          }
-          if (refreshedProfile.organization) {
-            const org = refreshedProfile.organization as { id: string; name: string; status: string };
-            setOrgStatus(org.status);
-            setOrgName(org.name);
-          }
-        }
-      } catch (err) {
-        console.warn('Could not refresh profile:', err);
-      } finally {
-        if (isMounted) {
-          setCheckingOrg(false);
-        }
-      }
-    }
 
     initUserAndProfile();
 
@@ -81,7 +100,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       isMounted = false;
       clearTimeout(safetyTimer);
     };
-  }, [user?.id, isLoading, router, setUser]);
+    }, [user?.id, isLoading, router, setUser]);
+
+  const isSubscriptionExpired =
+    subscription?.status === 'expired' || (!!subscription?.end_date && new Date(subscription.end_date) < new Date());
+
+  useEffect(() => {
+    if (!isSubscriptionExpired) return;
+    fetch('/api/subscriptions/renew')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (res?.data?.pendingRequest) setRenewState('pending');
+      })
+      .catch(() => {});
+  }, [isSubscriptionExpired]);
+
+  const handleRenewRequest = async () => {
+    setRenewState('sending');
+    try {
+      const res = await fetch('/api/subscriptions/renew', { method: 'POST' });
+      // 409 = une demande est déjà en attente
+      setRenewState(res.ok || res.status === 409 ? 'pending' : 'idle');
+    } catch {
+      setRenewState('idle');
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -89,7 +132,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/login');
   };
 
-  if ((isLoading && !user) || (checkingOrg && !user)) {
+  if ((isLoading && !user) || (checkingOrg && !user) || (checkingSub && !user)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-3">
@@ -143,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   // Suspended screen
-  if (orgStatus === 'suspended') {
+  if (orgStatus === 'suspended' || orgStatus === 'cancelled' || orgStatus === 'archived') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-center">
         <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-red-200 dark:border-red-900/40 p-8 space-y-6">
@@ -153,9 +196,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-red-600 dark:text-red-400">Compte Suspendu</h1>
+            <h1 className="text-xl font-bold text-red-600 dark:text-red-400">
+              {orgStatus === 'suspended' ? 'Espace désactivé' : 'Inscription refusée'}
+            </h1>
             <p className="text-xs text-slate-500 mt-2">
-              L&apos;accès pour l&apos;organisation <strong className="text-slate-800 dark:text-slate-200">{orgName}</strong> a été temporairement suspendu.
+              {orgStatus === 'suspended' ? (
+                <>L&apos;accès pour l&apos;organisation <strong className="text-slate-800 dark:text-slate-200">{orgName}</strong> a été désactivé.</>
+              ) : (
+                <>L&apos;inscription de l&apos;organisation <strong className="text-slate-800 dark:text-slate-200">{orgName}</strong> n&apos;a pas été validée.</>
+              )}
             </p>
             <p className="text-xs text-slate-400 mt-1">
               Veuillez contacter le support pour réactiver votre compte.
@@ -167,6 +216,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             Se déconnecter
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Expired subscription screen
+  if (isSubscriptionExpired) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-center">
+        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-red-200 dark:border-red-900/40 p-8 space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-red-600 dark:text-red-400">Abonnement expiré</h1>
+            <p className="text-xs text-slate-500 mt-2">
+              Votre abonnement a expiré. Vous n&apos;avez plus accès à votre espace.
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {renewState === 'pending'
+                ? 'Votre demande de renouvellement est en attente de validation. Votre accès sera rétabli dès son activation.'
+                : 'Demandez le renouvellement : votre accès sera rétabli dès validation par l\'équipe OptiWifi.'}
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col gap-2">
+            {renewState !== 'pending' && (
+              <Button
+                onClick={handleRenewRequest}
+                isLoading={renewState === 'sending'}
+                className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs transition"
+              >
+                Demander le renouvellement
+              </Button>
+            )}
+            <button
+              onClick={handleSignOut}
+              className="w-full py-2.5 px-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold text-xs transition"
+            >
+              Se déconnecter
+            </button>
+          </div>
         </div>
       </div>
     );

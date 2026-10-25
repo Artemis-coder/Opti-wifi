@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -23,6 +24,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ctx = await getSessionContext();
+    if (!ctx) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    }
     const { id } = await params;
     const supabase = await getSupabaseServerClient();
 
@@ -40,7 +45,11 @@ export async function GET(
       .eq('id', id)
       .single();
 
-    if (error || !collection) {
+    if (
+      error ||
+      !collection ||
+      !canAccessOrganization(ctx, collection.organization_id || collection.organisation_id)
+    ) {
       console.error('Collection detail error:', error);
       return NextResponse.json(
         { error: 'Collecte introuvable', details: error?.message },
@@ -49,7 +58,7 @@ export async function GET(
     }
 
     return NextResponse.json(collection);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Collection detail exception:', e);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }

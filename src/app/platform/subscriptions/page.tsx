@@ -11,12 +11,14 @@ import {
   Clock,
   Zap,
   ExternalLink,
+  KeyRound,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { SubscriptionWithPlan, SubscriptionStatus } from '@/types/platform';
@@ -48,6 +50,7 @@ export default function PlatformSubscriptionsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [extending, setExtending] = useState<SubscriptionWithPlan | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; subscription: SubscriptionWithPlan | null; action: string }>({
     open: false,
     subscription: null,
@@ -244,7 +247,7 @@ export default function PlatformSubscriptionsPage() {
                   return (
                     <tr key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       <td className="px-4 py-3">
-                        <Link href={`/platform/clients/${sub.organization?.id || ''}`} className="font-semibold text-slate-900 dark:text-white hover:text-amber-500">
+                        <Link href={`/platform/clients/${sub.organization_id}`} className="font-semibold text-slate-900 dark:text-white hover:text-amber-500">
                           {sub.organization?.name || '—'}
                         </Link>
                       </td>
@@ -294,7 +297,10 @@ export default function PlatformSubscriptionsPage() {
                               {btn.label}
                             </Button>
                           ))}
-                          <Link href={`/platform/clients/${sub.organization?.id || ''}`}>
+                          <Button variant="primary" size="sm" className="text-xs h-7" onClick={() => setExtending(sub)}>
+                            <KeyRound className="w-3 h-3" /> Prolonger
+                          </Button>
+                          <Link href={`/platform/clients/${sub.organization_id}`}>
                             <Button variant="ghost" size="sm" className="text-xs h-7">
                               <ExternalLink className="w-3 h-3" /> Voir le client
                             </Button>
@@ -308,6 +314,18 @@ export default function PlatformSubscriptionsPage() {
             </table>
           </div>
         </Card>
+      )}
+
+      {extending && (
+        <LicenseActivationModal
+          isOpen={!!extending}
+          onClose={() => setExtending(null)}
+          onActivated={loadSubscriptions}
+          organizationId={extending.organization_id}
+          organizationName={extending.organization?.name || ''}
+          currentEndDate={extending.status === 'active' || extending.status === 'trialing' ? extending.end_date : null}
+          defaultPlanId={extending.plan_id}
+        />
       )}
 
       {/* Confirmation Modal */}

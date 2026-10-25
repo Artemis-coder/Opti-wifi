@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -24,6 +25,7 @@ import {
   BarChart3,
   Wallet,
   ExternalLink,
+  KeyRound,
   Loader2,
   AlertCircle,
   Copy,
@@ -93,8 +95,8 @@ const STATUS_CONFIG: Record<OrganizationStatus, { label: string; color: 'success
   active: { label: 'Actif', color: 'success' },
   expiring: { label: 'Expire bientôt', color: 'warning' },
   expired: { label: 'Expiré', color: 'danger' },
-  suspended: { label: 'Suspendu', color: 'danger' },
-  cancelled: { label: 'Annulé', color: 'neutral' },
+  suspended: { label: 'Désactivé', color: 'danger' },
+  cancelled: { label: 'Refusé', color: 'neutral' },
   archived: { label: 'Archivé', color: 'neutral' },
 };
 
@@ -116,6 +118,8 @@ export default function ClientDetailPage() {
   const [data, setData] = useState<ClientDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [licenseModalOpen, setLicenseModalOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [confirmModalOpen, setConfirmModalOpen] = useState<{
     open: boolean;
     action: string;
@@ -141,7 +145,7 @@ export default function ClientDetailPage() {
       }
     }
     fetchClient();
-  }, [clientId]);
+  }, [clientId, reloadKey]);
 
   const handleStatusAction = async (action: string, label: string) => {
     setConfirmModalOpen({ open: true, action, label });
@@ -218,9 +222,9 @@ export default function ClientDetailPage() {
 
   const getSubAction = () => {
     if (!org) return null;
-    if (org.status === 'pending_approval') return { action: 'approve', label: 'Approuver' };
-    if (org.status === 'suspended') return { action: 'reactivate', label: 'Réactiver' };
-    if (org.status === 'active' || org.status === 'trial' || org.status === 'expiring') return { action: 'suspend', label: 'Suspendre' };
+    if (org.status === 'pending_approval') return { action: 'approve', label: "Valider l'inscription" };
+    if (org.status === 'suspended' || org.status === 'cancelled') return { action: 'reactivate', label: "Activer l'espace" };
+    if (org.status === 'active' || org.status === 'trial' || org.status === 'expiring' || org.status === 'expired') return { action: 'suspend', label: "Désactiver l'espace" };
     return null;
   };
 
@@ -256,12 +260,30 @@ export default function ClientDetailPage() {
               {subAction.label}
             </Button>
           )}
+          {org.status !== 'pending_approval' && org.status !== 'cancelled' && (
+            <Button variant="primary" size="sm" className="gap-2" onClick={() => setLicenseModalOpen(true)}>
+              <KeyRound className="w-4 h-4" />
+              Activer une licence
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="gap-2" onClick={handleImpersonate}>
             <ExternalLink className="w-4 h-4" />
             Accéder à l&apos;espace client
           </Button>
         </div>
       </div>
+
+      {licenseModalOpen && (
+      <LicenseActivationModal
+        isOpen={licenseModalOpen}
+        onClose={() => setLicenseModalOpen(false)}
+        onActivated={() => setReloadKey((k) => k + 1)}
+        organizationId={org.id}
+        organizationName={org.name}
+        currentEndDate={sub?.status === 'active' || sub?.status === 'trialing' ? sub?.end_date : null}
+        defaultPlanId={sub?.plan_id}
+      />
+      )}
 
       {/* Confirmation Modal */}
       <Modal

@@ -179,6 +179,10 @@ export interface DashboardKpis {
   revenue_this_month: number;
   revenue_this_year: number;
   currency: string;
+  pending_registrations?: number;
+  pending_license_requests?: number;
+  expiring_7d?: number;
+  clients_without_license?: number;
 }
 
 export interface ChartDataPoint {

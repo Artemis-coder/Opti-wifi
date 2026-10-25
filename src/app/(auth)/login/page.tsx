@@ -99,9 +99,9 @@ export default function LoginPage() {
       const { user } = data;
       setUser(user);
 
-      // Redirect to dashboard after login
+      // La page racine redirige selon le rôle (super admin → /platform, client → /dashboard)
       router.refresh();
-      router.push('/dashboard');
+      router.push('/');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Une erreur est survenue.';
       setError(message);

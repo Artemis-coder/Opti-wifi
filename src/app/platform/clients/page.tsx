@@ -43,8 +43,8 @@ const STATUS_CONFIG: Record<OrganizationStatus, { label: string; color: 'success
   active: { label: 'Actif', color: 'success' },
   expiring: { label: 'Expire bientôt', color: 'warning' },
   expired: { label: 'Expiré', color: 'danger' },
-  suspended: { label: 'Suspendu', color: 'danger' },
-  cancelled: { label: 'Annulé', color: 'neutral' },
+  suspended: { label: 'Désactivé', color: 'danger' },
+  cancelled: { label: 'Refusé', color: 'neutral' },
   archived: { label: 'Archivé', color: 'neutral' },
 };
 
@@ -66,8 +66,8 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'trial', label: 'Essai' },
   { value: 'expiring', label: 'Expire bientôt' },
   { value: 'expired', label: 'Expirés' },
-  { value: 'suspended', label: 'Suspendus' },
-  { value: 'cancelled', label: 'Annulés' },
+  { value: 'suspended', label: 'Désactivés' },
+  { value: 'cancelled', label: 'Refusés' },
 ];
 
 export default function PlatformClientsPage() {
@@ -109,15 +109,15 @@ export default function PlatformClientsPage() {
 
   const handleStatusAction = async (orgId: string, action: string, orgName: string) => {
     const actionLabels: Record<string, string> = {
-      approve: 'approuver',
-      activate: 'activer',
-      suspend: 'suspendre',
-      reactivate: 'réactiver',
-      cancel: 'annuler',
+      approve: 'valider',
+      activate: "activer l'espace de",
+      suspend: "désactiver l'espace de",
+      reactivate: "activer l'espace de",
+      cancel: 'refuser',
     };
     const label = actionLabels[action] || action;
 
-    if (!window.confirm(`Voulez-vous vraiment ${label} le compte "${orgName}" ?`)) {
+    if (!window.confirm(`Voulez-vous vraiment ${label} « ${orgName} » ?`)) {
       return;
     }
 
@@ -221,7 +221,7 @@ export default function PlatformClientsPage() {
         </Card>
         <Card className="border-l-4 border-l-red-500">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Suspendus</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase">Désactivés</span>
             <PauseCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{suspendedCount}</p>
@@ -349,17 +349,17 @@ export default function PlatformClientsPage() {
                               title="Valider et approuver ce client"
                             >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                              <span>Approuver</span>
+                              <span>Valider</span>
                             </Button>
                           )}
-                          {client.status === 'suspended' && (
+                          {(client.status === 'suspended' || client.status === 'cancelled') && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="p-1 h-7 text-emerald-600 hover:text-emerald-700"
                               onClick={() => handleStatusAction(client.id, 'reactivate', client.name)}
                               disabled={!!isActionDisabled}
-                              title="Réactiver"
+                              title="Activer l'espace"
                             >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                             </Button>
@@ -371,7 +371,7 @@ export default function PlatformClientsPage() {
                               className="p-1 h-7 text-red-600 hover:text-red-700"
                               onClick={() => handleStatusAction(client.id, 'suspend', client.name)}
                               disabled={!!isActionDisabled}
-                              title="Suspendre"
+                              title="Désactiver l'espace"
                             >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <PauseCircle className="w-3.5 h-3.5" />}
                             </Button>

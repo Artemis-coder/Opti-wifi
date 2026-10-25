@@ -33,11 +33,16 @@ CREATE POLICY "Platform users: service role sees all"
     ON platform_users FOR ALL USING (true);
 
 -- 5. Créer/mettre à jour l'utilisateur Auth + profile + platform_users
---    Email: kedakeyaoboris@gmail.com | Password: 20071995@94119427
+--    Email: kedakeyaoboris@gmail.com | Mot de passe : définir _password ci-dessous avant exécution
 DO $$
 DECLARE
   _user_id UUID;
+  _password TEXT := 'CHANGE_ME_BEFORE_RUNNING'; -- À remplacer avant exécution (ne jamais commiter la vraie valeur)
 BEGIN
+  IF _password = 'CHANGE_ME_BEFORE_RUNNING' THEN
+    RAISE EXCEPTION 'Définissez _password avant d''exécuter ce script';
+  END IF;
+
   -- Find existing user or create new
   SELECT id INTO _user_id FROM auth.users WHERE email = 'kedakeyaoboris@gmail.com';
 
@@ -48,14 +53,14 @@ BEGIN
       'authenticated',
       'authenticated',
       'kedakeyaoboris@gmail.com',
-      crypt('20071995@94119427', gen_salt('bf')),
+      crypt(_password, gen_salt('bf')),
       NOW(),
       NOW()
     ) RETURNING id INTO _user_id;
   ELSE
     -- Update password if user already exists
     UPDATE auth.users
-      SET encrypted_password = crypt('20071995@94119427', gen_salt('bf')),
+      SET encrypted_password = crypt(_password, gen_salt('bf')),
           email_confirmed_at = NOW()
     WHERE id = _user_id;
   END IF;
