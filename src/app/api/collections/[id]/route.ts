@@ -31,17 +31,10 @@ export async function GET(
     const { id } = await params;
     const supabase = await getSupabaseServerClient();
 
+    // 1. Collecte avec POS et collecteur (le query builder ne gère qu'un niveau de jointure)
     const { data: collection, error } = await supabase
       .from('collections')
-      .select(
-        `*,
-         pos:points_of_sale(*),
-         collecteur:profiles(*),
-         items:collection_items(
-           *,
-           ticket_type:ticket_types(*)
-         )`
-      )
+      .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
       .eq('id', id)
       .single();
 
@@ -50,14 +43,20 @@ export async function GET(
       !collection ||
       !canAccessOrganization(ctx, collection.organization_id || collection.organisation_id)
     ) {
-      console.error('Collection detail error:', error);
-      return NextResponse.json(
-        { error: 'Collecte introuvable', details: error?.message },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Collecte introuvable' }, { status: 404 });
     }
 
-    return NextResponse.json(collection);
+    // 2. Items avec le type de ticket
+    const { data: items, error: itemsError } = await supabase
+      .from('collection_items')
+      .select('*, ticket_type:ticket_types(*)')
+      .eq('collection_id', id);
+
+    if (itemsError) {
+      console.warn('Collection items error:', itemsError);
+    }
+
+    return NextResponse.json({ ...collection, items: items || [] });
   } catch (e: unknown) {
     console.error('Collection detail exception:', e);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
