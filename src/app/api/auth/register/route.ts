@@ -1,5 +1,6 @@
 import { adminClient } from '@/lib/neon/admin';
 import { NextResponse } from 'next/server';
+import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 
 // Route POST pour créer un compte et une organisation avec le statut "pending_approval"
 export async function POST(request: Request) {
@@ -12,6 +13,11 @@ export async function POST(request: Request) {
         { error: 'Veuillez remplir tous les champs obligatoires (Email, Mot de passe, Nom complet, Nom de l\'entreprise).' },
         { status: 400 }
       );
+    }
+
+    const testEmailError = rejectTestEmailInProduction(email);
+    if (testEmailError) {
+      return NextResponse.json({ error: testEmailError }, { status: 400 });
     }
 
     if (password.length < 8) {

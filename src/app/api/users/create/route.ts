@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkQuota } from '@/lib/quotas';
 import { getSessionContext } from '@/lib/tenant';
 import { setMustChangePassword } from '@/lib/password-change';
+import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +30,10 @@ export async function POST(request: NextRequest) {
         { error: 'Les champs nom, email et mot de passe sont requis.' },
         { status: 400 }
       );
+    }
+    const testEmailError = rejectTestEmailInProduction(String(email));
+    if (testEmailError) {
+      return NextResponse.json({ error: testEmailError }, { status: 400 });
     }
     if (!['administrateur', 'collecteur'].includes(role)) {
       return NextResponse.json({ error: 'Rôle invalide.' }, { status: 400 });
