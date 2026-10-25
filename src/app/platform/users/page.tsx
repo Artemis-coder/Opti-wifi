@@ -85,7 +85,7 @@ interface CreateFormState {
       });
       const result = await res.json();
       if (res.ok) {
-        setOrganizations(result.data?.map((c: any) => ({ id: c.id, name: c.name })) || []);
+        setOrganizations(result.data?.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })) || []);
       }
     } catch {
       toast.error('Erreur de chargement des organisations');
@@ -501,7 +501,7 @@ interface CreateFormState {
        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
          <Card className="w-full max-w-md p-6 space-y-4">
            <div className="flex items-center justify-between">
-             <h2 className="text-lg font-semibold">Modifier le rôle / l'organisation</h2>
+             <h2 className="text-lg font-semibold">Modifier le rôle / l&apos;organisation</h2>
              <Button variant="ghost" size="sm" onClick={() => setChangeRoleUser(null)}>
                <X className="w-4 h-4" />
              </Button>
@@ -531,7 +531,7 @@ interface CreateFormState {
                    onChange={(e) => setNewOrgIdValue(e.target.value)}
                    className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                  >
-                   <option value="">— Conserver l'actuelle —</option>
+                   <option value="">— Conserver l&apos;actuelle —</option>
                    {organizations.map((org) => (
                      <option key={org.id} value={org.id}>{org.name}</option>
                    ))}
@@ -551,60 +551,6 @@ interface CreateFormState {
         </div>
       )}
 
-      {/* Change Role Modal */}
-      {changeRoleUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Modifier le rôle / l'organisation</h2>
-              <Button variant="ghost" size="sm" onClick={() => setChangeRoleUser(null)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Utilisateur : <span className="font-medium">{changeRoleUser.nom || changeRoleUser.email}</span>
-            </p>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nouveau rôle</label>
-                <select
-                  value={newRoleValue}
-                  onChange={(e) => setNewRoleValue(e.target.value as 'administrateur' | 'collecteur')}
-                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                >
-                  <option value="administrateur">Administrateur</option>
-                  <option value="collecteur">Collecteur</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nouvelle organisation</label>
-                {orgsLoading ? (
-                  <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-500 animate-pulse">Chargement...</div>
-                ) : (
-                  <select
-                    value={newOrgIdValue}
-                    onChange={(e) => setNewOrgIdValue(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  >
-                    <option value="">— Conserver l'actuelle —</option>
-                    {organizations.map((org) => (
-                      <option key={org.id} value={org.id}>{org.name}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" onClick={() => setChangeRoleUser(null)} disabled={savingRole}>
-                Annuler
-              </Button>
-              <Button onClick={handleChangeRoleSave} disabled={savingRole}>
-                {savingRole ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enregistrer'}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

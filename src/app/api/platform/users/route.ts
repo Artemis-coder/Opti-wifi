@@ -1,31 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/neon/server';
-import { cookies } from 'next/headers';
+import { requirePlatformAdmin } from '@/lib/neon/server';
 import { query } from '@/lib/neon/db';
+import { hashPassword } from '@/lib/neon/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(undefined, undefined, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    });
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-    }
-
-    if (user.role !== 'administrateur') {
-      return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 });
+    // Réservé au super admin de la plateforme (un administrateur client a aussi le rôle « administrateur »)
+    const auth = await requirePlatformAdmin();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const { searchParams } = new URL(request.url);
@@ -51,7 +34,7 @@ export async function GET(request: NextRequest) {
       WHERE p.role IN ('administrateur', 'collecteur')
     `;
 
-    const params: any[] = [];
+    const params: (string | number)[] = [];
     let paramIndex = 1;
 
     if (orgFilter) {
@@ -72,19 +55,19 @@ export async function GET(request: NextRequest) {
 
     const authResult = await query(
       `SELECT id, banned_until FROM users WHERE id = ANY($1)`,
-      [users.map((u: any) => u.id)]
+      [users.map((u: { id: string }) => u.id)]
     );
 
     const authMap = new Map(
-      (authResult.rows || []).map((au: any) => [
+      (authResult.rows || []).map((au: { id: string; banned_until: string | null }) => [
         au.id,
         au.banned_until ? new Date(au.banned_until) > new Date() : false
       ])
     );
 
-    const enrichedUsers = (users || []).map((u: any) => ({
+    const enrichedUsers = (users || []).map((u: Record<string, unknown>) => ({
       ...u,
-      is_banned: authMap.get(u.id) || false,
+      is_banned: authMap.get(u.id as string) || false,
       organization: u.organization_name ? {
         id: u.organization_id,
         name: u.organization_name,
@@ -100,25 +83,90 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Création d'un compte (administrateur ou collecteur) dans une organisation cliente.
+// Restauré : la refonte 0757a1d avait supprimé ce handler utilisé par la page.
+export async function POST(request: NextRequest) {
+  const auth = await requirePlatformAdmin();
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const nom = typeof body.nom === 'string' ? body.nom.trim().slice(0, 255) : '';
+  const role = body.role || 'administrateur';
+  const organizationId = body.organization_id;
+  const telephone = typeof body.telephone === 'string' ? body.telephone.trim().slice(0, 50) || null : null;
+  const devise = typeof body.devise === 'string' && body.devise ? body.devise.slice(0, 10) : 'XOF';
+
+  if (!EMAIL_RE.test(email) || !nom) {
+    return NextResponse.json({ error: 'Email valide et nom requis.' }, { status: 400 });
+  }
+  if (!organizationId || !UUID_RE.test(organizationId)) {
+    return NextResponse.json({ error: 'Organisation requise.' }, { status: 400 });
+  }
+  if (!['administrateur', 'collecteur'].includes(role)) {
+    return NextResponse.json({ error: 'Rôle invalide.' }, { status: 400 });
+  }
+  if (body.password && (typeof body.password !== 'string' || body.password.length < 6)) {
+    return NextResponse.json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' }, { status: 400 });
+  }
+
+  try {
+    const org = await query('SELECT id FROM organizations WHERE id = $1', [organizationId]);
+    if (!org.rows[0]) {
+      return NextResponse.json({ error: 'Organisation introuvable.' }, { status: 404 });
+    }
+    const existing = await query('SELECT 1 FROM users WHERE email = $1', [email]);
+    if (existing.rows[0]) {
+      return NextResponse.json({ error: 'Un compte existe déjà avec cet email.' }, { status: 409 });
+    }
+
+    const plainPassword = body.password || `OptiWifi_${crypto.randomUUID().slice(0, 12)}!`;
+    const passwordHash = await hashPassword(plainPassword);
+
+    // Compte et profil créés dans la même requête : tout ou rien
+    const { rows } = await query(
+      `WITH u AS (
+         INSERT INTO users (email, password_hash, email_confirmed, user_metadata, app_metadata, created_at, updated_at)
+         VALUES ($1, $2, true, jsonb_build_object('nom', $3::text, 'role', $4::text, 'organization_id', $5::text),
+                 jsonb_build_object('role', $4::text), NOW(), NOW())
+         RETURNING id
+       )
+       INSERT INTO profiles (id, nom, email, role, telephone, devise, organization_id, is_active)
+       SELECT u.id, $3, $1, $4::user_role, $6, $7, $5::uuid, true FROM u
+       RETURNING id`,
+      [email, passwordHash, nom, role, organizationId, telephone, devise]
+    );
+    const newUserId = rows[0].id;
+
+    await query(
+      `INSERT INTO platform_audit_logs (platform_user_id, organization_id, action, entity_type, entity_id, new_data)
+       VALUES ($1, $2, 'user.create', 'profile', $3, $4)`,
+      [auth.platformUser.id, organizationId, newUserId, JSON.stringify({ email, nom, role })]
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: `Compte « ${nom} » créé avec succès.`,
+      data: { id: newUserId, email, role },
+      temporary_password: body.password ? undefined : plainPassword,
+    });
+  } catch (err) {
+    console.error('Platform user create error:', err);
+    return NextResponse.json({ error: 'Erreur lors de la création du compte.' }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(undefined, undefined, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    });
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || user.role !== 'administrateur') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    // Réservé au super admin de la plateforme (un administrateur client a aussi le rôle « administrateur »)
+    const auth = await requirePlatformAdmin();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const body = await request.json();
@@ -189,7 +237,7 @@ export async function PATCH(request: NextRequest) {
         }
 
         const plainPassword = `OptiWifi_${crypto.randomUUID().slice(0, 12)}!`;
-        const passwordHash = await import('@/lib/neon/auth').then(m => m.hashPassword(plainPassword));
+        const passwordHash = await hashPassword(plainPassword);
         await query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, userId]);
 
         return NextResponse.json({
