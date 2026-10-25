@@ -153,7 +153,8 @@ CREATE TABLE IF NOT EXISTS ticket_allocations (
   exchange_group_id UUID,
   organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
   statut          VARCHAR(50) DEFAULT 'validee',
-  created_at      TIMESTAMPTZ DEFAULT NOW()
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ============================================================

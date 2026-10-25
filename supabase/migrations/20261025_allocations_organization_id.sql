@@ -8,6 +8,10 @@
 -- Script idempotent : peut être rejoué sans effet de bord.
 -- ============================================================
 
+-- Le trigger trg_ticket_allocations_updated_at (set_updated_at) existe mais la
+-- colonne manquait : toute modification d'une allocation échouait.
+ALTER TABLE ticket_allocations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
 CREATE OR REPLACE FUNCTION public.set_allocation_organization_id()
 RETURNS TRIGGER AS $$
 BEGIN
