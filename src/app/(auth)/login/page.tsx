@@ -99,9 +99,10 @@ export default function LoginPage() {
       const { user } = data;
       setUser(user);
 
-      // La page racine redirige selon le rôle (super admin → /platform, client → /dashboard)
+      // Mot de passe temporaire : choisir son propre mot de passe avant tout accès.
+      // Sinon la page racine redirige selon le rôle (super admin → /platform, client → /dashboard).
       router.refresh();
-      router.push('/');
+      router.push(data.must_change_password ? '/change-password' : '/');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Une erreur est survenue.';
       setError(message);

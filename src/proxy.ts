@@ -77,6 +77,22 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // --- Mot de passe temporaire : changement obligatoire avant tout accès ---
+  if (pathname === '/change-password') {
+    return user ? NextResponse.next() : NextResponse.redirect(new URL('/login', request.url));
+  }
+  if (user?.app_metadata?.must_change_password === true) {
+    const allowedApi = ['/api/auth/change-password', '/api/auth/logout', '/api/auth/session', '/api/auth/login'];
+    if (pathname.startsWith('/api/')) {
+      if (allowedApi.includes(pathname)) return NextResponse.next();
+      return NextResponse.json(
+        { error: 'Changement de mot de passe requis.', code: 'PASSWORD_CHANGE_REQUIRED' },
+        { status: 403 }
+      );
+    }
+    return NextResponse.redirect(new URL('/change-password', request.url));
+  }
+
   const isClientRoute = PROTECTED_CLIENT_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(route + '/')
   );
