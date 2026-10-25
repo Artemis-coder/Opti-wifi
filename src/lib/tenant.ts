@@ -12,8 +12,11 @@ export interface SessionContext {
   role: string;
   organizationId: string | null;
   organizationStatus: string | null;
-  /** Organisation suspendue, supprimée, refusée ou en attente : plus d'accès à ses données. */
+  /** Licence expirée (l'organisation en a eu une, plus aucune n'est active et en cours). */
+  licenceExpired: boolean;
+  /** Organisation suspendue, supprimée, refusée, en attente ou licence expirée : plus d'accès à ses données. */
   organizationBlocked: boolean;
+  blockReason: 'organization_status' | 'licence_expired' | null;
   isPlatformAdmin: boolean;
 }
 
@@ -36,7 +39,14 @@ export async function getSessionContext(token?: string | null): Promise<SessionC
     role: user.role,
     organizationId: user.organization_id || null,
     organizationStatus: user.organization_status || null,
-    organizationBlocked: BLOCKED_ORGANIZATION_STATUSES.includes(user.organization_status || ''),
+    licenceExpired: user.licence_expired === true,
+    organizationBlocked:
+      BLOCKED_ORGANIZATION_STATUSES.includes(user.organization_status || '') || user.licence_expired === true,
+    blockReason: BLOCKED_ORGANIZATION_STATUSES.includes(user.organization_status || '')
+      ? 'organization_status'
+      : user.licence_expired
+        ? 'licence_expired'
+        : null,
     isPlatformAdmin: !!platformUser?.is_active && platformUser.role === 'super_admin',
   };
 }

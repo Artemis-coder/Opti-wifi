@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
     role: user.role,
     telephone: user.telephone,
     organization_id: user.organization_id,
+    // État d'accès calculé côté serveur (utilisé par le layout client pour l'écran de statut)
+    organization_status: user.organization_status ?? null,
+    licence_expired: user.licence_expired === true,
     email_confirmed: user.email_confirmed,
     created_at: user.created_at,
     updated_at: user.updated_at,

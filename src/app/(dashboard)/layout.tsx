@@ -20,7 +20,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [orgName, setOrgName] = useState<string | null>(null);
   const [checkingOrg, setCheckingOrg] = useState(true);
   const [checkingSub, setCheckingSub] = useState(true);
-  const [subscription, setSubscription] = useState<{ status: string; end_date: string | null } | null>(null);
+  // Licence expirée : calculée côté serveur (même règle que le blocage des données)
+  const [licenceExpired, setLicenceExpired] = useState(false);
   const [renewState, setRenewState] = useState<'idle' | 'sending' | 'pending'>('idle');
   const [renewError, setRenewError] = useState('');
   const [renewPlans, setRenewPlans] = useState<{ id: string; name: string; price: number; billing_period: string; current: boolean }[]>([]);
@@ -72,17 +73,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 setOrgStatus(org.status);
                 setOrgName(org.name);
 
-                // Check subscription status for this organization
-                const { data: subscription } = await supabase
-                  .from('subscriptions')
-                  .select('status, end_date')
-                  .eq('organization_id', org.id)
-                  .order('created_at', { ascending: false })
-                  .limit(1)
-                  .maybeSingle();
+                // État de la licence, calculé par le serveur
+                const session = await fetch('/api/auth/session')
+                  .then((res) => (res.ok ? res.json() : null))
+                  .catch(() => null);
                 if (isMounted) {
+                  setLicenceExpired(session?.user?.licence_expired === true);
                   setCheckingSub(false);
-                  if (subscription) setSubscription(subscription);
                 }
               }
             }
@@ -104,8 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
     }, [user?.id, isLoading, router, setUser]);
 
-  const isSubscriptionExpired =
-    subscription?.status === 'expired' || (!!subscription?.end_date && new Date(subscription.end_date) < new Date());
+  const isSubscriptionExpired = licenceExpired;
 
   // Abonnement expiré : forfaits que l'on peut demander (le forfait d'essai n'est proposé qu'une fois)
   useEffect(() => {
@@ -154,7 +150,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/login');
   };
 
-  if ((isLoading && !user) || (checkingOrg && !user) || (checkingSub && !user)) {
+  // Attendre la vérification (organisation + licence) avant d'afficher l'espace :
+  // sinon le tableau de bord apparaîtrait brièvement pour un compte expiré ou suspendu.
+  if (isLoading || checkingOrg || checkingSub) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-3">

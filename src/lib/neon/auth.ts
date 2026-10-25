@@ -23,6 +23,8 @@ export interface NeonUser {
   organization_id?: string | null;
   /** Statut de l'organisation (active, suspended, archived…) : sert à couper l'accès aux données. */
   organization_status?: string | null;
+  /** L'organisation a déjà eu une licence mais aucune n'est active et en cours : accès aux données coupé. */
+  licence_expired?: boolean;
   email_confirmed: boolean;
   user_metadata?: Record<string, any> | null;
   app_metadata?: Record<string, any> | null;
@@ -118,7 +120,17 @@ export async function getUserById(id: string): Promise<NeonUser | null> {
   const result = await query(
     `SELECT u.id, u.email, u.email_confirmed, u.user_metadata, u.app_metadata, u.created_at, u.updated_at,
             p.nom, p.role, p.telephone, p.devise, p.organization_id,
-            o.status AS organization_status
+            o.status AS organization_status,
+            CASE
+              WHEN p.organization_id IS NULL THEN false
+              WHEN NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.organization_id = p.organization_id) THEN false
+              ELSE NOT EXISTS (
+                SELECT 1 FROM subscriptions s
+                 WHERE s.organization_id = p.organization_id
+                   AND s.status IN ('active', 'trialing')
+                   AND (s.end_date IS NULL OR s.end_date > NOW())
+              )
+            END AS licence_expired
      FROM users u
      LEFT JOIN profiles p ON p.id = u.id
      LEFT JOIN organizations o ON o.id = p.organization_id
@@ -142,6 +154,7 @@ export async function getUserById(id: string): Promise<NeonUser | null> {
     devise: row.devise,
     organization_id: row.organization_id,
     organization_status: row.organization_status ?? null,
+    licence_expired: row.licence_expired === true,
     email_confirmed: row.email_confirmed,
     user_metadata: row.user_metadata,
     app_metadata: row.app_metadata,
