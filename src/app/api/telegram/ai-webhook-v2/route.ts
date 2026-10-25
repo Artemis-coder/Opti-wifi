@@ -48,8 +48,8 @@ import {
   HELP_TEXT,
   MENU_PROMPTS,
   handleActionCallback,
-  isClaudeConfigured,
-  runClaudeAssistant,
+  isAssistantAvailable,
+  runAssistant,
   sendBotMessage,
   toTelegramHtml,
 } from '@/lib/bot/assistant';
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         await handleMessage(update.message);
       } else if (update.callback_query) {
         await handleCallbackQuery(update.callback_query);
-      } else if (update.edited_message && !isClaudeConfigured()) {
+      } else if (update.edited_message && !isAssistantAvailable()) {
         await handleMessage(update.edited_message);
       }
     } catch (error) {
@@ -124,8 +124,8 @@ async function handleMessage(message: any) {
   // Get or create session
   const session = await getOrCreateSession(chatId);
 
-  // Assistant Claude (modèle par défaut) ; l'ancien moteur reste en secours sans clé Anthropic
-  if (isClaudeConfigured()) {
+  // Assistant (Claude par défaut, modèles open source en relais) ; ancien moteur sans aucune clé d'IA
+  if (isAssistantAvailable()) {
     await handleClaudeMessage(message, chatId, session);
     return;
   }
@@ -206,7 +206,7 @@ async function handleClaudeMessage(message: any, chatId: string, session: any) {
     return;
   }
 
-  await runClaudeAssistant(chatId, MENU_PROMPTS[text] || text);
+  await runAssistant(chatId, MENU_PROMPTS[text] || text);
 }
 
 async function handleTextMessage(text: string, chatId: string, userName: string, session: any) {

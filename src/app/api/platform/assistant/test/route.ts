@@ -2,19 +2,19 @@ import { NextResponse } from 'next/server';
 import { requirePlatformAdmin } from '@/lib/supabase/platform';
 import { query } from '@/lib/neon/db';
 import { getOrCreateSession } from '@/lib/conversation-memory';
-import { CLAUDE_MODEL, isClaudeConfigured, runClaudeAssistant } from '@/lib/bot/assistant';
+import { isAssistantAvailable, isClaudeConfigured, runAssistant } from '@/lib/bot/assistant';
 
 export const maxDuration = 120;
 
-// Pose une question à l'assistant Claude du bot (mêmes outils, lecture seule conseillée) et renvoie
+// Pose une question à l'assistant du bot (Claude, ou modèle open source en relais) (mêmes outils, lecture seule conseillée) et renvoie
 // sa réponse, sans passer par Telegram. La conversation de test est effacée ensuite.
 export async function POST(request: Request) {
   const auth = await requirePlatformAdmin();
   if ('error' in auth) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
-  if (!isClaudeConfigured()) {
-    return NextResponse.json({ ok: false, error: "ANTHROPIC_API_KEY n'est pas configurée sur ce déploiement." });
+  if (!isAssistantAvailable()) {
+    return NextResponse.json({ ok: false, error: "Aucune clé d'IA (ANTHROPIC, GROQ, TOGETHER, OPENROUTER) n'est configurée sur ce déploiement." });
   }
 
   const body = await request.json().catch(() => ({}));
@@ -27,9 +27,15 @@ export async function POST(request: Request) {
 
   try {
     await getOrCreateSession(chatId);
-    const answer = await runClaudeAssistant(chatId, question, { deliver: false });
-    const failed = answer.startsWith('❌') || answer.startsWith('⏳');
-    return NextResponse.json({ ok: !failed, model: CLAUDE_MODEL, question, answer, duration_ms: Date.now() - started });
+    const result = await runAssistant(chatId, question, { deliver: false });
+    return NextResponse.json({
+      ok: result.ok,
+      model: result.model,
+      claude_configured: isClaudeConfigured(),
+      question,
+      answer: result.text,
+      duration_ms: Date.now() - started,
+    });
   } catch (err) {
     console.error('Assistant test error:', err);
     return NextResponse.json({ ok: false, error: "Erreur lors du test de l'assistant" }, { status: 500 });

@@ -28,6 +28,7 @@ import {
   resolveOrganization,
   searchUsers,
 } from '@/lib/bot/admin-data';
+import { isOpenModelAvailable, openModelCompletion, type ChatMessage, type FunctionTool, type OpenModel } from '@/lib/bot/open-models';
 
 export const CLAUDE_MODEL = 'claude-opus-5-5';
 const MAX_TOOL_ROUNDS = 6;
@@ -479,20 +480,31 @@ function textOf(content: Anthropic.ContentBlock[]): string {
   return content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('\n').trim();
 }
 
-/**
- * Répond à un message du super admin (outils + confirmation des actions).
- * `deliver: false` : la réponse est seulement renvoyée (test depuis le back-office), pas envoyée sur Telegram.
- */
-export async function runClaudeAssistant(chatId: string, userText: string, opts: { deliver?: boolean } = {}): Promise<string> {
-  const deliver = opts.deliver !== false;
-  if (deliver) await sendTyping(chatId);
-  const history = await loadHistory(chatId);
-  await query(`INSERT INTO conversation_messages (chat_id, role, content) VALUES ($1, 'user', $2)`, [chatId, userText]);
+/** Erreur Claude survenue avant ou après l'exécution d'outils (relais impossible si des outils ont tourné). */
+class AssistantError extends Error {
+  constructor(public cause: unknown, public toolsRan: boolean) {
+    super('assistant error');
+  }
+}
 
-  const now = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'full', timeStyle: 'short' });
-  const messages: Anthropic.MessageParam[] = [...history, { role: 'user', content: `[${now}]\n${userText}` }];
+async function executeTools(chatId: string, calls: { id: string; name: string; input: ToolInput }[]) {
+  return Promise.all(
+    calls.map(async (c) => {
+      try {
+        return { id: c.id, content: JSON.stringify(await runTool(chatId, c.name, c.input)), isError: false };
+      } catch (err) {
+        console.error(`Bot tool ${c.name} error:`, err);
+        return { id: c.id, content: 'Erreur technique pendant la lecture des données.', isError: true };
+      }
+    })
+  );
+}
 
-  let finalText = '';
+const TOO_MANY_STEPS = 'Je n’ai pas pu terminer : la demande nécessite trop d’étapes. Précisez-la un peu.';
+
+async function runClaudeLoop(chatId: string, history: Anthropic.MessageParam[], userContent: string, deliver: boolean): Promise<string> {
+  const messages: Anthropic.MessageParam[] = [...history, { role: 'user', content: userContent }];
+  let toolsRan = false;
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const response = await getClient().beta.messages.create({
@@ -507,52 +519,139 @@ export async function runClaudeAssistant(chatId: string, userText: string, opts:
         messages: messages as Anthropic.Beta.BetaMessageParam[],
       });
 
-      if (response.stop_reason === 'refusal') {
-        finalText = "Je ne peux pas traiter cette demande. Reformulez-la ou utilisez le back-office.";
-        break;
-      }
+      if (response.stop_reason === 'refusal') return 'Je ne peux pas traiter cette demande. Reformulez-la ou utilisez le back-office.';
       const toolUses = response.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use');
       if (response.stop_reason !== 'tool_use' || toolUses.length === 0) {
-        finalText = textOf(response.content as Anthropic.ContentBlock[]);
-        if (response.stop_reason === 'max_tokens') finalText += '\n\n<i>(réponse tronquée)</i>';
-        break;
+        const text = textOf(response.content as Anthropic.ContentBlock[]);
+        return response.stop_reason === 'max_tokens' ? `${text}\n\n<i>(réponse tronquée)</i>` : text;
       }
 
       messages.push({ role: 'assistant', content: response.content as Anthropic.ContentBlockParam[] });
       if (round === 0 && deliver) await sendTyping(chatId);
-      const results = await Promise.all(
-        toolUses.map(async (t): Promise<Anthropic.ToolResultBlockParam> => {
-          try {
-            const output = await runTool(chatId, t.name, (t.input || {}) as ToolInput);
-            return { type: 'tool_result', tool_use_id: t.id, content: JSON.stringify(output) };
-          } catch (err) {
-            console.error(`Bot tool ${t.name} error:`, err);
-            return { type: 'tool_result', tool_use_id: t.id, content: 'Erreur technique pendant la lecture des données.', is_error: true };
-          }
-        })
-      );
-      messages.push({ role: 'user', content: results });
-      if (round === MAX_TOOL_ROUNDS - 1) finalText = 'Je n’ai pas pu terminer : la demande nécessite trop d’étapes. Précisez-la un peu.';
+      toolsRan = true;
+      const results = await executeTools(chatId, toolUses.map((t) => ({ id: t.id, name: t.name, input: (t.input || {}) as ToolInput })));
+      messages.push({
+        role: 'user',
+        content: results.map((r): Anthropic.ToolResultBlockParam => ({ type: 'tool_result', tool_use_id: r.id, content: r.content, ...(r.isError ? { is_error: true } : {}) })),
+      });
     }
+    return TOO_MANY_STEPS;
   } catch (err) {
-    console.error('Claude assistant error:', err);
-    if (err instanceof Anthropic.AuthenticationError) finalText = '❌ Clé ANTHROPIC_API_KEY refusée : vérifiez-la dans Vercel.';
-    else if (err instanceof Anthropic.RateLimitError) finalText = '⏳ Trop de demandes à Claude en ce moment, réessayez dans une minute.';
-    else if (err instanceof Anthropic.APIError && err.status === 400 && /credit|billing/i.test(err.message)) finalText = '❌ Crédit API Anthropic épuisé : rechargez-le sur console.anthropic.com.';
-    else finalText = '❌ Claude est momentanément indisponible. Les boutons du menu restent utilisables, réessayez dans un instant.';
+    throw new AssistantError(err, toolsRan);
   }
-
-  if (!finalText) finalText = 'C’est noté.';
-  await query(`INSERT INTO conversation_messages (chat_id, role, content, metadata) VALUES ($1, 'assistant', $2, $3)`, [
-    chatId,
-    finalText,
-    JSON.stringify({ model: CLAUDE_MODEL }),
-  ]);
-  if (deliver) await sendBotMessage(chatId, toTelegramHtml(finalText));
-  return finalText;
 }
 
-export const HELP_TEXT = `🤖 <b>Assistant OptiSpace (Claude)</b>
+const OPEN_TOOLS: FunctionTool[] = TOOLS.map((t) => ({
+  type: 'function',
+  function: { name: t.name, description: t.description || '', parameters: t.input_schema as Record<string, unknown> },
+}));
+
+/** Même conversation et mêmes outils avec un modèle open source (Groq, Together, OpenRouter). */
+async function runOpenModelLoop(chatId: string, history: Anthropic.MessageParam[], userContent: string): Promise<{ text: string; label: string }> {
+  const messages: ChatMessage[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...history.map((m): ChatMessage => ({ role: m.role, content: typeof m.content === 'string' ? m.content : '' })),
+    { role: 'user', content: userContent },
+  ];
+  let model: OpenModel | null = null;
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const completion = await openModelCompletion(messages, OPEN_TOOLS, model);
+    model = completion.model;
+    if (completion.toolCalls.length === 0) return { text: completion.content.trim(), label: model.label };
+
+    messages.push({ role: 'assistant', content: completion.content || null, tool_calls: completion.toolCalls });
+    const calls = completion.toolCalls.map((c) => {
+      let input: ToolInput = {};
+      try {
+        const parsed = JSON.parse(c.function.arguments || '{}');
+        if (parsed && typeof parsed === 'object') input = parsed;
+      } catch {
+        // arguments illisibles : l'outil répondra avec ses valeurs par défaut ou une erreur claire
+      }
+      return { id: c.id, name: c.function.name, input };
+    });
+    for (const r of await executeTools(chatId, calls)) messages.push({ role: 'tool', tool_call_id: r.id, content: r.content });
+  }
+  return { text: TOO_MANY_STEPS, label: model?.label || 'modèle open source' };
+}
+
+function claudeErrorMessage(err: unknown): string {
+  if (err instanceof Anthropic.AuthenticationError) return '❌ Clé ANTHROPIC_API_KEY refusée : vérifiez-la dans Vercel.';
+  if (err instanceof Anthropic.RateLimitError) return '⏳ Trop de demandes à Claude en ce moment, réessayez dans une minute.';
+  if (err instanceof Anthropic.APIError && err.status === 400 && /credit|billing/i.test(err.message)) {
+    return '❌ Crédit API Anthropic épuisé : rechargez-le sur console.anthropic.com.';
+  }
+  return '❌ Claude est momentanément indisponible. Les boutons du menu restent utilisables, réessayez dans un instant.';
+}
+
+export function isAssistantAvailable(): boolean {
+  return isClaudeConfigured() || isOpenModelAvailable();
+}
+
+/**
+ * Répond à un message du super admin (outils + confirmation des actions).
+ * Claude d'abord ; s'il ne peut pas répondre (pas de clé, pas de crédit, panne) avant d'avoir
+ * exécuté un outil, relais automatique sur les modèles open source configurés.
+ * `deliver: false` : la réponse est seulement renvoyée (test depuis le back-office), pas envoyée sur Telegram.
+ */
+export async function runAssistant(
+  chatId: string,
+  userText: string,
+  opts: { deliver?: boolean } = {}
+): Promise<{ text: string; model: string; ok: boolean }> {
+  const deliver = opts.deliver !== false;
+  if (deliver) await sendTyping(chatId);
+  const history = await loadHistory(chatId);
+  await query(`INSERT INTO conversation_messages (chat_id, role, content) VALUES ($1, 'user', $2)`, [chatId, userText]);
+
+  const now = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'full', timeStyle: 'short' });
+  const userContent = `[${now}]\n${userText}`;
+
+  let text = '';
+  let model = CLAUDE_MODEL;
+  let ok = false;
+  let claudeError: unknown = null;
+
+  if (isClaudeConfigured()) {
+    try {
+      text = await runClaudeLoop(chatId, history, userContent, deliver);
+      ok = true;
+    } catch (err) {
+      const e = err as AssistantError;
+      console.error('Claude assistant error:', e.cause);
+      claudeError = e.cause;
+      // Des outils ont déjà tourné (ex. boutons d'action envoyés) : pas de relais pour éviter les doublons
+      if (e.toolsRan) text = claudeErrorMessage(e.cause);
+    }
+  }
+
+  if (!ok && !text && isOpenModelAvailable()) {
+    try {
+      const result = await runOpenModelLoop(chatId, history, userContent);
+      text = result.text ? `${result.text}\n\n<i>— ${result.label}${isClaudeConfigured() ? ', en relais de Claude' : ''}</i>` : '';
+      model = result.label;
+      ok = Boolean(result.text);
+    } catch (err) {
+      console.error('Open model assistant error:', err);
+    }
+  }
+
+  if (!text) {
+    text = claudeError
+      ? claudeErrorMessage(claudeError)
+      : '❌ Aucun modèle d’IA ne répond pour le moment. Les boutons du menu restent utilisables, réessayez dans un instant.';
+  }
+
+  await query(`INSERT INTO conversation_messages (chat_id, role, content, metadata) VALUES ($1, 'assistant', $2, $3)`, [
+    chatId,
+    text,
+    JSON.stringify({ model }),
+  ]);
+  if (deliver) await sendBotMessage(chatId, toTelegramHtml(text));
+  return { text, model, ok };
+}
+
+export const HELP_TEXT = `🤖 <b>Assistant OptiSpace</b>
 
 Écrivez ou dictez (message vocal) ce que vous voulez savoir ou faire, par exemple :
 • « Quelles demandes de licence sont en attente ? »
