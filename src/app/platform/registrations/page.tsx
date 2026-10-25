@@ -11,6 +11,7 @@ import { Modal } from '@/components/ui/Modal';
 import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
 import { formatDateFR } from '@/lib/utils/format';
 import type { OrganizationStatus } from '@/types/platform';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 interface Registration {
   id: string;
@@ -163,7 +164,7 @@ export default function PlatformRegistrationsPage() {
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -230,7 +231,7 @@ export default function PlatformRegistrationsPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </Card>
       )}
 

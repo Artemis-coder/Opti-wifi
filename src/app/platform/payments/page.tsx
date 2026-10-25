@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { Payment, PaymentStatus } from '@/types/platform';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 const STATUS_CONFIG: Record<PaymentStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending: { label: 'En attente', color: 'warning' },
@@ -166,7 +167,7 @@ export default function PlatformPaymentsPage() {
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -215,7 +216,7 @@ export default function PlatformPaymentsPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </Card>
       )}
     </div>

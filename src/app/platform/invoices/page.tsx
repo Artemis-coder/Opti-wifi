@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { Invoice, InvoiceStatus } from '@/types/platform';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   draft: { label: 'Brouillon', color: 'neutral' },
@@ -141,7 +142,7 @@ export default function PlatformInvoicesPage() {
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -195,7 +196,7 @@ export default function PlatformInvoicesPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </Card>
       )}
     </div>

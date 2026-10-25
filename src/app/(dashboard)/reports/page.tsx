@@ -9,6 +9,7 @@ import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { Collection, CollectionItem, PointOfSale } from '@/types/database';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 export default function ReportsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -120,7 +121,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Points de Vente</span>
@@ -213,7 +214,7 @@ export default function ReportsPage() {
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">Aperçu des Encaissements</h3>
           </div>
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -248,7 +249,7 @@ export default function ReportsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </Card>
       )}
     </div>

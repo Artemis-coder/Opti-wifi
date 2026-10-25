@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import { TicketAllocation, PointOfSale, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 interface ExtendedAllocation extends TicketAllocation {
   allocateur?: Profile | null;
@@ -345,6 +346,7 @@ export default function AllocationDetailPage() {
           </h2>
 
           <Card className="p-0 overflow-hidden border-slate-200 dark:border-slate-800">
+            <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -396,6 +398,7 @@ export default function AllocationDetailPage() {
                 })}
               </tbody>
             </table>
+            </ResponsiveTable>
           </Card>
         </div>
       )}

@@ -22,6 +22,7 @@ import { LicenseActivationModal } from '@/components/platform/LicenseActivationM
 import { toast } from 'sonner';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { SubscriptionWithPlan, SubscriptionStatus } from '@/types/platform';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   trialing: { label: 'Essai', color: 'info' },
@@ -226,7 +227,7 @@ export default function PlatformSubscriptionsPage() {
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
@@ -312,7 +313,7 @@ export default function PlatformSubscriptionsPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </Card>
       )}
 
