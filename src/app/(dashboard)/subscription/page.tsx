@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle, Layers, Store, Users, MapPin } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -51,6 +51,7 @@ export default function SubscriptionPage() {
   const [allPlans, setAllPlans] = useState<SubscriptionPlan[]>([]);
   const [pendingRequest, setPendingRequest] = useState<LicenseRequestInfo | null>(null);
   const [lastRequest, setLastRequest] = useState<LicenseRequestInfo | null>(null);
+  const [usage, setUsage] = useState({ posCount: 0, usersCount: 0, spacesCount: 0 });
   const { user } = useAuthStore();
   const supabase = createClient();
 
@@ -88,6 +89,18 @@ export default function SubscriptionPage() {
           if (subData) setSubscription(subData);
         }
         await loadRequestState();
+
+        // Utilisation actuelle (les requêtes sont limitées à l'organisation côté serveur)
+        const [posRes, usersRes, spacesRes] = await Promise.all([
+          supabase.from('points_of_sale').select('id', { count: 'exact', head: true }),
+          supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true),
+          supabase.from('wifi_spaces').select('id', { count: 'exact', head: true }),
+        ]);
+        setUsage({
+          posCount: posRes.count ?? 0,
+          usersCount: usersRes.count ?? 0,
+          spacesCount: spacesRes.count ?? 0,
+        });
       } catch (error) {
         console.error('Error loading subscription:', error);
       } finally {
@@ -342,6 +355,52 @@ export default function SubscriptionPage() {
       ) : (
         <Card className="p-6 text-center">
           <p className="text-slate-500">Aucune licence active. Choisissez un forfait ci-dessous pour en faire la demande.</p>
+        </Card>
+      )}
+
+      {subscription?.plan && (
+        <Card className="p-6">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+            <Layers className="w-4 h-4 text-brand-500" />
+            Utilisation de votre forfait
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Points de vente', icon: Store, count: usage.posCount, limit: subscription.plan.max_points_of_sale ?? null },
+              { label: "Membres d'équipe", icon: Users, count: usage.usersCount, limit: subscription.plan.max_users ?? null },
+              { label: 'Espaces Wi-Fi', icon: MapPin, count: usage.spacesCount, limit: null },
+            ].map((q) => {
+              const Icon = q.icon;
+              const percent = q.limit ? Math.min(100, Math.round((q.count / q.limit) * 100)) : 0;
+              return (
+                <div key={q.label} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5 text-brand-500" /> {q.label}
+                    </span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {q.count} / {q.limit ?? 'Illimité'}
+                    </span>
+                  </div>
+                  {q.limit ? (
+                    <>
+                      <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            percent >= 90 ? 'bg-red-500' : percent >= 70 ? 'bg-amber-500' : 'bg-brand-500'
+                          }`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400">{percent}% du quota utilisé</p>
+                    </>
+                  ) : (
+                    <p className="text-[10px] text-slate-400">Sans limite sur ce forfait</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </Card>
       )}
 
