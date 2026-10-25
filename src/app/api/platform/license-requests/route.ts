@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getPlatformUserFromSession, requirePlatformAdmin } from '@/lib/supabase/platform';
 import { query } from '@/lib/neon/db';
-import { notifyInBackground, notifyOrganizationAdmins } from '@/lib/notifications';
+import { rejectLicenseRequest } from '@/lib/platform-actions';
 
 const STATUSES = ['pending', 'approved', 'rejected', 'cancelled'] as const;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(request: Request) {
   const auth = await getPlatformUserFromSession();
@@ -56,40 +55,13 @@ export async function PATCH(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const { requestId, action, note } = body as { requestId?: string; action?: string; note?: string };
-
-  if (!requestId || !UUID_RE.test(requestId) || action !== 'reject') {
+  if (!requestId || action !== 'reject') {
     return NextResponse.json({ error: 'Requête invalide' }, { status: 400 });
   }
-  const adminNote = typeof note === 'string' ? note.trim().slice(0, 500) || null : null;
 
   try {
-    const { rows } = await query(
-      `UPDATE license_requests
-          SET status = 'rejected', processed_by = $2, processed_at = NOW(), admin_note = $3
-        WHERE id = $1 AND status = 'pending'
-        RETURNING id, organization_id`,
-      [requestId, auth.platformUser.id, adminNote]
-    );
-    if (!rows[0]) {
-      return NextResponse.json({ error: 'Demande introuvable ou déjà traitée' }, { status: 409 });
-    }
-
-    await query(
-      `INSERT INTO platform_audit_logs (platform_user_id, organization_id, action, entity_type, entity_id, new_data)
-       VALUES ($1, $2, 'license_request_rejected', 'license_request', $3, $4)`,
-      [auth.platformUser.id, rows[0].organization_id, requestId, JSON.stringify({ note: adminNote })]
-    );
-
-    const rejectedOrgId = rows[0].organization_id as string;
-    notifyInBackground(() =>
-      notifyOrganizationAdmins(rejectedOrgId, {
-        type: 'license_request.rejected',
-        title: "Votre demande de licence n'a pas été acceptée",
-        body: adminNote ? `Motif : ${adminNote}` : 'Vous pouvez choisir un autre forfait ou contacter le support.',
-        link: '/subscription',
-      })
-    );
-
+    const result = await rejectLicenseRequest({ requestId, note, platformUserId: auth.platformUser.id });
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('License request reject error:', err);
