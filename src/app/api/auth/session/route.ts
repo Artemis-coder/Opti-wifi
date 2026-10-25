@@ -18,5 +18,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ user: null });
   }
 
-  return NextResponse.json({ user });
+  // Ne jamais exposer les métadonnées internes, le hash de mot de passe, etc.
+  const safeUser = {
+    id: user.id,
+    email: user.email,
+    nom: user.nom,
+    role: user.role,
+    telephone: user.telephone,
+    organization_id: user.organization_id,
+    email_confirmed: user.email_confirmed,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  };
+
+  return NextResponse.json({ user: safeUser });
 }

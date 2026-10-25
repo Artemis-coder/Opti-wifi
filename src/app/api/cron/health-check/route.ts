@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runAllHealthChecks } from '@/lib/db-health';
 
-const CRON_SECRET = process.env.CRON_SECRET;
-
 export async function GET(request: NextRequest) {
+  const CRON_SECRET = process.env.CRON_SECRET;
+
+  // Fail closed: if no CRON_SECRET configured, always deny
+  if (!CRON_SECRET) {
+    return NextResponse.json({ error: 'Endpoint non configuré.' }, { status: 503 });
+  }
+
   const authHeader = request.headers.get('authorization');
-  
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 
   try {
     await runAllHealthChecks();
-    return NextResponse.json({ ok: true, message: 'Health checks completed' });
+    return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Cron health check failed:', error);
-    return NextResponse.json({ error: 'Health check failed' }, { status: 500 });
+    // Never expose diagnostic details in cron responses
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import { notifyCustom, notifyError } from '@/lib/telegram';
 
+/**
+ * Endpoint d'envoi de notifications Telegram.
+ * Requiert une authentification valide pour éviter le spam.
+ */
 export async function POST(request: NextRequest) {
+  // ── Authentification ──────────────────────────────────────────────────────
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  if (!token) {
+    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  }
+  const payload = verifyToken(token);
+  if (!payload) {
+    return NextResponse.json({ error: 'Session invalide.' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { type, ...data } = body;
@@ -63,12 +78,11 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return NextResponse.json({ error: 'Type inconnu' }, { status: 400 });
+        return NextResponse.json({ error: 'Type de notification inconnu.' }, { status: 400 });
     }
 
     return NextResponse.json({ ok: success });
   } catch (error) {
-    console.error('AI notification error:', error);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

@@ -86,6 +86,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   telephone     VARCHAR(50),
   devise        VARCHAR(10) DEFAULT 'XOF',
   organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
+  is_active     BOOLEAN NOT NULL DEFAULT true,
+  deleted_at    TIMESTAMPTZ DEFAULT NULL,
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
@@ -163,7 +165,7 @@ CREATE TABLE IF NOT EXISTS ticket_allocations (
 CREATE TABLE IF NOT EXISTS collections (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   pos_id          UUID NOT NULL REFERENCES points_of_sale(id) ON DELETE CASCADE,
-  collecteur_id   UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  collecteur_id   UUID REFERENCES profiles(id) ON DELETE SET NULL,
   space_id        UUID REFERENCES wifi_spaces(id) ON DELETE SET NULL,
   organisation_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
   organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
