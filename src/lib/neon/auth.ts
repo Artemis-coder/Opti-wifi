@@ -21,6 +21,8 @@ export interface NeonUser {
   telephone?: string | null;
   devise?: string | null;
   organization_id?: string | null;
+  /** Statut de l'organisation (active, suspended, archived…) : sert à couper l'accès aux données. */
+  organization_status?: string | null;
   email_confirmed: boolean;
   user_metadata?: Record<string, any> | null;
   app_metadata?: Record<string, any> | null;
@@ -110,13 +112,19 @@ export async function createUserInDb(
   return user;
 }
 
+// Appelée à chaque requête authentifiée côté serveur : un compte suspendu, banni ou supprimé
+// n'est plus reconnu, ce qui révoque immédiatement l'accès même si sa session (JWT) est encore valide.
 export async function getUserById(id: string): Promise<NeonUser | null> {
   const result = await query(
     `SELECT u.id, u.email, u.email_confirmed, u.user_metadata, u.app_metadata, u.created_at, u.updated_at,
-            p.nom, p.role, p.telephone, p.devise, p.organization_id
+            p.nom, p.role, p.telephone, p.devise, p.organization_id,
+            o.status AS organization_status
      FROM users u
      LEFT JOIN profiles p ON p.id = u.id
-     WHERE u.id = $1`,
+     LEFT JOIN organizations o ON o.id = p.organization_id
+     WHERE u.id = $1
+       AND (u.banned_until IS NULL OR u.banned_until <= NOW())
+       AND (p.id IS NULL OR (p.is_active IS NOT FALSE AND p.deleted_at IS NULL))`,
     [id]
   );
 
@@ -133,6 +141,7 @@ export async function getUserById(id: string): Promise<NeonUser | null> {
     telephone: row.telephone,
     devise: row.devise,
     organization_id: row.organization_id,
+    organization_status: row.organization_status ?? null,
     email_confirmed: row.email_confirmed,
     user_metadata: row.user_metadata,
     app_metadata: row.app_metadata,
@@ -144,7 +153,7 @@ export async function getUserById(id: string): Promise<NeonUser | null> {
 export async function authenticate(email: string, password: string): Promise<NeonUser | null> {
   const result = await query(
     `SELECT u.id, u.email, u.password_hash, u.email_confirmed, u.banned_until, u.user_metadata, u.app_metadata, u.created_at, u.updated_at,
-            p.nom, p.role, p.telephone, p.devise, p.organization_id
+            p.nom, p.role, p.telephone, p.devise, p.organization_id, p.is_active, p.deleted_at
      FROM users u
      LEFT JOIN profiles p ON p.id = u.id
      WHERE u.email = $1`,
@@ -158,6 +167,10 @@ export async function authenticate(email: string, password: string): Promise<Neo
   const row = result.rows[0];
 
   if (row.banned_until && new Date(row.banned_until) > new Date()) {
+    return null;
+  }
+  // Membre suspendu ou supprimé
+  if (row.is_active === false || row.deleted_at) {
     return null;
   }
 

@@ -11,8 +11,14 @@ export interface SessionContext {
   userId: string;
   role: string;
   organizationId: string | null;
+  organizationStatus: string | null;
+  /** Organisation suspendue, supprimée, refusée ou en attente : plus d'accès à ses données. */
+  organizationBlocked: boolean;
   isPlatformAdmin: boolean;
 }
+
+/** Statuts d'organisation qui coupent l'accès aux données (le super admin garde l'accès). */
+export const BLOCKED_ORGANIZATION_STATUSES = ['suspended', 'archived', 'cancelled', 'pending_approval'];
 
 export async function getSessionContext(token?: string | null): Promise<SessionContext | null> {
   const value = token ?? (await cookies()).get(AUTH_COOKIE_NAME)?.value;
@@ -29,6 +35,8 @@ export async function getSessionContext(token?: string | null): Promise<SessionC
     userId: user.id,
     role: user.role,
     organizationId: user.organization_id || null,
+    organizationStatus: user.organization_status || null,
+    organizationBlocked: BLOCKED_ORGANIZATION_STATUSES.includes(user.organization_status || ''),
     isPlatformAdmin: !!platformUser?.is_active && platformUser.role === 'super_admin',
   };
 }
@@ -36,5 +44,5 @@ export async function getSessionContext(token?: string | null): Promise<SessionC
 /** Vrai si la session peut accéder à une ligne appartenant à cette organisation. */
 export function canAccessOrganization(ctx: SessionContext, organizationId: string | null | undefined): boolean {
   if (ctx.isPlatformAdmin) return true;
-  return !!ctx.organizationId && organizationId === ctx.organizationId;
+  return !!ctx.organizationId && !ctx.organizationBlocked && organizationId === ctx.organizationId;
 }

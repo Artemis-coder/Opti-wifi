@@ -116,7 +116,7 @@ export async function PATCH(request: Request) {
     .eq('id', subscriptionId)
     .single();
 
-  let updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
   switch (action) {
     case 'cancel':

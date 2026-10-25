@@ -45,7 +45,7 @@ export async function GET(request: Request) {
             LIMIT 1
          ) s ON true
          LEFT JOIN subscription_plans p ON p.id = s.plan_id
-        WHERE ($1::text IS NULL OR o.status::text = $1)
+        WHERE (($1::text IS NULL AND o.status <> 'archived') OR o.status::text = $1)
           AND ($2::text IS NULL OR o.name ILIKE $2 OR o.contact_name ILIKE $2 OR o.email ILIKE $2 OR o.phone ILIKE $2)
         ORDER BY o.created_at DESC
         LIMIT $3 OFFSET $4`,

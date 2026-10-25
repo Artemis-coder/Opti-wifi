@@ -15,6 +15,7 @@ import {
   Plus,
   X,
   UserPlus,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
@@ -54,7 +55,7 @@ export default function PlatformUsersPage() {
   const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
   const [orgsLoading, setOrgsLoading] = useState(false);
 
-  const { setPlatformUser } = usePlatformAuthStore();
+  const { platformUser: currentPlatformUser, setPlatformUser } = usePlatformAuthStore();
 
 interface CreateFormState {
     email: string;
@@ -112,7 +113,12 @@ interface CreateFormState {
 
   const handleAction = async (userId: string, action: string, label: string) => {
     if (action === 'change_role') return;
-    if (!window.confirm(`Voulez-vous vraiment ${label} cet utilisateur ?`)) return;
+    const consequence: Record<string, string> = {
+      deactivate: "\n\nSon accès est coupé immédiatement. Vous pourrez le réactiver.",
+      delete: "\n\nSon accès est coupé immédiatement. Son historique (collectes, allocations) est conservé et il peut être réactivé.",
+      reset_password: '\n\nUn mot de passe temporaire sera généré ; il devra en choisir un nouveau à sa prochaine connexion.',
+    };
+    if (!window.confirm(`Voulez-vous vraiment ${label} cet utilisateur ?${consequence[action] || ''}`)) return;
 
     setActionLoading(userId);
     try {
@@ -124,12 +130,17 @@ interface CreateFormState {
       const result = await res.json();
       if (res.ok) {
         toast.success(result.message);
+        if (result.temporary_password) {
+          toast.warning(`Mot de passe temporaire : ${result.temporary_password}`, { duration: 15000 });
+        }
         setUsers((prev) =>
-          prev.map((u: PlatformUserProfile) =>
-            u.id === userId
-              ? { ...u, is_banned: action === 'deactivate' }
-              : u
-          )
+          prev.map((u: PlatformUserProfile) => {
+            if (u.id !== userId) return u;
+            if (action === 'deactivate') return { ...u, is_banned: true, is_active: false };
+            if (action === 'delete') return { ...u, is_banned: true, is_active: false, deleted_at: new Date().toISOString() };
+            if (action === 'activate') return { ...u, is_banned: false, is_active: true, deleted_at: null };
+            return u;
+          })
         );
       } else {
         toast.error(result.error || 'Erreur');
@@ -317,8 +328,11 @@ interface CreateFormState {
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={u.is_banned ? 'danger' : 'success'} className="text-xs">
-                        {u.is_banned ? 'Désactivé' : 'Actif'}
+                      <Badge
+                        variant={u.deleted_at ? 'neutral' : u.is_banned || !u.is_active ? 'danger' : 'success'}
+                        className="text-xs"
+                      >
+                        {u.deleted_at ? 'Supprimé' : u.is_banned || !u.is_active ? 'Suspendu' : 'Actif'}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-slate-500">
@@ -326,28 +340,42 @@ interface CreateFormState {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-1 justify-end">
-                        {u.is_banned ? (
+                        {currentPlatformUser?.auth_user_id === u.id ? (
+                          <span className="text-[11px] text-slate-400 self-center mr-1">Vous</span>
+                        ) : u.deleted_at || u.is_banned || !u.is_active ? (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="p-1 h-7 text-emerald-600 hover:text-emerald-700"
                             onClick={() => handleAction(u.id, 'activate', 'réactiver')}
                             disabled={actionLoading === u.id}
-                            title="Réactiver"
+                            title="Réactiver (rétablir l'accès)"
                           >
                             {actionLoading === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
                           </Button>
                         ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1 h-7 text-red-600 hover:text-red-700"
-                            onClick={() => handleAction(u.id, 'deactivate', 'désactiver')}
-                            disabled={actionLoading === u.id}
-                            title="Désactiver"
-                          >
-                            {actionLoading === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-1 h-7 text-red-600 hover:text-red-700"
+                              onClick={() => handleAction(u.id, 'deactivate', 'suspendre')}
+                              disabled={actionLoading === u.id}
+                              title="Suspendre (couper l'accès)"
+                            >
+                              {actionLoading === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-1 h-7 text-red-700 hover:text-red-800"
+                              onClick={() => handleAction(u.id, 'delete', 'supprimer')}
+                              disabled={actionLoading === u.id}
+                              title="Supprimer (couper l'accès, historique conservé)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
                         )}
                         <Button
                           variant="ghost"
@@ -366,6 +394,7 @@ interface CreateFormState {
                             </Button>
                           </Link>
                         )}
+                        {currentPlatformUser?.auth_user_id !== u.id && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -376,6 +405,7 @@ interface CreateFormState {
                         >
                           <UserPlus className="w-3.5 h-3.5" />
                         </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
