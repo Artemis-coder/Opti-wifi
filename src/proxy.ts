@@ -61,7 +61,7 @@ function checkCSRF(request: NextRequest): boolean {
   return true;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const user = token ? await verifyNeonToken(token) : null;
@@ -123,8 +123,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Client app routes ---
+  // Utilisateur déjà connecté sur / ou /login : le super admin va au back-office, les clients à leur espace.
   if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const isSuperAdmin =
+      user.role === 'super_admin' || user.app_metadata?.role === 'super_admin';
+    return NextResponse.redirect(new URL(isSuperAdmin ? '/platform/dashboard' : '/dashboard', request.url));
   }
 
   if (isClientRoute && !user) {
