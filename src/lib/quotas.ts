@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/neon/server';
+import { getSessionContext } from '@/lib/tenant';
 
 export type QuotaType = 'users' | 'points_of_sale' | 'tickets_per_month';
 
@@ -172,16 +173,10 @@ function getQuotaLabel(quota: QuotaType): string {
  * Get the organization ID for the current authenticated user
  */
 export async function getUserOrganizationId(
-  supabase: ReturnType<typeof createServerClient>
+  _supabase: ReturnType<typeof createServerClient>
 ): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single();
-
-  return profile?.organization_id ?? null;
+  // Organisation de l'utilisateur, uniquement si elle n'est pas suspendue / supprimée / en attente
+  const ctx = await getSessionContext();
+  if (!ctx || ctx.organizationBlocked) return null;
+  return ctx.organizationId;
 }

@@ -172,21 +172,64 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { userId, action } = body;
 
-    if (!userId || !action) {
+    if (!userId || !UUID_RE.test(userId) || !action) {
       return NextResponse.json({ error: 'userId et action requis' }, { status: 400 });
     }
 
+    // Garde-fous : pas d'action sur son propre compte, jamais de plateforme sans super admin actif
+    if (['deactivate', 'delete', 'change_role'].includes(action)) {
+      if (userId === auth.user.id) {
+        return NextResponse.json({ error: 'Vous ne pouvez pas effectuer cette action sur votre propre compte.' }, { status: 400 });
+      }
+      const target = await query(
+        `SELECT 1 FROM platform_users WHERE auth_user_id = $1 AND role = 'super_admin' AND is_active = true`,
+        [userId]
+      );
+      if (target.rows[0]) {
+        const others = await query(
+          `SELECT COUNT(*) AS n FROM platform_users WHERE role = 'super_admin' AND is_active = true AND auth_user_id <> $1`,
+          [userId]
+        );
+        if (Number(others.rows[0]?.n || 0) < 1) {
+          return NextResponse.json({ error: 'Impossible : ce compte est le dernier super admin actif.' }, { status: 400 });
+        }
+      }
+    }
+
+    const audit = (name: string, data: Record<string, unknown>) =>
+      query(
+        `INSERT INTO platform_audit_logs (platform_user_id, action, entity_type, entity_id, new_data)
+         VALUES ($1, $2, 'user', $3, $4)`,
+        [auth.platformUser.id, name, userId, JSON.stringify(data)]
+      );
+
     switch (action) {
+      // Suspendre : accès coupé immédiatement (compte bloqué), réactivation possible
       case 'deactivate': {
         await query(`UPDATE profiles SET is_active = false WHERE id = $1`, [userId]);
         await query(`UPDATE users SET banned_until = NOW() + INTERVAL '876000h' WHERE id = $1`, [userId]);
-        return NextResponse.json({ success: true, message: 'Utilisateur désactivé' });
+        await query(`UPDATE platform_users SET is_active = false WHERE auth_user_id = $1`, [userId]);
+        await audit('user.suspend', { is_active: false });
+        return NextResponse.json({ success: true, message: 'Utilisateur suspendu : son accès est coupé.' });
       }
 
+      // Réactiver (aussi après une suppression)
       case 'activate': {
-        await query(`UPDATE profiles SET is_active = true WHERE id = $1`, [userId]);
+        await query(`UPDATE profiles SET is_active = true, deleted_at = NULL WHERE id = $1`, [userId]);
         await query(`UPDATE users SET banned_until = NULL WHERE id = $1`, [userId]);
-        return NextResponse.json({ success: true, message: 'Utilisateur activé' });
+        await query(`UPDATE platform_users SET is_active = true WHERE auth_user_id = $1`, [userId]);
+        await audit('user.reactivate', { is_active: true });
+        return NextResponse.json({ success: true, message: 'Utilisateur réactivé : son accès est rétabli.' });
+      }
+
+      // Supprimer : suppression douce, l'historique (collectes, allocations) reste intact
+      case 'delete': {
+        await query(`UPDATE profiles SET is_active = false, deleted_at = NOW() WHERE id = $1`, [userId]);
+        await query(`UPDATE users SET banned_until = NOW() + INTERVAL '876000h' WHERE id = $1`, [userId]);
+        await query(`UPDATE platform_users SET is_active = false WHERE auth_user_id = $1`, [userId]);
+        await query(`UPDATE points_of_sale SET collecteur_id = NULL WHERE collecteur_id = $1`, [userId]);
+        await audit('user.delete', { deleted: true });
+        return NextResponse.json({ success: true, message: 'Utilisateur supprimé : son accès est coupé, son historique est conservé.' });
       }
 
       case 'change_role': {

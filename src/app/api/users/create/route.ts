@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (!ctx) {
       return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
     }
-    if (ctx.role !== 'administrateur' || !ctx.organizationId) {
+    if (ctx.role !== 'administrateur' || !ctx.organizationId || ctx.organizationBlocked) {
       return NextResponse.json({ error: 'Action réservée aux administrateurs.' }, { status: 403 });
     }
     const orgId = ctx.organizationId;

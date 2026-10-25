@@ -15,6 +15,7 @@ import {
   Zap,
   AlertCircle,
   Activity,
+  Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -43,9 +44,9 @@ const STATUS_CONFIG: Record<OrganizationStatus, { label: string; color: 'success
   active: { label: 'Actif', color: 'success' },
   expiring: { label: 'Expire bientôt', color: 'warning' },
   expired: { label: 'Expiré', color: 'danger' },
-  suspended: { label: 'Désactivé', color: 'danger' },
+  suspended: { label: 'Suspendu', color: 'danger' },
   cancelled: { label: 'Refusé', color: 'neutral' },
-  archived: { label: 'Archivé', color: 'neutral' },
+  archived: { label: 'Supprimé', color: 'neutral' },
 };
 
 const STATUS_ICONS: Record<OrganizationStatus, React.ElementType> = {
@@ -66,7 +67,8 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'trial', label: 'Essai' },
   { value: 'expiring', label: 'Expire bientôt' },
   { value: 'expired', label: 'Expirés' },
-  { value: 'suspended', label: 'Désactivés' },
+  { value: 'suspended', label: 'Suspendus' },
+  { value: 'archived', label: 'Supprimés' },
   { value: 'cancelled', label: 'Refusés' },
 ];
 
@@ -111,13 +113,18 @@ export default function PlatformClientsPage() {
     const actionLabels: Record<string, string> = {
       approve: 'valider',
       activate: "activer l'espace de",
-      suspend: "désactiver l'espace de",
-      reactivate: "activer l'espace de",
+      suspend: "suspendre l'espace de",
+      reactivate: "réactiver l'espace de",
       cancel: 'refuser',
+      archive: 'supprimer',
     };
     const label = actionLabels[action] || action;
+    const consequence: Record<string, string> = {
+      suspend: "\n\nTous ses membres perdent immédiatement l'accès. Vous pourrez le réactiver.",
+      archive: "\n\nTous ses membres perdent immédiatement l'accès. Les données sont conservées et l'organisation peut être réactivée.",
+    };
 
-    if (!window.confirm(`Voulez-vous vraiment ${label} « ${orgName} » ?`)) {
+    if (!window.confirm(`Voulez-vous vraiment ${label} « ${orgName} » ?${consequence[action] || ''}`)) {
       return;
     }
 
@@ -221,7 +228,7 @@ export default function PlatformClientsPage() {
         </Card>
         <Card className="border-l-4 border-l-red-500">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Désactivés</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase">Suspendus</span>
             <PauseCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{suspendedCount}</p>
@@ -352,14 +359,14 @@ export default function PlatformClientsPage() {
                               <span>Valider</span>
                             </Button>
                           )}
-                          {(client.status === 'suspended' || client.status === 'cancelled') && (
+                          {(client.status === 'suspended' || client.status === 'cancelled' || client.status === 'archived') && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="p-1 h-7 text-emerald-600 hover:text-emerald-700"
                               onClick={() => handleStatusAction(client.id, 'reactivate', client.name)}
                               disabled={!!isActionDisabled}
-                              title="Activer l'espace"
+                              title="Réactiver l'espace"
                             >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                             </Button>
@@ -371,9 +378,21 @@ export default function PlatformClientsPage() {
                               className="p-1 h-7 text-red-600 hover:text-red-700"
                               onClick={() => handleStatusAction(client.id, 'suspend', client.name)}
                               disabled={!!isActionDisabled}
-                              title="Désactiver l'espace"
+                              title="Suspendre l'espace"
                             >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <PauseCircle className="w-3.5 h-3.5" />}
+                            </Button>
+                          )}
+                          {client.status !== 'archived' && client.status !== 'pending_approval' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-1 h-7 text-red-700 hover:text-red-800"
+                              onClick={() => handleStatusAction(client.id, 'archive', client.name)}
+                              disabled={!!isActionDisabled}
+                              title="Supprimer l'organisation"
+                            >
+                              {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                             </Button>
                           )}
                           <Link href={`/platform/clients/${client.id}`}>

@@ -25,6 +25,7 @@ import {
   BarChart3,
   Wallet,
   ExternalLink,
+  Trash2,
   KeyRound,
   Loader2,
   AlertCircle,
@@ -95,9 +96,9 @@ const STATUS_CONFIG: Record<OrganizationStatus, { label: string; color: 'success
   active: { label: 'Actif', color: 'success' },
   expiring: { label: 'Expire bientôt', color: 'warning' },
   expired: { label: 'Expiré', color: 'danger' },
-  suspended: { label: 'Désactivé', color: 'danger' },
+  suspended: { label: 'Suspendu', color: 'danger' },
   cancelled: { label: 'Refusé', color: 'neutral' },
-  archived: { label: 'Archivé', color: 'neutral' },
+  archived: { label: 'Supprimé', color: 'neutral' },
 };
 
 const SUB_STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
@@ -223,8 +224,8 @@ export default function ClientDetailPage() {
   const getSubAction = () => {
     if (!org) return null;
     if (org.status === 'pending_approval') return { action: 'approve', label: "Valider l'inscription" };
-    if (org.status === 'suspended' || org.status === 'cancelled') return { action: 'reactivate', label: "Activer l'espace" };
-    if (org.status === 'active' || org.status === 'trial' || org.status === 'expiring' || org.status === 'expired') return { action: 'suspend', label: "Désactiver l'espace" };
+    if (org.status === 'suspended' || org.status === 'cancelled' || org.status === 'archived') return { action: 'reactivate', label: "Réactiver l'espace" };
+    if (org.status === 'active' || org.status === 'trial' || org.status === 'expiring' || org.status === 'expired') return { action: 'suspend', label: "Suspendre l'espace" };
     return null;
   };
 
@@ -260,7 +261,19 @@ export default function ClientDetailPage() {
               {subAction.label}
             </Button>
           )}
-          {org.status !== 'pending_approval' && org.status !== 'cancelled' && (
+          {org.status !== 'pending_approval' && org.status !== 'archived' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-red-700 border-red-200 hover:bg-red-50"
+              onClick={() => handleStatusAction('archive', 'supprimer')}
+              disabled={actionLoading}
+            >
+              <Trash2 className="w-4 h-4" />
+              Supprimer
+            </Button>
+          )}
+          {org.status !== 'pending_approval' && org.status !== 'cancelled' && org.status !== 'archived' && (
             <Button variant="primary" size="sm" className="gap-2" onClick={() => setLicenseModalOpen(true)}>
               <KeyRound className="w-4 h-4" />
               Activer une licence
@@ -293,6 +306,14 @@ export default function ClientDetailPage() {
       >
         <p className="text-sm text-slate-700 dark:text-slate-300">
           Voulez-vous vraiment <strong>{confirmModalOpen.label}</strong> ce compte client ?
+          {(confirmModalOpen.action === 'suspend' || confirmModalOpen.action === 'archive') && (
+            <span className="block mt-2 text-xs text-red-600">
+              Tous ses membres perdent immédiatement l&apos;accès.{' '}
+              {confirmModalOpen.action === 'archive'
+                ? 'Les données sont conservées et l’organisation peut être réactivée.'
+                : 'Vous pourrez réactiver l’espace à tout moment.'}
+            </span>
+          )}
           Cette action affectera immédiatement l&apos;accès du client à la plateforme.
         </p>
         <div className="flex justify-end gap-2 pt-4">

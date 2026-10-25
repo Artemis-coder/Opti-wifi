@@ -39,6 +39,10 @@ const PLATFORM_ADMIN_TABLES = new Set([...Object.keys(CLIENT_POLICIES)]);
 // Tables lisibles via une jointure (alias:table(...)) depuis une requête autorisée.
 const JOINABLE_TABLES = new Set(Object.keys(CLIENT_POLICIES).filter((t) => t !== 'platform_users'));
 
+// Organisation suspendue / supprimée / refusée / en attente : lecture seule de ce qui sert
+// à afficher l'écran de statut (profil, organisation, abonnement), rien d'autre.
+const BLOCKED_ORG_READABLE_TABLES = new Set(['profiles', 'organizations', 'subscriptions', 'subscription_plans', 'license_requests', 'platform_users']);
+
 // Colonnes qu'un client ne peut jamais fixer lui-même.
 const PROTECTED_COLUMNS = new Set(['organization_id', 'organisation_id']);
 
@@ -92,6 +96,8 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
     if (!PLATFORM_ADMIN_TABLES.has(tableName) || action === 'rpc') throw new ForbiddenError('Action non autorisée');
   } else if (!policy.actions.includes(action)) {
     throw new ForbiddenError('Action non autorisée');
+  } else if (ctx.organizationBlocked && (action !== 'select' || !BLOCKED_ORG_READABLE_TABLES.has(tableName))) {
+    throw new ForbiddenError('Accès suspendu pour cette organisation');
   }
 
   const filters = Array.isArray(body.filters) ? [...body.filters] : [];

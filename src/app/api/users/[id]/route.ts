@@ -84,7 +84,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       .eq('id', callerUser.id)
       .single();
 
-    if (!callerProfile || callerProfile.role !== 'administrateur') {
+    const callerCtx = await getSessionContext();
+    if (!callerProfile || callerProfile.role !== 'administrateur' || !callerCtx || callerCtx.organizationBlocked) {
       return NextResponse.json({ error: 'Action réservée aux administrateurs.' }, { status: 403 });
     }
 

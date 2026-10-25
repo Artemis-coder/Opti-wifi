@@ -2,6 +2,15 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+const ACTION_MESSAGES: Record<string, string> = {
+  approve: 'inscription validée',
+  activate: 'espace activé',
+  reactivate: 'espace réactivé, accès rétabli',
+  suspend: 'espace suspendu, accès coupé pour tous ses membres',
+  cancel: 'inscription refusée',
+  archive: 'organisation supprimée, accès coupé (données conservées, réactivation possible)',
+};
+
 export async function PATCH(request: Request) {
   const cookieStore = await cookies();
   const supabase = createServerClient(undefined, undefined, {
@@ -53,7 +62,7 @@ export async function PATCH(request: Request) {
   }
 
   let newStatus: string;
-  const validActions = ['approve', 'activate', 'suspend', 'reactivate', 'cancel'];
+  const validActions = ['approve', 'activate', 'suspend', 'reactivate', 'cancel', 'archive'];
 
   if (!validActions.includes(action)) {
     return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
@@ -70,6 +79,10 @@ export async function PATCH(request: Request) {
       break;
     case 'cancel':
       newStatus = 'cancelled';
+      break;
+    case 'archive':
+      // Suppression réversible : accès coupé pour tous les membres, données conservées
+      newStatus = 'archived';
       break;
     default:
       return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
@@ -98,7 +111,7 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({
     success: true,
-    message: `Organisation "${org.name}" ${action} — nouveau statut: ${newStatus}`,
+    message: `« ${org.name} » : ${ACTION_MESSAGES[action] || 'statut mis à jour'}.`,
     new_status: newStatus,
   });
 }
