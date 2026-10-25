@@ -28,7 +28,14 @@ import {
   resolveOrganization,
   searchUsers,
 } from '@/lib/bot/admin-data';
-import { isOpenModelAvailable, openModelCompletion, type ChatMessage, type FunctionTool, type OpenModel } from '@/lib/bot/open-models';
+import {
+  isOpenModelAvailable,
+  openModelCompletion,
+  OpenModelsUnavailableError,
+  type ChatMessage,
+  type FunctionTool,
+  type OpenModel,
+} from '@/lib/bot/open-models';
 
 export const CLAUDE_MODEL = 'claude-opus-5-5';
 const MAX_TOOL_ROUNDS = 6;
@@ -487,11 +494,17 @@ class AssistantError extends Error {
   }
 }
 
-async function executeTools(chatId: string, calls: { id: string; name: string; input: ToolInput }[]) {
+/** Résultat d'outil en JSON compact (sans champs vides), tronqué pour les modèles à petit contexte. */
+function compactJson(value: unknown, maxChars: number): string {
+  const json = JSON.stringify(value, (_k, v) => (v === null || v === undefined || v === '' ? undefined : v));
+  return json.length > maxChars ? `${json.slice(0, maxChars)}… [tronqué : demandez un filtre plus précis]` : json;
+}
+
+async function executeTools(chatId: string, calls: { id: string; name: string; input: ToolInput }[], maxChars: number) {
   return Promise.all(
     calls.map(async (c) => {
       try {
-        return { id: c.id, content: JSON.stringify(await runTool(chatId, c.name, c.input)), isError: false };
+        return { id: c.id, content: compactJson(await runTool(chatId, c.name, c.input), maxChars), isError: false };
       } catch (err) {
         console.error(`Bot tool ${c.name} error:`, err);
         return { id: c.id, content: 'Erreur technique pendant la lecture des données.', isError: true };
@@ -529,7 +542,7 @@ async function runClaudeLoop(chatId: string, history: Anthropic.MessageParam[], 
       messages.push({ role: 'assistant', content: response.content as Anthropic.ContentBlockParam[] });
       if (round === 0 && deliver) await sendTyping(chatId);
       toolsRan = true;
-      const results = await executeTools(chatId, toolUses.map((t) => ({ id: t.id, name: t.name, input: (t.input || {}) as ToolInput })));
+      const results = await executeTools(chatId, toolUses.map((t) => ({ id: t.id, name: t.name, input: (t.input || {}) as ToolInput })), 30_000);
       messages.push({
         role: 'user',
         content: results.map((r): Anthropic.ToolResultBlockParam => ({ type: 'tool_result', tool_use_id: r.id, content: r.content, ...(r.isError ? { is_error: true } : {}) })),
@@ -570,7 +583,7 @@ async function runOpenModelLoop(chatId: string, history: Anthropic.MessageParam[
       }
       return { id: c.id, name: c.function.name, input };
     });
-    for (const r of await executeTools(chatId, calls)) messages.push({ role: 'tool', tool_call_id: r.id, content: r.content });
+    for (const r of await executeTools(chatId, calls, 6_000)) messages.push({ role: 'tool', tool_call_id: r.id, content: r.content });
   }
   return { text: TOO_MANY_STEPS, label: model?.label || 'modèle open source' };
 }
@@ -582,6 +595,13 @@ function claudeErrorMessage(err: unknown): string {
     return '❌ Crédit API Anthropic épuisé : rechargez-le sur console.anthropic.com.';
   }
   return '❌ Claude est momentanément indisponible. Les boutons du menu restent utilisables, réessayez dans un instant.';
+}
+
+function claudeShortReason(err: unknown): string {
+  if (err instanceof Anthropic.AuthenticationError) return 'clé API refusée';
+  if (err instanceof Anthropic.RateLimitError) return 'quota atteint';
+  if (err instanceof Anthropic.APIError && err.status === 400 && /credit|billing/i.test(err.message)) return 'crédit API épuisé (console.anthropic.com)';
+  return 'indisponible';
 }
 
 export function isAssistantAvailable(): boolean {
@@ -597,7 +617,7 @@ export function isAssistantAvailable(): boolean {
 export async function runAssistant(
   chatId: string,
   userText: string,
-  opts: { deliver?: boolean } = {}
+  opts: { deliver?: boolean; fallbackView?: () => Promise<string> } = {}
 ): Promise<{ text: string; model: string; ok: boolean }> {
   const deliver = opts.deliver !== false;
   if (deliver) await sendTyping(chatId);
@@ -625,6 +645,7 @@ export async function runAssistant(
     }
   }
 
+  let openError: OpenModelsUnavailableError | null = null;
   if (!ok && !text && isOpenModelAvailable()) {
     try {
       const result = await runOpenModelLoop(chatId, history, userContent);
@@ -632,14 +653,30 @@ export async function runAssistant(
       model = result.label;
       ok = Boolean(result.text);
     } catch (err) {
-      console.error('Open model assistant error:', err);
+      console.error('Open model assistant error:', err instanceof OpenModelsUnavailableError ? err.summary() : err);
+      if (err instanceof OpenModelsUnavailableError) openError = err;
+    }
+  }
+
+  // Bouton du menu : sans IA, on affiche directement les données
+  if (!ok && !text && opts.fallbackView) {
+    try {
+      text = `${await opts.fallbackView()}\n\n<i>— affichage direct, l’IA est indisponible pour le moment</i>`;
+      model = 'affichage direct';
+      ok = true;
+    } catch (err) {
+      console.error('Bot fallback view error:', err);
     }
   }
 
   if (!text) {
-    text = claudeError
-      ? claudeErrorMessage(claudeError)
-      : '❌ Aucun modèle d’IA ne répond pour le moment. Les boutons du menu restent utilisables, réessayez dans un instant.';
+    const reasons = [
+      claudeError ? `Claude : ${claudeShortReason(claudeError)}` : null,
+      ...(openError?.lines() || []),
+    ].filter(Boolean);
+    text = reasons.length
+      ? `❌ Aucune IA n’a pu répondre pour le moment.\n${reasons.map((r) => `• ${r}`).join('\n')}\n\nLes boutons du menu affichent les données sans IA.`
+      : '❌ Aucun modèle d’IA ne répond pour le moment. Les boutons du menu affichent les données sans IA.';
   }
 
   await query(`INSERT INTO conversation_messages (chat_id, role, content, metadata) VALUES ($1, 'assistant', $2, $3)`, [

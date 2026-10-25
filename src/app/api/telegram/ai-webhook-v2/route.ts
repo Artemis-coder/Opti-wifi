@@ -53,7 +53,7 @@ import {
   sendBotMessage,
   toTelegramHtml,
 } from '@/lib/bot/assistant';
-import { getTechnicalStatus } from '@/lib/bot/admin-data';
+import { MENU_VIEWS, technicalStatusView } from '@/lib/bot/fallback-views';
 
 const SYSTEM_PROMPT = `Tu es l'assistant IA expert d'OptiWifi, une plateforme SaaS de gestion WiFi.
 
@@ -206,7 +206,7 @@ async function handleClaudeMessage(message: any, chatId: string, session: any) {
     return;
   }
 
-  await runAssistant(chatId, MENU_PROMPTS[text] || text);
+  await runAssistant(chatId, MENU_PROMPTS[text] || text, { fallbackView: MENU_VIEWS[text] });
 }
 
 async function handleTextMessage(text: string, chatId: string, userName: string, session: any) {
@@ -352,7 +352,7 @@ async function handleMenuButton(text: string, chatId: string, userName: string, 
   // Main Menu Buttons
   if (text === '📊 Statut Projet') {
     await updateSessionContext(chatId, 'project');
-    await sendMessageWithKeyboard(chatId, formatTechnicalStatus(await getTechnicalStatus()), PROJECT_MENU);
+    await sendMessageWithKeyboard(chatId, await technicalStatusView(), PROJECT_MENU);
     return true;
   }
 
@@ -1373,21 +1373,4 @@ function getContextualMenu(context: string) {
     new_project: NEW_PROJECT_MENU,
   };
   return menus[context] || MAIN_MENU;
-}
-function formatTechnicalStatus(status: Awaited<ReturnType<typeof getTechnicalStatus>>): string {
-  const fmt = (d: string) => new Date(d).toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'short', timeStyle: 'short' });
-  const deployments = (list: unknown) =>
-    Array.isArray(list)
-      ? list.map((d) => `• ${d.etat === 'READY' ? '✅' : d.etat === 'ERROR' ? '❌' : '🔄'} ${fmt(d.date)} — ${toTelegramHtml(d.message || d.commit || '')} <code>${d.commit || ''}</code>`).join('\n') || '• aucun'
-      : `• ⚠️ ${toTelegramHtml((list as { erreur?: string })?.erreur || 'indisponible')}`;
-  const v = status.version_en_cours;
-  const db = status.base_de_donnees as { ok?: boolean; latence_ms?: number };
-  return (
-    `📊 <b>Statut du projet OptiSpace</b>\n\n` +
-    `🌐 https://www.optiwifi.site\n` +
-    `🏷️ <b>Version en cours :</b> ${v.environnement} · <code>${v.commit || '—'}</code> ${toTelegramHtml(v.message || '')}\n` +
-    `🗄️ <b>Base de données :</b> ${db.ok ? `✅ OK (${db.latence_ms} ms)` : '❌ injoignable'}\n\n` +
-    `🚀 <b>Production</b>\n${deployments(status.deploiements_production)}\n\n` +
-    `🧪 <b>Preview (develop)</b>\n${deployments(status.deploiements_preview)}`
-  );
 }
