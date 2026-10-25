@@ -1,122 +1,73 @@
-import { createServerClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/neon/admin';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { requirePlatformAdmin } from '@/lib/supabase/platform';
+import { query } from '@/lib/neon/db';
 
-export async function GET(request: Request) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(undefined, undefined, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      },
-    },
-  });
+// Paramètres de la plateforme (table platform_settings, clé primaire « key », valeur JSONB).
+// Requêtes SQL directes : l'upsert du query builder fait ON CONFLICT (id), colonne absente de cette table.
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+const KEY_RE = /^[a-z][a-z0-9_]{1,63}$/;
+const MAX_VALUE_LENGTH = 2000;
 
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+export async function GET() {
+  const auth = await requirePlatformAdmin();
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const { data: platformUser } = await supabase
-    .from('platform_users')
-    .select('role, is_active')
-    .eq('auth_user_id', user.id)
-    .single();
-
-  if (!platformUser || !platformUser.is_active || platformUser.role !== 'super_admin') {
-    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  try {
+    const { rows } = await query('SELECT key, value, description, updated_at FROM platform_settings ORDER BY key');
+    return NextResponse.json({ data: rows });
+  } catch (err) {
+    console.error('Platform settings GET error:', err);
+    return NextResponse.json({ error: 'Erreur lors du chargement des paramètres' }, { status: 500 });
   }
-
-  const adminClient = createAdminClient();
-
-  const { data: settings, error } = await adminClient
-    .from('platform_settings')
-    .select('*');
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ data: settings });
 }
 
 export async function PATCH(request: Request) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(undefined, undefined, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  const auth = await requirePlatformAdmin();
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const { data: pu } = await supabase
-    .from('platform_users')
-    .select('id, role, is_active')
-    .eq('auth_user_id', user.id)
-    .single();
+  const body = await request.json().catch(() => ({}));
+  const { key, value } = body as { key?: string; value?: unknown };
 
-  if (!pu || !pu.is_active || pu.role !== 'super_admin') {
-    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  if (!key || !KEY_RE.test(key) || value === undefined) {
+    return NextResponse.json({ error: 'Paramètre invalide' }, { status: 400 });
+  }
+  if (!['string', 'number', 'boolean'].includes(typeof value) && value !== null) {
+    return NextResponse.json({ error: 'Valeur invalide' }, { status: 400 });
+  }
+  const json = JSON.stringify(typeof value === 'string' ? value.trim() : value);
+  if (json.length > MAX_VALUE_LENGTH) {
+    return NextResponse.json({ error: 'Valeur trop longue' }, { status: 400 });
   }
 
-  const body = await request.json();
-  const { key, value } = body;
+  try {
+    const old = await query('SELECT value FROM platform_settings WHERE key = $1', [key]);
+    const { rows } = await query(
+      `INSERT INTO platform_settings (key, value, updated_at)
+       VALUES ($1, $2::jsonb, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+       RETURNING key, value, updated_at`,
+      [key, json]
+    );
 
-  if (!key || value === undefined) {
-    return NextResponse.json({ error: 'key et value requis' }, { status: 400 });
+    await query(
+      `INSERT INTO platform_audit_logs (platform_user_id, action, entity_type, entity_id, old_data, new_data, ip_address)
+       VALUES ($1, 'platform_settings.update', 'platform_settings', $2, $3, $4, $5)`,
+      [
+        auth.platformUser.id,
+        key,
+        JSON.stringify({ value: old.rows[0]?.value ?? null }),
+        JSON.stringify({ value: rows[0].value }),
+        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
+      ]
+    );
+
+    return NextResponse.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('Platform settings PATCH error:', err);
+    return NextResponse.json({ error: "Erreur lors de l'enregistrement du paramètre" }, { status: 500 });
   }
-
-  const adminClient = createAdminClient();
-
-  const { data: oldSetting } = await adminClient
-    .from('platform_settings')
-    .select('value')
-    .eq('key', key)
-    .maybeSingle();
-
-  const _old = oldSetting?.value;
-
-  const { data: setting, error } = await adminClient
-    .from('platform_settings')
-    .upsert({ key, value, updated_at: new Date().toISOString() })
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  await adminClient.from('platform_audit_logs').insert({
-    platform_user_id: pu.id,
-    action: 'platform_settings.update',
-    entity_type: 'platform_settings',
-    entity_id: key,
-    new_data: { key, value },
-    ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
-  });
-
-  return NextResponse.json({ success: true, data: setting });
 }

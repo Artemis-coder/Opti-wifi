@@ -2,20 +2,39 @@ import { adminClient } from '@/lib/neon/admin';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
+import { checkQuota } from '@/lib/quotas';
+import { getSessionContext } from '@/lib/tenant';
+import { setMustChangePassword } from '@/lib/password-change';
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = adminClient;
 
+    // Seul un administrateur d'organisation peut ajouter un membre à SON organisation
+    const ctx = await getSessionContext();
+    if (!ctx) {
+      return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+    }
+    if (ctx.role !== 'administrateur' || !ctx.organizationId) {
+      return NextResponse.json({ error: 'Action réservée aux administrateurs.' }, { status: 403 });
+    }
+    const orgId = ctx.organizationId;
+
     const body = await request.json();
-    const { nom, email, role, telephone, mot_de_passe } = body;
+    const { nom, email, telephone, mot_de_passe } = body;
+    const role = body.role || 'collecteur';
 
     if (!nom || !email || !mot_de_passe) {
       return NextResponse.json(
         { error: 'Les champs nom, email et mot de passe sont requis.' },
         { status: 400 }
       );
+    }
+    if (!['administrateur', 'collecteur'].includes(role)) {
+      return NextResponse.json({ error: 'Rôle invalide.' }, { status: 400 });
+    }
+    if (typeof mot_de_passe !== 'string' || mot_de_passe.length < 6) {
+      return NextResponse.json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' }, { status: 400 });
     }
 
     const cookieStore = await cookies();
@@ -26,20 +45,15 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const { data: { user: callerUser } } = await clientSupabase.auth.getUser();
-    const orgId = callerUser ? await getUserOrganizationId(clientSupabase) : null;
-
-    if (orgId) {
-      const quotaCheck = await checkQuota(clientSupabase, orgId, 'users');
-      if (!quotaCheck.allowed) {
-        return NextResponse.json({
-          error: quotaCheck.message
-        }, { status: 403 });
-      }
+    const quotaCheck = await checkQuota(clientSupabase, orgId, 'users');
+    if (!quotaCheck.allowed) {
+      return NextResponse.json({
+        error: quotaCheck.message
+      }, { status: 403 });
     }
 
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
+      email: String(email).trim().toLowerCase(),
       password: mot_de_passe,
       email_confirm: true,
       user_metadata: {
@@ -62,12 +76,15 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+      return NextResponse.json({ error: 'Impossible de créer ce compte (email déjà utilisé ?).' }, { status: 400 });
     }
 
     if (!authData?.user) {
       return NextResponse.json({ error: 'Erreur lors de la création de l\'utilisateur.' }, { status: 500 });
     }
+
+    // Mot de passe fixé par l'administrateur : le membre devra choisir le sien à sa première connexion
+    await setMustChangePassword(authData.user.id, true);
 
     const profile: Record<string, unknown> = {
       id: authData.user.id,
@@ -105,10 +122,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('Create user error:', error);
-    const message = error instanceof Error ? error.message : 'Erreur interne du serveur.';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
   }
 }

@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
     };
 
     const response = NextResponse.json({
+      // Mot de passe temporaire : la page de connexion envoie vers /change-password
+      must_change_password: user.app_metadata?.must_change_password === true,
       user: sessionUser,
       session: {
         access_token: token,

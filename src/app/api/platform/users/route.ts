@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       `WITH u AS (
          INSERT INTO users (email, password_hash, email_confirmed, user_metadata, app_metadata, created_at, updated_at)
          VALUES ($1, $2, true, jsonb_build_object('nom', $3::text, 'role', $4::text, 'organization_id', $5::text),
-                 jsonb_build_object('role', $4::text), NOW(), NOW())
+                 jsonb_build_object('role', $4::text, 'must_change_password', true), NOW(), NOW())
          RETURNING id
        )
        INSERT INTO profiles (id, nom, email, role, telephone, devise, organization_id, is_active)
@@ -238,7 +238,15 @@ export async function PATCH(request: NextRequest) {
 
         const plainPassword = `OptiWifi_${crypto.randomUUID().slice(0, 12)}!`;
         const passwordHash = await hashPassword(plainPassword);
-        await query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, userId]);
+        // Mot de passe temporaire : l'utilisateur devra choisir le sien à la prochaine connexion
+        await query(
+          `UPDATE users
+              SET password_hash = $1,
+                  app_metadata = COALESCE(app_metadata, '{}'::jsonb) || '{"must_change_password": true}'::jsonb,
+                  updated_at = NOW()
+            WHERE id = $2`,
+          [passwordHash, userId]
+        );
 
         return NextResponse.json({
           success: true,
