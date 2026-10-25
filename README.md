@@ -17,6 +17,10 @@
   <a href="#déploiement">☁️ Déploiement</a>
 </p>
 
+<p align="center">
+  <strong>Version actuelle : v1.2.0</strong> — <a href="./RELEASE_NOTES_v1.2.0.md">notes de version</a>
+</p>
+
 ---
 
 ## Stack Technique
@@ -26,13 +30,13 @@
 | **Framework** | Next.js 16 (App Router), React 19, TypeScript 5 |
 | **Styling** | Tailwind CSS 4, Design System Material 3 personnalisé |
 | **Base de données** | Neon (PostgreSQL serverless) — migré depuis Supabase |
-| **Auth** | Supabase Auth (SSR) + JWT custom pour Edge Runtime |
+| **Auth** | JWT maison (cookie `neon-auth-token`, bcrypt) vérifié par le proxy Next.js (`src/proxy.ts`) |
 | **State Management** | Zustand (auth, spaces, platform) |
 | **Formulaires** | React Hook Form + Zod |
 | **Graphiques** | Recharts |
 | **UI Components** | Lucide React (icônes), Sonner (toasts) |
 | **Email** | Nodemailer (SMTP Gmail) |
-| **Déploiement** | Vercel (auto-deploy depuis `main`) |
+| **Déploiement** | Vercel — `main` → production, `develop` → Preview (`dev.optiwifi.site`) |
 | **Monnaie** | FCFA (XOF) — marché Afrique francophone |
 
 ---
@@ -95,8 +99,22 @@
 - Création de comptes avec attribution de rôle
 
 ### ⚙️ Paramètres
-- Configuration du profil et de l'organisation
-- Gestion de l'abonnement
+- Configuration du profil, informations de l'organisation et rôle
+
+### 💳 Abonnement & Licences
+- Forfait actuel, date de fin et jours restants
+- Utilisation du forfait : points de vente, membres, espaces (barres de quota)
+- Demande de renouvellement ou de changement de forfait, **validée par le super admin**
+- Quotas du forfait appliqués (membres, encaissements, allocations)
+- Accès bloqué si l'inscription est en attente, refusée, l'espace désactivé ou la licence expirée
+
+### 👑 Back-office Super Admin (`/platform`)
+- **Tableau de bord « À traiter »** : inscriptions à valider, demandes de licence, licences qui expirent, KPIs cliquables
+- **Inscriptions** : valider ou refuser les comptes créés
+- **Licences** : activer un forfait pour une durée (1 à 24 mois), prolonger, approuver / refuser les demandes
+- **Clients** : fiche détaillée, activer / désactiver un espace client
+- **Utilisateurs** : créer des administrateurs, changer un rôle, réinitialiser un mot de passe
+- **Forfaits**, abonnements, expirations, paiements, factures, journal d'audit, support, paramètres de la plateforme
 
 ### 📴 Mode Offline (Résilience Réseau)
 - Détection réseau temps réel (`useOnlineStatus`)
@@ -104,11 +122,12 @@
 - File d'attente d'actions hors-ligne avec sync automatique
 
 ### 🔐 Sécurité
-- RLS (Row Level Security) sur toutes les tables PostgreSQL
-- Protection API côté serveur (vérification de rôle)
-- Middleware Next.js pour les routes protégées
-- Pas de secrets hardcodés (`.env.local`)
-- Fonction `is_admin()` optimisée sans récursion
+- **Isolation multi-tenant côté serveur** : chaque client ne voit et ne modifie que les données de son organisation (`/api/db` + `src/lib/tenant.ts`)
+- Page de connexion unique : redirection selon le rôle (super admin / client)
+- **Mot de passe temporaire à changer** à la première connexion (`/change-password`)
+- Proxy Next.js (`src/proxy.ts`) pour les routes protégées, en-têtes HTTP de sécurité
+- Requêtes SQL paramétrées, identifiants validés, journal d'audit des actions super admin
+- Pas de secrets hardcodés (`.env.local`, `.vercelignore`)
 
 ### 📱 Mobile-First
 - Navigation bottom bar fixe sur mobile avec backdrop blur
@@ -128,7 +147,8 @@
 src/
 ├── app/
 │   ├── (auth)/
-│   │   └── login/               # Page de connexion / inscription / récupération
+│   │   ├── login/               # Connexion unique / inscription / récupération
+│   │   └── change-password/     # Choix du mot de passe après un mot de passe temporaire
 │   ├── (dashboard)/
 │   │   ├── allocations/         # Gestion & historique des allocations
 │   │   │   ├── exchange/        # Module d'échange de tickets
@@ -140,6 +160,7 @@ src/
 │   │   │   └── [id]/            # Détail POS + remise à zéro
 │   │   ├── reports/             # Rapports & exports
 │   │   ├── settings/            # Paramètres utilisateur
+│   │   ├── subscription/        # Abonnement, utilisation et demandes de licence
 │   │   ├── spaces/              # Espaces Wi-Fi & dashboard par espace
 │   │   │   └── [id]/            # Détail espace Wi-Fi
 │   │   ├── tickets/             # Types de tickets
@@ -147,8 +168,8 @@ src/
 │   │   └── layout.tsx           # Layout dashboard (sidebar + header + bottom nav)
 │   ├── api/
 │   │   ├── allocations/exchange/ # API échange de tickets
-│   │   ├── auth/                # Login, register, forgot-password
-│   │   ├── db/                  # Opérations base de données
+│   │   ├── auth/                # Login, register, change-password, session
+│   │   ├── db/                  # Passerelle de données (isolée par organisation)
 │   │   ├── platform/            # APIs admin plateforme
 │   │   ├── pos/[id]/reset/      # API remise à zéro POS
 │   │   └── users/               # Gestion utilisateurs
@@ -156,12 +177,16 @@ src/
 │   ├── platform/                # Back-office super-admin
 │   │   ├── audit-logs/          # Journaux d'audit
 │   │   ├── clients/             # Gestion clients multi-tenant
-│   │   ├── dashboard/           # Dashboard plateforme
+│   │   ├── dashboard/           # Dashboard « À traiter » + KPIs
+│   │   ├── registrations/       # Inscriptions à valider
+│   │   ├── license-requests/    # Demandes de licence
 │   │   ├── invoices/            # Facturation
 │   │   ├── payments/            # Paiements
 │   │   ├── plans/               # Plans d'abonnement
 │   │   ├── reports/             # Rapports plateforme
-│   │   ├── subscriptions/       # Abonnements
+│   │   ├── subscriptions/       # Abonnements & expirations
+│   │   ├── users/               # Utilisateurs de la plateforme
+│   │   ├── settings/            # Paramètres de la plateforme
 │   │   └── support/             # Support client
 │   └── reset-password/          # Réinitialisation mot de passe
 ├── components/
@@ -191,7 +216,10 @@ src/
 │   │   ├── authStore.ts         # Store Zustand auth
 │   │   ├── platformAuthStore.ts # Store auth super-admin
 │   │   └── spaceStore.ts        # Store espace sélectionné
-│   ├── supabase/                # Client Supabase (auth SSR)
+│   ├── password-change.ts       # Règle de mot de passe, marqueur « à changer »
+│   ├── quotas.ts                # Quotas du forfait
+│   ├── tenant.ts                # Contexte de session et isolation par organisation
+│   ├── supabase/                # Alias historiques vers les clients Neon
 │   └── utils/
 │       ├── cn.ts                # Utility class merging (clsx + tailwind-merge)
 │       └── format.ts            # Formatage FCFA, dates FR
@@ -232,9 +260,13 @@ src/
         │  subscriptions     │────▷│  payments     │
         └───────┬────────────┘     └──────────────┘
                 │
-        ┌───────▽────────────┐
-        │ subscription_plans │
-        └────────────────────┘
+        ┌───────▽────────────┐     ┌──────────────────┐
+        │ subscription_plans │◁────│ license_requests │
+        └────────────────────┘     └──────────────────┘
+
+        ┌────────────────┐     ┌─────────────────────┐
+        │ platform_users │────▷│ platform_audit_logs │   (+ platform_settings)
+        └────────────────┘     └─────────────────────┘
 ```
 
 ### Rôles & Permissions
@@ -252,7 +284,9 @@ src/
 | Types de tickets | ✅ CRUD | ❌ |
 | Paramètres | ✅ | ✅ (limité) |
 | Vider un POS | ✅ | ❌ |
-| Abonnement | ✅ | ❌ |
+| Abonnement & demandes de licence | ✅ | ❌ |
+
+Le **super admin** (table `platform_users`) gère toutes les organisations depuis `/platform` ; il n'a pas d'accès au contenu métier d'un client via l'espace client.
 
 ---
 
@@ -260,12 +294,22 @@ src/
 
 | Méthode | Route | Description | Rôle requis |
 |---------|-------|-------------|-------------|
-| `POST` | `/api/auth/login` | Connexion utilisateur | Public |
-| `POST` | `/api/auth/register` | Inscription (création org + profil) | Public |
+| `POST` | `/api/auth/login` | Connexion (indique si le mot de passe doit être changé) | Public |
+| `POST` | `/api/auth/register` | Inscription (organisation en attente de validation) | Public |
+| `POST` | `/api/auth/change-password` | Choisir son mot de passe | Connecté |
+| `POST` | `/api/db` | Passerelle de données, filtrée par organisation | Connecté |
+| `GET` | `/api/collections/[id]`, `/api/allocations/[id]` | Détail encaissement / allocation | Même organisation |
+| `POST` | `/api/collections`, `/api/ticket-allocations` | Création avec contrôle de quota | Admin / Collecteur |
 | `POST` | `/api/allocations/exchange` | Échange de tickets | Admin / Collecteur |
 | `DELETE` | `/api/pos/[id]/reset` | Vider toutes les données d'un POS | Admin |
-| `POST` | `/api/users/create` | Créer un utilisateur | Admin |
-| `GET/POST` | `/api/platform/*` | APIs back-office super-admin | Super Admin |
+| `POST` | `/api/users/create` | Ajouter un membre (mot de passe à changer) | Admin |
+| `DELETE` | `/api/users/[id]` | Supprimer un membre (désactivation) | Admin |
+| `GET/POST` | `/api/subscriptions/renew` | État et demande de renouvellement | Admin |
+| `POST` | `/api/platform/licenses` | Activer une licence | Super Admin |
+| `GET/PATCH` | `/api/platform/license-requests` | Demandes de licence | Super Admin |
+| `GET/POST/PATCH` | `/api/platform/users` | Comptes, rôles, réinitialisation | Super Admin |
+| `GET/PATCH` | `/api/platform/settings` | Paramètres de la plateforme | Super Admin |
+| `GET/PATCH` | `/api/platform/*` | Autres APIs back-office | Super Admin |
 
 ---
 
@@ -273,9 +317,9 @@ src/
 
 ### Prérequis
 
-- **Node.js** ≥ 18
+- **Node.js** ≥ 20
 - **npm** ≥ 9
-- Un projet **Supabase** (pour l'auth) ou **Neon** (pour la DB)
+- Accès à la branche Neon **de développement** (`vercel-dev`)
 
 ### Installation
 
@@ -302,10 +346,13 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 Créer un fichier `.env.local` à la racine :
 
 ```bash
-# ── Supabase (Auth) ─────────────────────────────────
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbG...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbG...
+# ── Base de données (Neon — branche de DÉVELOPPEMENT uniquement) ──
+DATABASE_URL=postgresql://<user>:<password>@ep-crimson-shape-xxx-pooler.../neondb?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://<user>:<password>@ep-crimson-shape-xxx.../neondb?sslmode=require
+
+# ── Authentification ────────────────────────────────
+JWT_SECRET=<secret aléatoire de 32+ caractères>
+CRON_SECRET=<secret pour /api/cron/health-check>
 
 # ── Email (SMTP) ────────────────────────────────────
 SMTP_HOST=smtp.gmail.com
@@ -319,6 +366,8 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 > ⚠️ **Ne jamais committer `.env.local`** — Ce fichier est exclu par `.gitignore`.
+> Le garde-fou `src/lib/env-guard.ts` bloque toute connexion à la base de production depuis le local ou une Preview.
+> Détails : [`docs/ENVIRONMENT_SETUP.md`](docs/ENVIRONMENT_SETUP.md).
 
 ### Base de Données
 
@@ -328,8 +377,8 @@ Exécuter le schéma initial dans le SQL Editor Neon ou Supabase :
 # Schéma complet (toutes les tables + enums + index)
 supabase/neon_schema.sql
 
-# Corrections et migrations additionnelles
-supabase/fix_missing_columns.sql
+# Migrations incrémentales (idempotentes), à tester d'abord sur la base dev
+supabase/migrations/*.sql
 ```
 
 ---
@@ -344,7 +393,7 @@ npm run lint         # Linting ESLint
 
 npx tsc --noEmit     # Vérification TypeScript (0 erreur requise)
 
-npm run backup       # Créer un backup JSON de la base
+npm run backup       # ⚠️ obsolète (API Supabase) — voir « Backup & Restauration »
 npm run backup:list  # Lister les backups disponibles
 npm run backup:restore=<file>  # Restaurer depuis un backup
 npm run backup:clean # Nettoyer les anciens backups
@@ -354,7 +403,11 @@ npm run backup:clean # Nettoyer les anciens backups
 
 ## Backup & Restauration
 
-### Backup manuel
+> ⚠️ Depuis la migration vers Neon, `scripts/backup.js` (API Supabase) ne sauvegarde plus la vraie base.
+> En attendant sa réécriture, faire une sauvegarde Neon directe en lecture seule (export JSON de toutes les tables
+> dans `scripts/backups/`, dossier ignoré par Git) — voir [`docs/PROCEDURE_DEPLOIEMENT.md`](docs/PROCEDURE_DEPLOIEMENT.md).
+
+### Backup manuel (ancien script)
 
 ```bash
 bash scripts/backup.sh              # Créer un backup daté (JSON)
@@ -374,32 +427,36 @@ echo "0 2 * * * $(pwd)/scripts/cron_backup.sh" | crontab -
 
 ## Déploiement
 
-### Production (Vercel)
+> 📌 Procédure complète et obligatoire : [`docs/PROCEDURE_DEPLOIEMENT.md`](docs/PROCEDURE_DEPLOIEMENT.md)
 
-L'application est déployée automatiquement sur **Vercel** à chaque push sur la branche `main` :
+| Branche | Environnement | URL | Base Neon |
+|---|---|---|---|
+| `develop` | Preview (automatique à chaque push) | https://dev.optiwifi.site | `vercel-dev` |
+| `main` | Production (à la fusion d'une PR) | https://www.optiwifi.site | `production` |
 
-- **URL** : [https://www.optiwifi.site](https://www.optiwifi.site)
-- **Repo** : [github.com/Artemis-coder/Opti-wifi](https://github.com/Artemis-coder/Opti-wifi)
-
-### Procédure de déploiement
+### Cycle de travail
 
 ```bash
-# 1. Vérifier TypeScript (0 erreurs)
-npx tsc --noEmit
+# 1. Travailler sur develop, à jour
+git switch develop && git pull --ff-only origin develop
 
-# 2. Build de production
-npm run build
+# 2. Vérifier avant chaque push
+npx tsc --noEmit && npm run build
 
-# 3. Pousser sur main (Vercel deploy automatique)
-git push origin main
+# 3. Pousser → Preview automatique sur dev.optiwifi.site
+git push origin develop
 
-# 4. Si mise à jour DB nécessaire :
-#    Exécuter supabase/fix_missing_columns.sql dans le SQL Editor
+# 4. Mise en production : sauvegarde + migrations, puis PR develop → main validée par le propriétaire
+gh pr create --base main --head develop
 ```
+
+**Interdits :** push forcé sur `develop` / `main`, `git reset --hard` sur une branche poussée, `vercel --prod`, commit direct sur `main`, données de test en production.
+En cas de problème : *Instant Rollback* Vercel ou `git revert`, jamais de push forcé.
 
 ### Vérification post-déploiement
 
-- [ ] Page de connexion accessible (`/login`)
+- [ ] Page de connexion accessible (`/login`), super admin → `/platform`, client → `/dashboard`
+- [ ] `/api/cron/health-check` répond
 - [ ] Dashboard se charge sans spinner infini
 - [ ] Création d'un POS fonctionne
 - [ ] Assistant de collecte en 5 étapes fonctionne
@@ -417,6 +474,10 @@ git push origin main
 | **Collecte liée** | Chaque collecte est liée à un POS et un collecteur |
 | **Échange équivalent** | Un échange doit avoir une valeur FCFA équivalente (retours = réceptions) |
 | **Espace verrouillé** | Un POS rattaché à un espace Wi-Fi ne peut pas être déplacé |
+| **Licence validée** | Un client ne prolonge pas sa licence lui-même : il envoie une demande que le super admin approuve |
+| **Une demande à la fois** | Une seule demande de licence en attente par organisation |
+| **Isolation** | Un utilisateur n'accède qu'aux données de son organisation |
+| **Mot de passe personnel** | Un mot de passe temporaire doit être changé à la première connexion |
 | **Admin seul** | Seul un administrateur peut vider les données d'un POS, gérer les utilisateurs et les espaces |
 
 ---
@@ -426,7 +487,8 @@ git push origin main
 Consulter [`AGENTS.md`](./AGENTS.md) pour les règles de sécurité complètes :
 
 - 🔒 **Secret scanning** obligatoire avant chaque commit
-- 🛡️ **SQL injection** — Requêtes paramétrées uniquement (ORM Supabase)
+- 🛡️ **SQL injection** — Requêtes paramétrées uniquement, identifiants validés
+- 🏢 **Multi-tenant** — Filtre d'organisation imposé côté serveur
 - 🚫 **XSS** — Pas de `dangerouslySetInnerHTML` avec données utilisateur
 - 🔐 **Auth** — Vérification côté serveur sur chaque API protégée
 - 📋 **Pre-commit checklist** — Voir `AGENTS.md` pour la liste complète
@@ -435,6 +497,7 @@ Consulter [`AGENTS.md`](./AGENTS.md) pour les règles de sécurité complètes :
 
 ## Release Notes
 
+- [**v1.2.0**](./RELEASE_NOTES_v1.2.0.md) — Back-office Super Admin (inscriptions, licences, demandes), isolation des données par client, connexion unique, mot de passe temporaire à changer, correctifs de sécurité
 - [**v1.1.0**](./RELEASE_NOTES_v1.1.0.md) — Échanges de tickets, Multi-Espaces Wi-Fi, Mode Offline, Refonte Mobile, Sécurité RLS
 - [**v1.0.0**](./RELEASE_NOTES_v1.0.0.md) — Lancement initial : POS, Allocations, Collectes, Dashboard
 
