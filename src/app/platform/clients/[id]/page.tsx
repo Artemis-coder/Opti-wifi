@@ -24,6 +24,7 @@ import {
   BarChart3,
   Wallet,
   ExternalLink,
+  Database,
   Loader2,
   AlertCircle,
   Copy,
@@ -256,6 +257,12 @@ export default function ClientDetailPage() {
               {subAction.label}
             </Button>
           )}
+          <Link href={`/platform/explorer?org=${clientId}`}>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Database className="w-4 h-4" />
+              Explorer les données
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" className="gap-2" onClick={handleImpersonate}>
             <ExternalLink className="w-4 h-4" />
             Accéder à l&apos;espace client

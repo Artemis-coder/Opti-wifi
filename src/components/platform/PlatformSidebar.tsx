@@ -23,6 +23,7 @@ import {
   Wifi,
   WifiOff,
   AlertTriangle,
+  Database,
 } from 'lucide-react';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
@@ -40,6 +41,7 @@ const sidebarItems = [
     section: 'CLIENTS',
     items: [
       { label: 'Tous les clients', href: '/platform/clients', icon: Building2 },
+      { label: 'Explorateur de données', href: '/platform/explorer', icon: Database },
     ],
   },
   {

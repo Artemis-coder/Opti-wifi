@@ -1,7 +1,14 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { Organization, Subscription, Payment, SubscriptionPlan } from "@/types/platform";
+import { Organization, Subscription, Payment } from "@/types/platform";
+import {
+  getOperationsKpis,
+  getOperationsChart,
+  getTopClients,
+  getInactiveClients,
+  INACTIVITY_DAYS,
+} from '@/lib/platform/operations';
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -81,6 +88,7 @@ export async function GET(request: Request) {
   const nowISO = now.toISOString();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const thirtyDaysAhead = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const totalClients = orgs.length;
   const activeClients = orgs.filter((o: Organization) => o.status === 'active').length;
@@ -90,7 +98,7 @@ export async function GET(request: Request) {
 
   const activeSubs = subs.filter((s: Subscription) => s.status === 'active' || s.status === 'trialing').length;
   const expiringSubs = subs.filter(
-    (s: Subscription) => (s.status === 'active' || s.status === 'trialing') && s.end_date && s.end_date <= thirtyDaysAgo + 'T23:59:59' && s.end_date >= nowISO
+    (s: Subscription) => (s.status === 'active' || s.status === 'trialing') && s.end_date && s.end_date <= thirtyDaysAhead && s.end_date >= nowISO
   ).length;
   const expiredSubs = subs.filter((s: Subscription) => s.status === 'expired' || s.status === 'cancelled').length;
 
@@ -250,8 +258,28 @@ export async function GET(request: Request) {
     currency,
   };
 
+  let operations = null;
+  try {
+    const [opsKpis, opsChart, topClients, inactiveClients] = await Promise.all([
+      getOperationsKpis(rangeStartISO),
+      getOperationsChart(rangeStartISO),
+      getTopClients(rangeStartISO),
+      getInactiveClients(),
+    ]);
+    operations = {
+      kpis: opsKpis,
+      chart: opsChart,
+      top_clients: topClients,
+      inactive_clients: inactiveClients,
+      inactivity_days: INACTIVITY_DAYS,
+    };
+  } catch (err) {
+    console.error('Platform dashboard operations error:', err);
+  }
+
   return NextResponse.json({
     kpis,
+    operations,
     charts: {
       registrations: registrationsChart,
       subscriptions: subsChart,
