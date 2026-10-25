@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requirePlatformAdmin } from '@/lib/supabase/platform';
 import { query } from '@/lib/neon/db';
+import { hasUsedTrialPlan, isTrialPlan } from '@/lib/trial-plan';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -37,11 +38,18 @@ export async function POST(request: Request) {
   try {
     const [orgRes, planRes] = await Promise.all([
       query('SELECT id, name, status FROM organizations WHERE id = $1', [organizationId]),
-      query(`SELECT id, name FROM subscription_plans WHERE id = $1 AND status = 'active'`, [planId]),
+      query(`SELECT id, name, trial_days FROM subscription_plans WHERE id = $1 AND status = 'active'`, [planId]),
     ]);
     const org = orgRes.rows[0];
     if (!org) return NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 });
     if (!planRes.rows[0]) return NextResponse.json({ error: 'Forfait introuvable ou inactif' }, { status: 404 });
+    // Forfait d'essai (Découverte) : une seule fois par organisation, y compris par le super admin
+    if (isTrialPlan(planRes.rows[0]) && (await hasUsedTrialPlan(organizationId))) {
+      return NextResponse.json(
+        { error: `${org.name} a déjà bénéficié du forfait « ${planRes.rows[0].name} ». Choisissez un autre forfait.`, code: 'TRIAL_ALREADY_USED' },
+        { status: 409 }
+      );
+    }
 
     if (requestId) {
       const reqRes = await query(

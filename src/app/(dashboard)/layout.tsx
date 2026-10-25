@@ -22,6 +22,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [checkingSub, setCheckingSub] = useState(true);
   const [subscription, setSubscription] = useState<{ status: string; end_date: string | null } | null>(null);
   const [renewState, setRenewState] = useState<'idle' | 'sending' | 'pending'>('idle');
+  const [renewError, setRenewError] = useState('');
+  const [renewPlans, setRenewPlans] = useState<{ id: string; name: string; price: number; billing_period: string; current: boolean }[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -105,22 +107,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isSubscriptionExpired =
     subscription?.status === 'expired' || (!!subscription?.end_date && new Date(subscription.end_date) < new Date());
 
+  // Abonnement expiré : forfaits que l'on peut demander (le forfait d'essai n'est proposé qu'une fois)
   useEffect(() => {
     if (!isSubscriptionExpired) return;
-    fetch('/api/subscriptions/renew')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((res) => {
-        if (res?.data?.pendingRequest) setRenewState('pending');
+    Promise.all([
+      fetch('/api/subscriptions/renew').then((res) => (res.ok ? res.json() : null)),
+      supabase.from('subscription_plans').select('id, name, price, billing_period, trial_days').eq('status', 'active').order('price', { ascending: true }),
+    ])
+      .then(([state, plansRes]) => {
+        if (state?.data?.pendingRequest) setRenewState('pending');
+        const currentPlanId = state?.data?.subscription?.plan_id;
+        const trialUsed = state?.data?.trialUsed === true;
+        const plans = ((plansRes?.data || []) as { id: string; name: string; price: number; billing_period: string; trial_days: number | null }[])
+          .filter((p) => !(trialUsed && Number(p.trial_days ?? 0) > 0))
+          .map((p) => ({ id: p.id, name: p.name, price: Number(p.price), billing_period: p.billing_period, current: p.id === currentPlanId }));
+        setRenewPlans(plans);
       })
       .catch(() => {});
-  }, [isSubscriptionExpired]);
+  }, [isSubscriptionExpired, supabase]);
 
-  const handleRenewRequest = async () => {
+  const handleRenewRequest = async (planId: string) => {
     setRenewState('sending');
+    setRenewError('');
     try {
-      const res = await fetch('/api/subscriptions/renew', { method: 'POST' });
+      const res = await fetch('/api/subscriptions/renew', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      });
       // 409 = une demande est déjà en attente
-      setRenewState(res.ok || res.status === 409 ? 'pending' : 'idle');
+      if (res.ok || res.status === 409) {
+        setRenewState('pending');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setRenewError(data.error || 'Impossible d’envoyer la demande.');
+        setRenewState('idle');
+      }
     } catch {
       setRenewState('idle');
     }
@@ -239,19 +261,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p className="text-xs text-slate-400 mt-1">
               {renewState === 'pending'
                 ? 'Votre demande de renouvellement est en attente de validation. Votre accès sera rétabli dès son activation.'
-                : 'Demandez le renouvellement : votre accès sera rétabli dès validation par l\'équipe OptiWifi.'}
+                : 'Choisissez un forfait : votre accès sera rétabli dès validation par l\'équipe OptiWifi.'}
             </p>
           </div>
           <div className="pt-2 flex flex-col gap-2">
-            {renewState !== 'pending' && (
+            {renewState !== 'pending' && renewPlans.map((plan) => (
               <Button
-                onClick={handleRenewRequest}
+                key={plan.id}
+                onClick={() => handleRenewRequest(plan.id)}
                 isLoading={renewState === 'sending'}
                 className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs transition"
               >
-                Demander le renouvellement
+                {plan.current ? 'Renouveler' : 'Choisir'} « {plan.name} » — {new Intl.NumberFormat('fr-FR').format(plan.price)} FCFA
               </Button>
-            )}
+            ))}
+            {renewError && <p className="text-xs text-red-600">{renewError}</p>}
             <button
               onClick={handleSignOut}
               className="w-full py-2.5 px-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold text-xs transition"

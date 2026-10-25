@@ -20,6 +20,7 @@ interface SubscriptionPlan {
   max_users?: number;
   max_points_of_sale?: number;
   max_tickets_per_month?: number;
+  trial_days?: number;
 }
 
 interface Subscription {
@@ -51,6 +52,7 @@ export default function SubscriptionPage() {
   const [allPlans, setAllPlans] = useState<SubscriptionPlan[]>([]);
   const [pendingRequest, setPendingRequest] = useState<LicenseRequestInfo | null>(null);
   const [lastRequest, setLastRequest] = useState<LicenseRequestInfo | null>(null);
+  const [trialUsed, setTrialUsed] = useState(false);
   const [usage, setUsage] = useState({ posCount: 0, usersCount: 0, spacesCount: 0 });
   const { user } = useAuthStore();
   const supabase = createClient();
@@ -116,6 +118,7 @@ export default function SubscriptionPage() {
     const { data } = await res.json();
     setPendingRequest(data?.pendingRequest || null);
     setLastRequest(data?.lastRequest || null);
+    setTrialUsed(data?.trialUsed === true);
   }
 
   const getStatusBadge = (status: string) => {
@@ -329,7 +332,13 @@ export default function SubscriptionPage() {
             </div>
           </div>
 
-          {subscription.plan && !pendingRequest && (
+          {subscription.plan && !pendingRequest && Number(subscription.plan.trial_days ?? 0) > 0 && (
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400">
+              Le forfait <strong>{subscription.plan.name}</strong> est un forfait d&apos;essai : il n&apos;est pas renouvelable.
+              Choisissez un autre forfait ci-dessous pour continuer.
+            </div>
+          )}
+          {subscription.plan && !pendingRequest && Number(subscription.plan.trial_days ?? 0) === 0 && (
             <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
               <Button
                 variant={isExpired ? 'danger' : 'primary'}
@@ -450,10 +459,18 @@ export default function SubscriptionPage() {
                   </div>
                 )}
               </div>
-              {!pendingRequest && subscription?.plan_id !== plan.id && (
+              {Number(plan.trial_days ?? 0) > 0 && (
+                <p className="text-xs text-slate-500">
+                  {trialUsed ? 'Forfait d’essai déjà utilisé : non disponible.' : `Forfait d’essai : ${plan.trial_days} jours, une seule fois.`}
+                </p>
+              )}
+              {!pendingRequest && subscription?.plan_id !== plan.id && !(trialUsed && Number(plan.trial_days ?? 0) > 0) && (
                 <Button variant="outline" size="sm" className="w-full" onClick={() => handleRequest(plan.id)} disabled={renewing}>
                   Demander ce forfait
                 </Button>
+              )}
+              {trialUsed && Number(plan.trial_days ?? 0) > 0 && subscription?.plan_id !== plan.id && (
+                <Badge variant="neutral" className="w-full justify-center">Déjà utilisé</Badge>
               )}
             </Card>
           ))}
