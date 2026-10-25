@@ -92,7 +92,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
   const handleLogout = async () => {
     await supabase.auth.signOut();
     logout();
-    router.push('/platform/login');
+    router.push('/login');
   };
 
   const content = (

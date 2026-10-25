@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -61,11 +62,12 @@ export async function DELETE(
   // ── Verify POS exists and belongs to this org ────────────────────
   const { data: posData, error: posError } = await supabase
     .from('points_of_sale')
-    .select('id')
+    .select('id, organization_id')
     .eq('id', posId)
     .single();
 
-  if (posError || !posData) {
+  const ctx = await getSessionContext();
+  if (posError || !posData || !ctx || !canAccessOrganization(ctx, posData.organization_id)) {
     return NextResponse.json({ error: 'Point de vente introuvable.' }, { status: 404 });
   }
 

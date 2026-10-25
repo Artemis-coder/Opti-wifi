@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { getSessionContext } from '@/lib/tenant';
+import { query } from '@/lib/neon/db';
 
 interface ExchangeItem {
   ticket_type_id: string;
@@ -100,6 +102,25 @@ export async function POST(request: NextRequest) {
 
     if (receivesPayload.some((r) => !r.ticket_type_id || r.quantite <= 0)) {
       return NextResponse.json({ error: 'Chaque ticket à recevoir doit avoir un identifiant et une quantité valide (> 0).' }, { status: 400 });
+    }
+
+    // Le POS et les types de tickets doivent appartenir à l'organisation de l'utilisateur.
+    const ctx = await getSessionContext();
+    if (!ctx) {
+      return NextResponse.json({ error: 'Authentification requise.' }, { status: 401 });
+    }
+    if (!ctx.isPlatformAdmin) {
+      const ticketTypeIds = [...new Set([...returnsPayload, ...receivesPayload].map((r) => r.ticket_type_id as string))];
+      const owned = await query(
+        `SELECT
+           (SELECT COUNT(*) FROM points_of_sale WHERE id = $1 AND organization_id = $2) AS pos_ok,
+           (SELECT COUNT(*) FROM ticket_types WHERE id = ANY($3::uuid[]) AND organization_id = $2) AS types_ok`,
+        [body.pos_id, ctx.organizationId, ticketTypeIds]
+      );
+      const row = owned.rows[0];
+      if (Number(row?.pos_ok) !== 1 || Number(row?.types_ok) !== ticketTypeIds.length) {
+        return NextResponse.json({ error: 'Point de vente ou type de ticket introuvable.' }, { status: 404 });
+      }
     }
 
     const { data, error } = await supabase.rpc('perform_ticket_exchange', {

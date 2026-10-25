@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -23,6 +24,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ctx = await getSessionContext();
+    if (!ctx) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    }
     const { id } = await params;
     const supabase = await getSupabaseServerClient();
 
@@ -32,7 +37,7 @@ export async function GET(
       .eq('id', id)
       .single();
 
-    if (allocError || !allocation) {
+    if (allocError || !allocation || !canAccessOrganization(ctx, allocation.organization_id)) {
       console.error('Allocation detail error:', allocError);
       return NextResponse.json(
         { error: 'Allocation introuvable', details: allocError?.message },
@@ -55,7 +60,8 @@ export async function GET(
       const { data: ops } = await supabase
         .from('ticket_allocations')
         .select('*, ticket_type:ticket_types(*)')
-        .eq('exchange_group_id', allocation.exchange_group_id);
+        .eq('exchange_group_id', allocation.exchange_group_id)
+        .eq('organization_id', allocation.organization_id);
       exchangeOperations = ops || [];
     }
 

@@ -20,7 +20,7 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     logout();
-    router.push('/platform/login');
+    router.push('/login');
   };
 
   return (
