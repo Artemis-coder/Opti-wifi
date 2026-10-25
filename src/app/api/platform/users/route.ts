@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { requirePlatformAdmin } from '@/lib/neon/server';
 import { query } from '@/lib/neon/db';
 import { hashPassword } from '@/lib/neon/auth';
+import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 
 export async function GET(request: NextRequest) {
   try {
@@ -104,6 +105,10 @@ export async function POST(request: NextRequest) {
 
   if (!EMAIL_RE.test(email) || !nom) {
     return NextResponse.json({ error: 'Email valide et nom requis.' }, { status: 400 });
+  }
+  const testEmailError = rejectTestEmailInProduction(email);
+  if (testEmailError) {
+    return NextResponse.json({ error: testEmailError }, { status: 400 });
   }
   if (!organizationId || !UUID_RE.test(organizationId)) {
     return NextResponse.json({ error: 'Organisation requise.' }, { status: 400 });
