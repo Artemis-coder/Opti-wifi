@@ -1,3 +1,5 @@
+import { sendTelegramNotificationByType } from '@/lib/telegram';
+import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { query } from '@/lib/neon/db';
@@ -85,11 +87,7 @@ async function executeTool(name: string, args: any): Promise<any> {
         error: { type: 'error', source: 'Bot IA', error: args.message, severity: args.severity || 'medium' },
         custom: { type: 'custom', title: args.title, message: args.message, emoji: '🤖' }
       };
-      await fetch('https://www.optiwifi.site/api/telegram/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(notifTypes[args.type as keyof typeof notifTypes] || notifTypes.custom)
-      });
+      await sendTelegramNotificationByType((notifTypes[args.type as keyof typeof notifTypes] || notifTypes.custom).type, notifTypes[args.type as keyof typeof notifTypes] || notifTypes.custom);
       return { success: true, message: 'Notification envoyée' };
 
     case 'create_validation_request':
@@ -104,9 +102,9 @@ async function executeTool(name: string, args: any): Promise<any> {
       };
       pendingValidations.set(valId, validation);
       
-      await fetch('https://www.optiwifi.site/api/ai/notify', {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.optiwifi.site'}/api/ai/notify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.CRON_SECRET}` },
         body: JSON.stringify({
           type: 'validation_needed',
           project: 'OptiWifi',
@@ -283,6 +281,9 @@ async function generateAIResponse(userMessage: string, history: Array<{ role: st
 }
 
 export async function POST(request: NextRequest) {
+  if (!isTelegramWebhookAuthorized(request)) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  }
   try {
     const body = await request.json();
     const message = body.message;

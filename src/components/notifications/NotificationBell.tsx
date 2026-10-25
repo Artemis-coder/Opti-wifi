@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, BellRing, CheckCheck, Smartphone } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
 import { getPushState, subscribeToPush, type PushState } from '@/lib/push-client';
 
@@ -16,7 +17,9 @@ interface NotificationItem {
   created_at: string;
 }
 
-const POLL_MS = 30_000;
+// Rafraîchissement de secours quand le push n'est pas activé (l'onglet doit être visible).
+// Avec le push activé, le service worker prévient l'onglet instantanément.
+const POLL_MS = 10_000;
 
 function timeAgo(date: string): string {
   const s = Math.max(0, Math.round((Date.now() - new Date(date).getTime()) / 1000));
@@ -39,29 +42,63 @@ export function NotificationBell({ className }: { className?: string }) {
   const [reloadKey, setReloadKey] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Chargement + rafraîchissement périodique (suspendu quand l'onglet est masqué)
+  const seenIds = useRef<Set<string> | null>(null);
+
+  // Chargement + rafraîchissement : instantané via le service worker (push),
+  // au retour sur l'onglet, et périodique en secours.
   useEffect(() => {
     let cancelled = false;
     const load = () => {
       if (document.visibilityState === 'hidden') return;
-      fetch('/api/notifications?limit=20')
+      fetch('/api/notifications?limit=20', { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
         .then((res) => {
           if (cancelled || !res) return;
-          setItems(res.data || []);
+          const list: NotificationItem[] = res.data || [];
+          // Nouvelles notifications depuis le dernier chargement : on les affiche en toast
+          if (seenIds.current) {
+            const fresh = list.filter((n) => !n.read_at && !seenIds.current!.has(n.id));
+            if (fresh.length > 2) {
+              toast(`${fresh.length} nouvelles notifications`, {
+                action: { label: 'Voir', onClick: () => setOpen(true) },
+              });
+            } else {
+              fresh.forEach((n) =>
+                toast(n.title, {
+                  description: n.body || undefined,
+                  action: { label: 'Voir', onClick: () => setOpen(true) },
+                })
+              );
+            }
+          }
+          seenIds.current = new Set(list.map((n) => n.id));
+          setItems(list);
           setUnread(res.unread || 0);
         })
         .catch(() => {});
     };
     load();
     const timer = setInterval(load, POLL_MS);
+    const onSwMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'optispace:notification') load();
+    };
     document.addEventListener('visibilitychange', load);
+    window.addEventListener('focus', load);
+    navigator.serviceWorker?.addEventListener('message', onSwMessage);
     return () => {
       cancelled = true;
       clearInterval(timer);
       document.removeEventListener('visibilitychange', load);
+      window.removeEventListener('focus', load);
+      navigator.serviceWorker?.removeEventListener('message', onSwMessage);
     };
   }, [reloadKey]);
+
+  // Nombre de non-lues dans le titre de l'onglet
+  useEffect(() => {
+    const base = document.title.replace(/^\(\d+\+?\) /, '');
+    document.title = unread > 0 ? `(${unread > 99 ? '99+' : unread}) ${base}` : base;
+  }, [unread]);
 
   useEffect(() => {
     getPushState().then(setPushState).catch(() => setPushState('unsupported'));

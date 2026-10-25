@@ -8,7 +8,7 @@
 import { after } from 'next/server';
 import webpush from 'web-push';
 import { query } from '@/lib/neon/db';
-import { sendTelegramMessage } from '@/lib/telegram';
+import { escapeTelegramHtml, sendTelegramMessageDetailed, type TelegramSendResult } from '@/lib/telegram';
 
 export type NotificationType =
   | 'registration.new'
@@ -24,7 +24,8 @@ export type NotificationType =
   | 'organization.archived'
   | 'account.password_reset'
   | 'team.collection_created'
-  | 'team.member_added';
+  | 'team.member_added'
+  | 'system.test';
 
 export interface NotificationInput {
   type: NotificationType;
@@ -51,12 +52,22 @@ function configureVapid(): boolean {
   return true;
 }
 
-async function sendPush(userIds: string[], n: NotificationInput): Promise<void> {
-  if (!configureVapid() || userIds.length === 0) return;
+export interface PushResult {
+  configured: boolean;
+  subscriptions: number;
+  sent: number;
+  failed: number;
+}
+
+async function sendPush(userIds: string[], n: NotificationInput): Promise<PushResult> {
+  const result: PushResult = { configured: configureVapid(), subscriptions: 0, sent: 0, failed: 0 };
+  if (!result.configured || userIds.length === 0) return result;
   const { rows } = await query(
     'SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ANY($1::uuid[])',
     [userIds]
   );
+  result.subscriptions = rows.length;
+  // Urgence haute : livraison immédiate même si l'appareil est en veille
   const payload = JSON.stringify({ title: n.title, body: n.body || '', url: n.link || '/', tag: n.type });
   await Promise.all(
     rows.map(async (sub) => {
@@ -64,10 +75,12 @@ async function sendPush(userIds: string[], n: NotificationInput): Promise<void> 
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload,
-          { TTL: 60 * 60 * 24 }
+          { TTL: 60 * 60 * 24, urgency: 'high' }
         );
+        result.sent++;
         await query('UPDATE push_subscriptions SET last_used_at = NOW() WHERE id = $1', [sub.id]);
       } catch (err) {
+        result.failed++;
         const status = (err as { statusCode?: number }).statusCode;
         // Abonnement expiré ou révoqué par le navigateur : on le supprime
         if (status === 404 || status === 410) {
@@ -78,6 +91,7 @@ async function sendPush(userIds: string[], n: NotificationInput): Promise<void> 
       }
     })
   );
+  return result;
 }
 
 /** Crée la notification in-app pour chaque destinataire puis envoie le push. */
@@ -122,20 +136,57 @@ export async function getOrganizationAdminIds(organizationId: string, excludeUse
   return rows.map((r) => r.id as string);
 }
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const TELEGRAM_EMOJI: Partial<Record<NotificationType, string>> = {
+  'registration.new': '🆕',
+  'license_request.new': '🧾',
+  'system.test': '✅',
+};
+
+/** Telegram : en production, ou ailleurs si TELEGRAM_NOTIFY_ENABLED=true. */
+function telegramNotificationsEnabled(): boolean {
+  return process.env.VERCEL_ENV === 'production' || process.env.TELEGRAM_NOTIFY_ENABLED === 'true';
 }
 
-/** Super admins : in-app + push, et Telegram en production uniquement. */
+/** Message Telegram du super admin, avec un bouton qui ouvre la page à traiter. */
+export async function sendSuperAdminTelegram(n: NotificationInput): Promise<TelegramSendResult> {
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.optiwifi.site').replace(/\/$/, '');
+  const lines = [`${TELEGRAM_EMOJI[n.type] || '🔔'} <b>${escapeTelegramHtml(n.title)}</b>`];
+  if (n.body) lines.push('', escapeTelegramHtml(n.body));
+  const time = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'short', timeStyle: 'short' });
+  lines.push('', `<i>${time} · OptiSpace</i>`);
+
+  const url = n.link ? `${base}${n.link}` : null;
+  // Telegram n'accepte les boutons-liens qu'en https : sinon le lien est ajouté au texte
+  const button = url?.startsWith('https://');
+  if (url && !button) lines.push(url);
+  return sendTelegramMessageDetailed({
+    text: lines.join('\n'),
+    parse_mode: 'HTML',
+    ...(button ? { reply_markup: { inline_keyboard: [[{ text: 'Ouvrir dans OptiSpace', url }]] } } : {}),
+  });
+}
+
+/** Super admins : in-app + push, et Telegram (production uniquement par défaut). */
 export async function notifySuperAdmins(n: NotificationInput): Promise<void> {
   await notifyUsers(await getSuperAdminUserIds(), n);
-  if (process.env.VERCEL_ENV === 'production') {
-    const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.optiwifi.site';
-    const lines = [`🔔 <b>${escapeHtml(n.title)}</b>`];
-    if (n.body) lines.push(escapeHtml(n.body));
-    if (n.link) lines.push(`${base}${n.link}`);
-    await sendTelegramMessage({ text: lines.join('\n'), parse_mode: 'HTML' }).catch(() => false);
-  }
+  if (telegramNotificationsEnabled()) await sendSuperAdminTelegram(n);
+}
+
+/** Test des trois canaux pour un super admin (bouton « Tester » des paramètres). */
+export async function sendTestNotification(userId: string) {
+  const n: NotificationInput = {
+    type: 'system.test',
+    title: 'Test des notifications',
+    body: 'Si vous lisez ceci, ce canal fonctionne.',
+    link: '/platform/settings',
+  };
+  const { rows } = await query(
+    `INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [userId, n.type, n.title, n.body, n.link]
+  );
+  const push = await sendPush([userId], n);
+  const telegram = await sendSuperAdminTelegram(n);
+  return { inApp: Boolean(rows[0]), push, telegram };
 }
 
 export async function notifyOrganizationAdmins(

@@ -1,3 +1,4 @@
+import { sendTelegramNotificationByType } from '@/lib/telegram';
 /**
  * Function Definitions for OpenRouter Function Calling
  * These are passed to the LLM so it can call our tools
@@ -763,20 +764,16 @@ export async function executeFunction(name: string, args: any, chatId: string): 
         custom: { type: 'custom', title: args.title, message: args.message, emoji: '🤖' }
       };
       
-      await fetch('https://www.optiwifi.site/api/telegram/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(notifTypes[args.type] || notifTypes.custom)
-      });
+      await sendTelegramNotificationByType((notifTypes[args.type] || notifTypes.custom).type, notifTypes[args.type] || notifTypes.custom);
       return { success: true, message: 'Notification envoyée' };
     }
 
     case 'create_validation_request': {
       const valId = `val_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      await fetch('https://www.optiwifi.site/api/ai/notify', {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.optiwifi.site'}/api/ai/notify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.CRON_SECRET}` },
         body: JSON.stringify({
           type: 'validation_needed',
           project: 'OptiWifi',

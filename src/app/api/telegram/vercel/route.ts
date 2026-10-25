@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { notifyBuild } from '@/lib/telegram';
+import { isVercelWebhookSigned } from '@/lib/telegram-auth';
 
 export async function POST(request: NextRequest) {
+  // Seuls les webhooks signés par Vercel (VERCEL_WEBHOOK_SECRET) sont acceptés
+  const rawBody = await request.text();
+  if (!isVercelWebhookSigned(rawBody, request.headers.get('x-vercel-signature'))) {
+    return NextResponse.json({ error: 'Signature invalide' }, { status: 403 });
+  }
   try {
-    const payload = await request.json();
+    const payload = JSON.parse(rawBody);
 
     if (payload.type !== 'deployment') {
       return NextResponse.json({ ok: true, ignored: true });
