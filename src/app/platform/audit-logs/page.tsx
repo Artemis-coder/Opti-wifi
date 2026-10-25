@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDateFR } from '@/lib/utils/format';
 import { PlatformAuditLogWithUser } from '@/types/platform';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
+import { DateField } from '@/components/ui/DateField';
 
 export default function PlatformAuditLogsPage() {
   const [logs, setLogs] = useState<PlatformAuditLogWithUser[]>([]);
@@ -110,18 +111,8 @@ export default function PlatformAuditLogsPage() {
             value={entityTypeFilter}
             onChange={(e) => setEntityTypeFilter(e.target.value)}
           />
-          <Input
-            label="Date de début"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-          <Input
-            label="Date de fin"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
+          <DateField label="Date de début" value={startDate} onChange={setStartDate} max={endDate || undefined} clearable />
+          <DateField label="Date de fin" value={endDate} onChange={setEndDate} min={startDate || undefined} clearable />
         </div>
       </Card>
 

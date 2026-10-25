@@ -26,6 +26,8 @@ import { formatDateFR } from '@/lib/utils/format';
 import { PlatformUser } from '@/types/platform';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 
 interface PlatformUserProfile {
   id: string;
@@ -119,7 +121,8 @@ interface CreateFormState {
       delete: "\n\nSon accès est coupé immédiatement. Son historique (collectes, allocations) est conservé et il peut être réactivé.",
       reset_password: '\n\nUn mot de passe temporaire sera généré ; il devra en choisir un nouveau à sa prochaine connexion.',
     };
-    if (!window.confirm(`Voulez-vous vraiment ${label} cet utilisateur ?${consequence[action] || ''}`)) return;
+    const danger = ['deactivate', 'delete'].includes(action);
+    if (!(await confirmAction(`Voulez-vous vraiment ${label} cet utilisateur ?${consequence[action] || ''}`, { danger }))) return;
 
     setActionLoading(userId);
     try {
@@ -474,43 +477,40 @@ interface CreateFormState {
              </div>
              <div>
                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Devise</label>
-               <select
+               <CustomSelect
                  value={createFormData.devise}
-                 onChange={(e) => setCreateFormData({ ...createFormData, devise: e.target.value })}
-                 className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-               >
-                 <option value="XOF">XOF (Franc CFA)</option>
-                 <option value="EUR">EUR (Euro)</option>
-                 <option value="USD">USD (Dollar US)</option>
-               </select>
+                 onChange={(v) => setCreateFormData({ ...createFormData, devise: v })}
+                 options={[
+                   { value: 'XOF', label: 'XOF (Franc CFA)' },
+                   { value: 'EUR', label: 'EUR (Euro)' },
+                   { value: 'USD', label: 'USD (Dollar US)' },
+                 ]}
+               />
              </div>
              <div>
                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Rôle</label>
-               <select
+               <CustomSelect
                  value={createFormData.role}
-                 onChange={(e) => setCreateFormData({ ...createFormData, role: e.target.value as 'administrateur' | 'collecteur' })}
-                 className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-               >
-                 <option value="administrateur">Administrateur</option>
-                 <option value="collecteur">Collecteur</option>
-               </select>
+                 onChange={(v) => setCreateFormData({ ...createFormData, role: v as 'administrateur' | 'collecteur' })}
+                 options={[
+                   { value: 'administrateur', label: 'Administrateur' },
+                   { value: 'collecteur', label: 'Collecteur' },
+                 ]}
+               />
              </div>
              <div>
                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Organisation *</label>
                {showCreateModal && orgsLoading ? (
                  <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-500 animate-pulse">Chargement...</div>
                ) : (
-                 <select
+                 <CustomSelect
                    value={createFormData.organization_id}
-                   onChange={(e) => setCreateFormData({ ...createFormData, organization_id: e.target.value })}
-                   className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                   required
-                 >
-                   <option value="">Sélectionner une organisation</option>
-                   {organizations.map((org) => (
-                     <option key={org.id} value={org.id}>{org.name}</option>
-                   ))}
-                 </select>
+                   onChange={(v) => setCreateFormData({ ...createFormData, organization_id: v })}
+                   options={[
+                     { value: '', label: 'Sélectionner une organisation' },
+                     ...organizations.map((org) => ({ value: org.id, label: org.name })),
+                   ]}
+                 />
                )}
              </div>
            </div>
@@ -543,30 +543,28 @@ interface CreateFormState {
            <div className="space-y-3">
              <div>
                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nouveau rôle</label>
-               <select
+               <CustomSelect
                  value={newRoleValue}
-                 onChange={(e) => setNewRoleValue(e.target.value as 'administrateur' | 'collecteur')}
-                 className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-               >
-                 <option value="administrateur">Administrateur</option>
-                 <option value="collecteur">Collecteur</option>
-               </select>
+                 onChange={(v) => setNewRoleValue(v as 'administrateur' | 'collecteur')}
+                 options={[
+                   { value: 'administrateur', label: 'Administrateur' },
+                   { value: 'collecteur', label: 'Collecteur' },
+                 ]}
+               />
              </div>
              <div>
                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nouvelle organisation</label>
                {orgsLoading ? (
                  <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-500 animate-pulse">Chargement...</div>
                ) : (
-                 <select
+                 <CustomSelect
                    value={newOrgIdValue}
-                   onChange={(e) => setNewOrgIdValue(e.target.value)}
-                   className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                 >
-                   <option value="">— Conserver l&apos;actuelle —</option>
-                   {organizations.map((org) => (
-                     <option key={org.id} value={org.id}>{org.name}</option>
-                   ))}
-                 </select>
+                   onChange={(v) => setNewOrgIdValue(v)}
+                   options={[
+                     { value: '', label: '— Conserver l\'actuelle —' },
+                     ...organizations.map((org) => ({ value: org.id, label: org.name })),
+                   ]}
+                 />
                )}
              </div>
            </div>

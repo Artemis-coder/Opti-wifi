@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { ConnectionStatus } from "@/components/offline/ConnectionStatus";
+import { ConfirmHost } from "@/components/ui/ConfirmDialog";
 import { ErrorReporter } from "@/components/ErrorReporter";
 
 const geistSans = Geist({
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </ErrorReporter>
         <ConnectionStatus />
+        <ConfirmHost />
         <Toaster closeButton position="top-center" offset={72} />
       </body>
     </html>

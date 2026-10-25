@@ -12,6 +12,7 @@ import { formatCurrencyFCFA, toDateInputValue } from '@/lib/utils/format';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PointOfSale, TicketType } from '@/types/database';
+import { DateField } from '@/components/ui/DateField';
 
 interface AllocationLine {
   ticketTypeId: string;
@@ -192,14 +193,7 @@ const addLine = () => {
               </div>
 
               <div className="space-y-1.5">
-                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                   Date d&apos;Allocation
-                 </label>
-                 <Input
-                   type="date"
-                   value={dateAllocation}
-                   onChange={(e) => setDateAllocation(e.target.value)}
-                 />
+                 <DateField label="Date d'allocation" value={dateAllocation} onChange={setDateAllocation} />
                </div>
 
                <div className="space-y-3">

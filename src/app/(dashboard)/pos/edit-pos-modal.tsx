@@ -9,6 +9,7 @@ import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 interface EditPosModalProps {
   isOpen: boolean;
@@ -151,18 +152,14 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
               {spaces.find((s: WifiSpace) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
             </div>
           ) : (
-            <select
+            <CustomSelect
               value={spaceId}
-              onChange={(e) => setSpaceId(e.target.value)}
-              className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-            >
-              <option value="">Aucun espace</option>
-              {spaces.map((s: WifiSpace) => (
-                <option key={s.id} value={s.id}>
-                  {s.nom}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setSpaceId(v)}
+              options={[
+                { value: '', label: 'Aucun espace' },
+                ...spaces.map((s) => ({ value: s.id, label: s.nom })),
+              ]}
+            />
           )}
         </div>
 
@@ -170,33 +167,29 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
             Collecteur Attribué (Optionnel)
           </label>
-          <select
+          <CustomSelect
             value={collecteurId}
-            onChange={(e) => setCollecteurId(e.target.value)}
-            className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-          >
-            <option value="">Aucun collecteur attribué</option>
-            {collectors.map((c: Profile) => (
-              <option key={c.id} value={c.id}>
-                {c.nom} ({c.email})
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setCollecteurId(v)}
+            options={[
+              { value: '', label: 'Aucun collecteur attribué' },
+              ...collectors.map((c) => ({ value: c.id, label: `${c.nom} (${c.email})` })),
+            ]}
+          />
         </div>
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
             Statut
           </label>
-          <select
+          <CustomSelect
             value={statut}
-            onChange={(e) => setStatut(e.target.value as PosStatus)}
-            className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-          >
-            <option value="actif">Actif</option>
-            <option value="inactif">Inactif</option>
-            <option value="suspendu">Suspendu</option>
-          </select>
+            onChange={(v) => setStatut(v as PosStatus)}
+            options={[
+              { value: 'actif', label: 'Actif' },
+              { value: 'inactif', label: 'Inactif' },
+              { value: 'suspendu', label: 'Suspendu' },
+            ]}
+          />
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
