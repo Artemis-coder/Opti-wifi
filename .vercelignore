@@ -1,0 +1,10 @@
+# Fichiers à ne jamais envoyer à Vercel lors d'un déploiement CLI
+# (les déploiements Git n'utilisent que les fichiers commités)
+.env
+.env.*
+!.env.example
+.claude/
+.kilo/
+cookies.txt
+scripts/backups/
+*.log

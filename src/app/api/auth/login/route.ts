@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate, signToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import type { AuthUser } from "@/lib/neon/query-builder";
-import { NextApiRequest } from 'next';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,12 +14,13 @@ export async function POST(request: NextRequest) {
     const user = await authenticate(email, password);
 
     if (!user) {
+      // Message générique intentionnel — ne pas distinguer "email inconnu" de "mauvais mot de passe"
       return NextResponse.json({ error: 'Identifiants invalides.' }, { status: 401 });
     }
 
     const token = signToken(user);
 
-    const { nom, role, telephone, devise, organization_id, email_confirmed, user_metadata, app_metadata, ...safeUser } = user;
+    // Ne retourner QUE les champs nécessaires côté client — jamais user_metadata, app_metadata, password_hash
     const sessionUser: AuthUser = {
       id: user.id,
       email: user.email,
@@ -30,8 +30,6 @@ export async function POST(request: NextRequest) {
       devise: user.devise,
       organization_id: user.organization_id,
       email_confirmed: user.email_confirmed,
-      user_metadata: user.user_metadata,
-      app_metadata: user.app_metadata,
       created_at: user.created_at,
       updated_at: user.updated_at,
     };
@@ -54,7 +52,10 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err: unknown) {
-    console.error('Login API error:', err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) || 'Erreur interne.' }, { status: 500 });
+    // En production, ne jamais exposer les détails techniques de l'erreur
+    const isDev = process.env.NODE_ENV !== 'production';
+    const message = isDev && err instanceof Error ? err.message : 'Erreur de connexion. Veuillez réessayer.';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

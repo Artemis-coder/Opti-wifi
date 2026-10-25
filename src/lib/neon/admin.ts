@@ -159,6 +159,15 @@ export function createAdminClient() {
           return { data: null, error: { message: err.message || 'Database error' } };
         }
       },
+
+      deleteUser: async (userId: string): Promise<{ data: { user: null }; error: SupabaseError | null }> => {
+        try {
+          await query('DELETE FROM users WHERE id = $1', [userId]);
+          return { data: { user: null }, error: null };
+        } catch (err: any) {
+          return { data: { user: null }, error: { message: err.message || 'Database error' } };
+        }
+      },
     },
   };
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 
 interface PendingValidation {
   id: string;
@@ -60,42 +61,59 @@ export function clearOldValidations(maxAgeMs = 24 * 60 * 60 * 1000) {
   }
 }
 
+/** Vérifie l'authentification et renvoie le payload JWT ou null. */
+function requireAuth(request: NextRequest) {
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  if (!token) return null;
+  return verifyToken(token);
+}
+
 export async function GET(request: NextRequest) {
+  const payload = requireAuth(request);
+  if (!payload) {
+    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
-  
+
   if (id) {
     const validation = getValidation(id);
     if (!validation) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Validation introuvable.' }, { status: 404 });
     }
     return NextResponse.json(validation);
   }
-  
+
   clearOldValidations();
   return NextResponse.json({ validations: getPendingValidations() });
 }
 
 export async function POST(request: NextRequest) {
+  const payload = requireAuth(request);
+  if (!payload) {
+    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { action, id, response } = body;
-    
+
     if (action === 'respond' && id) {
       const validation = updateValidation(id, 'instructions', response);
       if (validation) {
         return NextResponse.json({ ok: true, validation });
       }
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Validation introuvable.' }, { status: 404 });
     }
-    
+
     if (action === 'create') {
       const validation = createValidationRequest(body);
       return NextResponse.json({ ok: true, validation });
     }
-    
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+
+    return NextResponse.json({ error: 'Action invalide.' }, { status: 400 });
   } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

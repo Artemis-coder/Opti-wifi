@@ -18,36 +18,84 @@ import {
   Hash,
   DollarSign,
   ShoppingBag,
+  Clock,
+  Wallet,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
-import { Collection } from '@/types/database';
+import { formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
+import { Collection, CollectionItem } from '@/types/database';
+import { createClient } from '@/lib/supabase/client';
 
 export default function CollectionDetailPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [collection, setCollection] = useState<Collection | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const supabase = createClient();
+
+  const collectionId = typeof params?.id === 'string'
+    ? params.id
+    : Array.isArray(params?.id)
+    ? params.id[0]
+    : '';
 
   useEffect(() => {
-    if (!params?.id) return;
+    if (!collectionId) return;
+
     async function loadDetail() {
       setLoading(true);
-      const res = await fetch(`/api/collections/${params.id}`);
-      if (!res.ok) {
+      setNotFound(false);
+
+      try {
+        // 1. Charger la collecte avec son POS et son collecteur
+        const { data: colData, error: colError } = await supabase
+          .from('collections')
+          .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
+          .eq('id', collectionId)
+          .single();
+
+        if (colError || !colData) {
+          console.warn('[CollectionDetailPage] Erreur client Supabase, tentative API route:', colError);
+          // Fallback vers l'API route
+          const res = await fetch(`/api/collections/${collectionId}`);
+          if (!res.ok) {
+            setNotFound(true);
+            setLoading(false);
+            return;
+          }
+          const data = await res.json();
+          setCollection(data);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Charger les items de la collecte avec leur type de ticket
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('collection_items')
+          .select('*, ticket_type:ticket_types(*)')
+          .eq('collection_id', collectionId);
+
+        if (itemsError) {
+          console.warn('[CollectionDetailPage] Erreur items:', itemsError);
+        }
+
+        setCollection({
+          ...(colData as Collection),
+          items: (itemsData as CollectionItem[]) || [],
+        });
+      } catch (err) {
+        console.error('[CollectionDetailPage] Exception au chargement:', err);
         setNotFound(true);
+      } finally {
         setLoading(false);
-        return;
       }
-      const data = await res.json();
-      setCollection(data);
-      setLoading(false);
     }
+
     loadDetail();
-  }, [params?.id]);
+  }, [collectionId, supabase]);
 
   /* ── helpers ── */
   const statusConfig = {
@@ -95,6 +143,11 @@ export default function CollectionDetailPage() {
     ? formatDateFR(collection.date_collecte)
     : formatDateFR(collection.created_at);
 
+  const montantCollecte = Number(collection.montant_collecte || 0);
+  const montantAttendu = Number(collection.montant_attendu || 0);
+  const commission = Number(collection.commission || 0);
+  const montantRestant = montantCollecte - commission;
+
   return (
     <div className="space-y-5 max-w-3xl mx-auto pb-10">
       {/* ── Back nav + Header ── */}
@@ -123,8 +176,8 @@ export default function CollectionDetailPage() {
 
       {/* ── Summary Card ── */}
       <Card className="p-4 sm:p-6 border-slate-200 dark:border-slate-800 space-y-4">
-        {/* POS + Collecteur + Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* POS + Collecteur + Date d'opération + Enregistrement Système */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
               <Store className="w-4 h-4" />
@@ -155,7 +208,21 @@ export default function CollectionDetailPage() {
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Date de collecte</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{displayDate}</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                {formatDateOnlyFR(collection.date_collecte || collection.created_at)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Enregistré dans le système</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                {formatDateFR(collection.created_at)}
+              </p>
             </div>
           </div>
         </div>
@@ -164,38 +231,50 @@ export default function CollectionDetailPage() {
         <div className="border-t border-slate-200 dark:border-slate-800" />
 
         {/* Financial KPIs row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Montant Attendu */}
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
               <DollarSign className="w-3 h-3 text-blue-500 shrink-0" />
               Attendu
             </div>
-            <p className="text-base font-extrabold text-slate-700 dark:text-slate-200 truncate">
-              {formatCurrencyFCFA(Number(collection.montant_attendu))}
+            <p className="text-sm sm:text-base font-extrabold text-slate-700 dark:text-slate-200 truncate">
+              {formatCurrencyFCFA(montantAttendu)}
             </p>
           </div>
 
-          {/* Montant Encaissé */}
+          {/* Montant Encaissé Brut */}
           <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-500 mb-1">
               <Receipt className="w-3 h-3 shrink-0" />
-              Encaissé
+              Total Encaissé
             </div>
-            <p className="text-base font-extrabold text-emerald-700 dark:text-emerald-300 truncate">
-              {formatCurrencyFCFA(Number(collection.montant_collecte))}
+            <p className="text-sm sm:text-base font-extrabold text-emerald-700 dark:text-emerald-300 truncate">
+              {formatCurrencyFCFA(montantCollecte)}
             </p>
           </div>
 
-          {/* Commission */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+          {/* Commission POS */}
+          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-500 mb-1">
               <ShoppingBag className="w-3 h-3 shrink-0" />
-              Commission
+              Commission POS
             </div>
-            <p className="text-base font-extrabold text-slate-700 dark:text-slate-200 truncate">
-              {formatCurrencyFCFA(Number(collection.commission || 0))}
+            <p className="text-sm sm:text-base font-extrabold text-amber-700 dark:text-amber-300 truncate">
+              {formatCurrencyFCFA(commission)}
             </p>
+          </div>
+
+          {/* Montant Restant (Net après commission) */}
+          <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-800/40">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-blue-500 mb-1">
+              <Wallet className="w-3 h-3 shrink-0" />
+              Net Restant
+            </div>
+            <p className="text-sm sm:text-base font-extrabold text-blue-700 dark:text-blue-300 truncate">
+              {formatCurrencyFCFA(montantRestant)}
+            </p>
+            <p className="text-[9px] text-blue-500/80 mt-0.5">après commission</p>
           </div>
 
           {/* Écart */}
@@ -221,7 +300,7 @@ export default function CollectionDetailPage() {
               Écart
             </div>
             <p
-              className={`text-base font-extrabold truncate ${
+              className={`text-sm sm:text-base font-extrabold truncate ${
                 diffIsZero
                   ? 'text-emerald-700 dark:text-emerald-300'
                   : diffIsNeg
@@ -316,13 +395,31 @@ export default function CollectionDetailPage() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-700">
+                <tfoot className="bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-700 text-xs font-semibold">
                   <tr>
-                    <td colSpan={4} className="px-4 py-3 text-xs font-bold text-slate-600 dark:text-slate-400 text-right">
-                      Total encaissé
+                    <td colSpan={4} className="px-4 py-2 text-slate-500 text-right">
+                      Total brut encaissé
                     </td>
-                    <td className="px-4 py-3 text-right text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
-                      {formatCurrencyFCFA(Number(collection.montant_collecte))}
+                    <td className="px-4 py-2 text-right font-bold text-slate-900 dark:text-white">
+                      {formatCurrencyFCFA(montantCollecte)}
+                    </td>
+                  </tr>
+                  {commission > 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-2 text-amber-600 dark:text-amber-400 text-right">
+                        Commission POS déduite
+                      </td>
+                      <td className="px-4 py-2 text-right font-bold text-amber-600 dark:text-amber-400">
+                        - {formatCurrencyFCFA(commission)}
+                      </td>
+                    </tr>
+                  )}
+                  <tr className="border-t border-slate-200 dark:border-slate-700 bg-blue-50/50 dark:bg-blue-950/20">
+                    <td colSpan={4} className="px-4 py-3 font-bold text-blue-700 dark:text-blue-300 text-right">
+                      Montant net restant après commission
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm font-extrabold text-blue-700 dark:text-blue-300">
+                      {formatCurrencyFCFA(montantRestant)}
                     </td>
                   </tr>
                 </tfoot>
@@ -373,14 +470,28 @@ export default function CollectionDetailPage() {
                 </div>
               ))}
 
-              {/* Mobile total */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
-                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
-                  Total encaissé
-                </span>
-                <span className="text-base font-extrabold text-emerald-700 dark:text-emerald-300">
-                  {formatCurrencyFCFA(Number(collection.montant_collecte))}
-                </span>
+              {/* Mobile financial summary */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Total brut collecté</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {formatCurrencyFCFA(montantCollecte)}
+                  </span>
+                </div>
+                {commission > 0 && (
+                  <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+                    <span className="font-medium">Commission POS</span>
+                    <span className="font-bold">- {formatCurrencyFCFA(commission)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <span className="font-bold text-blue-700 dark:text-blue-300">
+                    Net restant après commission
+                  </span>
+                  <span className="text-base font-extrabold text-blue-700 dark:text-blue-300">
+                    {formatCurrencyFCFA(montantRestant)}
+                  </span>
+                </div>
               </div>
             </div>
           </Card>

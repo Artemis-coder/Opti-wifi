@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Ticket, 
   Banknote, 
@@ -15,6 +16,7 @@ import {
   Package,
   User,
   Calendar,
+  ChevronRight,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +28,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Collection, CollectionItem, TicketAllocation } from '@/types/database';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const { currentSpaceId } = useSpaceStore();
   const [loading, setLoading] = useState(true);
@@ -351,15 +354,16 @@ export default function DashboardPage() {
                       <th className="px-4 py-3">Collecteur</th>
                       <th className="px-4 py-3 text-right">Montant Encaissé</th>
                       <th className="px-4 py-3 text-center">Statut</th>
-                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Enregistré le</th>
+                      <th className="px-4 py-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                     {collections.slice(0, 5).map((col: Collection) => (
-                      <tr 
-                        key={col.id} 
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer"
-                        onClick={() => window.location.href = `/collections/${col.id}`}
+                      <tr
+                        key={col.id}
+                        onClick={() => router.push(`/collections/${col.id}`)}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer group"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -383,7 +387,10 @@ export default function DashboardPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                          {col.date_collecte ? formatDateFR(col.date_collecte) : formatDateFR(col.created_at)}
+                          {formatDateFR(col.created_at)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition" />
                         </td>
                       </tr>
                     ))}
@@ -394,10 +401,13 @@ export default function DashboardPage() {
               {/* Mobile Card Layout (visible on mobile, hidden from md upwards) */}
               <div className="md:hidden p-3 space-y-2.5">
                 {collections.slice(0, 5).map((col: Collection) => (
-                  <Link
-                    href={`/collections/${col.id}`}
+                  <div
                     key={`dashboard-col-${col.id}`}
-                    className="block p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs hover:border-brand-300 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => router.push(`/collections/${col.id}`)}
+                    onKeyDown={(e) => e.key === 'Enter' && router.push(`/collections/${col.id}`)}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs cursor-pointer hover:border-brand-500/50 hover:shadow-sm transition active:scale-[0.99]"
                   >
                     {/* Header: POS + Status */}
                     <div className="flex items-start justify-between gap-2">
@@ -427,7 +437,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs">
                       <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
                         <Calendar className="w-3.5 h-3.5 shrink-0" />
-                        <span>{col.date_collecte ? formatDateFR(col.date_collecte) : formatDateFR(col.created_at)}</span>
+                        <span>{formatDateFR(col.created_at)}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
@@ -438,7 +448,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </Card>
