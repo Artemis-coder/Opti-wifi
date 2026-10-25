@@ -479,9 +479,13 @@ function textOf(content: Anthropic.ContentBlock[]): string {
   return content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('\n').trim();
 }
 
-/** Répond à un message du super admin (outils + confirmation des actions). */
-export async function runClaudeAssistant(chatId: string, userText: string): Promise<void> {
-  await sendTyping(chatId);
+/**
+ * Répond à un message du super admin (outils + confirmation des actions).
+ * `deliver: false` : la réponse est seulement renvoyée (test depuis le back-office), pas envoyée sur Telegram.
+ */
+export async function runClaudeAssistant(chatId: string, userText: string, opts: { deliver?: boolean } = {}): Promise<string> {
+  const deliver = opts.deliver !== false;
+  if (deliver) await sendTyping(chatId);
   const history = await loadHistory(chatId);
   await query(`INSERT INTO conversation_messages (chat_id, role, content) VALUES ($1, 'user', $2)`, [chatId, userText]);
 
@@ -515,7 +519,7 @@ export async function runClaudeAssistant(chatId: string, userText: string): Prom
       }
 
       messages.push({ role: 'assistant', content: response.content as Anthropic.ContentBlockParam[] });
-      if (round === 0) await sendTyping(chatId);
+      if (round === 0 && deliver) await sendTyping(chatId);
       const results = await Promise.all(
         toolUses.map(async (t): Promise<Anthropic.ToolResultBlockParam> => {
           try {
@@ -544,7 +548,8 @@ export async function runClaudeAssistant(chatId: string, userText: string): Prom
     finalText,
     JSON.stringify({ model: CLAUDE_MODEL }),
   ]);
-  await sendBotMessage(chatId, toTelegramHtml(finalText));
+  if (deliver) await sendBotMessage(chatId, toTelegramHtml(finalText));
+  return finalText;
 }
 
 export const HELP_TEXT = `🤖 <b>Assistant OptiSpace (Claude)</b>

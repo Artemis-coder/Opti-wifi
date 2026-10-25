@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { BellRing, CheckCircle2, Send, XCircle } from 'lucide-react';
+import { BellRing, Bot, CheckCircle2, Send, XCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { getPushState, subscribeToPush, type PushState } from '@/lib/push-client';
@@ -38,6 +38,21 @@ export function NotificationChannelsTest() {
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
+  const [assistant, setAssistant] = useState<{ ok: boolean; answer?: string; error?: string; duration_ms?: number } | null>(null);
+
+  async function testAssistant() {
+    setAsking(true);
+    setAssistant(null);
+    try {
+      const res = await fetch('/api/platform/assistant/test', { method: 'POST' });
+      setAssistant(await res.json());
+    } catch {
+      setAssistant({ ok: false, error: 'Erreur réseau' });
+    } finally {
+      setAsking(false);
+    }
+  }
 
   useEffect(() => {
     getPushState().then(setPushState).catch(() => setPushState('unsupported'));
@@ -108,6 +123,26 @@ export function NotificationChannelsTest() {
           />
         </ul>
       )}
+
+      <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+        <Button variant="outline" onClick={testAssistant} isLoading={asking} className="gap-2">
+          <Bot className="w-4 h-4" /> Tester l&apos;assistant Claude du bot
+        </Button>
+        {assistant && (
+          <div className="text-sm space-y-1">
+            <Line
+              ok={assistant.ok}
+              label="Assistant"
+              detail={assistant.ok ? `réponse en ${((assistant.duration_ms || 0) / 1000).toFixed(1)} s` : assistant.error || assistant.answer || 'échec'}
+            />
+            {assistant.ok && assistant.answer && (
+              <p className="whitespace-pre-wrap text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3">
+                {assistant.answer.replace(/<[^>]+>/g, '')}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
