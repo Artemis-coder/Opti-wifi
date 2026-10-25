@@ -24,6 +24,7 @@ export interface Profile {
   organization_id?: string;
   is_active?: boolean;
   deleted_at?: string | null;
+  last_sign_in_at?: string | null;
   created_at: string;
   updated_at: string;
 }
