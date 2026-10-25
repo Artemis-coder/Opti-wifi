@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { TableBuilder, makeError, type QuerySpec } from '@/lib/neon/query-builder';
 import { AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import { getSessionContext, type SessionContext } from '@/lib/tenant';
+import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
 
 // Passerelle générique utilisée par le client navigateur (lib/supabase/client).
 // Règles imposées côté serveur :
@@ -205,6 +206,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await TableBuilder.fromSpec(spec).execute();
+
+    // Nouvel encaissement saisi par un membre : prévenir les administrateurs de l'organisation
+    if (spec.tableName === 'collections' && spec.action === 'insert' && !result.error && ctx.organizationId) {
+      const inserted = (Array.isArray(result.data) ? result.data[0] : result.data) as
+        | { id?: string; pos_id?: string; montant_collecte?: number | string | null }
+        | null;
+      const organizationId = ctx.organizationId;
+      if (inserted) notifyInBackground(() => notifyCollectionCreated(organizationId, ctx.userId, inserted));
+    }
+
     return NextResponse.json(result);
   } catch (err) {
     console.error('API db error:', err);

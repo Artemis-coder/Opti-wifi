@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/neon/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
+import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,6 +71,11 @@ export async function POST(request: NextRequest) {
     if (colError) {
       console.error('Erreur création collecte:', colError);
       return NextResponse.json({ error: 'Erreur lors de la création de la collecte.' }, { status: 500 });
+    }
+
+    if (collection && callerUser) {
+      const actorId = callerUser.id;
+      notifyInBackground(() => notifyCollectionCreated(orgId, actorId, collection));
     }
 
     return NextResponse.json({

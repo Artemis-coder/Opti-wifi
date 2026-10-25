@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { query } from '@/lib/neon/db';
 import { hasUsedTrialPlan, isTrialPlan, TRIAL_ALREADY_USED_MESSAGE } from '@/lib/trial-plan';
+import { notifyInBackground, notifySuperAdmins } from '@/lib/notifications';
 
 // Le client ne prolonge plus son abonnement lui-même : il envoie une demande de licence
 // que le super admin valide (POST /api/platform/licenses) ou refuse.
@@ -134,6 +135,22 @@ export async function POST(request: NextRequest) {
        RETURNING id, type, status, duration_months, created_at`,
       [ctx.organizationId, targetPlanId, months, type, note, ctx.userId]
     );
+
+    const organizationId = ctx.organizationId;
+    const TYPE_LABELS: Record<string, string> = { renewal: 'Renouvellement', new: 'Nouvelle licence', upgrade: 'Changement de forfait' };
+    notifyInBackground(async () => {
+      const info = await query(
+        `SELECT o.name AS org, p.name AS plan FROM organizations o, subscription_plans p WHERE o.id = $1 AND p.id = $2`,
+        [organizationId, targetPlanId]
+      );
+      const r = info.rows[0];
+      await notifySuperAdmins({
+        type: 'license_request.new',
+        title: `Demande de licence : ${r?.org || 'client'}`,
+        body: `${TYPE_LABELS[type]} — ${r?.plan || 'forfait'}, ${months} mois. À valider.`,
+        link: '/platform/license-requests',
+      });
+    });
 
     return NextResponse.json({
       success: true,

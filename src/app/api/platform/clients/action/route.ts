@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { notifyInBackground, notifyOrganizationAdmins, type NotificationInput } from '@/lib/notifications';
 
 const ACTION_MESSAGES: Record<string, string> = {
   approve: 'inscription validée',
@@ -108,6 +109,19 @@ export async function PATCH(request: Request) {
     new_data: { status: newStatus, reason: reason || null },
     ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
   });
+
+  const CLIENT_NOTIFICATIONS: Record<string, NotificationInput> = {
+    approve: { type: 'registration.approved', title: 'Votre inscription est validée', body: 'Bienvenue sur OptiSpace : votre espace est maintenant accessible.', link: '/dashboard' },
+    cancel: { type: 'registration.rejected', title: "Votre inscription n'a pas été validée", body: reason && reason !== 'Super admin action' ? `Motif : ${reason}` : 'Contactez le support pour plus d’informations.', link: '/login' },
+    suspend: { type: 'organization.suspended', title: 'Votre espace a été suspendu', body: 'L’accès à vos données est temporairement coupé. Contactez le support.', link: '/dashboard' },
+    reactivate: { type: 'organization.reactivated', title: 'Votre espace est réactivé', body: 'Vous avez de nouveau accès à toutes vos données.', link: '/dashboard' },
+    activate: { type: 'organization.reactivated', title: 'Votre espace est activé', body: 'Vous avez accès à toutes vos données.', link: '/dashboard' },
+    archive: { type: 'organization.archived', title: 'Votre espace a été fermé', body: 'Contactez le support pour plus d’informations.', link: '/login' },
+  };
+  const clientNotification = CLIENT_NOTIFICATIONS[action];
+  if (clientNotification) {
+    notifyInBackground(() => notifyOrganizationAdmins(organizationId, clientNotification));
+  }
 
   return NextResponse.json({
     success: true,

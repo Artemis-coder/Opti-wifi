@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, Wifi, WifiOff, AlertTriangle, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface HeaderProps {
   onOpenMobileMenu?: () => void;
@@ -69,6 +70,7 @@ export function Header({ onOpenMobileMenu, title }: HeaderProps) {
 
         {/* Right: Quick mobile indicators & avatar button */}
         <div className="flex items-center gap-2 shrink-0">
+          <NotificationBell />
           {/* Network status pill on mobile */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300">
             {isOnline && (

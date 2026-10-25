@@ -3,6 +3,7 @@ import { requirePlatformAdmin } from '@/lib/neon/server';
 import { query } from '@/lib/neon/db';
 import { hashPassword } from '@/lib/neon/auth';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
+import { notifyInBackground, notifyUsers } from '@/lib/notifications';
 
 export async function GET(request: NextRequest) {
   try {
@@ -294,6 +295,15 @@ export async function PATCH(request: NextRequest) {
                   updated_at = NOW()
             WHERE id = $2`,
           [passwordHash, userId]
+        );
+
+        notifyInBackground(() =>
+          notifyUsers([userId], {
+            type: 'account.password_reset',
+            title: 'Votre mot de passe a été réinitialisé',
+            body: 'Un administrateur a réinitialisé votre mot de passe. Vous en choisirez un nouveau à votre prochaine connexion.',
+            link: '/change-password',
+          })
         );
 
         return NextResponse.json({

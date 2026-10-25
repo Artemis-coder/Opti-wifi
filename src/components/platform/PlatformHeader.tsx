@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Menu, Search, Bell, LogOut } from 'lucide-react';
+import { Menu, Search, LogOut } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useRouter } from 'next/navigation';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
@@ -55,14 +56,7 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        <button
-          type="button"
-          className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition relative"
-          aria-label="Notifications"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-brand-500 rounded-full" />
-        </button>
+        <NotificationBell />
 
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden sm:block text-right">
