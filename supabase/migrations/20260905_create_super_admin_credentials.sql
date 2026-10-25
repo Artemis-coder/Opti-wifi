@@ -7,9 +7,13 @@ DO $$
 DECLARE
   new_user_id UUID := gen_random_uuid();
   admin_email VARCHAR := 'superadmin@optiwifi.com';
-  admin_password VARCHAR := 'SuperAdminOpti2026!'; -- Mot de passe par défaut
+  admin_password VARCHAR := 'CHANGE_ME_BEFORE_RUNNING'; -- À remplacer par un mot de passe fort avant exécution (ne jamais commiter la vraie valeur)
   org_id UUID;
 BEGIN
+  IF admin_password = 'CHANGE_ME_BEFORE_RUNNING' THEN
+    RAISE EXCEPTION 'Définissez admin_password avant d''exécuter ce script';
+  END IF;
+
   -- 1. Récupérer ou créer une organisation par défaut
   SELECT id INTO org_id FROM organizations LIMIT 1;
   IF org_id IS NULL THEN
