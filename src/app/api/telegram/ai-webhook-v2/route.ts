@@ -4,7 +4,7 @@ import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
  * Supports: Free models (DeepSeek, Llama, Mistral, etc.), Voice transcription, Menus, Memory
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { freeLLMClient, selectBestAvailableModel, getModelInfo, FREE_MODELS, type ModelId, type ModelInfo } from '@/lib/free-llm';
 import { 
   sendTelegramMessage 
@@ -43,6 +43,17 @@ import {
 } from '@/lib/conversation-memory';
 import { executeFunction } from '@/lib/bot-functions';
 import { PROJECT_KNOWLEDGE, BOT_CAPABILITIES } from '@/lib/bot-knowledge';
+import {
+  ADMIN_MENU,
+  HELP_TEXT,
+  MENU_PROMPTS,
+  handleActionCallback,
+  isAssistantAvailable,
+  runAssistant,
+  sendBotMessage,
+  toTelegramHtml,
+} from '@/lib/bot/assistant';
+import { getTechnicalStatus } from '@/lib/bot/admin-data';
 
 const SYSTEM_PROMPT = `Tu es l'assistant IA expert d'OptiWifi, une plateforme SaaS de gestion WiFi.
 
@@ -79,26 +90,25 @@ export async function POST(request: NextRequest) {
   if (!isTelegramWebhookAuthorized(request)) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
   }
-  await initializeDB();
-  
-  try {
-    const body = await request.json();
-    const update = body;
+  const update = await request.json().catch(() => null);
+  if (!update) return NextResponse.json({ ok: true });
 
-    // Handle different update types
-    if (update.message) {
-      await handleMessage(update.message);
-    } else if (update.callback_query) {
-      await handleCallbackQuery(update.callback_query);
-    } else if (update.edited_message) {
-      await handleMessage(update.edited_message);
+  // Réponse immédiate à Telegram (sinon il renvoie le message), traitement en arrière-plan
+  after(async () => {
+    try {
+      await initializeDB();
+      if (update.message) {
+        await handleMessage(update.message);
+      } else if (update.callback_query) {
+        await handleCallbackQuery(update.callback_query);
+      } else if (update.edited_message && !isAssistantAvailable()) {
+        await handleMessage(update.edited_message);
+      }
+    } catch (error) {
+      console.error('Webhook error:', error);
     }
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error('Webhook error:', error);
-    return NextResponse.json({ ok: true });
-  }
+  });
+  return NextResponse.json({ ok: true });
 }
 
 async function handleMessage(message: any) {
@@ -107,12 +117,18 @@ async function handleMessage(message: any) {
   const authorizedChatId = process.env.TELEGRAM_CHAT_ID;
 
   if (chatId !== authorizedChatId) {
-    await sendMessageWithKeyboard(chatId, '❌ Non autorisé. Ce bot est privé.', MAIN_MENU);
+    await sendTelegramMessage({ chat_id: chatId, text: '❌ Non autorisé. Ce bot est privé.' });
     return;
   }
 
   // Get or create session
   const session = await getOrCreateSession(chatId);
+
+  // Assistant (Claude par défaut, modèles open source en relais) ; ancien moteur sans aucune clé d'IA
+  if (isAssistantAvailable()) {
+    await handleClaudeMessage(message, chatId, session);
+    return;
+  }
   
   // Handle different message types
   if (message.voice) {
@@ -126,42 +142,71 @@ async function handleMessage(message: any) {
   }
 }
 
+/** Télécharge un message vocal Telegram et le transcrit (Whisper via OpenRouter ou Groq). */
+async function transcribeVoice(message: any, session: any): Promise<{ text: string; model: string }> {
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${message.voice.file_id}`);
+  const fileData = await fileRes.json();
+  if (!fileData.ok) throw new Error('Fichier audio introuvable');
+  const audioRes = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`);
+  const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
+
+  const transcriptionModelKey = session.transcription_model || 'openrouter/whisper';
+  const modelInfo = getModelInfo(transcriptionModelKey as ModelId);
+  const text = await freeLLMClient.transcribeAudio(audioBuffer, 'fr', modelInfo?.model || 'openai/whisper-large-v3');
+  return { text: text.trim(), model: modelInfo?.name || 'Whisper' };
+}
+
 async function handleVoiceMessage(message: any, chatId: string, session: any) {
-  const client = freeLLMClient;
-  
+  const contextMenu = getContextualMenu(session.context);
   try {
-    // Download voice file
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${message.voice.file_id}`);
-    const fileData = await fileRes.json();
-    
-    if (!fileData.ok) throw new Error('Failed to get file info');
-    
-    const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
-    const audioRes = await fetch(fileUrl);
-    const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
-    
-    // Use free LLM client for transcription (will try OpenRouter then Groq)
-    const transcriptionModelKey = session.transcription_model || 'openrouter/whisper';
-    const modelInfo = getModelInfo(transcriptionModelKey as ModelId);
-    const actualModelName = modelInfo?.model || 'openai/whisper-large-v3';
-    const modelDisplayName = modelInfo?.name || 'Whisper';
-    
-    // Transcribe
-    const contextMenu = getContextualMenu(session.context);
-    await sendMessageWithKeyboard(chatId, `🎙️ Transcription en cours avec <b>${modelDisplayName}</b>...`, contextMenu, 'HTML');
-    
-    const transcript = await client.transcribeAudio(audioBuffer, 'fr', actualModelName);
-    
-    await sendMessageWithKeyboard(chatId, `🎙️ <b>Transcription (${modelDisplayName}) :</b>\n\n${transcript}`, contextMenu, 'HTML');
-    
-    // Process as text message
-    await handleTextMessage(transcript, chatId, message.from?.first_name || 'Utilisateur', session);
-    
+    await sendMessageWithKeyboard(chatId, '🎙️ Transcription en cours...', contextMenu, 'HTML');
+    const { text, model } = await transcribeVoice(message, session);
+    await sendMessageWithKeyboard(chatId, `🎙️ <b>Transcription (${model}) :</b>\n\n${toTelegramHtml(text)}`, contextMenu, 'HTML');
+    await handleTextMessage(text, chatId, message.from?.first_name || 'Utilisateur', session);
   } catch (error) {
-    const contextMenu = getContextualMenu(session.context);
-    await sendMessageWithKeyboard(chatId, `❌ Erreur transcription : ${error}`, contextMenu);
+    console.error('Transcription error:', error);
+    await sendMessageWithKeyboard(chatId, '❌ La transcription a échoué. Réessayez ou écrivez votre message.', contextMenu);
   }
+}
+
+/** Messages traités par l'assistant Claude : commandes, boutons du menu, texte et vocal. */
+async function handleClaudeMessage(message: any, chatId: string, session: any) {
+  let text: string = (message.text || '').trim();
+
+  if (message.voice) {
+    try {
+      const { text: transcript } = await transcribeVoice(message, session);
+      if (!transcript) {
+        await sendBotMessage(chatId, "🎙️ Je n'ai rien entendu dans ce message vocal.");
+        return;
+      }
+      await sendBotMessage(chatId, `🎙️ <i>${toTelegramHtml(transcript)}</i>`);
+      text = transcript;
+    } catch (error) {
+      console.error('Transcription error:', error);
+      await sendBotMessage(chatId, '❌ La transcription a échoué. Réessayez ou écrivez votre message.');
+      return;
+    }
+  }
+  if (!text) return;
+
+  const command = text.split(/\s+/)[0].toLowerCase().replace(/@.*$/, '');
+  if (['/start', '/menu'].includes(command)) {
+    await sendBotMessage(chatId, `👋 Bonjour ! Que voulez-vous savoir ou faire ?\n\n${HELP_TEXT}`);
+    return;
+  }
+  if (['/aide', '/help', '❓ aide'].includes(command) || text === '❓ Aide') {
+    await sendBotMessage(chatId, HELP_TEXT);
+    return;
+  }
+  if (['/effacer', '/clear'].includes(command)) {
+    await clearConversationHistory(chatId);
+    await sendBotMessage(chatId, '🧹 Conversation effacée : je repars de zéro.');
+    return;
+  }
+
+  await runAssistant(chatId, MENU_PROMPTS[text] || text);
 }
 
 async function handleTextMessage(text: string, chatId: string, userName: string, session: any) {
@@ -307,18 +352,10 @@ async function handleMenuButton(text: string, chatId: string, userName: string, 
   // Main Menu Buttons
   if (text === '📊 Statut Projet') {
     await updateSessionContext(chatId, 'project');
-    const result = await executeFunction('check_deployment_status', {}, chatId);
-    await sendMessageWithKeyboard(chatId, 
-      `📊 <b>Statut Projet OptiWifi</b>\n\n` +
-      `🌐 <b>URL :</b> https://www.optiwifi.site\n` +
-      `📦 <b>Dernier déploiement :</b> ${result?.state || 'Inconnu'}\n` +
-      `🕐 <b>Date :</b> ${result?.createdAt ? new Date(result.createdAt).toLocaleString('fr-FR') : 'N/A'}\n` +
-      `🔗 <a href="${result?.url || 'https://vercel.com/optiwifi'}">Voir sur Vercel</a>`,
-      PROJECT_MENU
-    );
+    await sendMessageWithKeyboard(chatId, formatTechnicalStatus(await getTechnicalStatus()), PROJECT_MENU);
     return true;
   }
-  
+
   if (text === '🚀 Déployer') {
     await updateSessionContext(chatId, 'project');
     await sendMessageWithKeyboard(chatId, 
@@ -1230,6 +1267,17 @@ async function handleCallbackQuery(callbackQuery: any) {
 
   const [action, ...params] = data.split(':');
 
+  // Confirmation / annulation d'une action préparée par l'assistant
+  if (action === 'act') {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }),
+    }).catch(() => {});
+    await sendBotMessage(chatId, await handleActionCallback(chatId, params[0], params[1] || ''));
+    return;
+  }
+
   switch (action) {
     case 'model': {
       const model = params.join(':');
@@ -1325,4 +1373,21 @@ function getContextualMenu(context: string) {
     new_project: NEW_PROJECT_MENU,
   };
   return menus[context] || MAIN_MENU;
+}
+function formatTechnicalStatus(status: Awaited<ReturnType<typeof getTechnicalStatus>>): string {
+  const fmt = (d: string) => new Date(d).toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'short', timeStyle: 'short' });
+  const deployments = (list: unknown) =>
+    Array.isArray(list)
+      ? list.map((d) => `• ${d.etat === 'READY' ? '✅' : d.etat === 'ERROR' ? '❌' : '🔄'} ${fmt(d.date)} — ${toTelegramHtml(d.message || d.commit || '')} <code>${d.commit || ''}</code>`).join('\n') || '• aucun'
+      : `• ⚠️ ${toTelegramHtml((list as { erreur?: string })?.erreur || 'indisponible')}`;
+  const v = status.version_en_cours;
+  const db = status.base_de_donnees as { ok?: boolean; latence_ms?: number };
+  return (
+    `📊 <b>Statut du projet OptiSpace</b>\n\n` +
+    `🌐 https://www.optiwifi.site\n` +
+    `🏷️ <b>Version en cours :</b> ${v.environnement} · <code>${v.commit || '—'}</code> ${toTelegramHtml(v.message || '')}\n` +
+    `🗄️ <b>Base de données :</b> ${db.ok ? `✅ OK (${db.latence_ms} ms)` : '❌ injoignable'}\n\n` +
+    `🚀 <b>Production</b>\n${deployments(status.deploiements_production)}\n\n` +
+    `🧪 <b>Preview (develop)</b>\n${deployments(status.deploiements_preview)}`
+  );
 }

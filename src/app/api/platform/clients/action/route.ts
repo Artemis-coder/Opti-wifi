@@ -1,131 +1,28 @@
-import { createServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { notifyInBackground, notifyOrganizationAdmins, type NotificationInput } from '@/lib/notifications';
-
-const ACTION_MESSAGES: Record<string, string> = {
-  approve: 'inscription validée',
-  activate: 'espace activé',
-  reactivate: 'espace réactivé, accès rétabli',
-  suspend: 'espace suspendu, accès coupé pour tous ses membres',
-  cancel: 'inscription refusée',
-  archive: 'organisation supprimée, accès coupé (données conservées, réactivation possible)',
-};
+import { requirePlatformAdmin } from '@/lib/supabase/platform';
+import { setOrganizationStatus } from '@/lib/platform-actions';
 
 export async function PATCH(request: Request) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(undefined, undefined, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  const auth = await requirePlatformAdmin();
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.status === 403 ? 'Accès refusé — droits super_admin requis' : auth.error }, { status: auth.status });
   }
 
-  const { data: platformUser, error: puError } = await supabase
-    .from('platform_users')
-    .select('id, role, is_active')
-    .eq('auth_user_id', user.id)
-    .single();
+  const body = await request.json().catch(() => ({}));
+  const { organizationId, action, reason } = body as { organizationId?: string; action?: string; reason?: string };
 
-  if (puError || !platformUser || !platformUser.is_active || platformUser.role !== 'super_admin') {
-    return NextResponse.json({ error: 'Accès refusé — droits super_admin requis' }, { status: 403 });
+  try {
+    const result = await setOrganizationStatus({
+      organizationId: organizationId || '',
+      action: action || '',
+      reason,
+      platformUserId: auth.platformUser.id,
+      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
+    });
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ success: true, message: result.message, new_status: result.data.new_status });
+  } catch (err) {
+    console.error('Organization action error:', err);
+    return NextResponse.json({ error: "Erreur lors de la mise à jour de l'organisation" }, { status: 500 });
   }
-
-  const body = await request.json();
-  const { organizationId, action, reason } = body;
-
-  if (!organizationId || !action) {
-    return NextResponse.json({ error: 'organizationId et action requis' }, { status: 400 });
-  }
-
-  const { data: org, error: fetchError } = await supabase
-    .from('organizations')
-    .select('id, name, status')
-    .eq('id', organizationId)
-    .single();
-
-  if (fetchError || !org) {
-    return NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 });
-  }
-
-  let newStatus: string;
-  const validActions = ['approve', 'activate', 'suspend', 'reactivate', 'cancel', 'archive'];
-
-  if (!validActions.includes(action)) {
-    return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
-  }
-
-  switch (action) {
-    case 'approve':
-    case 'activate':
-    case 'reactivate':
-      newStatus = 'active';
-      break;
-    case 'suspend':
-      newStatus = 'suspended';
-      break;
-    case 'cancel':
-      newStatus = 'cancelled';
-      break;
-    case 'archive':
-      // Suppression réversible : accès coupé pour tous les membres, données conservées
-      newStatus = 'archived';
-      break;
-    default:
-      return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
-  }
-
-  const { error: updateError } = await supabase
-    .from('organizations')
-    .update({ status: newStatus as never, updated_at: new Date().toISOString() })
-    .eq('id', organizationId);
-
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
-  }
-
-  // Log to platform_audit_logs
-  await supabase.from('platform_audit_logs').insert({
-    platform_user_id: platformUser.id,
-    organization_id: organizationId,
-    action: `organization.${action}`,
-    entity_type: 'organization',
-    entity_id: organizationId,
-    old_data: { status: org.status },
-    new_data: { status: newStatus, reason: reason || null },
-    ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
-  });
-
-  const CLIENT_NOTIFICATIONS: Record<string, NotificationInput> = {
-    approve: { type: 'registration.approved', title: 'Votre inscription est validée', body: 'Bienvenue sur OptiSpace : votre espace est maintenant accessible.', link: '/dashboard' },
-    cancel: { type: 'registration.rejected', title: "Votre inscription n'a pas été validée", body: reason && reason !== 'Super admin action' ? `Motif : ${reason}` : 'Contactez le support pour plus d’informations.', link: '/login' },
-    suspend: { type: 'organization.suspended', title: 'Votre espace a été suspendu', body: 'L’accès à vos données est temporairement coupé. Contactez le support.', link: '/dashboard' },
-    reactivate: { type: 'organization.reactivated', title: 'Votre espace est réactivé', body: 'Vous avez de nouveau accès à toutes vos données.', link: '/dashboard' },
-    activate: { type: 'organization.reactivated', title: 'Votre espace est activé', body: 'Vous avez accès à toutes vos données.', link: '/dashboard' },
-    archive: { type: 'organization.archived', title: 'Votre espace a été fermé', body: 'Contactez le support pour plus d’informations.', link: '/login' },
-  };
-  const clientNotification = CLIENT_NOTIFICATIONS[action];
-  if (clientNotification) {
-    notifyInBackground(() => notifyOrganizationAdmins(organizationId, clientNotification));
-  }
-
-  return NextResponse.json({
-    success: true,
-    message: `« ${org.name} » : ${ACTION_MESSAGES[action] || 'statut mis à jour'}.`,
-    new_status: newStatus,
-  });
 }
