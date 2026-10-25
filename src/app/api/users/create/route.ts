@@ -6,6 +6,7 @@ import { checkQuota } from '@/lib/quotas';
 import { getSessionContext } from '@/lib/tenant';
 import { setMustChangePassword } from '@/lib/password-change';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
+import { notifyInBackground, notifyOrganizationAdmins } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -120,6 +121,20 @@ export async function POST(request: NextRequest) {
     if (fetchError) {
       console.warn('Profile fetch warning:', fetchError.message);
     }
+
+    const creatorId = ctx.userId;
+    notifyInBackground(() =>
+      notifyOrganizationAdmins(
+        orgId,
+        {
+          type: 'team.member_added',
+          title: 'Nouveau membre dans l’équipe',
+          body: `${String(nom).trim()} a été ajouté comme ${role === 'administrateur' ? 'administrateur' : 'collecteur'}.`,
+          link: '/users',
+        },
+        creatorId
+      )
+    );
 
     return NextResponse.json({
       success: true,

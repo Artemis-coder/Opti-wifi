@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPlatformUserFromSession, requirePlatformAdmin } from '@/lib/supabase/platform';
 import { query } from '@/lib/neon/db';
+import { notifyInBackground, notifyOrganizationAdmins } from '@/lib/notifications';
 
 const STATUSES = ['pending', 'approved', 'rejected', 'cancelled'] as const;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -77,6 +78,16 @@ export async function PATCH(request: Request) {
       `INSERT INTO platform_audit_logs (platform_user_id, organization_id, action, entity_type, entity_id, new_data)
        VALUES ($1, $2, 'license_request_rejected', 'license_request', $3, $4)`,
       [auth.platformUser.id, rows[0].organization_id, requestId, JSON.stringify({ note: adminNote })]
+    );
+
+    const rejectedOrgId = rows[0].organization_id as string;
+    notifyInBackground(() =>
+      notifyOrganizationAdmins(rejectedOrgId, {
+        type: 'license_request.rejected',
+        title: "Votre demande de licence n'a pas été acceptée",
+        body: adminNote ? `Motif : ${adminNote}` : 'Vous pouvez choisir un autre forfait ou contacter le support.',
+        link: '/subscription',
+      })
     );
 
     return NextResponse.json({ success: true });

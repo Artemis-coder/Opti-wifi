@@ -1,6 +1,7 @@
 import { adminClient } from '@/lib/neon/admin';
 import { NextResponse } from 'next/server';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
+import { notifyInBackground, notifySuperAdmins } from '@/lib/notifications';
 
 // Route POST pour créer un compte et une organisation avec le statut "pending_approval"
 export async function POST(request: Request) {
@@ -108,6 +109,15 @@ export async function POST(request: Request) {
       // We don't rollback everything here to avoid orphaned auth users which are hard to delete without admin rights
       // The profile might have been created by a trigger, so we upsert it to ensure org_id is set.
     }
+
+    notifyInBackground(() =>
+      notifySuperAdmins({
+        type: 'registration.new',
+        title: 'Nouvelle inscription à valider',
+        body: `${orgName} — ${nom} (${email})`,
+        link: '/platform/registrations',
+      })
+    );
 
     return NextResponse.json({
       message: 'Compte créé avec succès. Votre compte est en attente de validation.',

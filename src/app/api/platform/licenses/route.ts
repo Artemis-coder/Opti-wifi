@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requirePlatformAdmin } from '@/lib/supabase/platform';
 import { query } from '@/lib/neon/db';
 import { hasUsedTrialPlan, isTrialPlan } from '@/lib/trial-plan';
+import { notifyInBackground, notifyOrganizationAdmins } from '@/lib/notifications';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -123,6 +124,16 @@ export async function POST(request: Request) {
           note: adminNote,
         }),
       ]
+    );
+
+    const endLabel = new Date(sub.end_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    notifyInBackground(() =>
+      notifyOrganizationAdmins(organizationId, {
+        type: 'license.activated',
+        title: requestId ? 'Votre demande de licence est approuvée' : 'Votre licence est activée',
+        body: `Forfait ${planRes.rows[0].name} actif jusqu'au ${endLabel}.`,
+        link: '/subscription',
+      })
     );
 
     return NextResponse.json({
