@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { query } from '@/lib/neon/db';
+import { hasUsedTrialPlan, isTrialPlan, TRIAL_ALREADY_USED_MESSAGE } from '@/lib/trial-plan';
 
 // Le client ne prolonge plus son abonnement lui-même : il envoie une demande de licence
 // que le super admin valide (POST /api/platform/licenses) ou refuse.
@@ -76,8 +77,12 @@ export async function GET() {
   if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
   try {
-    const state = await getRequestState(ctx.organizationId);
-    return NextResponse.json({ success: true, data: { ...state, canRequest: !state.pendingRequest } });
+    const [state, trialUsed] = await Promise.all([
+      getRequestState(ctx.organizationId),
+      hasUsedTrialPlan(ctx.organizationId),
+    ]);
+    // trialUsed : la page masque le forfait Découverte s'il a déjà été utilisé
+    return NextResponse.json({ success: true, data: { ...state, trialUsed, canRequest: !state.pendingRequest } });
   } catch (err) {
     console.error('Renew request GET error:', err);
     return NextResponse.json({ error: 'Erreur lors du chargement' }, { status: 500 });
@@ -108,11 +113,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Choisissez un forfait' }, { status: 400 });
     }
     const planRes = await query(
-      `SELECT id, billing_period FROM subscription_plans WHERE id = $1 AND status = 'active'`,
+      `SELECT id, billing_period, trial_days FROM subscription_plans WHERE id = $1 AND status = 'active'`,
       [targetPlanId]
     );
     if (!planRes.rows[0]) {
       return NextResponse.json({ error: 'Forfait introuvable ou inactif' }, { status: 404 });
+    }
+    // Forfait d'essai (Découverte) : une seule fois par organisation, ni redemandé ni renouvelé
+    if (isTrialPlan(planRes.rows[0]) && (await hasUsedTrialPlan(ctx.organizationId))) {
+      return NextResponse.json({ error: TRIAL_ALREADY_USED_MESSAGE, code: 'TRIAL_ALREADY_USED' }, { status: 400 });
     }
 
     const type = !state.subscription ? 'new' : targetPlanId === state.subscription.plan_id ? 'renewal' : 'upgrade';

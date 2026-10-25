@@ -97,7 +97,11 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
   } else if (!policy.actions.includes(action)) {
     throw new ForbiddenError('Action non autorisée');
   } else if (ctx.organizationBlocked && (action !== 'select' || !BLOCKED_ORG_READABLE_TABLES.has(tableName))) {
-    throw new ForbiddenError('Accès suspendu pour cette organisation');
+    throw new ForbiddenError(
+      ctx.blockReason === 'licence_expired'
+        ? 'Abonnement expiré : choisissez un forfait pour retrouver l’accès'
+        : 'Accès suspendu pour cette organisation'
+    );
   }
 
   const filters = Array.isArray(body.filters) ? [...body.filters] : [];
