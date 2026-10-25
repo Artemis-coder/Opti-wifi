@@ -2,6 +2,10 @@
 
 > **Règle absolue :** La branche `main` et la base Neon de production sont **strictement protégées**. Aucune modification directe n'est tolérée sur `main`. Tout le travail s'effectue sur `develop` ou sur des branches `feature/*`.
 
+> 📌 **Procédure à suivre pour chaque modification et chaque mise en production : [`PROCEDURE_DEPLOIEMENT.md`](./PROCEDURE_DEPLOIEMENT.md).**
+> Depuis le 25/10/2026, le travail se fait directement sur `develop` ; push forcé et `vercel --prod` sont interdits
+> (un push forcé du 23/10 a effacé ~30 commits de `develop` et `main`).
+
 ---
 
 ## 1. Vue d'ensemble des branches Git
