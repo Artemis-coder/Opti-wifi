@@ -29,6 +29,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { PointOfSale, TicketType, Collection, CollectionInsert, CollectionItem, CollectionItemInsert, TicketAllocation } from '@/types/database';
+import { DateField } from '@/components/ui/DateField';
 
 export default function NewCollectionWizard() {
   const router = useRouter();
@@ -936,13 +937,12 @@ export default function NewCollectionWizard() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Input
+                  <DateField
                     label="Date effective de collecte *"
-                    type="date"
                     value={dateCollecte}
                     max={toDateInputValue()}
-                    onChange={(e) => {
-                      setDateCollecte(e.target.value);
+                    onChange={(v) => {
+                      setDateCollecte(v);
                       if (errors.dateCollecte) {
                         const next = { ...errors };
                         delete next.dateCollecte;

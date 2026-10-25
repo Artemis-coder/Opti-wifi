@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Profile, UserRole } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -170,10 +171,14 @@ export default function UsersPage() {
           <Input label="Mot de Passe" type="password" placeholder="•••••••• (6+ caractères)" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} required />
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Rôle</label>
-            <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm">
-              <option value="collecteur">Collecteur / Agent Terrain</option>
-              <option value="administrateur">Administrateur Système</option>
-            </select>
+            <CustomSelect
+              value={role}
+              onChange={(v) => setRole(v as UserRole)}
+              options={[
+                { value: 'collecteur', label: 'Collecteur / Agent Terrain' },
+                { value: 'administrateur', label: 'Administrateur Système' },
+              ]}
+            />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Annuler</Button>

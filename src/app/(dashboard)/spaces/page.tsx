@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { WifiSpace, PointOfSale } from '@/types/database';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 
 export default function WifiSpacesPage() {
   const { user } = useAuthStore();
@@ -145,7 +147,7 @@ export default function WifiSpacesPage() {
       linkedCount > 0
         ? `Supprimer cet espace détachera ${linkedCount} point(s) de vente. Continuer ?`
         : 'Supprimer cet espace ?';
-    if (!window.confirm(message)) return;
+    if (!(await confirmAction(message, { title: 'Supprimer l’espace', confirmLabel: 'Supprimer' }))) return;
 
     if (linkedCount > 0) {
       await supabase.from('points_of_sale').update({ space_id: null }).eq('space_id', id);
@@ -389,15 +391,15 @@ export default function WifiSpacesPage() {
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Statut
                   </label>
-                  <select
+                  <CustomSelect
                     value={statut}
-                    onChange={(e) => setStatut(e.target.value as 'actif' | 'inactif' | 'suspendu')}
-                    className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium"
-                  >
-                    <option value="actif">Actif</option>
-                    <option value="inactif">Inactif</option>
-                    <option value="suspendu">Suspendu</option>
-                  </select>
+                    onChange={(v) => setStatut(v as 'actif' | 'inactif' | 'suspendu')}
+                    options={[
+                      { value: 'actif', label: 'Actif' },
+                      { value: 'inactif', label: 'Inactif' },
+                      { value: 'suspendu', label: 'Suspendu' },
+                    ]}
+                  />
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
                   <Button type="button" variant="ghost" onClick={handleCloseModal}>

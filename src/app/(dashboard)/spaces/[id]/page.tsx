@@ -42,6 +42,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { PosSummary } from '@/components/ui/PosSummary';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 
 export default function SpaceDashboardPage() {
   const params = useParams();
@@ -182,7 +184,7 @@ export default function SpaceDashboardPage() {
       linkedPos.length > 0
         ? `Supprimer cet espace détachera ${linkedPos.length} point(s) de vente. Continuer ?`
         : 'Supprimer cet espace ?';
-    if (!window.confirm(message)) return;
+    if (!(await confirmAction(message, { title: 'Supprimer l’espace', confirmLabel: 'Supprimer' }))) return;
 
     if (linkedPos.length > 0) {
       await supabase
@@ -818,15 +820,7 @@ export default function SpaceDashboardPage() {
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Statut
                   </label>
-                  <select
-                    name="statut"
-                    defaultValue={space.statut}
-                    className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-                  >
-                    <option value="actif">Actif</option>
-                    <option value="inactif">Inactif</option>
-                    <option value="suspendu">Suspendu</option>
-                  </select>
+                  <StatusField name="statut" defaultValue={space.statut} />
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
                   <Button
@@ -846,5 +840,24 @@ export default function SpaceDashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Statut de l'espace dans le formulaire de modification (valeur envoyée via un champ caché). */
+function StatusField({ name, defaultValue }: { name: string; defaultValue: string }) {
+  const [value, setValue] = useState(defaultValue);
+  return (
+    <>
+      <input type="hidden" name={name} value={value} />
+      <CustomSelect
+        value={value}
+        onChange={setValue}
+        options={[
+          { value: 'actif', label: 'Actif' },
+          { value: 'inactif', label: 'Inactif' },
+          { value: 'suspendu', label: 'Suspendu' },
+        ]}
+      />
+    </>
   );
 }

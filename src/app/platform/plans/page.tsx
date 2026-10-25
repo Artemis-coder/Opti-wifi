@@ -21,6 +21,8 @@ import { Modal } from '@/components/ui/Modal';
 import { toast } from 'sonner';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { SubscriptionPlan, BillingPeriod, PlanStatus } from '@/types/platform';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 
 const BILLING_PERIODS: { value: BillingPeriod; label: string }[] = [
   { value: 'monthly', label: 'Mensuelle' },
@@ -174,7 +176,7 @@ export default function PlatformPlansPage() {
   };
 
   const handleDelete = async (plan: SubscriptionPlan) => {
-    if (!window.confirm(`Supprimer le plan "${plan.name}" ?`)) return;
+    if (!(await confirmAction(`Supprimer le forfait « ${plan.name} » ?`, { title: 'Supprimer le forfait', confirmLabel: 'Supprimer' }))) return;
 
     const res = await fetch(`/api/platform/plans/${plan.id}`, { method: 'DELETE' });
     const result = await res.json();
@@ -335,15 +337,13 @@ export default function PlatformPlansPage() {
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Devise
               </label>
-              <select
+              <CustomSelect
                 value={formCurrency}
-                onChange={(e) => setFormCurrency(e.target.value)}
-                className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-              >
-                {CURRENCIES.map((c: { value: string; label: string }) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
+                onChange={(v) => setFormCurrency(v)}
+                options={[
+                  ...CURRENCIES.map((c) => ({ value: c.value, label: c.label })),
+                ]}
+              />
             </div>
           </div>
 
@@ -351,15 +351,13 @@ export default function PlatformPlansPage() {
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Période de facturation
             </label>
-            <select
+            <CustomSelect
               value={formPeriod}
-              onChange={(e) => setFormPeriod(e.target.value as BillingPeriod)}
-              className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-            >
-              {BILLING_PERIODS.map((p: { value: BillingPeriod; label: string }) => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
+              onChange={(v) => setFormPeriod(v as BillingPeriod)}
+              options={[
+                ...BILLING_PERIODS.map((p) => ({ value: p.value, label: p.label })),
+              ]}
+            />
           </div>
 
           <Input
@@ -395,15 +393,13 @@ export default function PlatformPlansPage() {
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Statut
             </label>
-            <select
+            <CustomSelect
               value={formStatus}
-              onChange={(e) => setFormStatus(e.target.value as PlanStatus)}
-              className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
-            >
-              {PLAN_STATUSES.map((s: { value: PlanStatus; label: string }) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+              onChange={(v) => setFormStatus(v as PlanStatus)}
+              options={[
+                ...PLAN_STATUSES.map((s) => ({ value: s.value, label: s.label })),
+              ]}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

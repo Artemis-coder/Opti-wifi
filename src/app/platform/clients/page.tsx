@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { OrganizationStatus } from '@/types/platform';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 
 interface ClientOrg {
   id: string;
@@ -125,7 +126,8 @@ export default function PlatformClientsPage() {
       archive: "\n\nTous ses membres perdent immédiatement l'accès. Les données sont conservées et l'organisation peut être réactivée.",
     };
 
-    if (!window.confirm(`Voulez-vous vraiment ${label} « ${orgName} » ?${consequence[action] || ''}`)) {
+    const danger = ['suspend', 'archive', 'cancel'].includes(action);
+    if (!(await confirmAction(`Voulez-vous vraiment ${label} « ${orgName} » ?${consequence[action] || ''}`, { danger }))) {
       return;
     }
 

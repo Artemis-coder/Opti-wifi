@@ -13,11 +13,11 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { Payment, PaymentStatus } from '@/types/platform';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
+import { DateField } from '@/components/ui/DateField';
 
 const STATUS_CONFIG: Record<PaymentStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending: { label: 'En attente', color: 'warning' },
@@ -117,18 +117,8 @@ export default function PlatformPaymentsPage() {
               className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
-          <Input
-            label="Date de début"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-          <Input
-            label="Date de fin"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
+          <DateField label="Date de début" value={startDate} onChange={setStartDate} max={endDate || undefined} clearable />
+          <DateField label="Date de fin" value={endDate} onChange={setEndDate} min={startDate || undefined} clearable />
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-500 uppercase">Statut</label>
             <div className="flex flex-wrap gap-1">
