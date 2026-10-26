@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.2.0</strong> — <a href="./RELEASE_NOTES_v1.2.0.md">notes de version</a>
+  <strong>Version actuelle : v1.3.0</strong> — <a href="./RELEASE_NOTES_v1.3.0.md">notes de version</a>
 </p>
 
 ---
@@ -106,15 +106,29 @@
 - Utilisation du forfait : points de vente, membres, espaces (barres de quota)
 - Demande de renouvellement ou de changement de forfait, **validée par le super admin**
 - Quotas du forfait appliqués (membres, encaissements, allocations)
-- Accès bloqué si l'inscription est en attente, refusée, l'espace désactivé ou la licence expirée
+- Accès bloqué si l'inscription est en attente, refusée, l'espace désactivé ou la licence expirée (appliqué côté serveur)
+- Forfait Découverte (essai) utilisable une seule fois par organisation
+- Rappels automatiques avant et après l'expiration de la licence
 
 ### 👑 Back-office Super Admin (`/platform`)
 - **Tableau de bord « À traiter »** : inscriptions à valider, demandes de licence, licences qui expirent, KPIs cliquables
 - **Inscriptions** : valider ou refuser les comptes créés
 - **Licences** : activer un forfait pour une durée (1 à 24 mois), prolonger, approuver / refuser les demandes
-- **Clients** : fiche détaillée, activer / désactiver un espace client
-- **Utilisateurs** : créer des administrateurs, changer un rôle, réinitialiser un mot de passe
+- **Clients** : fiche détaillée ; suspendre, réactiver ou supprimer un espace client (accès coupé immédiatement, données conservées)
+- **Utilisateurs** : créer des administrateurs, changer un rôle, réinitialiser un mot de passe, désactiver ou supprimer un compte (révocation immédiate)
 - **Forfaits**, abonnements, expirations, paiements, factures, journal d'audit, support, paramètres de la plateforme
+
+### 🔔 Notifications
+- Cloche dans l'application (client et super admin), mise à jour instantanée
+- Notifications push du navigateur, reçues même site fermé
+- Telegram pour le super admin (inscriptions, demandes de licence)
+- Paramètres → Canaux de notification : activer le push et s'envoyer un test
+
+### 🤖 Assistant Telegram du super admin
+- Claude par défaut, relais automatique sur des modèles open source (Groq, OpenRouter, Together)
+- Répond sur les vraies données : clients, licences, demandes, encaissements, statut technique
+- Agit sur demande (approuver une licence, suspendre un espace…) après confirmation par bouton
+- Boutons du menu utilisables même sans IA
 
 ### 📴 Mode Offline (Résilience Réseau)
 - Détection réseau temps réel (`useOnlineStatus`)
@@ -136,6 +150,8 @@
 - Safe area insets (iPhone notch / home bar)
 - Body scroll lock quand le tiroir est ouvert
 - Toggle de visibilité mot de passe sur tous les formulaires
+- Tableaux transformés en cartes sous 768 px (`ResponsiveTable`), barre de navigation en bas dans le back-office
+- Calendrier, listes et confirmations intégrés au site (`DateField`, `CustomSelect`, `confirmAction`) au lieu des fenêtres natives du téléphone
 
 ---
 
@@ -309,6 +325,13 @@ Le **super admin** (table `platform_users`) gère toutes les organisations depui
 | `GET/PATCH` | `/api/platform/license-requests` | Demandes de licence | Super Admin |
 | `GET/POST/PATCH` | `/api/platform/users` | Comptes, rôles, réinitialisation | Super Admin |
 | `GET/PATCH` | `/api/platform/settings` | Paramètres de la plateforme | Super Admin |
+| `PATCH` | `/api/platform/clients/action` | Valider, suspendre, réactiver, supprimer une organisation | Super Admin |
+| `POST` | `/api/platform/notifications/test` | Tester cloche, push et Telegram | Super Admin |
+| `POST` | `/api/platform/assistant/test` | Tester l'assistant du bot | Super Admin |
+| `GET/PATCH` | `/api/notifications` | Notifications de l'utilisateur, marquer comme lues | Connecté |
+| `POST/DELETE` | `/api/notifications/push` | Abonnement push du navigateur | Connecté |
+| `GET` | `/api/cron/licence-reminders` | Rappels de licence (quotidien, 8 h UTC) | `CRON_SECRET` |
+| `POST` | `/api/telegram/ai-webhook-v2` | Webhook du bot Telegram | Secret Telegram |
 | `GET/PATCH` | `/api/platform/*` | Autres APIs back-office | Super Admin |
 
 ---
@@ -363,7 +386,22 @@ SMTP_SECURE=false
 
 # ── Site URL ────────────────────────────────────────
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# ── Notifications push (clés VAPID de DÉVELOPPEMENT) ──
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<clé publique>
+VAPID_PRIVATE_KEY=<clé privée>
+VAPID_SUBJECT=mailto:support@optiwifi.site
+
+# ── Bot Telegram et assistant (optionnel en local) ──
+TELEGRAM_BOT_TOKEN=<jeton du bot>
+TELEGRAM_CHAT_ID=<chat du super admin>
+TELEGRAM_WEBHOOK_SECRET=<secret des webhooks>
+ANTHROPIC_API_KEY=<clé API Anthropic>
+GROQ_API_KEY=<relais open source>
 ```
+
+> Telegram n'est envoyé qu'en production (sauf `TELEGRAM_NOTIFY_ENABLED=true`).
+> Liste complète et environnements : [`RELEASE_NOTES_v1.3.0.md`](./RELEASE_NOTES_v1.3.0.md#️-configuration).
 
 > ⚠️ **Ne jamais committer `.env.local`** — Ce fichier est exclu par `.gitignore`.
 > Le garde-fou `src/lib/env-guard.ts` bloque toute connexion à la base de production depuis le local ou une Preview.
@@ -497,6 +535,7 @@ Consulter [`AGENTS.md`](./AGENTS.md) pour les règles de sécurité complètes :
 
 ## Release Notes
 
+- [**v1.3.0**](./RELEASE_NOTES_v1.3.0.md) — Suspension et suppression avec révocation immédiate, essai unique et licence expirée appliquée côté serveur, notifications (cloche, push, Telegram), assistant Telegram sur Claude avec relais open source, back-office mobile first, fenêtres natives du téléphone remplacées
 - [**v1.2.0**](./RELEASE_NOTES_v1.2.0.md) — Back-office Super Admin (inscriptions, licences, demandes), isolation des données par client, connexion unique, mot de passe temporaire à changer, correctifs de sécurité
 - [**v1.1.0**](./RELEASE_NOTES_v1.1.0.md) — Échanges de tickets, Multi-Espaces Wi-Fi, Mode Offline, Refonte Mobile, Sécurité RLS
 - [**v1.0.0**](./RELEASE_NOTES_v1.0.0.md) — Lancement initial : POS, Allocations, Collectes, Dashboard
