@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { Menu, Wifi, WifiOff, AlertTriangle, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { Menu, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -26,6 +26,7 @@ const TITLES: Record<string, string> = {
   '/reports': 'Rapports',
   '/settings': 'Paramètres',
   '/subscription': 'Abonnement',
+  '/support': 'Support',
 };
 
 function resolveTitle(pathname: string): string {
@@ -69,10 +70,13 @@ export function Header({ onOpenMobileMenu, title }: HeaderProps) {
         </div>
 
         {/* Right: Quick mobile indicators & avatar button */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           <NotificationBell />
           {/* Network status pill on mobile */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+          <div
+            role="status"
+            aria-label={isOffline ? 'Hors ligne' : isUnstable ? 'Connexion instable' : 'En ligne'}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300">
             {isOnline && (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
