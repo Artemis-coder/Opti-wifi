@@ -11,15 +11,22 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /**
- * Webhook Telegram : si TELEGRAM_WEBHOOK_SECRET est défini, Telegram doit renvoyer ce secret
- * dans l'en-tête X-Telegram-Bot-Api-Secret-Token (setWebhook avec secret_token).
- * Sans secret configuré, la route reste ouverte (seul le contrôle du chat autorisé s'applique).
+ * Webhook Telegram : Telegram doit renvoyer TELEGRAM_WEBHOOK_SECRET dans l'en-tête
+ * X-Telegram-Bot-Api-Secret-Token (setWebhook avec secret_token).
+ * Fermé par défaut : sans secret ou sans jeton du bot configuré (ex. preview), tout appel est
+ * refusé. Avant, la route restait ouverte et n'importe qui pouvait faire travailler le bot
+ * (et consommer les crédits d'IA) via son URL.
  */
 export function isTelegramWebhookAuthorized(request: Request): boolean {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
-  if (!secret) return true;
+  if (!secret || !process.env.TELEGRAM_BOT_TOKEN?.trim()) return false;
   const header = request.headers.get('x-telegram-bot-api-secret-token') || '';
   return safeEqual(header, secret);
+}
+
+/** Le bot peut-il fonctionner sur ce déploiement (jeton + secret du webhook) ? */
+export function isTelegramBotConfigured(): boolean {
+  return !!process.env.TELEGRAM_BOT_TOKEN?.trim() && !!process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
 }
 
 /** Appel interne (Bearer CRON_SECRET) ou super admin connecté. */

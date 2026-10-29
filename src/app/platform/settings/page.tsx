@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { PlatformSettings } from '@/types/platform';
 import { NotificationChannelsTest } from '@/components/platform/NotificationChannelsTest';
+import { BotHealthCard } from '@/components/platform/BotHealthCard';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 type SettingValue = string | number | boolean;
@@ -328,6 +329,8 @@ export default function PlatformSettingsPage() {
       </Card>
 
       <NotificationChannelsTest />
+
+      <BotHealthCard />
 
       {/* Security */}
       <Card className="space-y-6">

@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.3.0</strong> — <a href="./RELEASE_NOTES_v1.3.0.md">notes de version</a>
+  <strong>Version actuelle : v1.4.0</strong> — <a href="./RELEASE_NOTES_v1.4.0.md">notes de version</a>
 </p>
 
 ---
@@ -108,7 +108,9 @@
 - Quotas du forfait appliqués (membres, encaissements, allocations)
 - Accès bloqué si l'inscription est en attente, refusée, l'espace désactivé ou la licence expirée (appliqué côté serveur)
 - Forfait Découverte (essai) utilisable une seule fois par organisation
-- Rappels automatiques avant et après l'expiration de la licence
+- Rappels automatiques à J-10, J-5 et J-2 avant l'expiration, puis après
+- **Réabonnement par Wave** : « Me réabonner » → forfait → QR code « Payez avec Wave », numéro à copier, justificatif envoyé sur WhatsApp, « J'ai payé »
+- **Factures de licence** émises à chaque activation payante, historique « Paiements et factures », téléchargement en PDF
 
 ### 👑 Back-office Super Admin (`/platform`)
 - **Tableau de bord « À traiter »** : inscriptions à valider, demandes de licence, licences qui expirent, KPIs cliquables
@@ -116,7 +118,12 @@
 - **Licences** : activer un forfait pour une durée (1 à 24 mois), prolonger, approuver / refuser les demandes
 - **Clients** : fiche détaillée ; suspendre, réactiver ou supprimer un espace client (accès coupé immédiatement, données conservées)
 - **Utilisateurs** : créer des administrateurs, changer un rôle, réinitialiser un mot de passe, désactiver ou supprimer un compte (révocation immédiate)
-- **Forfaits**, abonnements, expirations, paiements, factures, journal d'audit, support, paramètres de la plateforme
+- **Statistiques** : inscriptions, abonnements par type, revenus, revenu mensuel récurrent, répartition des licences en cours
+- **Moyens de paiement** : QR code, numéro, lien WhatsApp, logo et couleur de l'opérateur
+- **Factures et transactions** avec chiffres clés (montants, renouvellements, par moyen de paiement)
+- **Support** : tickets des clients, réponses, ouverture d'un ticket pour un client
+- **Journal d'audit** lisible (avant → après), santé du bot Telegram
+- **Forfaits**, abonnements, expirations, paramètres de la plateforme
 
 ### 🔔 Notifications
 - Cloche dans l'application (client et super admin), mise à jour instantanée
@@ -332,6 +339,12 @@ Le **super admin** (table `platform_users`) gère toutes les organisations depui
 | `POST/DELETE` | `/api/notifications/push` | Abonnement push du navigateur | Connecté |
 | `GET` | `/api/cron/licence-reminders` | Rappels de licence (quotidien, 8 h UTC) | `CRON_SECRET` |
 | `POST` | `/api/telegram/ai-webhook-v2` | Webhook du bot Telegram | Secret Telegram |
+| `GET` | `/api/payment-methods` | Moyens de paiement actifs (réabonnement) | Connecté |
+| `GET` | `/api/invoices`, `/api/invoices/[id]` | Factures de l'organisation | Admin (ou super admin) |
+| `GET/POST` | `/api/support`, `/api/support/[id]` | Tickets de l'organisation, réponses | Connecté |
+| `GET/POST/PATCH/DELETE` | `/api/platform/payment-methods` | Moyens de paiement | Super Admin |
+| `GET/POST/PATCH` | `/api/platform/support`, `/api/platform/support/[id]` | Tickets, réponses, statut | Super Admin |
+| `GET/POST` | `/api/platform/bot-health` | Santé du bot (statuts seulement), réenregistrer le webhook | Super Admin |
 | `GET/PATCH` | `/api/platform/*` | Autres APIs back-office | Super Admin |
 
 ---
@@ -535,6 +548,7 @@ Consulter [`AGENTS.md`](./AGENTS.md) pour les règles de sécurité complètes :
 
 ## Release Notes
 
+- [**v1.4.0**](./RELEASE_NOTES_v1.4.0.md) — Réabonnement et paiement par Wave (QR code, justificatif WhatsApp), factures de licence en PDF, statistiques et KPI du back-office, support par tickets, rappels J-10 / J-5 / J-2, bot Telegram fiabilisé et sécurisé
 - [**v1.3.0**](./RELEASE_NOTES_v1.3.0.md) — Suspension et suppression avec révocation immédiate, essai unique et licence expirée appliquée côté serveur, notifications (cloche, push, Telegram), assistant Telegram sur Claude avec relais open source, back-office mobile first, fenêtres natives du téléphone remplacées
 - [**v1.2.0**](./RELEASE_NOTES_v1.2.0.md) — Back-office Super Admin (inscriptions, licences, demandes), isolation des données par client, connexion unique, mot de passe temporaire à changer, correctifs de sécurité
 - [**v1.1.0**](./RELEASE_NOTES_v1.1.0.md) — Échanges de tickets, Multi-Espaces Wi-Fi, Mode Offline, Refonte Mobile, Sécurité RLS
