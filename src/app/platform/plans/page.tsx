@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Wallet,
-  Plus,
   Search,
   Edit,
   Trash2,
@@ -23,6 +22,7 @@ import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { SubscriptionPlan, BillingPeriod, PlanStatus } from '@/types/platform';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
+import { AddButton } from '@/components/ui/AddButton';
 
 const BILLING_PERIODS: { value: BillingPeriod; label: string }[] = [
   { value: 'monthly', label: 'Mensuelle' },
@@ -224,9 +224,7 @@ export default function PlatformPlansPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Plans Tarifaires</h1>
           <p className="text-xs text-slate-500">Configurez les offres commerciales de la plateforme SaaS.</p>
         </div>
-        <Button onClick={() => handleOpenModal()} className="gap-2 font-semibold">
-          <Plus className="w-4 h-4" /> Nouveau Plan
-        </Button>
+        <AddButton what="un forfait" onClick={() => handleOpenModal()} />
       </div>
 
       {/* Search */}
@@ -249,9 +247,7 @@ export default function PlatformPlansPage() {
           <Wallet className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun plan trouvé</h3>
           <p className="text-xs text-slate-500">Créez votre premier plan tarifaire pour commencer.</p>
-          <Button onClick={() => handleOpenModal()} variant="secondary" className="font-bold gap-2">
-            <Plus className="w-4 h-4" /> Nouveau Plan
-          </Button>
+          <AddButton what="un forfait" onClick={() => handleOpenModal()} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

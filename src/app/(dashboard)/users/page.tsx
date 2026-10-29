@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Mail, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Mail, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Profile, UserRole } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { AddButton } from '@/components/ui/AddButton';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,9 +97,7 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gestion des Utilisateurs</h1>
           <p className="text-xs text-slate-500">Profils et rôles d&apos;accès à la plateforme.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-semibold">
-          <Plus className="w-4 h-4" /> Créer un Utilisateur
-        </Button>
+        <AddButton what="un utilisateur" onClick={() => setIsModalOpen(true)} />
       </div>
 
       {loading ? (
@@ -115,9 +114,7 @@ export default function UsersPage() {
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             Créez des profils pour attribuer des points de vente aux collecteurs de votre équipe.
           </p>
-          <Button onClick={() => setIsModalOpen(true)} variant="secondary" className="font-bold gap-2">
-            <Plus className="w-4 h-4" /> Ajouter un utilisateur
-          </Button>
+          <AddButton what="un utilisateur" onClick={() => setIsModalOpen(true)} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

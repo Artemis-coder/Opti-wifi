@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Receipt,
-  Plus,
   CheckCircle2,
   AlertTriangle,
   Loader2,
@@ -24,6 +22,7 @@ import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { Collection } from '@/types/database';
+import { AddButton } from '@/components/ui/AddButton';
 
 export default function CollectionsPage() {
   const router = useRouter();
@@ -90,12 +89,7 @@ export default function CollectionsPage() {
             Historique et suivi des levées de fonds et encaissements de caisse.
           </p>
         </div>
-        <Link href="/collections/new" className="w-full sm:w-auto">
-          <Button variant="secondary" className="w-full sm:w-auto gap-2 font-bold text-xs sm:text-sm">
-            <Plus className="w-4 h-4" />
-            <span>Nouvelle Collecte de Caisse</span>
-          </Button>
-        </Link>
+        <AddButton what="une collecte de caisse" href="/collections/new" />
       </div>
 
       {/* KPI Highlights Cards */}
@@ -182,11 +176,7 @@ export default function CollectionsPage() {
             Vous n&apos;avez enregistré aucune collecte de caisse. Lancez votre première levée de fonds.
           </p>
           <div className="pt-2">
-            <Link href="/collections/new">
-              <Button variant="secondary" className="font-bold gap-2">
-                <Plus className="w-4 h-4" /> Démarrer une collecte
-              </Button>
-            </Link>
+            <AddButton what="une collecte de caisse" href="/collections/new" />
           </div>
         </Card>
       ) : filteredCollections.length === 0 ? (

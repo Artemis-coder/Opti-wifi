@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LifeBuoy, Loader2, Plus } from 'lucide-react';
+import { LifeBuoy, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
+import { AddButton } from '@/components/ui/AddButton';
 
 interface SupportTicket {
   id: string;
@@ -93,9 +94,7 @@ export default function PlatformSupportPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Support & Tickets</h1>
           <p className="text-xs text-slate-500">Suivez les problèmes signalés par les clients.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-semibold">
-          <Plus className="w-4 h-4" /> Nouveau ticket
-        </Button>
+        <AddButton what="un ticket de support" onClick={() => setIsModalOpen(true)} />
       </div>
 
       {tickets.length === 0 ? (

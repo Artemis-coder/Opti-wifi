@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Loader2, Pencil, Plus, QrCode, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Loader2, Pencil, QrCode, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +17,7 @@ import {
 } from '@/components/payments/PaymentMethodCard';
 import { cn } from '@/lib/utils/cn';
 import { normalizeWhatsappUrl, whatsappFromNumber } from '@/lib/whatsapp';
+import { AddButton } from '@/components/ui/AddButton';
 
 interface PaymentMethod extends PublicPaymentMethod {
   is_active: boolean;
@@ -308,9 +309,7 @@ export default function PaymentMethodsPage() {
             justificatif de paiement.
           </p>
         </div>
-        <Button onClick={() => openModal()} className="gap-2 font-semibold w-full sm:w-auto">
-          <Plus className="w-4 h-4" /> Ajouter un moyen
-        </Button>
+        <AddButton what="un moyen de paiement" onClick={() => openModal()} />
       </div>
 
       {loading ? (
@@ -324,9 +323,7 @@ export default function PaymentMethodsPage() {
           <p className="text-xs text-slate-500">
             Ajoutez Wave avec votre QR code : vos clients le verront en cliquant sur « Me réabonner ».
           </p>
-          <Button onClick={() => openModal()} variant="secondary" className="font-bold gap-2">
-            <Plus className="w-4 h-4" /> Ajouter un moyen
-          </Button>
+          <AddButton what="un moyen de paiement" onClick={() => openModal()} />
         </Card>
       ) : (
         <>

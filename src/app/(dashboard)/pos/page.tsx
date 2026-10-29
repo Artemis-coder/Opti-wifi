@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Store, Plus, Search, MapPin, UserCheck, Loader2, Edit, Power, PowerOff } from 'lucide-react';
+import { Store, Search, MapPin, UserCheck, Loader2, Edit, Power, PowerOff } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -10,6 +10,7 @@ import { EditPosModal } from './edit-pos-modal';
 import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { AddButton } from '@/components/ui/AddButton';
 
 export default function PosPage() {
   const [search, setSearch] = useState('');
@@ -79,10 +80,7 @@ async function loadData() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Points de Vente (POS)</h1>
           <p className="text-xs text-slate-500">Gérez le réseau de distribution et l&apos;attribution des collecteurs.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-semibold">
-          <Plus className="w-4 h-4" />
-          Ajouter un POS
-        </Button>
+        <AddButton what="un point de vente" onClick={() => setIsModalOpen(true)} />
       </div>
 
       {/* KPI Cards */}
@@ -147,9 +145,7 @@ async function loadData() {
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             Vous n&apos;avez pas encore configuré de point de vente. Ajoutez votre premier emplacement pour démarrer les encaissements.
           </p>
-          <Button onClick={() => setIsModalOpen(true)} variant="secondary" className="font-bold gap-2">
-            <Plus className="w-4 h-4" /> Ajouter mon premier POS
-          </Button>
+          <AddButton what="un point de vente" onClick={() => setIsModalOpen(true)} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeftRight,
-  Plus,
   Store,
   Ticket,
   Loader2,
@@ -26,6 +25,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { AddButton } from '@/components/ui/AddButton';
 
 export default function AllocationsPage() {
   const router = useRouter();
@@ -178,12 +178,7 @@ export default function AllocationsPage() {
               <span>Échange de Tickets</span>
             </Button>
           </Link>
-          <Link href="/allocations/new" className="flex-1 sm:flex-initial">
-            <Button size="sm" className="w-full gap-1.5 font-bold text-xs sm:text-sm">
-              <Plus className="w-4 h-4" />
-              <span>Nouvelle Allocation</span>
-            </Button>
-          </Link>
+          <AddButton what="une allocation" href="/allocations/new" className="flex-1 sm:flex-initial" />
         </div>
       </div>
 
@@ -283,11 +278,7 @@ export default function AllocationsPage() {
               : 'Aucun enregistrement ne correspond à vos critères de recherche.'}
           </p>
           <div className="pt-2">
-            <Link href="/allocations/new">
-              <Button variant="secondary" className="font-bold gap-2">
-                <Plus className="w-4 h-4" /> Créer une allocation
-              </Button>
-            </Link>
+            <AddButton what="une allocation" href="/allocations/new" />
           </div>
         </Card>
       ) : (
