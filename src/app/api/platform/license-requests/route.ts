@@ -23,11 +23,13 @@ export async function GET(request: Request) {
               o.contact_name, o.email AS organization_email, o.phone AS organization_phone,
               p.id AS plan_id, p.name AS plan_name, p.price AS plan_price, p.currency AS plan_currency,
               pr.nom AS requested_by_name,
+              r.payment_reference, pm.name AS payment_method_name,
               cur.end_date AS current_end_date, cp.name AS current_plan_name
          FROM license_requests r
          JOIN organizations o ON o.id = r.organization_id
          LEFT JOIN subscription_plans p ON p.id = r.plan_id
          LEFT JOIN profiles pr ON pr.id = r.requested_by
+         LEFT JOIN payment_methods pm ON pm.id = r.payment_method_id
          LEFT JOIN LATERAL (
            SELECT s.end_date, s.plan_id FROM subscriptions s
             WHERE s.organization_id = r.organization_id

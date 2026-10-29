@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { toast } from 'sonner';
+import { LicenseRequestDialog, type RequestedPlan } from '@/components/payments/LicenseRequestDialog';
 
 interface SubscriptionPlan {
   id: string;
@@ -47,7 +47,7 @@ interface LicenseRequestInfo {
 
 export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
-  const [renewing, setRenewing] = useState(false);
+  const [requestPlan, setRequestPlan] = useState<{ plan: RequestedPlan; renewal: boolean } | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [allPlans, setAllPlans] = useState<SubscriptionPlan[]>([]);
   const [pendingRequest, setPendingRequest] = useState<LicenseRequestInfo | null>(null);
@@ -163,27 +163,22 @@ export default function SubscriptionPage() {
   const isExpired = subscription ? (subscription.status === 'expired' || (subscription.end_date && new Date(subscription.end_date).getTime() < new Date().getTime())) : false;
   const isExpiringSoon = subscription && !isExpired && daysRemaining !== null && daysRemaining <= 7;
 
-  const handleRequest = async (planId?: string) => {
-    setRenewing(true);
-    try {
-      const res = await fetch('/api/subscriptions/renew', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(planId ? { planId } : {}),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Échec de l'envoi de la demande");
-        return;
-      }
-      toast.success(data.message || 'Demande envoyée');
-      await loadRequestState();
-    } catch (error) {
-      console.error('Renew request error:', error);
-      toast.error("Erreur lors de l'envoi de la demande");
-    } finally {
-      setRenewing(false);
-    }
+  // Ouvre la demande de licence : montant, moyens de paiement, référence du paiement
+  const handleRequest = (plan?: SubscriptionPlan) => {
+    const target = plan || subscription?.plan;
+    if (!target) return;
+    setRequestPlan({
+      plan: {
+        id: target.id,
+        name: target.name,
+        price: Number(target.price),
+        billing_period: target.billing_period,
+        max_users: target.max_users,
+        max_points_of_sale: target.max_points_of_sale,
+        max_tickets_per_month: target.max_tickets_per_month,
+      },
+      renewal: !plan,
+    });
   };
 
   if (loading) {
@@ -344,19 +339,9 @@ export default function SubscriptionPage() {
                 variant={isExpired ? 'danger' : 'primary'}
                 size="sm"
                 onClick={() => handleRequest()}
-                disabled={renewing}
               >
-                {renewing ? (
-                  <>
-                    <RotateCcw className="w-4 h-4 animate-spin" />
-                    <span className="ml-2">Envoi...</span>
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="w-4 h-4" />
-                    <span className="ml-2">Demander le renouvellement</span>
-                  </>
-                )}
+                <RotateCcw className="w-4 h-4" />
+                <span className="ml-2">Me réabonner</span>
               </Button>
             </div>
           )}
@@ -465,8 +450,8 @@ export default function SubscriptionPage() {
                 </p>
               )}
               {!pendingRequest && subscription?.plan_id !== plan.id && !(trialUsed && Number(plan.trial_days ?? 0) > 0) && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => handleRequest(plan.id)} disabled={renewing}>
-                  Demander ce forfait
+                <Button variant="outline" size="sm" className="w-full" onClick={() => handleRequest(plan)}>
+                  Choisir ce forfait
                 </Button>
               )}
               {trialUsed && Number(plan.trial_days ?? 0) > 0 && subscription?.plan_id !== plan.id && (
@@ -476,6 +461,15 @@ export default function SubscriptionPage() {
           ))}
         </div>
       </div>
+      <LicenseRequestDialog
+        plan={requestPlan?.plan ?? null}
+        renewal={requestPlan?.renewal}
+        onClose={() => setRequestPlan(null)}
+        onSent={() => {
+          setRequestPlan(null);
+          loadRequestState();
+        }}
+      />
     </div>
   );
 }

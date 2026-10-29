@@ -25,6 +25,7 @@ import {
   Wifi,
   WifiOff,
   AlertTriangle,
+  Smartphone,
 } from 'lucide-react';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
@@ -57,6 +58,7 @@ const sidebarItems = [
   {
     section: 'PAIEMENTS',
     items: [
+      { label: 'Moyens de paiement', href: '/platform/payment-methods', icon: Smartphone },
       { label: 'Transactions', href: '/platform/payments', icon: Receipt },
       { label: 'Factures', href: '/platform/invoices', icon: FileText },
     ],
