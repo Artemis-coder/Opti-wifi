@@ -1029,3 +1029,17 @@ SELECT t.id, t.created_by, t.client_name, t.message, t.created_at
 -- Accès uniquement par l'API serveur (jamais via /api/db)
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_messages ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- Secrets d'intégration saisis dans le back-office (chiffrés)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS integration_secrets (
+  key             VARCHAR(60) PRIMARY KEY,
+  value_encrypted TEXT NOT NULL,
+  updated_by      UUID REFERENCES users(id) ON DELETE SET NULL,
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Accès uniquement par l'API serveur (jamais via /api/db)
+ALTER TABLE integration_secrets ENABLE ROW LEVEL SECURITY;

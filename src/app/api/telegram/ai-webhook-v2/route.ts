@@ -54,6 +54,7 @@ import {
   toTelegramHtml,
 } from '@/lib/bot/assistant';
 import { MENU_VIEWS, technicalStatusView } from '@/lib/bot/fallback-views';
+import { hydrateTelegramEnv } from '@/lib/integration-secrets';
 
 const SYSTEM_PROMPT = `Tu es l'assistant IA expert d'OptiWifi, une plateforme SaaS de gestion WiFi.
 
@@ -87,6 +88,8 @@ async function initializeDB() {
 }
 
 export async function POST(request: NextRequest) {
+  // Jeton, secret et chat : interface du back-office, sinon variables Vercel
+  await hydrateTelegramEnv();
   if (!isTelegramWebhookAuthorized(request)) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
   }

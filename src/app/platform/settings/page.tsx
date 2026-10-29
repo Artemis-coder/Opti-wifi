@@ -1,20 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import {
-  Settings,
-  Save,
-  Globe,
-  Loader2,
-  Shield,
-  Calendar,
-  Bell,
-  Mail,
-  Key,
-  ToggleLeft,
-  ToggleRight,
-  Wrench,
-} from 'lucide-react';
+import React, { Suspense, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Settings, Save, Globe, Loader2, Shield, Calendar, Bell, Mail, Key, ToggleLeft, ToggleRight, Wrench, Bot } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -23,11 +11,34 @@ import { toast } from 'sonner';
 import { PlatformSettings } from '@/types/platform';
 import { NotificationChannelsTest } from '@/components/platform/NotificationChannelsTest';
 import { BotHealthCard } from '@/components/platform/BotHealthCard';
+import { TelegramBotConfigCard } from '@/components/platform/TelegramBotConfigCard';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 type SettingValue = string | number | boolean;
 
+const SETTINGS_TABS = [
+  { value: 'general', label: 'Général', icon: Settings },
+  { value: 'notifications', label: 'Notifications', icon: Bell },
+  { value: 'bot', label: 'Bot Telegram', icon: Bot },
+] as const;
+type SettingsTab = (typeof SETTINGS_TABS)[number]['value'];
+
 export default function PlatformSettingsPage() {
+  // useSearchParams impose une frontière Suspense pour une page prérendue
+  return (
+    <Suspense fallback={null}>
+      <PlatformSettingsContent />
+    </Suspense>
+  );
+}
+
+function PlatformSettingsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const tab: SettingsTab = SETTINGS_TABS.some((t) => t.value === tabParam) ? (tabParam as SettingsTab) : 'general';
+  const selectTab = (value: SettingsTab) =>
+    router.replace(value === 'general' ? '/platform/settings' : `/platform/settings?tab=${value}`, { scroll: false });
   const [settings, setSettings] = useState<Record<string, SettingValue>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -123,256 +134,298 @@ export default function PlatformSettingsPage() {
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Paramètres de la Plateforme</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Paramètres de la plateforme</h1>
           <p className="text-xs text-slate-500">Configurez les paramètres globaux de la plateforme SaaS.</p>
         </div>
-        <Button onClick={handleSave} variant="secondary" className="gap-2 font-semibold" isLoading={saving}>
-          <Save className="w-4 h-4" /> Enregistrer
-        </Button>
+        {tab !== 'bot' && (
+          <Button onClick={handleSave} variant="secondary" className="gap-2 font-semibold w-full sm:w-auto" isLoading={saving}>
+            <Save className="w-4 h-4" /> Enregistrer
+          </Button>
+        )}
       </div>
 
-      {/* General */}
-      <Card className="space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <Settings className="w-5 h-5 text-amber-500" />
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">Général</p>
-            <p className="text-xs text-slate-500">Configuration de base de la plateforme.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Nom de la plateforme"
-            value={getString('platform_name', 'OptiWifi')}
-            onChange={(e) => updateValue('platform_name', e.target.value)}
-            placeholder="OptiWifi"
-          />
-          <Input
-            label="Logo (URL)"
-            value={getString('platform_logo', '/assets/logo.jpg')}
-            onChange={(e) => updateValue('platform_logo', e.target.value)}
-            placeholder="/assets/logo.jpg"
-          />
-          <Input
-            label="Email support"
-            value={getString('support_email', 'support@optiwifi.ci')}
-            onChange={(e) => updateValue('support_email', e.target.value)}
-            placeholder="support@optiwifi.ci"
-          />
-          <Input
-            label="Téléphone support"
-            value={getString('support_phone')}
-            onChange={(e) => updateValue('support_phone', e.target.value)}
-            placeholder="+225 XX XX XX XX"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-            Devise principale
-          </label>
-          <CustomSelect
-            value={getString('platform_currency', 'XOF')}
-            onChange={(v) => updateValue('platform_currency', v)}
-            options={[
-              { value: 'XOF', label: 'Franc CFA (XOF)' },
-              { value: 'XAF', label: 'Franc CFA (XAF)' },
-              { value: 'EUR', label: 'Euro (EUR)' },
-              { value: 'USD', label: 'Dollar US (USD)' },
-            ]}
-          />
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-          <div className="flex items-center gap-3">
-            <Globe className="w-5 h-5 text-blue-900 dark:text-blue-400" />
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">Autoriser les inscriptions publiques</p>
-              <p className="text-xs text-slate-500">Permettre aux nouveaux clients de créer un compte.</p>
-            </div>
-          </div>
-          <button
-            onClick={() => updateValue('allow_registration', !editedValues.allow_registration)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-              editedValues.allow_registration ? 'bg-amber-500' : 'bg-slate-400'
-            }`}
-          >
-            <span className="sr-only">Toggle registration</span>
-            {editedValues.allow_registration ? (
-              <ToggleRight className="absolute right-1 h-4 w-4 text-white" />
-            ) : (
-              <ToggleLeft className="absolute left-1 h-4 w-4 text-white" />
-            )}
-          </button>
-        </div>
-      </Card>
-
-      {/* Abonnements */}
-      <Card className="space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <Calendar className="w-5 h-5 text-emerald-600" />
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">Abonnements</p>
-            <p className="text-xs text-slate-500">Période d&apos;essai et période de grâce.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Jours d'essai gratuit"
-            type="number"
-            value={editedValues.trial_days?.toString() || '14'}
-            onChange={(e) => updateValue('trial_days', parseInt(e.target.value) || 0)}
-            placeholder="14"
-          />
-          <Input
-            label="Jours de grâce"
-            type="number"
-            value={editedValues.grace_period_days?.toString() || '3'}
-            onChange={(e) => updateValue('grace_period_days', parseInt(e.target.value) || 0)}
-            placeholder="3"
-          />
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-          <div className="flex items-center gap-3">
-            <Bell className="w-5 h-5 text-amber-500" />
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">Renouvellement automatique par défaut</p>
-              <p className="text-xs text-slate-500">Activer le renouvellement automatique pour les nouveaux abonnés.</p>
-            </div>
-          </div>
-          <button
-            onClick={() => updateValue('auto_renew_default', !editedValues.auto_renew_default)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-              editedValues.auto_renew_default ? 'bg-amber-500' : 'bg-slate-400'
-            }`}
-          >
-            <span className="sr-only">Toggle auto-renew</span>
-            {editedValues.auto_renew_default ? (
-              <ToggleRight className="absolute right-1 h-4 w-4 text-white" />
-            ) : (
-              <ToggleLeft className="absolute left-1 h-4 w-4 text-white" />
-            )}
-          </button>
-        </div>
-      </Card>
-
-      {/* Maintenance */}
-      <Card className="space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <Wrench className="w-5 h-5 text-red-600" />
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">Mode Maintenance</p>
-            <p className="text-xs text-slate-500">Activer/désactiver le mode maintenance de la plateforme.</p>
-          </div>
-        </div>
-
-        <div className={`flex items-center justify-between p-4 rounded-xl border ${
-          maintenanceMode
-            ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
-            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
-        }`}>
-          <div className="flex items-center gap-3">
-            <Wrench className={`w-5 h-5 ${maintenanceMode ? 'text-red-600' : 'text-slate-400'}`} />
-            <div>
-              <p className={`text-sm font-semibold ${maintenanceMode ? 'text-red-900 dark:text-red-300' : 'text-slate-900 dark:text-white'}`}>
-                {maintenanceMode ? 'Maintenance activée' : 'Maintenance désactivée'}
-              </p>
-              <p className="text-xs text-slate-500">
-                {maintenanceMode
-                  ? 'La plateforme est temporairement indisponible pour les clients.'
-                  : 'La plateforme est opérationnelle pour tous les clients.'}
-              </p>
-            </div>
-          </div>
-          <Badge variant={maintenanceMode ? 'danger' : 'neutral'}>
-            {maintenanceMode ? 'Actif' : 'Inactif'}
-          </Badge>
-        </div>
-
-        <Input
-          label="Message de maintenance"
-          value={getString('maintenance_message', '')}
-          onChange={(e) => updateValue('maintenance_message', e.target.value)}
-          placeholder="La plateforme est actuellement en maintenance..."
-        />
-      </Card>
-
-      {/* Notifications */}
-      <Card className="space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <Mail className="w-5 h-5 text-blue-900 dark:text-blue-400" />
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">Notifications Clients</p>
-            <p className="text-xs text-slate-500">Configurer les messages envoyés aux clients.</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <Input
-            label="Avant expiration (jours)"
-            type="number"
-            value={editedValues.notification_before_expiry?.toString() || '7'}
-            onChange={(e) => updateValue('notification_before_expiry', parseInt(e.target.value) || 0)}
-            helperText="Nombre de jours avant l'expiration pour envoyer un rappel"
-          />
-          <Input
-            label="Jour après expiration"
-            type="number"
-            value={editedValues.notification_after_expiry?.toString() || '1'}
-            onChange={(e) => updateValue('notification_after_expiry', parseInt(e.target.value) || 0)}
-            helperText="Jour après expiration pour envoyer un rappel"
-          />
-        </div>
-      </Card>
-
-      <NotificationChannelsTest />
-
-      <BotHealthCard />
-
-      {/* Security */}
-      <Card className="space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <Shield className="w-5 h-5 text-emerald-600" />
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">Sécurité</p>
-            <p className="text-xs text-slate-500">Paramètres de sécurité de la plateforme.</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">Authentification forte (MFA/2FA)</p>
-              <p className="text-xs text-slate-500">Exiger la 2FA pour les super admins.</p>
-            </div>
-            <Badge variant="success">Activé ✓</Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">Déconnexion automatique</p>
-              <p className="text-xs text-slate-500">Après 30 minutes d&apos;inactivité.</p>
-            </div>
-            <Badge variant="success">Activé ✓</Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">Limite des tentatives de connexion</p>
-              <p className="text-xs text-slate-500">Blocage après 5 tentatives échouées.</p>
-            </div>
-            <Badge variant="success">Activé ✓</Badge>
-          </div>
-        </div>
-      </Card>
-
-      {/* Save Button (sticky at bottom) */}
-      <div className="flex justify-end pt-4">
-        <Button onClick={handleSave} variant="secondary" className="gap-2 font-bold" isLoading={saving}>
-          <Save className="w-4 h-4" /> Enregistrer les modifications
-        </Button>
+      {/* Onglets : une vue par thème (adresse ?tab=… pour y revenir directement) */}
+      <div role="tablist" aria-label="Rubriques des paramètres" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+        {SETTINGS_TABS.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.value;
+          return (
+            <button
+              key={t.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => selectTab(t.value)}
+              className={`shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition ${
+                active
+                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <Icon className="w-4 h-4" /> {t.label}
+            </button>
+          );
+        })}
       </div>
+
+      {tab === 'general' && (
+        <>
+          {/* General */}
+          <Card className="space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <Settings className="w-5 h-5 text-amber-500" />
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Général</p>
+                <p className="text-xs text-slate-500">Configuration de base de la plateforme.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Nom de la plateforme"
+                value={getString('platform_name', 'OptiWifi')}
+                onChange={(e) => updateValue('platform_name', e.target.value)}
+                placeholder="OptiWifi"
+              />
+              <Input
+                label="Logo (URL)"
+                value={getString('platform_logo', '/assets/logo.jpg')}
+                onChange={(e) => updateValue('platform_logo', e.target.value)}
+                placeholder="/assets/logo.jpg"
+              />
+              <Input
+                label="Email support"
+                value={getString('support_email', 'support@optiwifi.ci')}
+                onChange={(e) => updateValue('support_email', e.target.value)}
+                placeholder="support@optiwifi.ci"
+              />
+              <Input
+                label="Téléphone support"
+                value={getString('support_phone')}
+                onChange={(e) => updateValue('support_phone', e.target.value)}
+                placeholder="+225 XX XX XX XX"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Devise principale
+              </label>
+              <CustomSelect
+                value={getString('platform_currency', 'XOF')}
+                onChange={(v) => updateValue('platform_currency', v)}
+                options={[
+                  { value: 'XOF', label: 'Franc CFA (XOF)' },
+                  { value: 'XAF', label: 'Franc CFA (XAF)' },
+                  { value: 'EUR', label: 'Euro (EUR)' },
+                  { value: 'USD', label: 'Dollar US (USD)' },
+                ]}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              <div className="flex items-center gap-3">
+                <Globe className="w-5 h-5 text-blue-900 dark:text-blue-400" />
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Autoriser les inscriptions publiques</p>
+                  <p className="text-xs text-slate-500">Permettre aux nouveaux clients de créer un compte.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => updateValue('allow_registration', !editedValues.allow_registration)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  editedValues.allow_registration ? 'bg-amber-500' : 'bg-slate-400'
+                }`}
+              >
+                <span className="sr-only">Toggle registration</span>
+                {editedValues.allow_registration ? (
+                  <ToggleRight className="absolute right-1 h-4 w-4 text-white" />
+                ) : (
+                  <ToggleLeft className="absolute left-1 h-4 w-4 text-white" />
+                )}
+              </button>
+            </div>
+          </Card>
+
+          {/* Abonnements */}
+          <Card className="space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <Calendar className="w-5 h-5 text-emerald-600" />
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Abonnements</p>
+                <p className="text-xs text-slate-500">Période d&apos;essai et période de grâce.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Jours d'essai gratuit"
+                type="number"
+                value={editedValues.trial_days?.toString() || '14'}
+                onChange={(e) => updateValue('trial_days', parseInt(e.target.value) || 0)}
+                placeholder="14"
+              />
+              <Input
+                label="Jours de grâce"
+                type="number"
+                value={editedValues.grace_period_days?.toString() || '3'}
+                onChange={(e) => updateValue('grace_period_days', parseInt(e.target.value) || 0)}
+                placeholder="3"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              <div className="flex items-center gap-3">
+                <Bell className="w-5 h-5 text-amber-500" />
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Renouvellement automatique par défaut</p>
+                  <p className="text-xs text-slate-500">Activer le renouvellement automatique pour les nouveaux abonnés.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => updateValue('auto_renew_default', !editedValues.auto_renew_default)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  editedValues.auto_renew_default ? 'bg-amber-500' : 'bg-slate-400'
+                }`}
+              >
+                <span className="sr-only">Toggle auto-renew</span>
+                {editedValues.auto_renew_default ? (
+                  <ToggleRight className="absolute right-1 h-4 w-4 text-white" />
+                ) : (
+                  <ToggleLeft className="absolute left-1 h-4 w-4 text-white" />
+                )}
+              </button>
+            </div>
+          </Card>
+
+          {/* Maintenance */}
+          <Card className="space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <Wrench className="w-5 h-5 text-red-600" />
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Mode Maintenance</p>
+                <p className="text-xs text-slate-500">Activer/désactiver le mode maintenance de la plateforme.</p>
+              </div>
+            </div>
+
+            <div
+              className={`flex items-center justify-between p-4 rounded-xl border ${
+                maintenanceMode
+                  ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                  : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Wrench className={`w-5 h-5 ${maintenanceMode ? 'text-red-600' : 'text-slate-400'}`} />
+                <div>
+                  <p
+                    className={`text-sm font-semibold ${maintenanceMode ? 'text-red-900 dark:text-red-300' : 'text-slate-900 dark:text-white'}`}
+                  >
+                    {maintenanceMode ? 'Maintenance activée' : 'Maintenance désactivée'}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {maintenanceMode
+                      ? 'La plateforme est temporairement indisponible pour les clients.'
+                      : 'La plateforme est opérationnelle pour tous les clients.'}
+                  </p>
+                </div>
+              </div>
+              <Badge variant={maintenanceMode ? 'danger' : 'neutral'}>{maintenanceMode ? 'Actif' : 'Inactif'}</Badge>
+            </div>
+
+            <Input
+              label="Message de maintenance"
+              value={getString('maintenance_message', '')}
+              onChange={(e) => updateValue('maintenance_message', e.target.value)}
+              placeholder="La plateforme est actuellement en maintenance..."
+            />
+          </Card>
+
+          {/* Security */}
+          <Card className="space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <Shield className="w-5 h-5 text-emerald-600" />
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Sécurité</p>
+                <p className="text-xs text-slate-500">Paramètres de sécurité de la plateforme.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Authentification forte (MFA/2FA)</p>
+                  <p className="text-xs text-slate-500">Exiger la 2FA pour les super admins.</p>
+                </div>
+                <Badge variant="success">Activé ✓</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Déconnexion automatique</p>
+                  <p className="text-xs text-slate-500">Après 30 minutes d&apos;inactivité.</p>
+                </div>
+                <Badge variant="success">Activé ✓</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Limite des tentatives de connexion</p>
+                  <p className="text-xs text-slate-500">Blocage après 5 tentatives échouées.</p>
+                </div>
+                <Badge variant="success">Activé ✓</Badge>
+              </div>
+            </div>
+          </Card>
+        </>
+      )}
+
+      {tab === 'notifications' && (
+        <>
+          {/* Notifications */}
+          <Card className="space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <Mail className="w-5 h-5 text-blue-900 dark:text-blue-400" />
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Notifications Clients</p>
+                <p className="text-xs text-slate-500">Configurer les messages envoyés aux clients.</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Input
+                label="Avant expiration (jours)"
+                type="number"
+                value={editedValues.notification_before_expiry?.toString() || '7'}
+                onChange={(e) => updateValue('notification_before_expiry', parseInt(e.target.value) || 0)}
+                helperText="Nombre de jours avant l'expiration pour envoyer un rappel"
+              />
+              <Input
+                label="Jour après expiration"
+                type="number"
+                value={editedValues.notification_after_expiry?.toString() || '1'}
+                onChange={(e) => updateValue('notification_after_expiry', parseInt(e.target.value) || 0)}
+                helperText="Jour après expiration pour envoyer un rappel"
+              />
+            </div>
+          </Card>
+
+          <NotificationChannelsTest />
+        </>
+      )}
+
+      {tab === 'bot' && (
+        <>
+          <TelegramBotConfigCard />
+          <BotHealthCard />
+        </>
+      )}
+
+      {tab !== 'bot' && (
+        <div className="flex justify-end pt-4">
+          <Button onClick={handleSave} variant="secondary" className="gap-2 font-bold" isLoading={saving}>
+            <Save className="w-4 h-4" /> Enregistrer les modifications
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

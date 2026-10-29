@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle2, CircleSlash, Link2, Stethoscope, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, CircleSlash, Stethoscope, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { confirmAction } from '@/components/ui/ConfirmDialog';
 import type { HealthCheck, HealthStatus } from '@/lib/bot-health';
 
 const ICONS: Record<HealthStatus, { icon: React.ElementType; className: string; label: string }> = {
@@ -16,14 +15,13 @@ const ICONS: Record<HealthStatus, { icon: React.ElementType; className: string; 
 };
 
 /**
- * Paramètres : santé du bot Telegram. Le serveur teste lui-même ses clés et ne renvoie que des
- * statuts ; « Réenregistrer le webhook » transmet le secret directement du serveur à Telegram.
+ * Paramètres → Bot Telegram : santé du bot. Le serveur teste lui-même ses clés et ne renvoie que
+ * des statuts (le branchement du webhook se fait dans la carte de configuration).
  */
 export function BotHealthCard() {
   const [checks, setChecks] = useState<HealthCheck[] | null>(null);
   const [env, setEnv] = useState('');
   const [running, setRunning] = useState(false);
-  const [registering, setRegistering] = useState(false);
 
   const run = async () => {
     setRunning(true);
@@ -40,28 +38,7 @@ export function BotHealthCard() {
     }
   };
 
-  const register = async () => {
-    const ok = await confirmAction(
-      'Le webhook du bot sera enregistré auprès de Telegram sur ce site, avec le secret configuré sur le serveur. Les messages envoyés au bot arriveront ici.',
-      { title: 'Réenregistrer le webhook', confirmLabel: 'Réenregistrer', danger: false }
-    );
-    if (!ok) return;
-    setRegistering(true);
-    try {
-      const res = await fetch('/api/platform/bot-health', { method: 'POST' });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.message);
-      toast.success(json.message);
-      await run();
-    } catch (err) {
-      toast.error(err instanceof Error && err.message ? err.message : 'Enregistrement impossible');
-    } finally {
-      setRegistering(false);
-    }
-  };
-
   const problems = checks?.filter((c) => c.status === 'error' || c.status === 'warning').length ?? 0;
-  const canRegister = env === 'production' && checks?.some((c) => c.id === 'telegram' && c.status === 'ok') && checks?.some((c) => c.id === 'telegram_secret' && c.status === 'ok');
 
   return (
     <Card className="space-y-4">
@@ -105,11 +82,6 @@ export function BotHealthCard() {
         <Button icon={Stethoscope} onClick={run} isLoading={running} className="w-full sm:w-auto font-semibold">
           {checks ? 'Relancer le diagnostic' : 'Lancer le diagnostic'}
         </Button>
-        {canRegister && (
-          <Button variant="outline" icon={Link2} onClick={register} isLoading={registering} className="w-full sm:w-auto">
-            Réenregistrer le webhook
-          </Button>
-        )}
       </div>
     </Card>
   );

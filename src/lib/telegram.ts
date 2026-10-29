@@ -1,3 +1,5 @@
+import { hydrateTelegramEnv } from '@/lib/integration-secrets';
+
 interface TelegramMessage {
   chat_id?: string | number;
   text: string;
@@ -25,6 +27,7 @@ export function isTelegramConfigured(): boolean {
 
 /** Envoi avec délai maximal et une nouvelle tentative (limite de débit Telegram ou erreur serveur). */
 export async function sendTelegramMessageDetailed(message: TelegramMessage): Promise<TelegramSendResult> {
+  await hydrateTelegramEnv();
   const url = apiUrl('sendMessage');
   if (!url) return { ok: false, error: 'TELEGRAM_BOT_TOKEN manquant' };
   const chatId = message.chat_id || process.env.TELEGRAM_CHAT_ID?.trim();
@@ -68,6 +71,7 @@ export async function sendTelegramMessage(message: TelegramMessage): Promise<boo
 
 /** Identité du bot (vérifie que le token est valide). */
 export async function getTelegramBotInfo(): Promise<{ ok: boolean; username?: string; error?: string }> {
+  await hydrateTelegramEnv();
   const url = apiUrl('getMe');
   if (!url) return { ok: false, error: 'TELEGRAM_BOT_TOKEN manquant' };
   try {
