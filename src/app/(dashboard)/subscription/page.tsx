@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
+import { InvoiceList } from '@/components/invoices/InvoiceList';
 import { LicenseRequestDialog, type RequestedPlan } from '@/components/payments/LicenseRequestDialog';
 
 interface SubscriptionPlan {
@@ -397,6 +398,8 @@ export default function SubscriptionPage() {
           </div>
         </Card>
       )}
+
+      <InvoiceList />
 
       <div>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Tous les forfaits disponibles</h2>

@@ -1,17 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Search,
   Loader2,
-  Download,
   Receipt,
   Calendar,
   Clock,
   CheckCircle,
   AlertCircle,
   Ban,
+  Eye,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -32,6 +33,8 @@ interface InvoiceRecord {
   organization_id: string;
   subscription_id?: string | null;
   invoice_number: string;
+  plan_name?: string | null;
+  duration_months?: number | null;
   amount: number;
   currency: string;
   status: InvoiceStatus;
@@ -151,7 +154,7 @@ export default function PlatformInvoicesPage() {
                   <th className="px-4 py-3">Montant</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3">Émise</th>
-                  <th className="px-4 py-3">Échéance</th>
+                  <th className="px-4 py-3">Forfait</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -181,15 +184,15 @@ export default function PlatformInvoicesPage() {
                         {inv.issued_at ? formatDateFR(inv.issued_at) : '—'}
                       </td>
                       <td className="px-4 py-3 text-slate-500">
-                        {inv.due_at ? formatDateFR(inv.due_at) : '—'}
+                        {inv.plan_name ? `${inv.plan_name}${inv.duration_months ? ` · ${inv.duration_months} mois` : ''}` : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                          title="Télécharger"
+                        <Link
+                          href={`/platform/invoices/${inv.id}`}
+                          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
                         >
-                          <Download className="w-4 h-4" />
-                        </button>
+                          <Eye className="w-4 h-4" /> Voir
+                        </Link>
                       </td>
                     </tr>
                   );
