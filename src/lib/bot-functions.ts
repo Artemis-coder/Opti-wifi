@@ -321,7 +321,7 @@ export const FUNCTION_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'check_env_secrets',
-      description: 'Scan for exposed secrets in environment variables and code',
+      description: 'Check the server configuration: required environment variables present, no secret exposed to the browser (NEXT_PUBLIC_*), secrets long enough. Never returns values.',
       parameters: { type: 'object', properties: {} }
     }
   },
@@ -1057,76 +1057,50 @@ export async function executeFunction(name: string, args: any, chatId: string): 
     }
 
     case 'check_env_secrets': {
-      const fs = await import('fs');
-      const path = await import('path');
-      
-      const secretPatterns = [
-        { pattern: /sk_live_[a-zA-Z0-9]{24,}/g, type: 'Stripe Secret Key' },
-        { pattern: /sk_test_[a-zA-Z0-9]{24,}/g, type: 'Stripe Test Key' },
-        { pattern: /pk_live_[a-zA-Z0-9]{24,}/g, type: 'Stripe Publishable Key' },
-        { pattern: /AKIA[0-9A-Z]{16}/g, type: 'AWS Access Key' },
-        { pattern: /AIza[0-9A-Za-z\\-_]{35}/g, type: 'Google API Key' },
-        { pattern: /Bearer [a-zA-Z0-9\\-_]{20,}/g, type: 'Bearer Token' },
-        { pattern: /password\s*[=:]\s*['\"][^'\"]{8,}['\"]/gi, type: 'Password in Code' },
-        { pattern: /secret\s*[=:]\s*['\"][^'\"]{8,}['\"]/gi, type: 'Secret in Code' },
-        { pattern: /private_key\s*[=:]\s*['\"][^'\"]{20,}['\"]/gi, type: 'Private Key' },
-        { pattern: /postgres:\/\/[^\\s]+:[^\\s]+@[^\\s]+/g, type: 'Postgres URL with Credentials' },
-        { pattern: /mongodb:\/\/[^\\s]+:[^\\s]+@[^\\s]+/g, type: 'MongoDB URL with Credentials' },
+      // Contrôle de la configuration du serveur, sans lire aucun fichier : l'ancien scan
+      // (readdirSync('.') + readFileSync) faisait embarquer tout le projet dans la fonction
+      // serveur au build, parcourait node_modules et renvoyait des extraits de secrets au
+      // chat / aux fournisseurs d'IA. Le code est vérifié avant chaque commit (AGENTS.md).
+      // Les valeurs ne sont jamais lues dans le résultat : seulement les noms des variables.
+      const env = process.env;
+      const findings: { file: string; type: string; count: number; preview: string; severity: 'critical' | 'high' | 'medium' }[] = [];
+
+      const REQUIRED = [
+        'DATABASE_URL',
+        'JWT_SECRET',
+        'CRON_SECRET',
+        'TELEGRAM_BOT_TOKEN',
+        'TELEGRAM_WEBHOOK_SECRET',
+        'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
+        'VAPID_PRIVATE_KEY',
       ];
-      
-      const findings = [];
-      const scanDirs = ['src', 'scripts', '.'];
-      
-      for (const dir of scanDirs) {
-        try {
-          const files = fs.readdirSync(dir, { recursive: true, encoding: 'utf-8' });
-          for (const file of files) {
-            const filePath = path.join(dir, file);
-            const stat = fs.statSync(filePath);
-            if (stat.isFile() && (filePath.endsWith('.ts') || filePath.endsWith('.tsx') || filePath.endsWith('.js') || filePath.endsWith('.json') || filePath.endsWith('.env'))) {
-              const content = fs.readFileSync(filePath, 'utf-8');
-              for (const { pattern, type } of secretPatterns) {
-                const matches = content.match(pattern);
-                if (matches) {
-                  findings.push({
-                    file: filePath,
-                    type,
-                    count: matches.length,
-                    preview: matches[0].substring(0, 50)
-                  });
-                }
-              }
-            }
-          }
-        } catch (e) {
-          // Directory might not exist
+      for (const name of REQUIRED) {
+        if (!env[name]) findings.push({ file: name, type: 'Variable manquante', count: 1, preview: 'non configurée', severity: 'high' });
+      }
+
+      // Variable publique (envoyée au navigateur) dont le nom évoque un secret
+      const PUBLIC_ALLOWED = new Set(['NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY']);
+      for (const name of Object.keys(env)) {
+        if (name.startsWith('NEXT_PUBLIC_') && !PUBLIC_ALLOWED.has(name) && /SECRET|TOKEN|PRIVATE|PASSWORD|SERVICE_ROLE|API_KEY/.test(name)) {
+          findings.push({ file: name, type: 'Secret exposé au navigateur', count: 1, preview: 'variable NEXT_PUBLIC_*', severity: 'critical' });
         }
       }
-      
-      // Also check .env.local
-      try {
-        const envContent = fs.readFileSync('.env.local', 'utf-8');
-        for (const { pattern, type } of secretPatterns) {
-          const matches = envContent.match(pattern);
-          if (matches) {
-            findings.push({
-              file: '.env.local',
-              type,
-              count: matches.length,
-              preview: '***REDACTED***'
-            });
-          }
+
+      // Secrets trop courts pour être sûrs
+      for (const name of ['JWT_SECRET', 'CRON_SECRET', 'TELEGRAM_WEBHOOK_SECRET']) {
+        const value = env[name];
+        if (value && value.length < 32) {
+          findings.push({ file: name, type: 'Secret trop court', count: 1, preview: 'moins de 32 caractères', severity: 'medium' });
         }
-      } catch (e) {
-        // No .env.local
       }
-      
+
       return {
         success: true,
-        scanned: scanDirs,
+        scanned: ['variables d’environnement du serveur'],
         findings: findings.length,
         details: findings.slice(0, 20),
-        critical: findings.filter(f => f.type.includes('Key') || f.type.includes('Token') || f.type.includes('Password') || f.type.includes('Private')).length
+        issues: findings,
+        critical: findings.filter((f) => f.severity === 'critical').length,
       };
     }
 
