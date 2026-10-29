@@ -25,6 +25,9 @@ export type NotificationType =
   | 'account.password_reset'
   | 'team.collection_created'
   | 'team.member_added'
+  | 'support.new'
+  | 'support.reply'
+  | 'support.status'
   | 'system.test';
 
 export interface NotificationInput {
@@ -139,6 +142,8 @@ export async function getOrganizationAdminIds(organizationId: string, excludeUse
 const TELEGRAM_EMOJI: Partial<Record<NotificationType, string>> = {
   'registration.new': '🆕',
   'license_request.new': '🧾',
+  'support.new': '🛟',
+  'support.reply': '💬',
   'system.test': '✅',
 };
 

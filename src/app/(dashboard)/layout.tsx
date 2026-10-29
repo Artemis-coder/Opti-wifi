@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
+import { LicenseRequestDialog } from '@/components/payments/LicenseRequestDialog';
 import { Button } from '@/components/ui/Button';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -22,8 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [checkingSub, setCheckingSub] = useState(true);
   // Licence expirée : calculée côté serveur (même règle que le blocage des données)
   const [licenceExpired, setLicenceExpired] = useState(false);
-  const [renewState, setRenewState] = useState<'idle' | 'sending' | 'pending'>('idle');
-  const [renewError, setRenewError] = useState('');
+  const [renewState, setRenewState] = useState<'idle' | 'pending'>('idle');
   const [renewPlans, setRenewPlans] = useState<{ id: string; name: string; price: number; billing_period: string; current: boolean }[]>([]);
 
   useEffect(() => {
@@ -122,27 +122,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .catch(() => {});
   }, [isSubscriptionExpired, supabase]);
 
-  const handleRenewRequest = async (planId: string) => {
-    setRenewState('sending');
-    setRenewError('');
-    try {
-      const res = await fetch('/api/subscriptions/renew', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
-      });
-      // 409 = une demande est déjà en attente
-      if (res.ok || res.status === 409) {
-        setRenewState('pending');
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setRenewError(data.error || 'Impossible d’envoyer la demande.');
-        setRenewState('idle');
-      }
-    } catch {
-      setRenewState('idle');
-    }
-  };
+  // Le choix d'un forfait ouvre la demande : montant, moyens de paiement, référence
+  const [requestPlan, setRequestPlan] = useState<(typeof renewPlans)[number] | null>(null);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -266,14 +247,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {renewState !== 'pending' && renewPlans.map((plan) => (
               <Button
                 key={plan.id}
-                onClick={() => handleRenewRequest(plan.id)}
-                isLoading={renewState === 'sending'}
+                onClick={() => setRequestPlan(plan)}
                 className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs transition"
               >
-                {plan.current ? 'Renouveler' : 'Choisir'} « {plan.name} » — {new Intl.NumberFormat('fr-FR').format(plan.price)} FCFA
+                {plan.current ? 'Me réabonner' : 'Choisir'} « {plan.name} » — {new Intl.NumberFormat('fr-FR').format(plan.price)} FCFA
               </Button>
             ))}
-            {renewError && <p className="text-xs text-red-600">{renewError}</p>}
             <button
               onClick={handleSignOut}
               className="w-full py-2.5 px-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold text-xs transition"
@@ -282,6 +261,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
         </div>
+        <LicenseRequestDialog
+          plan={requestPlan}
+          renewal={requestPlan?.current}
+          onClose={() => setRequestPlan(null)}
+          onSent={() => {
+            setRequestPlan(null);
+            setRenewState('pending');
+          }}
+        />
       </div>
     );
   }

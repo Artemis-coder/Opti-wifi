@@ -12,7 +12,6 @@ import {
   Clock,
   Shield,
   Building2,
-  Plus,
   X,
   UserPlus,
   Trash2,
@@ -28,6 +27,7 @@ import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
+import { AddButton } from '@/components/ui/AddButton';
 
 interface PlatformUserProfile {
   id: string;
@@ -254,10 +254,7 @@ interface CreateFormState {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Utilisateurs</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">Tous les administrateurs de la plateforme.</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="h-9">
-          <Plus className="w-4 h-4 mr-2" />
-          Créer un administrateur
-        </Button>
+        <AddButton what="un utilisateur" onClick={() => setShowCreateModal(true)} />
       </div>
 
       <Card className="p-4">

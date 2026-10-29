@@ -23,6 +23,7 @@ import {
   CreditCard,
   ChevronRight,
   ShieldCheck,
+  LifeBuoy,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
@@ -68,6 +69,7 @@ const navSections: NavSection[] = [
       { label: 'Rapports & Exports', href: '/reports', icon: FileSpreadsheet, roles: ['administrateur'] },
       { label: 'Utilisateurs & Équipe', href: '/users', icon: Users, roles: ['administrateur'] },
       { label: 'Abonnement', href: '/subscription', icon: CreditCard, roles: ['administrateur'] },
+      { label: 'Support', href: '/support', icon: LifeBuoy, roles: ['administrateur', 'collecteur'] },
       { label: 'Paramètres', href: '/settings', icon: Settings, roles: ['administrateur', 'collecteur'] },
     ],
   },

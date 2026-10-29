@@ -6,6 +6,7 @@
 import { query } from '@/lib/neon/db';
 import { hasUsedTrialPlan, isTrialPlan } from '@/lib/trial-plan';
 import { notifyInBackground, notifyOrganizationAdmins, type NotificationInput } from '@/lib/notifications';
+import { issueLicenseInvoice, type IssuedInvoice } from '@/lib/invoices';
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -39,6 +40,8 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   start_date: string;
   end_date: string;
   organization_status: string;
+  invoice_id: string | null;
+  invoice_number: string | null;
 }>> {
   const { organizationId, planId, requestId, platformUserId } = input;
   const months = Number(input.durationMonths);
@@ -128,20 +131,36 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
     ]
   );
 
+  // Licence payante : paiement + facture, consultable par le client. Un échec ici
+  // n'annule pas l'activation (la licence est déjà en place) : il est journalisé.
+  let invoice: IssuedInvoice | null = null;
+  try {
+    invoice = await issueLicenseInvoice({ subscriptionId: sub.id, durationMonths: months, requestId: requestId || null });
+  } catch (err) {
+    console.error('License invoice error:', err);
+  }
+
   const endLabel = frDate(sub.end_date);
   notifyInBackground(() =>
     notifyOrganizationAdmins(organizationId, {
       type: 'license.activated',
       title: requestId ? 'Votre demande de licence est approuvée' : 'Votre licence est activée',
-      body: `Forfait ${plan.name} actif jusqu'au ${endLabel}.`,
-      link: '/subscription',
+      body: `Forfait ${plan.name} actif jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} disponible.` : ''}`,
+      link: invoice ? `/subscription/invoices/${invoice.id}` : '/subscription',
     })
   );
 
   return {
     ok: true,
-    data: { subscription_id: sub.id, start_date: sub.start_date, end_date: sub.end_date, organization_status: sub.org_status },
-    message: `Licence ${plan.name} activée pour « ${org.name} » jusqu'au ${endLabel}.`,
+    data: {
+      subscription_id: sub.id,
+      start_date: sub.start_date,
+      end_date: sub.end_date,
+      organization_status: sub.org_status,
+      invoice_id: invoice?.id ?? null,
+      invoice_number: invoice?.invoice_number ?? null,
+    },
+    message: `Licence ${plan.name} activée pour « ${org.name} » jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} émise.` : ''}`,
   };
 }
 

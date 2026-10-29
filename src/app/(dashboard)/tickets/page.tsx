@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Ticket, Plus, Clock, Loader2, Edit, PauseCircle, PlayCircle } from 'lucide-react';
+import { Ticket, Clock, Loader2, Edit, PauseCircle, PlayCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +12,7 @@ import { EditTicketModal } from './edit-ticket-modal';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { TicketType } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { AddButton } from '@/components/ui/AddButton';
 
 export default function TicketTypesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -94,10 +95,7 @@ export default function TicketTypesPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Types de Tickets Wi-Fi</h1>
           <p className="text-xs text-slate-500">Configurez les forfaits et la grille tarifaire de vos tickets.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2 font-semibold">
-          <Plus className="w-4 h-4" />
-          Nouveau Type de Ticket
-        </Button>
+        <AddButton what="un type de ticket" onClick={() => setIsModalOpen(true)} />
       </div>
 
       {loading ? (
@@ -114,9 +112,7 @@ export default function TicketTypesPage() {
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             Créez votre premier forfait (ex: Pass 1h, Pass 24h) pour commencer la distribution.
           </p>
-          <Button onClick={() => setIsModalOpen(true)} variant="secondary" className="font-bold gap-2">
-            <Plus className="w-4 h-4" /> Créer un premier ticket
-          </Button>
+          <AddButton what="un type de ticket" onClick={() => setIsModalOpen(true)} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -376,3 +376,27 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Impression d'une facture (« Télécharger en PDF ») : seule la facture est imprimée,
+   sans le menu, l'en-tête ni la barre de navigation. */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+  body:has(.invoice-print) * {
+    visibility: hidden;
+  }
+  body:has(.invoice-print) .invoice-print,
+  body:has(.invoice-print) .invoice-print * {
+    visibility: visible;
+  }
+  body:has(.invoice-print) .invoice-print {
+    position: absolute;
+    inset: 0 0 auto 0;
+    color-scheme: light;
+  }
+  body:has(.invoice-print) {
+    background: #fff !important;
+  }
+}

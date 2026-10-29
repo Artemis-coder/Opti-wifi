@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/neon/admin';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getPaymentStats } from '@/lib/billing-stats';
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -75,5 +76,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ data: payments });
+  // Chiffres clés (toutes périodes + mois en cours), indépendants des filtres de la liste
+  const stats = await getPaymentStats().catch((err) => {
+    console.error('Billing stats error:', err);
+    return null;
+  });
+
+  return NextResponse.json({ data: payments, stats });
 }

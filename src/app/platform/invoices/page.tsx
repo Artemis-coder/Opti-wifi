@@ -1,23 +1,26 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Search,
   Loader2,
-  Download,
   Receipt,
   Calendar,
   Clock,
   CheckCircle,
   AlertCircle,
   Ban,
+  Eye,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { Invoice, InvoiceStatus } from '@/types/platform';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
+import { KpiTiles } from '@/components/platform/KpiTiles';
+import type { InvoiceStats } from '@/lib/billing-stats';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   draft: { label: 'Brouillon', color: 'neutral' },
@@ -32,6 +35,8 @@ interface InvoiceRecord {
   organization_id: string;
   subscription_id?: string | null;
   invoice_number: string;
+  plan_name?: string | null;
+  duration_months?: number | null;
   amount: number;
   currency: string;
   status: InvoiceStatus;
@@ -44,6 +49,7 @@ interface InvoiceRecord {
 
 export default function PlatformInvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [stats, setStats] = useState<InvoiceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -60,6 +66,7 @@ export default function PlatformInvoicesPage() {
       const result = await res.json();
       if (res.ok) {
         setInvoices(result.data || []);
+        if (result.stats) setStats(result.stats);
       }
     } catch {
       // error
@@ -94,16 +101,44 @@ export default function PlatformInvoicesPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Factures</h1>
-          <p className="text-xs text-slate-500">Gérez toutes les factures de la plateforme.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Factures</h1>
+          <p className="text-xs text-slate-500">Factures de licence émises à chaque activation payante.</p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-slate-500">Montant dû (impayé)</p>
-          <p className="text-xl font-bold text-red-600">
-            {formatCurrencyFCFA(totalOutstanding)}
-          </p>
-        </div>
+        {totalOutstanding > 0 && (
+          <div className="sm:text-right">
+            <p className="text-xs text-slate-500">Montant dû (impayé)</p>
+            <p className="text-xl font-bold text-red-600">{formatCurrencyFCFA(totalOutstanding)}</p>
+          </div>
+        )}
       </div>
+
+      {/* Chiffres clés */}
+      <KpiTiles
+        loading={!stats}
+        tiles={[
+          {
+            label: 'Montant encaissé',
+            value: formatCurrencyFCFA(stats?.paid_amount ?? 0),
+            sub: `${stats?.paid ?? 0} facture${(stats?.paid ?? 0) > 1 ? 's' : ''} payée${(stats?.paid ?? 0) > 1 ? 's' : ''}`,
+            highlight: true,
+          },
+          {
+            label: 'Ce mois-ci',
+            value: formatCurrencyFCFA(stats?.month_amount ?? 0),
+            sub: `${stats?.month_count ?? 0} facture${(stats?.month_count ?? 0) > 1 ? 's' : ''} émise${(stats?.month_count ?? 0) > 1 ? 's' : ''}`,
+          },
+          {
+            label: 'Renouvellements',
+            value: String(stats?.renewals ?? 0),
+            sub: `${stats?.new_count ?? 0} nouvelle${(stats?.new_count ?? 0) > 1 ? 's' : ''} · ${stats?.upgrades ?? 0} changement${(stats?.upgrades ?? 0) > 1 ? 's' : ''} de forfait`,
+          },
+          {
+            label: 'Facture moyenne',
+            value: formatCurrencyFCFA(stats?.average ?? 0),
+            sub: `${stats?.clients ?? 0} client${(stats?.clients ?? 0) > 1 ? 's' : ''} facturé${(stats?.clients ?? 0) > 1 ? 's' : ''}`,
+          },
+        ]}
+      />
 
       <Card className="p-4">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -151,7 +186,7 @@ export default function PlatformInvoicesPage() {
                   <th className="px-4 py-3">Montant</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3">Émise</th>
-                  <th className="px-4 py-3">Échéance</th>
+                  <th className="px-4 py-3">Forfait</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -181,15 +216,15 @@ export default function PlatformInvoicesPage() {
                         {inv.issued_at ? formatDateFR(inv.issued_at) : '—'}
                       </td>
                       <td className="px-4 py-3 text-slate-500">
-                        {inv.due_at ? formatDateFR(inv.due_at) : '—'}
+                        {inv.plan_name ? `${inv.plan_name}${inv.duration_months ? ` · ${inv.duration_months} mois` : ''}` : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          className="p-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                          title="Télécharger"
+                        <Link
+                          href={`/platform/invoices/${inv.id}`}
+                          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
                         >
-                          <Download className="w-4 h-4" />
-                        </button>
+                          <Eye className="w-4 h-4" /> Voir
+                        </Link>
                       </td>
                     </tr>
                   );

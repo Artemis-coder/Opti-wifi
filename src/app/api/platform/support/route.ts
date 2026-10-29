@@ -1,104 +1,45 @@
-import { createServerClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/neon/admin';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { requirePlatformAdmin } from '@/lib/supabase/platform';
+import { createTicket, listTickets, parseNewTicket, ticketCounts } from '@/lib/support';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Support (super admin) : tous les tickets + compteurs, ouverture d'un ticket pour un client.
+// Auparavant, toute personne connectée (y compris un client) pouvait lister tous les tickets.
 export async function GET(request: Request) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(undefined, undefined, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  const auth = await requirePlatformAdmin();
+  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  try {
+    const status = new URL(request.url).searchParams.get('status');
+    const [tickets, counts] = await Promise.all([listTickets(null, status), ticketCounts()]);
+    return NextResponse.json({ data: tickets, counts });
+  } catch (err) {
+    console.error('Platform support GET error:', err);
+    return NextResponse.json({ error: 'Erreur lors du chargement des tickets' }, { status: 500 });
   }
-
-  const adminClient = createAdminClient();
-
-  const { searchParams } = new URL(request.url);
-  const statusFilter = searchParams.get('status');
-
-  let query = adminClient
-    .from('support_tickets')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (statusFilter) {
-    query = query.eq('status', statusFilter);
-  }
-
-  const { data: tickets, error } = await query;
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ data: tickets });
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(undefined, undefined, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      },
-    },
-  });
+  const auth = await requirePlatformAdmin();
+  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const organizationId = typeof body.organizationId === 'string' ? body.organizationId : '';
+  if (!UUID_RE.test(organizationId)) return NextResponse.json({ error: 'Choisissez le client concerné' }, { status: 400 });
+  const parsed = parseNewTicket(body);
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+  try {
+    const result = await createTicket({
+      organizationId,
+      authorUserId: auth.user.id,
+      authorName: auth.platformUser.full_name || 'Support OptiWifi',
+      fromSupport: true,
+      ...parsed,
+    });
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ success: true, data: result.data });
+  } catch (err) {
+    console.error('Platform support POST error:', err);
+    return NextResponse.json({ error: 'Erreur lors de la création du ticket' }, { status: 500 });
   }
-
-  const body = await request.json();
-  const { subject, message, client_name } = body;
-
-  if (!subject || !message) {
-    return NextResponse.json(
-      { error: 'subject et message requis' },
-      { status: 400 }
-    );
-  }
-
-  const adminClient = createAdminClient();
-
-  const { data: ticket, error } = await adminClient
-    .from('support_tickets')
-    .insert({
-      subject,
-      message,
-      client_name: client_name || 'Client inconnu',
-      created_by: user.id,
-      status: 'new',
-    })
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ data: ticket });
 }

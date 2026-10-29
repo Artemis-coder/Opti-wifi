@@ -95,10 +95,19 @@ export async function POST(request: NextRequest) {
   if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
   const body = await request.json().catch(() => ({}));
-  const { planId, message } = body as { planId?: string; message?: string };
+  const { planId, message, paymentMethodId, paymentReference } = body as {
+    planId?: string;
+    message?: string;
+    paymentMethodId?: string;
+    paymentReference?: string;
+  };
   if (planId && !UUID_RE.test(planId)) {
     return NextResponse.json({ error: 'Forfait invalide' }, { status: 400 });
   }
+  if (paymentMethodId && !UUID_RE.test(paymentMethodId)) {
+    return NextResponse.json({ error: 'Moyen de paiement invalide' }, { status: 400 });
+  }
+  const reference = typeof paymentReference === 'string' ? paymentReference.trim().slice(0, 100) || null : null;
 
   try {
     const state = await getRequestState(ctx.organizationId);
@@ -125,15 +134,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: TRIAL_ALREADY_USED_MESSAGE, code: 'TRIAL_ALREADY_USED' }, { status: 400 });
     }
 
+    let paymentMethodName: string | null = null;
+    if (paymentMethodId) {
+      const pm = await query('SELECT name FROM payment_methods WHERE id = $1 AND is_active = true', [paymentMethodId]);
+      if (!pm.rows[0]) return NextResponse.json({ error: 'Moyen de paiement indisponible' }, { status: 400 });
+      paymentMethodName = pm.rows[0].name;
+    }
+
     const type = !state.subscription ? 'new' : targetPlanId === state.subscription.plan_id ? 'renewal' : 'upgrade';
     const months = getBillingPeriodMonths(planRes.rows[0].billing_period);
     const note = typeof message === 'string' ? message.trim().slice(0, 500) || null : null;
 
     const { rows } = await query(
-      `INSERT INTO license_requests (organization_id, plan_id, duration_months, type, message, requested_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO license_requests (organization_id, plan_id, duration_months, type, message, requested_by,
+                                     payment_method_id, payment_reference)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, type, status, duration_months, created_at`,
-      [ctx.organizationId, targetPlanId, months, type, note, ctx.userId]
+      [ctx.organizationId, targetPlanId, months, type, note, ctx.userId, paymentMethodId || null, reference]
     );
 
     const organizationId = ctx.organizationId;
@@ -147,7 +164,9 @@ export async function POST(request: NextRequest) {
       await notifySuperAdmins({
         type: 'license_request.new',
         title: `Demande de licence : ${r?.org || 'client'}`,
-        body: `${TYPE_LABELS[type]} — ${r?.plan || 'forfait'}, ${months} mois. À valider.`,
+        body: `${TYPE_LABELS[type]} — ${r?.plan || 'forfait'}, ${months} mois.${
+          paymentMethodName ? ` Payé par ${paymentMethodName}${reference ? ` (réf. ${reference})` : ''}.` : ''
+        } À valider.`,
         link: '/platform/license-requests',
       });
     });

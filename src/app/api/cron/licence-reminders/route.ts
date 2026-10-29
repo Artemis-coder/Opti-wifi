@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
 import { notifyOrganizationAdmins } from '@/lib/notifications';
+import { EXPIRY_REMINDER_DAYS, expiringMessage, reminderStage } from '@/lib/licence-reminders';
 
 // Rappels de licence (cron quotidien, voir vercel.json) :
-// - licence qui expire dans les 7 jours → « demandez le renouvellement »
+// - licence qui expire : rappels à J-10, J-5 et J-2 → « renouvelez »
 // - licence expirée depuis moins de 7 jours → « accès coupé, choisissez un forfait »
-// Chaque rappel n'est envoyé qu'une fois (dedupe_key par abonnement).
+// Chaque rappel n'est envoyé qu'une fois (dedupe_key par abonnement et par palier).
+
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return NextResponse.json({ error: 'Endpoint non configuré.' }, { status: 503 });
@@ -14,20 +16,21 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Licence en cours qui se termine dans les 7 jours, sans autre licence prenant le relais
+    // Licence en cours qui se termine dans les 10 jours, sans autre licence prenant le relais
     const expiring = await query(
       `SELECT s.id, s.organization_id, s.end_date, p.name AS plan, COALESCE(p.trial_days, 0) > 0 AS is_trial
          FROM subscriptions s
          JOIN organizations o ON o.id = s.organization_id
          LEFT JOIN subscription_plans p ON p.id = s.plan_id
         WHERE s.status IN ('active', 'trialing')
-          AND s.end_date BETWEEN NOW() AND NOW() + interval '7 days'
+          AND s.end_date BETWEEN NOW() AND NOW() + make_interval(days => $1)
           AND o.status NOT IN ('suspended', 'archived', 'cancelled', 'pending_approval')
           AND NOT EXISTS (
             SELECT 1 FROM subscriptions s2
              WHERE s2.organization_id = s.organization_id AND s2.id <> s.id
                AND s2.status IN ('active', 'trialing') AND s2.end_date > s.end_date
-          )`
+          )`,
+      [Math.max(...EXPIRY_REMINDER_DAYS)]
     );
 
     // Organisations dont la licence a expiré récemment et qui n'en ont plus aucune en cours
@@ -47,16 +50,20 @@ export async function GET(request: Request) {
 
     const fmt = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
+    const sent: Record<string, number> = {};
     for (const s of expiring.rows) {
+      const daysLeft = Math.ceil((new Date(s.end_date).getTime() - Date.now()) / 86_400_000);
+      const stage = reminderStage(daysLeft);
+      if (stage === null) continue;
+      const message = expiringMessage(stage, daysLeft, s.plan || 'actuel', fmt(s.end_date), s.is_trial === true);
       await notifyOrganizationAdmins(s.organization_id, {
         type: 'license.expiring',
-        title: 'Votre licence expire bientôt',
-        body: s.is_trial
-          ? `Votre forfait ${s.plan} se termine le ${fmt(s.end_date)}. Choisissez un forfait pour continuer sans interruption.`
-          : `Votre forfait ${s.plan} se termine le ${fmt(s.end_date)}. Demandez le renouvellement pour éviter une interruption.`,
+        ...message,
         link: '/subscription',
-        dedupeKey: `licence-expiring:${s.id}`,
+        // Un rappel par palier (J-10, J-5, J-2) et par licence
+        dedupeKey: `licence-expiring:${s.id}:j${stage}`,
       });
+      sent[`j${stage}`] = (sent[`j${stage}`] || 0) + 1;
     }
 
     for (const s of expired.rows) {
@@ -69,7 +76,7 @@ export async function GET(request: Request) {
       });
     }
 
-    return NextResponse.json({ ok: true, expiring: expiring.rows.length, expired: expired.rows.length });
+    return NextResponse.json({ ok: true, expiring: expiring.rows.length, stages: sent, expired: expired.rows.length });
   } catch (err) {
     console.error('Licence reminders cron error:', err);
     return NextResponse.json({ ok: false }, { status: 500 });

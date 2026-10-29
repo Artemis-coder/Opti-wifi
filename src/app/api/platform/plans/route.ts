@@ -41,7 +41,8 @@ export async function GET(request: Request) {
   const { data: plans, error } = await adminClient
     .from('subscription_plans')
     .select('*')
-    .order('created_at', { ascending: false });
+    // Ordre commercial : du moins cher au plus cher (Découverte → Standard → Décideur Pro)
+    .order('price', { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

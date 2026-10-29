@@ -890,7 +890,142 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
+-- TABLE: payment_methods (moyens de paiement des licences)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name           VARCHAR(100) NOT NULL,
+  account_number VARCHAR(50) NOT NULL,   -- numéro de paiement (copiable)
+  account_name   VARCHAR(100),           -- titulaire du compte
+  whatsapp_url   VARCHAR(300),           -- lien WhatsApp pour le justificatif ; vide = wa.me/<account_number>
+  description    TEXT,
+  logo           TEXT CHECK (logo IS NULL OR (logo LIKE 'data:image/%' AND length(logo) <= 1000000)),  -- QR code
+  brand_logo     TEXT CHECK (brand_logo IS NULL OR (brand_logo LIKE 'data:image/%' AND length(brand_logo) <= 300000)),
+  brand_color    VARCHAR(7) CHECK (brand_color IS NULL OR brand_color ~ '^#[0-9a-fA-F]{6}$'),
+  is_active      BOOLEAN NOT NULL DEFAULT true,
+  sort_order     INT NOT NULL DEFAULT 0,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Rattrapage si la table existait déjà (première version de ce script)
+ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS whatsapp_url VARCHAR(300);
+ALTER TABLE payment_methods DROP COLUMN IF EXISTS receipt_number;
+ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS brand_logo TEXT
+  CHECK (brand_logo IS NULL OR (brand_logo LIKE 'data:image/%' AND length(brand_logo) <= 300000));
+ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS brand_color VARCHAR(7)
+  CHECK (brand_color IS NULL OR brand_color ~ '^#[0-9a-fA-F]{6}$');
+ALTER TABLE payment_methods DROP CONSTRAINT IF EXISTS payment_methods_logo_check;
+ALTER TABLE payment_methods ADD CONSTRAINT payment_methods_logo_check
+  CHECK (logo IS NULL OR (logo LIKE 'data:image/%' AND length(logo) <= 1000000));
+
+CREATE INDEX IF NOT EXISTS idx_payment_methods_active ON payment_methods(is_active, sort_order);
+
+DROP TRIGGER IF EXISTS trg_payment_methods_updated_at ON payment_methods;
+CREATE TRIGGER trg_payment_methods_updated_at
+  BEFORE UPDATE ON payment_methods
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- Accès uniquement par l'API serveur (jamais via /api/db)
+ALTER TABLE payment_methods ENABLE ROW LEVEL SECURITY;
+
+-- Demande de licence : moyen utilisé et référence de la transaction (facultatifs)
+ALTER TABLE license_requests ADD COLUMN IF NOT EXISTS payment_method_id UUID REFERENCES payment_methods(id) ON DELETE SET NULL;
+ALTER TABLE license_requests ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(100);
+
+-- ============================================================
+-- Factures de licence (paiement + facture émis à l'activation)
+-- ============================================================
+
+-- Numérotation continue des factures : OPT-<année>-<n° sur 5 chiffres>
+CREATE SEQUENCE IF NOT EXISTS invoice_number_seq;
+
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_id UUID REFERENCES payments(id) ON DELETE SET NULL;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS plan_id UUID REFERENCES subscription_plans(id) ON DELETE SET NULL;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS license_request_id UUID REFERENCES license_requests(id) ON DELETE SET NULL;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS plan_name VARCHAR(100);
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS unit_price DECIMAL(12, 2);
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS quantity INT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS duration_months INT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS period_start TIMESTAMPTZ;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS period_end TIMESTAMPTZ;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_method VARCHAR(100);
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(100);
+-- Client facturé, figé à l'émission : { name, contact_name, email, phone, address }
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS billed_to JSONB;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_invoices_number ON invoices(invoice_number);
+-- Une seule facture par licence (pas de doublon si l'activation est rejouée)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_invoices_subscription ON invoices(subscription_id) WHERE subscription_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_invoices_org_issued ON invoices(organization_id, issued_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payments_org ON payments(organization_id, paid_at DESC);
+
+-- Accès uniquement par l'API serveur (jamais via /api/db)
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
 -- INITIAL DATA
 -- ============================================================
 -- Default data is inserted by migration script from backup or
 -- by the application at runtime for fresh installs
+
+-- ============================================================
+-- Support : tickets par client, numérotés, fil de discussion
+-- ============================================================
+
+CREATE SEQUENCE IF NOT EXISTS support_ticket_number_seq;
+
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS ticket_number VARCHAR(20);
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS category VARCHAR(20) NOT NULL DEFAULT 'other';
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS priority VARCHAR(10) NOT NULL DEFAULT 'normal';
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS opened_by_support BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS last_message_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;
+
+ALTER TABLE support_tickets DROP CONSTRAINT IF EXISTS support_tickets_category_check;
+ALTER TABLE support_tickets ADD CONSTRAINT support_tickets_category_check
+  CHECK (category IN ('billing', 'technical', 'account', 'other'));
+ALTER TABLE support_tickets DROP CONSTRAINT IF EXISTS support_tickets_priority_check;
+ALTER TABLE support_tickets ADD CONSTRAINT support_tickets_priority_check
+  CHECK (priority IN ('low', 'normal', 'high'));
+
+-- Auteur : un compte (client ou super admin), plus seulement un profil client
+ALTER TABLE support_tickets DROP CONSTRAINT IF EXISTS support_tickets_created_by_fkey;
+ALTER TABLE support_tickets ADD CONSTRAINT support_tickets_created_by_fkey
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+-- Tickets existants : organisation déduite de l'auteur, numéro attribué
+UPDATE support_tickets t SET organization_id = p.organization_id
+  FROM profiles p WHERE p.id = t.created_by AND t.organization_id IS NULL;
+UPDATE support_tickets
+   SET ticket_number = 'SUP-' || lpad(nextval('support_ticket_number_seq')::text, 5, '0')
+ WHERE ticket_number IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_support_tickets_number ON support_tickets(ticket_number);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_org ON support_tickets(organization_id, last_message_at DESC);
+
+-- Fil de discussion d'un ticket (le premier message est celui de la création)
+CREATE TABLE IF NOT EXISTS support_messages (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_id      UUID NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+  author_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  author_name    VARCHAR(255),
+  from_support   BOOLEAN NOT NULL DEFAULT false,
+  body           TEXT NOT NULL CHECK (length(body) BETWEEN 1 AND 5000),
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_messages_ticket ON support_messages(ticket_id, created_at);
+
+-- Message initial des tickets existants repris dans le fil
+INSERT INTO support_messages (ticket_id, author_user_id, author_name, body, created_at)
+SELECT t.id, t.created_by, t.client_name, t.message, t.created_at
+  FROM support_tickets t
+ WHERE NOT EXISTS (SELECT 1 FROM support_messages m WHERE m.ticket_id = t.id);
+
+-- Accès uniquement par l'API serveur (jamais via /api/db)
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE support_messages ENABLE ROW LEVEL SECURITY;

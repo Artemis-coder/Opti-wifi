@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, MapPin, Loader2, AlertCircle, Store, Link2, Unlink, Search, Power, PowerOff } from 'lucide-react';
+import { Edit, Trash2, MapPin, Loader2, AlertCircle, Store, Link2, Unlink, Search, Power, PowerOff } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,6 +13,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { WifiSpace, PointOfSale } from '@/types/database';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
+import { AddButton } from '@/components/ui/AddButton';
 
 export default function WifiSpacesPage() {
   const { user } = useAuthStore();
@@ -200,10 +201,7 @@ export default function WifiSpacesPage() {
           <p className="text-xs text-slate-500">Gérez vos zones géographiques et regroupez vos points de vente.</p>
         </div>
         {isAdmin && (
-          <Button onClick={() => handleOpenModal()} className="gap-2 font-semibold">
-            <Plus className="w-4 h-4" />
-            Créer un Espace
-          </Button>
+          <AddButton what="un espace Wi-Fi" onClick={() => handleOpenModal()} />
         )}
       </div>
 
@@ -267,9 +265,7 @@ export default function WifiSpacesPage() {
               : 'Aucun espace ne correspond à votre recherche.'}
           </p>
           {isAdmin && spaces.length === 0 && (
-            <Button onClick={() => handleOpenModal()} variant="secondary" className="font-bold gap-2">
-              <Plus className="w-4 h-4" /> Créer mon premier espace
-            </Button>
+            <AddButton what="un espace Wi-Fi" onClick={() => handleOpenModal()} />
           )}
         </Card>
       ) : (

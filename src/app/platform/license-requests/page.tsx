@@ -19,6 +19,8 @@ interface LicenseRequest {
   duration_months: number;
   message: string | null;
   admin_note: string | null;
+  payment_method_name: string | null;
+  payment_reference: string | null;
   created_at: string;
   processed_at: string | null;
   organization_id: string;
@@ -162,6 +164,12 @@ export default function LicenseRequestsPage() {
                       <p className="mt-1">
                         {r.plan_name || 'Forfait actuel'} · {r.duration_months} mois
                       </p>
+                      {(r.payment_method_name || r.payment_reference) && (
+                        <p className="mt-1 text-slate-700 dark:text-slate-300">
+                          Payé par <strong>{r.payment_method_name || 'moyen supprimé'}</strong>
+                          {r.payment_reference && <> · réf. <span className="font-mono">{r.payment_reference}</span></>}
+                        </p>
+                      )}
                       {r.message && <p className="mt-1 italic text-slate-500">« {r.message} »</p>}
                       {r.admin_note && <p className="mt-1 text-slate-500">Note : {r.admin_note}</p>}
                     </td>

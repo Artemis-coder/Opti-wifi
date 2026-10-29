@@ -198,10 +198,6 @@ export default function PlatformClientsPage() {
             Gérez tous les comptes clients de la plateforme SaaS.
           </p>
         </div>
-        <Button onClick={() => {}} className="gap-2 font-semibold" variant="secondary">
-          <Building2 className="w-4 h-4" />
-          Nouveau client
-        </Button>
       </div>
 
       {/* KPI Mini-cards */}
