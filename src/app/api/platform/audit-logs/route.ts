@@ -49,9 +49,10 @@ export async function GET(request: Request) {
     .from('platform_audit_logs')
     .select(`
       *,
-      platform_user:platform_users!inner(full_name, email, role),
+      platform_user:platform_users(full_name, email, role),
       organization:organizations(name)
     `)
+    // Jointure simple (pas !inner) : les actions dont l'auteur a été supprimé restent visibles
     .order('created_at', { ascending: false })
     .limit(limit);
 
