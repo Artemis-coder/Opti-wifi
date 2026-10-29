@@ -882,7 +882,7 @@ async function handleMenuButton(text: string, chatId: string, userName: string, 
   
   if (text === '🔐 Secrets Exposés') {
     const result = await executeFunction('check_env_secrets', {}, chatId);
-    let text = `🔐 <b>Scan Secrets Exposés</b>\n\n`;
+    let text = `🔐 <b>Contrôle des secrets (configuration)</b>\n\n`;
     if (result.error) {
       text += `❌ ${result.error}`;
     } else {
@@ -892,12 +892,11 @@ async function handleMenuButton(text: string, chatId: string, userName: string, 
       if (result.details && result.details.length > 0) {
         text += `<b>Détails :</b>\n`;
         for (const d of result.details) {
-          text += `• ${d.file} - ${d.type} (${d.count})\n`;
-          text += `  <code>${d.preview}</code>\n`;
+          text += `• <code>${d.file}</code> : ${d.type} (${d.preview})\n`;
         }
-        text += `\n💡 <b>Action requise :</b> Rotation immédiate des clés exposées !`;
+        text += `\n💡 <b>Action :</b> corrigez ces variables dans Vercel → Settings → Environment Variables.`;
       } else {
-        text += `✅ Aucun secret détecté dans le code`;
+        text += `✅ Configuration du serveur conforme`;
       }
     }
     await sendMessageWithKeyboard(chatId, text, SECURITY_MENU);
