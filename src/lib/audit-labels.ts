@@ -24,6 +24,8 @@ export const AUDIT_ACTIONS: Record<string, { label: string; tone: AuditTone }> =
   payment_method_updated: { label: 'Moyen de paiement modifié', tone: 'info' },
   payment_method_deleted: { label: 'Moyen de paiement supprimé', tone: 'danger' },
   'platform_settings.update': { label: 'Paramètre modifié', tone: 'info' },
+  'telegram_config.update': { label: 'Bot Telegram configuré', tone: 'info' },
+  'telegram_config.reset': { label: 'Réglage du bot rétabli (Vercel)', tone: 'neutral' },
   'subscription.cancel': { label: 'Abonnement annulé', tone: 'danger' },
   'subscription.reactivate': { label: 'Abonnement réactivé', tone: 'success' },
   'subscription.suspend': { label: 'Abonnement suspendu', tone: 'warning' },

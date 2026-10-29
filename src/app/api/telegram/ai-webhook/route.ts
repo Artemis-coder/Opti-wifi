@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { query } from '@/lib/neon/db';
 import { PROJECT_KNOWLEDGE, BOT_CAPABILITIES, AVAILABLE_TOOLS } from '@/lib/bot-knowledge';
+import { hydrateTelegramEnv } from '@/lib/integration-secrets';
 
 // Conversation memory (in production, use Redis or database)
 const conversationHistory = new Map<string, Array<{ role: string; content: string }>>();
@@ -281,6 +282,8 @@ async function generateAIResponse(userMessage: string, history: Array<{ role: st
 }
 
 export async function POST(request: NextRequest) {
+  // Jeton, secret et chat : interface du back-office, sinon variables Vercel
+  await hydrateTelegramEnv();
   if (!isTelegramWebhookAuthorized(request)) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
   }

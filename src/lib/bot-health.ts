@@ -3,6 +3,7 @@
 // Les clés restent dans les variables d'environnement du déploiement : le diagnostic ne
 // renvoie que des statuts et des messages, jamais une clé ni un extrait de clé.
 // ============================================================
+import { botTokenFromVercel, hydrateTelegramEnv, telegramConfigSources } from '@/lib/integration-secrets';
 
 export type HealthStatus = 'ok' | 'warning' | 'error' | 'missing';
 
@@ -50,37 +51,51 @@ async function checkTelegram(expectedWebhookUrl: string): Promise<HealthCheck[]>
     return [networkError('Bot Telegram', 'telegram', err)];
   }
 
+  const sources = await telegramConfigSources();
+  const origin = (key: string) => {
+    const src = sources.find((x) => x.key === key)?.source;
+    return src === 'interface' ? ' (saisi dans le back-office)' : src === 'vercel' ? ' (variable Vercel)' : '';
+  };
+  checks[0].message += origin('TELEGRAM_BOT_TOKEN');
   checks.push({
     id: 'telegram_secret',
     label: 'Secret du webhook',
     status: env('TELEGRAM_WEBHOOK_SECRET') ? 'ok' : 'missing',
     message: env('TELEGRAM_WEBHOOK_SECRET')
-      ? 'Configuré (le webhook refuse les appels sans ce secret)'
+      ? `Configuré${origin('TELEGRAM_WEBHOOK_SECRET')} : le webhook refuse les appels sans ce secret`
       : 'TELEGRAM_WEBHOOK_SECRET manquant : le webhook refuse tous les messages',
   });
   checks.push({
     id: 'telegram_chat',
     label: 'Chat autorisé',
     status: env('TELEGRAM_CHAT_ID') ? 'ok' : 'missing',
-    message: env('TELEGRAM_CHAT_ID') ? 'Configuré' : 'TELEGRAM_CHAT_ID manquant : personne ne peut utiliser le bot',
+    message: env('TELEGRAM_CHAT_ID')
+      ? `Configuré${origin('TELEGRAM_CHAT_ID')}`
+      : 'Chat autorisé manquant : personne ne peut utiliser le bot',
   });
 
   try {
     const info = await call(`https://api.telegram.org/bot${token}/getWebhookInfo`);
-    const r = (info.json?.result || {}) as { url?: string; pending_update_count?: number; last_error_message?: string; last_error_date?: number };
+    const r = (info.json?.result || {}) as {
+      url?: string;
+      pending_update_count?: number;
+      last_error_message?: string;
+      last_error_date?: number;
+    };
     const recentError = r.last_error_date && Date.now() / 1000 - r.last_error_date < 24 * 3600 ? r.last_error_message : null;
     let status: HealthStatus = 'ok';
     let message = `Enregistré${r.pending_update_count ? ` · ${r.pending_update_count} message(s) en attente` : ''}`;
     if (!r.url) {
       status = 'error';
-      message = "Aucun webhook enregistré : le bot ne reçoit pas les messages. Utilisez « Réenregistrer le webhook ».";
+      message = 'Aucun webhook enregistré : le bot ne reçoit pas les messages. Utilisez « Réenregistrer le webhook ».';
     } else if (r.url !== expectedWebhookUrl) {
       // Hors production (local, preview), le webhook doit rester sur le site de production
       const isProduction = process.env.VERCEL_ENV === 'production';
-      status = isProduction ? 'warning' : 'ok';
-      message = isProduction
-        ? `Pointe vers une autre adresse (${new URL(r.url).host}). Réenregistrez-le pour ce site.`
-        : `Pointe vers ${new URL(r.url).host} : normal, ce diagnostic tourne hors production`;
+      status = isProduction || !(await botTokenFromVercel()) ? 'warning' : 'ok';
+      message =
+        isProduction || !(await botTokenFromVercel())
+          ? `Pointe vers une autre adresse (${new URL(r.url).host}). Branchez-le sur ce site depuis la configuration.`
+          : `Pointe vers ${new URL(r.url).host} : normal, ce diagnostic tourne hors production`;
     } else if (recentError) {
       status = 'error';
       message = /401|403/.test(recentError)
@@ -97,7 +112,13 @@ async function checkTelegram(expectedWebhookUrl: string): Promise<HealthCheck[]>
 async function checkAnthropic(): Promise<HealthCheck> {
   const label = 'Claude (Anthropic)';
   const key = env('ANTHROPIC_API_KEY');
-  if (!key) return { id: 'anthropic', label, status: 'missing', message: 'ANTHROPIC_API_KEY non configurée (le bot passe par les modèles open source)' };
+  if (!key)
+    return {
+      id: 'anthropic',
+      label,
+      status: 'missing',
+      message: 'ANTHROPIC_API_KEY non configurée (le bot passe par les modèles open source)',
+    };
   try {
     // Message d'un seul jeton : seul moyen de détecter un crédit épuisé (coût négligeable)
     const r = await call('https://api.anthropic.com/v1/messages', {
@@ -108,7 +129,13 @@ async function checkAnthropic(): Promise<HealthCheck> {
     if (r.status === 200) return { id: 'anthropic', label, status: 'ok', message: 'Clé valide, crédit disponible' };
     const msg = String((r.json?.error as { message?: string })?.message || '');
     if (r.status === 401) return { id: 'anthropic', label, status: 'error', message: 'Clé refusée : remplacez ANTHROPIC_API_KEY' };
-    if (/credit|billing/i.test(msg)) return { id: 'anthropic', label, status: 'warning', message: 'Crédit épuisé : rechargez-le sur console.anthropic.com (relais open source actif)' };
+    if (/credit|billing/i.test(msg))
+      return {
+        id: 'anthropic',
+        label,
+        status: 'warning',
+        message: 'Crédit épuisé : rechargez-le sur console.anthropic.com (relais open source actif)',
+      };
     if (r.status === 429) return { id: 'anthropic', label, status: 'warning', message: 'Limite de requêtes atteinte, réessayez plus tard' };
     return { id: 'anthropic', label, status: 'error', message: `Réponse inattendue (${r.status})` };
   } catch (err) {
@@ -133,7 +160,8 @@ async function checkOpenProvider(id: string, label: string, keyName: string, url
 async function checkVercel(): Promise<HealthCheck> {
   const label = 'Jeton Vercel (statut technique)';
   const key = env('VERCEL_TOKEN');
-  if (!key) return { id: 'vercel', label, status: 'missing', message: 'VERCEL_TOKEN non configuré : le bot n’affiche pas les déploiements' };
+  if (!key)
+    return { id: 'vercel', label, status: 'missing', message: 'VERCEL_TOKEN non configuré : le bot n’affiche pas les déploiements' };
   try {
     const r = await call('https://api.vercel.com/v2/user', { headers: { Authorization: `Bearer ${key}` } });
     if (r.status === 200) return { id: 'vercel', label, status: 'ok', message: 'Jeton valide' };
@@ -150,6 +178,7 @@ async function checkVercel(): Promise<HealthCheck> {
 
 /** Diagnostic complet, exécuté sur le déploiement (les clés ne quittent pas le serveur). */
 export async function runBotHealth(siteOrigin: string): Promise<HealthCheck[]> {
+  await hydrateTelegramEnv();
   const [telegram, anthropic, groq, openrouter, together, vercel] = await Promise.all([
     checkTelegram(`${siteOrigin}${WEBHOOK_PATH}`),
     checkAnthropic(),
@@ -166,11 +195,15 @@ export async function runBotHealth(siteOrigin: string): Promise<HealthCheck[]> {
  * directement du serveur à Telegram : il n'est jamais affiché ni renvoyé au navigateur.
  */
 export async function registerTelegramWebhook(siteOrigin: string): Promise<{ ok: boolean; message: string }> {
+  await hydrateTelegramEnv();
   const token = env('TELEGRAM_BOT_TOKEN');
   const secret = env('TELEGRAM_WEBHOOK_SECRET');
   if (!token || !secret) return { ok: false, message: 'TELEGRAM_BOT_TOKEN et TELEGRAM_WEBHOOK_SECRET doivent être configurés.' };
-  // Uniquement depuis la production : un clic en preview ne doit jamais détourner le bot de production
-  if (process.env.VERCEL_ENV !== 'production') return { ok: false, message: 'Réservé au site de production.' };
+  // Hors production, seulement avec un bot saisi dans le back-office de cet environnement : un jeton
+  // venant des variables Vercel peut être celui de production et le webhook serait détourné.
+  if (process.env.VERCEL_ENV !== 'production' && (await botTokenFromVercel())) {
+    return { ok: false, message: 'Hors production, saisissez d’abord un bot de test dans la configuration.' };
+  }
   if (!/^https:\/\//.test(siteOrigin)) return { ok: false, message: 'Le webhook doit pointer vers une adresse https.' };
   const r = await call(`https://api.telegram.org/bot${token}/setWebhook`, {
     method: 'POST',

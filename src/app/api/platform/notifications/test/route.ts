@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { requirePlatformAdmin } from '@/lib/supabase/platform';
 import { sendTestNotification } from '@/lib/notifications';
 import { getTelegramBotInfo, isTelegramConfigured } from '@/lib/telegram';
+import { hydrateTelegramEnv } from '@/lib/integration-secrets';
 
 // Envoie une notification de test au super admin connecté sur chaque canal
 // (in-app, push, Telegram) et renvoie l'état de chacun.
 export async function POST() {
+  await hydrateTelegramEnv();
   const auth = await requirePlatformAdmin();
   if ('error' in auth) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });

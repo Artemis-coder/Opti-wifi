@@ -2,8 +2,11 @@ import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramMessage, formatCustomNotification } from '@/lib/telegram';
 import { getValidation, updateValidation, getPendingValidations } from '@/app/api/ai/validation/route';
+import { hydrateTelegramEnv } from '@/lib/integration-secrets';
 
 export async function POST(request: NextRequest) {
+  // Jeton, secret et chat : interface du back-office, sinon variables Vercel
+  await hydrateTelegramEnv();
   if (!isTelegramWebhookAuthorized(request)) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
   }
