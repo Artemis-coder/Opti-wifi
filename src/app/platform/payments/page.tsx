@@ -18,6 +18,8 @@ import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { Payment, PaymentStatus } from '@/types/platform';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { DateField } from '@/components/ui/DateField';
+import { KpiTiles } from '@/components/platform/KpiTiles';
+import type { PaymentStats } from '@/lib/billing-stats';
 
 const STATUS_CONFIG: Record<PaymentStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending: { label: 'En attente', color: 'warning' },
@@ -45,6 +47,7 @@ interface PaymentRecord {
 
 export default function PlatformPaymentsPage() {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [stats, setStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -68,6 +71,7 @@ export default function PlatformPaymentsPage() {
       const result = await res.json();
       if (res.ok) {
         setPayments(result.data || []);
+        if (result.stats) setStats(result.stats);
       }
     } catch {
       // error
@@ -93,16 +97,62 @@ export default function PlatformPaymentsPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Paiements</h1>
-          <p className="text-xs text-slate-500">Suivez toutes les transactions de la plateforme.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Transactions</h1>
+          <p className="text-xs text-slate-500">Paiements de licence enregistrés à chaque activation validée.</p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-slate-500">Total encaissé (réussi)</p>
-          <p className="text-xl font-bold text-slate-900 dark:text-white">
-            {formatCurrencyFCFA(totalAmount)}
-          </p>
+        <div className="sm:text-right">
+          <p className="text-xs text-slate-500">Total de la liste filtrée</p>
+          <p className="text-lg font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(totalAmount)}</p>
         </div>
       </div>
+
+      {/* Chiffres clés */}
+      <KpiTiles
+        loading={!stats}
+        tiles={[
+          {
+            label: 'Total encaissé',
+            value: formatCurrencyFCFA(stats?.successful_amount ?? 0),
+            sub: `${stats?.successful ?? 0} transaction${(stats?.successful ?? 0) > 1 ? 's' : ''} réussie${(stats?.successful ?? 0) > 1 ? 's' : ''}`,
+            highlight: true,
+          },
+          {
+            label: 'Ce mois-ci',
+            value: formatCurrencyFCFA(stats?.month_amount ?? 0),
+            sub: `${stats?.month_count ?? 0} transaction${(stats?.month_count ?? 0) > 1 ? 's' : ''}`,
+          },
+          { label: 'Montant moyen', value: formatCurrencyFCFA(stats?.average ?? 0), sub: 'par transaction réussie' },
+          {
+            label: 'À vérifier',
+            value: String((stats?.pending ?? 0) + (stats?.failed ?? 0)),
+            sub: `${stats?.pending ?? 0} en attente · ${stats?.failed ?? 0} échouée${(stats?.failed ?? 0) > 1 ? 's' : ''}`,
+          },
+        ]}
+      />
+
+      {stats && stats.by_method.length > 0 && (
+        <Card className="p-4 space-y-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Par moyen de paiement</p>
+          <ul className="space-y-2.5">
+            {stats.by_method.map((m) => {
+              const pct = stats.successful_amount ? Math.round((m.amount / stats.successful_amount) * 100) : 0;
+              return (
+                <li key={m.method} className="space-y-1">
+                  <div className="flex items-baseline justify-between gap-3 text-sm">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{m.method}</span>
+                    <span className="tabular-nums font-bold text-slate-900 dark:text-white">
+                      {formatCurrencyFCFA(m.amount)} <span className="font-medium text-slate-500">· {m.count} · {pct} %</span>
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden" role="img" aria-label={`${m.method} : ${pct} % des encaissements`}>
+                    <div className="h-full rounded-full bg-[#2a78d6] dark:bg-[#3987e5]" style={{ width: `${Math.max(pct, 2)}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card className="p-4">
