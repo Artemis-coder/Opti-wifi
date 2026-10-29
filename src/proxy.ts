@@ -12,6 +12,7 @@ const PROTECTED_CLIENT_ROUTES = [
   '/reports',
   '/settings',
   '/subscription',
+  '/support',
 ];
 
 const CSRF_EXEMPT_ROUTES = [
