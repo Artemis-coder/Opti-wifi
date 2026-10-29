@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PaymentPoster, PayNumber, ReceiptActions, type PublicPaymentMethod } from '@/components/payments/PaymentMethodCard';
+import { PaymentPoster, PayNumber, WhatsappReceiptButton, type PublicPaymentMethod } from '@/components/payments/PaymentMethodCard';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 
@@ -227,8 +227,8 @@ function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: 
               <li className="flex gap-3">
                 <StepNumber n={2} />
                 <div className="flex-1 min-w-0 text-sm space-y-2">
-                  <p className="font-semibold text-slate-900 dark:text-white">Envoyez le justificatif de paiement (capture) à ce numéro</p>
-                  <ReceiptActions method={method} message={receiptMessage} />
+                  <p className="font-semibold text-slate-900 dark:text-white">Envoyez le justificatif de paiement (capture) sur WhatsApp</p>
+                  <WhatsappReceiptButton method={method} message={receiptMessage} />
                 </div>
               </li>
               <li className="flex gap-3">

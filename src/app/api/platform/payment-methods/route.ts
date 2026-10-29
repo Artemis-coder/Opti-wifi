@@ -10,7 +10,7 @@ const EDITABLE = [
   'name',
   'account_number',
   'account_name',
-  'receipt_number',
+  'whatsapp_url',
   'description',
   'logo',
   'brand_logo',
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
   try {
     const { rows } = await query(
-      `INSERT INTO payment_methods (name, account_number, account_name, receipt_number, description, logo, brand_logo, brand_color,
+      `INSERT INTO payment_methods (name, account_number, account_name, whatsapp_url, description, logo, brand_logo, brand_color,
                                     is_active, sort_order)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
                COALESCE($10, (SELECT COALESCE(MAX(sort_order) + 1, 0) FROM payment_methods)))
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         d.name,
         d.account_number,
         d.account_name ?? null,
-        d.receipt_number ?? null,
+        d.whatsapp_url ?? null,
         d.description ?? null,
         d.logo ?? null,
         d.brand_logo ?? null,

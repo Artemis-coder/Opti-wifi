@@ -16,6 +16,7 @@ import {
   type PublicPaymentMethod,
 } from '@/components/payments/PaymentMethodCard';
 import { cn } from '@/lib/utils/cn';
+import { normalizeWhatsappUrl, whatsappFromNumber } from '@/lib/whatsapp';
 
 interface PaymentMethod extends PublicPaymentMethod {
   is_active: boolean;
@@ -26,7 +27,7 @@ const EMPTY_FORM = {
   name: 'Wave',
   account_number: '',
   account_name: '',
-  receipt_number: '',
+  whatsapp_url: '',
   description: '',
   logo: null as string | null,
   brand_logo: null as string | null,
@@ -158,7 +159,7 @@ export default function PaymentMethodsPage() {
             name: m.name,
             account_number: m.account_number,
             account_name: m.account_name || '',
-            receipt_number: m.receipt_number || '',
+            whatsapp_url: m.whatsapp_url || '',
             description: m.description || '',
             logo: m.logo,
             brand_logo: m.brand_logo,
@@ -197,6 +198,10 @@ export default function PaymentMethodsPage() {
     }
     if (!form.logo) {
       toast.error('Importez le QR code de paiement');
+      return;
+    }
+    if (normalizeWhatsappUrl(form.whatsapp_url) === false) {
+      toast.error('Lien WhatsApp invalide');
       return;
     }
     if (!COLOR_RE.test(form.brand_color)) {
@@ -288,6 +293,10 @@ export default function PaymentMethodsPage() {
   };
 
   const activeCount = methods.filter((m) => m.is_active).length;
+  const normalizedWhatsapp = normalizeWhatsappUrl(form.whatsapp_url);
+  const whatsappError =
+    normalizedWhatsapp === false ? 'Lien WhatsApp attendu (wa.me/…, api.whatsapp.com/…) ou numéro de téléphone' : undefined;
+  const whatsappPreview = normalizedWhatsapp || null;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -340,9 +349,16 @@ export default function PaymentMethodsPage() {
                       <p className="text-xs text-slate-500">
                         Paiement : <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{m.account_number}</span>
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 break-all">
                         Justificatif :{' '}
-                        <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{m.receipt_number || m.account_number}</span>
+                        <a
+                          href={m.whatsapp_url || whatsappFromNumber(m.account_number)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
+                        >
+                          {(m.whatsapp_url || whatsappFromNumber(m.account_number)).replace(/^https:\/\//, '')}
+                        </a>
                       </p>
                       {!m.logo && <p className="text-xs font-medium text-amber-700 dark:text-amber-400">QR code manquant</p>}
                     </div>
@@ -463,13 +479,14 @@ export default function PaymentMethodsPage() {
               onChange={(e) => setForm({ ...form, account_name: e.target.value })}
             />
             <Input
-              label="Numéro pour le justificatif (WhatsApp)"
-              placeholder="Vide = numéro de paiement"
-              inputMode="tel"
-              value={form.receipt_number}
-              maxLength={50}
-              onChange={(e) => setForm({ ...form, receipt_number: e.target.value })}
-              helperText="Le client y envoie la capture de son paiement pour faire activer son compte."
+              label="Lien WhatsApp pour le justificatif"
+              placeholder="ex : https://wa.me/2250700000000"
+              inputMode="url"
+              value={form.whatsapp_url}
+              maxLength={300}
+              onChange={(e) => setForm({ ...form, whatsapp_url: e.target.value })}
+              error={whatsappError}
+              helperText="Le bouton « Envoyer le justificatif sur WhatsApp » ouvre ce lien. Vide = numéro de paiement."
             />
             <div className="space-y-1.5">
               <label
@@ -508,7 +525,7 @@ export default function PaymentMethodsPage() {
                 name: form.name || 'Opérateur',
                 account_number: form.account_number || 'Numéro',
                 account_name: form.account_name || null,
-                receipt_number: form.receipt_number || null,
+                whatsapp_url: whatsappPreview,
                 description: form.description || null,
                 logo: form.logo,
                 brand_logo: form.brand_logo,

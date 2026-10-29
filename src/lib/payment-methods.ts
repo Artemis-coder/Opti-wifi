@@ -1,4 +1,5 @@
 import { query } from '@/lib/neon/db';
+import { normalizeWhatsappUrl } from '@/lib/whatsapp';
 
 export interface PaymentMethod {
   id: string;
@@ -8,8 +9,8 @@ export interface PaymentMethod {
   account_number: string;
   /** Titulaire du compte */
   account_name: string | null;
-  /** Numéro (WhatsApp) auquel envoyer le justificatif ; vide = account_number */
-  receipt_number: string | null;
+  /** Lien WhatsApp pour envoyer le justificatif ; vide = wa.me/<account_number> */
+  whatsapp_url: string | null;
   /** Instructions de paiement */
   description: string | null;
   /** QR code de paiement d'OptiWifi */
@@ -32,7 +33,7 @@ const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 export type PaymentMethodInput = Pick<
   PaymentMethod,
-  'name' | 'account_number' | 'account_name' | 'receipt_number' | 'description' | 'logo' | 'brand_logo' | 'brand_color' | 'is_active' | 'sort_order'
+  'name' | 'account_number' | 'account_name' | 'whatsapp_url' | 'description' | 'logo' | 'brand_logo' | 'brand_color' | 'is_active' | 'sort_order'
 >;
 
 /**
@@ -60,10 +61,10 @@ export function parsePaymentMethodInput(
     if (v.length > 100) return { ok: false, error: 'Titulaire : 100 caractères max' };
     data.account_name = v || null;
   }
-  if ('receipt_number' in body) {
-    const v = str(body.receipt_number);
-    if (v.length > 50) return { ok: false, error: 'Numéro du justificatif : 50 caractères max' };
-    data.receipt_number = v || null;
+  if ('whatsapp_url' in body) {
+    const v = normalizeWhatsappUrl(str(body.whatsapp_url));
+    if (v === false) return { ok: false, error: 'Lien WhatsApp invalide (ex. https://wa.me/2250700000000)' };
+    data.whatsapp_url = v;
   }
   if ('brand_color' in body) {
     const v = str(body.brand_color);
@@ -102,7 +103,7 @@ export function parsePaymentMethodInput(
 }
 
 export const PAYMENT_METHOD_COLUMNS =
-  'id, name, account_number, account_name, receipt_number, description, logo, brand_logo, brand_color, is_active, sort_order, created_at, updated_at';
+  'id, name, account_number, account_name, whatsapp_url, description, logo, brand_logo, brand_color, is_active, sort_order, created_at, updated_at';
 
 export async function listPaymentMethods(activeOnly: boolean): Promise<PaymentMethod[]> {
   const { rows } = await query(

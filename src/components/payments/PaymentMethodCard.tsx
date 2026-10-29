@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Camera, Check, Copy, MessageCircle, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
+import { whatsappFromNumber, whatsappHref } from '@/lib/whatsapp';
 
 export interface PublicPaymentMethod {
   id: string;
@@ -13,8 +14,8 @@ export interface PublicPaymentMethod {
   account_number: string;
   /** Titulaire du compte */
   account_name: string | null;
-  /** Numéro (WhatsApp) pour le justificatif ; vide = numéro de paiement */
-  receipt_number: string | null;
+  /** Lien WhatsApp pour le justificatif ; vide = wa.me/<numéro de paiement> */
+  whatsapp_url: string | null;
   /** Instructions de paiement */
   description: string | null;
   /** QR code de paiement d'OptiWifi (data URL) */
@@ -85,11 +86,6 @@ export function PaymentQrThumb({ method }: { method: Pick<PublicPaymentMethod, '
   );
 }
 
-/** Lien WhatsApp vers le numéro, avec un message prérempli. */
-export function whatsappLink(number: string, message: string) {
-  return `https://wa.me/${number.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-}
-
 function useCopy() {
   const [copied, setCopied] = useState(false);
   const copy = async (text: string) => {
@@ -126,32 +122,19 @@ export function PayNumber({ method }: { method: PublicPaymentMethod }) {
   );
 }
 
-/** Envoi du justificatif de paiement (WhatsApp, ou numéro à copier). */
-export function ReceiptActions({ method, message }: { method: PublicPaymentMethod; message: string }) {
-  const number = method.receipt_number || method.account_number;
-  const { copied, copy } = useCopy();
+/** Envoi du justificatif de paiement : un seul bouton qui ouvre la conversation WhatsApp. */
+export function WhatsappReceiptButton({ method, message }: { method: PublicPaymentMethod; message: string }) {
+  const href = whatsappHref(method.whatsapp_url || whatsappFromNumber(method.account_number), message);
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
-      <p className="font-mono text-base font-bold text-slate-900 dark:text-white tracking-wide break-all">{number}</p>
-      <div className="grid grid-cols-2 gap-2">
-        <a
-          href={whatsappLink(number, message)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-1.5 h-11 rounded-xl text-sm font-semibold text-white bg-[#128C7E] hover:bg-[#0e7268] transition"
-        >
-          <MessageCircle className="w-4 h-4" /> WhatsApp
-        </a>
-        <button
-          type="button"
-          onClick={() => copy(number)}
-          className="inline-flex items-center justify-center gap-1.5 h-11 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-        >
-          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          {copied ? 'Copié' : 'Copier'}
-        </button>
-      </div>
-    </div>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Envoyer le justificatif de paiement sur WhatsApp"
+      className="w-full inline-flex items-center justify-center gap-2 min-h-12 px-4 py-2 rounded-xl text-base font-semibold text-white bg-[#128C7E] hover:bg-[#0e7268] active:scale-[0.99] transition touch-manipulation"
+    >
+      <MessageCircle className="w-5 h-5 shrink-0" /> Envoyer sur WhatsApp
+    </a>
   );
 }
 
@@ -165,8 +148,8 @@ export function PaymentMethodPreview({ method }: { method: PublicPaymentMethod }
         <PayNumber method={method} />
       </div>
       <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-slate-500">Justificatif de paiement à envoyer au</p>
-        <ReceiptActions method={method} message={`Bonjour, voici le justificatif de mon paiement ${method.name} pour mon abonnement OptiWifi.`} />
+        <p className="text-xs font-semibold text-slate-500">Après le paiement</p>
+        <WhatsappReceiptButton method={method} message={`Bonjour, voici le justificatif de mon paiement ${method.name} pour mon abonnement OptiWifi.`} />
       </div>
     </div>
   );

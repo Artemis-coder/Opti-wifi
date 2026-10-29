@@ -9,12 +9,12 @@ export async function GET() {
   if (!ctx) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   try {
     const methods = await listPaymentMethods(true);
-    const data = methods.map(({ id, name, account_number, account_name, receipt_number, description, logo, brand_logo, brand_color }) => ({
+    const data = methods.map(({ id, name, account_number, account_name, whatsapp_url, description, logo, brand_logo, brand_color }) => ({
       id,
       name,
       account_number,
       account_name,
-      receipt_number,
+      whatsapp_url,
       description,
       logo,
       brand_logo,

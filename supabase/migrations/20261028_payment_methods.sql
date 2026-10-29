@@ -2,7 +2,7 @@
 -- OPTIWIFI - Moyens de paiement (Wave…)
 -- Gérés par le super admin, affichés au client quand il se réabonne, sous forme d'affiche
 -- « Payez avec <opérateur> » : couleur et logo de l'opérateur, QR code de paiement de
--- OptiWifi (colonne logo), numéro à copier, numéro auquel envoyer le justificatif.
+-- OptiWifi (colonne logo), numéro à copier, lien WhatsApp pour envoyer le justificatif.
 -- Images stockées en data URL (préparées dans le navigateur).
 -- Script idempotent : peut être rejoué sans effet de bord.
 -- ============================================================
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   name           VARCHAR(100) NOT NULL,
   account_number VARCHAR(50) NOT NULL,   -- numéro de paiement (copiable)
   account_name   VARCHAR(100),           -- titulaire du compte
-  receipt_number VARCHAR(50),            -- numéro (WhatsApp) pour le justificatif ; vide = account_number
+  whatsapp_url   VARCHAR(300),           -- lien WhatsApp pour le justificatif ; vide = wa.me/<account_number>
   description    TEXT,
   logo           TEXT CHECK (logo IS NULL OR (logo LIKE 'data:image/%' AND length(logo) <= 1000000)),  -- QR code
   brand_logo     TEXT CHECK (brand_logo IS NULL OR (brand_logo LIKE 'data:image/%' AND length(brand_logo) <= 300000)),
@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS payment_methods (
 );
 
 -- Rattrapage si la table existait déjà (première version de ce script)
-ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS receipt_number VARCHAR(50);
+ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS whatsapp_url VARCHAR(300);
+ALTER TABLE payment_methods DROP COLUMN IF EXISTS receipt_number;
 ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS brand_logo TEXT
   CHECK (brand_logo IS NULL OR (brand_logo LIKE 'data:image/%' AND length(brand_logo) <= 300000));
 ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS brand_color VARCHAR(7)
