@@ -13,3 +13,7 @@ npm run dev   # http://localhost:3001
 - Design system : copie de `../src/styles/design-system.css` dans `src/styles/` (à garder synchronisée)
 - Captures réelles de l'outil : `public/screens/` (compte démo de la base dev)
 - Variables : voir `.env.example`
+
+## Licence
+
+Propriétaire, tous droits réservés : voir [`../LICENSE`](../LICENSE).
