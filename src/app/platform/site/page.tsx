@@ -32,7 +32,7 @@ import {
 } from '@/lib/site-content-schema';
 
 /** Adresse publique du site vitrine (projet Vercel optispace-landing). */
-const SITE_URL = process.env.NEXT_PUBLIC_LANDING_URL || 'https://optispace-landing.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_LANDING_URL || 'https://space.optiwifi.site';
 
 type Plan = { id: string; name: string; price: number; currency: string };
 
