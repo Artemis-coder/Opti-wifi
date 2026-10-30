@@ -2,24 +2,27 @@
 
 import { motion } from "motion/react";
 import { ArrowRight, Check, Sparkles } from "lucide-react";
-import { INCLUDED, LINKS, PLANS } from "@/lib/content";
+import { INCLUDED } from "@/lib/content";
+import { useSite } from "./SiteProvider";
 import { CountUp, Item, Reveal, SectionTag } from "./motion";
 
 export function Pricing() {
+  const { content, plans: PLANS } = useSite();
+  const { pricing, links } = content;
   return (
     <section id="tarifs" className="relative bg-surface py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-5 sm:px-6">
         <Reveal className="mx-auto max-w-3xl text-center">
           <SectionTag>Tarifs</SectionTag>
           <Item as="h2" className="mt-5 text-4xl font-extrabold tracking-[-0.03em] text-ink sm:text-5xl">
-            Moins cher qu&apos;un seul écart de caisse.
+            {pricing.title}
           </Item>
           <Item as="p" className="mt-5 text-lg text-ink-soft">
-            Commencez gratuitement, passez au forfait qui suit la taille de votre réseau. Sans engagement, payable par Wave.
+            {pricing.subtitle}
           </Item>
         </Reveal>
 
-        <Reveal className="mt-14 grid items-stretch gap-5 lg:grid-cols-3" gap={0.12}>
+        <Reveal className={`mt-14 grid items-stretch gap-5 ${PLANS.length >= 3 ? "lg:grid-cols-3" : PLANS.length === 2 ? "lg:grid-cols-2 lg:px-24" : "mx-auto max-w-md"}`} gap={0.12}>
           {PLANS.map((p) => (
             <Item key={p.name}>
               <motion.div
@@ -61,7 +64,7 @@ export function Pricing() {
                 </ul>
 
                 <a
-                  href={LINKS.signup}
+                  href={links.signup_url}
                   className={`group mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-2xl font-bold transition ${
                     p.featured
                       ? "bg-brand-400 text-brand-on hover:bg-brand-300"

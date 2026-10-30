@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
-import { LINKS } from "@/lib/content";
+import { ArrowRight, MessageCircle } from "lucide-react";
+import { useSite } from "./SiteProvider";
 import { Item, Reveal } from "./motion";
 
 const TICKER = [
@@ -20,6 +20,7 @@ const TICKER = [
 ];
 
 export function FinalCta() {
+  const { final_cta: cta, links } = useSite().content;
   return (
     <section className="relative overflow-hidden bg-brand-950 pt-24 text-white sm:pt-32">
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/25 blur-[140px]" />
@@ -35,28 +36,40 @@ export function FinalCta() {
           </motion.div>
         </Item>
         <Item as="h2" className="text-4xl font-extrabold tracking-[-0.035em] sm:text-6xl">
-          Dès la semaine prochaine, <span className="text-gradient">vous saurez.</span>
+          {cta.title} {cta.highlight && <span className="text-gradient">{cta.highlight}</span>}
         </Item>
         <Item as="p" className="mx-auto mt-6 max-w-xl text-lg text-white/65">
-          Combien de tickets ont été vendus, combien d&apos;argent doit rentrer, et qui vous le doit. Créez votre espace en
-          quelques minutes et testez sur vos vrais points de vente.
+          {cta.text}
         </Item>
         <Item className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
-            href={LINKS.signup}
+            href={links.signup_url}
             className="group relative inline-flex h-14 items-center gap-2 overflow-hidden rounded-2xl bg-brand-400 px-8 text-base font-bold text-brand-on shadow-[0_10px_40px_-10px_rgb(132_200_101/0.7)] transition hover:bg-brand-300"
           >
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-            Créer mon espace gratuitement
+            {cta.cta_label}
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </a>
-          <a href={LINKS.login} className="inline-flex h-14 items-center px-6 font-semibold text-white/75 hover:text-white">
-            J&apos;ai déjà un compte
-          </a>
+          {links.whatsapp_url ? (
+            <a
+              href={links.whatsapp_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-14 items-center gap-2 rounded-2xl px-6 font-semibold text-white/85 ring-1 ring-white/15 hover:bg-white/5 hover:text-white"
+            >
+              <MessageCircle className="h-5 w-5" /> Nous écrire sur WhatsApp
+            </a>
+          ) : (
+            <a href={links.login_url} className="inline-flex h-14 items-center px-6 font-semibold text-white/75 hover:text-white">
+              J&apos;ai déjà un compte
+            </a>
+          )}
         </Item>
-        <Item as="p" className="mt-5 text-sm text-white/45">
-          5 jours gratuits · Sans carte bancaire · Vos données restent les vôtres
-        </Item>
+        {cta.note && (
+          <Item as="p" className="mt-5 text-sm text-white/45">
+            {cta.note}
+          </Item>
+        )}
       </Reveal>
 
       <div className="relative mt-24 overflow-hidden border-y border-white/10 py-5" aria-hidden>
@@ -74,6 +87,7 @@ export function FinalCta() {
 }
 
 export function Footer() {
+  const { links, sections } = useSite().content;
   return (
     <footer className="bg-brand-950 text-white/55">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-5 py-10 sm:flex-row sm:px-6">
@@ -85,10 +99,10 @@ export function Footer() {
           <span className="text-sm">· Gestion des tickets & encaissements Wi-Fi</span>
         </div>
         <nav className="flex items-center gap-6 text-sm">
-          <a href="#fonctionnalites" className="hover:text-white">Fonctionnalités</a>
-          <a href="#tarifs" className="hover:text-white">Tarifs</a>
-          <a href="#faq" className="hover:text-white">FAQ</a>
-          <a href={LINKS.login} className="hover:text-white">Connexion</a>
+          {sections.showcase && <a href="#fonctionnalites" className="hover:text-white">Fonctionnalités</a>}
+          {sections.pricing && <a href="#tarifs" className="hover:text-white">Tarifs</a>}
+          {sections.faq && <a href="#faq" className="hover:text-white">FAQ</a>}
+          <a href={links.login_url} className="hover:text-white">Connexion</a>
         </nav>
       </div>
       <p className="pb-8 text-center text-xs text-white/35">© {new Date().getFullYear()} OptiSpace. Tous droits réservés.</p>

@@ -4,18 +4,22 @@ import Image from "next/image";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import { LINKS } from "@/lib/content";
+import type { SectionKey } from "@/lib/content";
+import { useSite } from "./SiteProvider";
 import { EASE_OUT } from "./motion";
 
-const SECTIONS = [
-  { href: "#probleme", label: "Le problème" },
-  { href: "#fonctionnement", label: "Comment ça marche" },
-  { href: "#fonctionnalites", label: "Fonctionnalités" },
-  { href: "#tarifs", label: "Tarifs" },
-  { href: "#faq", label: "FAQ" },
+const ALL_SECTIONS: { href: string; label: string; key: SectionKey }[] = [
+  { href: "#probleme", label: "Le problème", key: "pains" },
+  { href: "#fonctionnement", label: "Comment ça marche", key: "how_it_works" },
+  { href: "#fonctionnalites", label: "Fonctionnalités", key: "showcase" },
+  { href: "#tarifs", label: "Tarifs", key: "pricing" },
+  { href: "#faq", label: "FAQ", key: "faq" },
 ];
 
 export function Nav() {
+  const { content } = useSite();
+  const links = content.links;
+  const SECTIONS = ALL_SECTIONS.filter((s) => content.sections[s.key]);
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -57,13 +61,13 @@ export function Nav() {
 
         <div className="flex items-center gap-2">
           <a
-            href={LINKS.login}
+            href={links.login_url}
             className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-white/80 transition-colors hover:text-white sm:block"
           >
             Se connecter
           </a>
           <a
-            href={LINKS.signup}
+            href={links.signup_url}
             className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-bold text-brand-on shadow-[0_0_0_0_rgb(132_200_101/0.5)] transition-all hover:bg-brand-300 hover:shadow-[0_0_24px_0_rgb(132_200_101/0.45)]"
           >
             Essai gratuit
@@ -101,7 +105,7 @@ export function Nav() {
               </li>
             ))}
             <li>
-              <a href={LINKS.login} className="block rounded-xl px-4 py-3 text-base font-semibold text-brand-300">
+              <a href={links.login_url} className="block rounded-xl px-4 py-3 text-base font-semibold text-brand-300">
                 Se connecter
               </a>
             </li>

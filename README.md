@@ -14,7 +14,8 @@ npm install
 npm run dev   # http://localhost:3001
 ```
 
-- Contenus (forfaits, FAQ, liens) : `src/lib/content.ts`
+- Contenus : gérés dans le back-office de l'outil → **Site vitrine** (table `site_content`), lus via
+  `SITE_CONTENT_API_URL` (page régénérée toutes les 60 s). `src/lib/content.ts` = contenu de secours.
 - Design system : copie de `src/styles/design-system.css` de l'outil (branche `develop`) dans `src/styles/` (à garder synchronisée)
 - Captures réelles de l'outil : `public/screens/` (compte démo de la base dev)
 - Variables : voir `.env.example`

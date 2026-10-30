@@ -3,10 +3,11 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { FAQ } from "@/lib/content";
+import { useSite } from "./SiteProvider";
 import { EASE_OUT, Item, Reveal, SectionTag } from "./motion";
 
 export function Faq() {
+  const FAQ = useSite().content.faq.items;
   const [open, setOpen] = useState<number | null>(0);
 
   return (

@@ -3,7 +3,8 @@
 import { motion } from "motion/react";
 import { ArrowRight, Info } from "lucide-react";
 import { useId, useState } from "react";
-import { LINKS, PLANS, formatFcfa } from "@/lib/content";
+import { formatFcfa, planForPos } from "@/lib/content";
+import { useSite } from "./SiteProvider";
 import { AnimatedNumber, Item, Reveal, SectionTag } from "./motion";
 
 type Field = { key: "pos" | "perDay" | "price" | "leak"; label: string; min: number; max: number; step: number; unit: string };
@@ -16,13 +17,14 @@ const FIELDS: Field[] = [
 ];
 
 export function Calculator() {
+  const { content, plans } = useSite();
   const [v, setV] = useState({ pos: 5, perDay: 30, price: 200, leak: 6 });
 
   const monthly = v.pos * v.perDay * v.price * 30;
   const lost = monthly * (v.leak / 100);
-  // Forfait adapté au nombre de points de vente (limites de la table subscription_plans).
-  const plan = v.pos <= 1 ? PLANS[0] : v.pos <= 10 ? PLANS[1] : PLANS[2];
-  const ratio = plan.price > 0 ? lost / plan.price : 0;
+  // Forfait adapté au nombre de points de vente (limites des forfaits du back-office).
+  const plan = planForPos(plans, v.pos);
+  const ratio = plan && plan.price > 0 ? lost / plan.price : 0;
 
   return (
     <section id="calculateur" className="bg-surface pb-24 sm:pb-32">
@@ -68,6 +70,7 @@ export function Calculator() {
                   soit <AnimatedNumber value={lost * 12} suffix=" FCFA" className="font-semibold text-white" /> par an.
                 </p>
               </div>
+              {plan && (
               <div className="rounded-2xl bg-white/5 p-5 ring-1 ring-white/10">
                 <p className="text-sm text-white/60">
                   Forfait adapté à {v.pos} point{v.pos > 1 ? "s" : ""} de vente :{" "}
@@ -80,9 +83,10 @@ export function Calculator() {
                   </p>
                 )}
               </div>
+              )}
             </div>
             <a
-              href={LINKS.signup}
+              href={content.links.signup_url}
               className="group relative inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-brand-400 px-6 font-bold text-brand-on transition hover:bg-brand-300"
             >
               Arrêter les fuites dès aujourd&apos;hui
