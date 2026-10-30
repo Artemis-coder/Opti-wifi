@@ -1,310 +1,474 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
+  AlertTriangle,
+  Ban,
+  Banknote,
+  CheckCircle2,
+  ExternalLink,
+  Gift,
+  History,
+  KeyRound,
+  Loader2,
+  PauseCircle,
+  PlayCircle,
   Receipt,
   Search,
-  Loader2,
-  CheckCircle,
-  PauseCircle,
-  Ban,
-  Clock,
+  UserX,
   Zap,
-  ExternalLink,
-  KeyRound,
 } from 'lucide-react';
-import Link from 'next/link';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Modal } from '@/components/ui/Modal';
-import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
-import { toast } from 'sonner';
-import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { SubscriptionWithPlan, SubscriptionStatus } from '@/types/platform';
+import { StatTile } from '@/components/ui/StatTile';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
+import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
+import { formatCurrencyFCFA, formatDateOnlyFR } from '@/lib/utils/format';
+import { cn } from '@/lib/utils/cn';
 
-const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
-  trialing: { label: 'Essai', color: 'info' },
+interface SubscriptionRow {
+  id: string;
+  organization_id: string;
+  plan_id: string;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  cancel_at_period_end: boolean;
+  created_at: string;
+  organization_name: string;
+  organization_status: string;
+  plan_name: string | null;
+  plan_price: number | null;
+  plan_currency: string | null;
+  plan_period: string | null;
+  is_trial: boolean;
+  days_left: number | null;
+  total_days: number | null;
+}
+
+interface Kpis {
+  paid_active: number;
+  trials: number;
+  expiring: number;
+  mrr: number;
+  without_licence: number;
+}
+
+type State = 'trial' | 'active' | 'expiring' | 'expired' | 'suspended' | 'cancelled';
+
+const EXPIRING_DAYS = 10;
+
+const STATE_CONFIG: Record<State, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
+  trial: { label: 'Essai gratuit', color: 'info' },
   active: { label: 'Actif', color: 'success' },
-  past_due: { label: 'En retard', color: 'warning' },
-  unpaid: { label: 'Impayé', color: 'danger' },
-  cancelled: { label: 'Annulé', color: 'neutral' },
+  expiring: { label: 'Expire bientôt', color: 'warning' },
   expired: { label: 'Expiré', color: 'danger' },
   suspended: { label: 'Suspendu', color: 'danger' },
+  cancelled: { label: 'Annulé', color: 'neutral' },
 };
 
-const STATUS_FILTERS: { value: string; label: string }[] = [
+const FILTERS: { value: 'all' | State; label: string }[] = [
   { value: 'all', label: 'Tous' },
   { value: 'active', label: 'Actifs' },
-  { value: 'trialing', label: 'Essai' },
-  { value: 'past_due', label: 'En retard' },
-  { value: 'unpaid', label: 'Impayés' },
+  { value: 'trial', label: 'Essais' },
+  { value: 'expiring', label: 'Expirent bientôt' },
   { value: 'expired', label: 'Expirés' },
-  { value: 'cancelled', label: 'Annulés' },
   { value: 'suspended', label: 'Suspendus' },
+  { value: 'cancelled', label: 'Annulés' },
 ];
 
+const PERIOD_LABELS: Record<string, string> = {
+  monthly: 'mois',
+  quarterly: 'trimestre',
+  semiannual: 'semestre',
+  annual: 'an',
+};
+
+/** État affiché : un abonnement « actif » dont la date est passée est expiré. */
+function stateOf(s: SubscriptionRow): State {
+  if (s.status === 'suspended') return 'suspended';
+  if (s.status === 'cancelled') return 'cancelled';
+  const live = (s.status === 'active' || s.status === 'trialing') && (s.days_left === null || s.days_left > 0);
+  if (!live) return 'expired';
+  if (s.is_trial) return 'trial';
+  return s.days_left !== null && s.days_left <= EXPIRING_DAYS ? 'expiring' : 'active';
+}
+
+const ACTION_CONFIRM: Record<string, { message: (name: string) => string; label: string; danger: boolean }> = {
+  suspend: {
+    message: (n) => `Suspendre l'abonnement de « ${n} » ? L'accès du client est coupé jusqu'à sa réactivation.`,
+    label: 'Suspendre',
+    danger: true,
+  },
+  cancel: {
+    message: (n) => `Annuler l'abonnement de « ${n} » ? L'accès du client est coupé immédiatement.`,
+    label: "Annuler l'abonnement",
+    danger: true,
+  },
+  reactivate: {
+    message: (n) => `Réactiver l'abonnement de « ${n} » jusqu'à sa date d'expiration ?`,
+    label: 'Réactiver',
+    danger: false,
+  },
+};
+
 export default function PlatformSubscriptionsPage() {
-  const [subscriptions, setSubscriptions] = useState<SubscriptionWithPlan[]>([]);
+  const [rows, setRows] = useState<SubscriptionRow[]>([]);
+  const [kpis, setKpis] = useState<Kpis | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [extending, setExtending] = useState<SubscriptionWithPlan | null>(null);
-  const [confirmModal, setConfirmModal] = useState<{ open: boolean; subscription: SubscriptionWithPlan | null; action: string }>({
-    open: false,
-    subscription: null,
-    action: '',
-  });
+  const [filter, setFilter] = useState<'all' | State>('all');
+  const [history, setHistory] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [licenseFor, setLicenseFor] = useState<SubscriptionRow | null>(null);
 
   useEffect(() => {
-    loadSubscriptions();
-  }, []);
+    let cancelled = false;
+    fetch(`/api/platform/subscriptions${history ? '?scope=all' : ''}`)
+      .then(async (res) => {
+        const result = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          toast.error(result.error || 'Erreur de chargement');
+          return;
+        }
+        setRows(result.data || []);
+        setKpis(result.kpis || null);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error('Erreur réseau');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [history, reloadKey]);
 
-  async function loadSubscriptions() {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ status: statusFilter, search });
-      const res = await fetch(`/api/platform/subscriptions?${params}`);
-      const result = await res.json();
-      if (res.ok) {
-        setSubscriptions(result.data || []);
-      }
-    } catch {
-      toast.error('Erreur de chargement');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const reload = () => setReloadKey((k) => k + 1);
 
-  useEffect(() => {
-    loadSubscriptions();
-  }, [statusFilter, search]);
+  const withState = useMemo(() => rows.map((r) => ({ ...r, state: stateOf(r) })), [rows]);
 
-  const handleAction = (sub: SubscriptionWithPlan, action: string) => {
-    setConfirmModal({ open: true, subscription: sub, action });
-  };
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: withState.length };
+    for (const r of withState) c[r.state] = (c[r.state] || 0) + 1;
+    return c;
+  }, [withState]);
 
-  const executeAction = async () => {
-    const { subscription, action } = confirmModal;
-    if (!subscription) return;
+  const q = search.trim().toLowerCase();
+  const visible = withState.filter(
+    (r) =>
+      (filter === 'all' || r.state === filter) &&
+      (!q || r.organization_name.toLowerCase().includes(q) || (r.plan_name || '').toLowerCase().includes(q))
+  );
 
-    setActionLoading(subscription.id);
-    setConfirmModal({ open: false, subscription: null, action: '' });
-
+  async function runAction(row: SubscriptionRow, action: keyof typeof ACTION_CONFIRM) {
+    const cfg = ACTION_CONFIRM[action];
+    const ok = await confirmAction(cfg.message(row.organization_name), { confirmLabel: cfg.label, danger: cfg.danger });
+    if (!ok) return;
+    setBusyId(row.id);
     try {
       const res = await fetch('/api/platform/subscriptions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId: subscription.id, action, reason: 'Super admin' }),
+        body: JSON.stringify({ subscriptionId: row.id, action, reason: 'Super admin' }),
       });
       const result = await res.json();
-      if (res.ok) {
-        toast.success(result.message);
-        setSubscriptions((prev) =>
-          prev.map((s: SubscriptionWithPlan) => (s.id === subscription.id ? result.data : s))
-        );
-      } else {
-        toast.error(result.error || 'Erreur');
+      if (!res.ok) {
+        toast.error(result.error || 'Action impossible');
+        return;
       }
+      toast.success(result.message);
+      reload();
     } catch {
       toast.error('Erreur réseau');
     } finally {
-      setActionLoading(null);
+      setBusyId(null);
     }
-  };
-
-  const getActionButtons = (sub: SubscriptionWithPlan) => {
-    const status = sub.status;
-    const isExpiring =
-      sub.end_date &&
-      new Date(sub.end_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) &&
-      new Date(sub.end_date) <= new Date();
-
-    const buttons: { label: string; action: string; variant: string; icon: React.ReactNode }[] = [];
-
-    if (status === 'active' && !sub.cancel_at_period_end) {
-      buttons.push({
-        label: 'Annuler à la fin',
-        action: 'cancel_at_period_end',
-        variant: 'outline' as const,
-        icon: <Clock className="w-4 h-4" />,
-      });
-    }
-
-    if (status === 'active' || status === 'suspended') {
-      buttons.push({
-        label: 'Réactiver',
-        action: 'reactivate',
-        variant: 'secondary' as const,
-        icon: <CheckCircle className="w-4 h-4" />,
-      });
-    }
-
-    if (isExpiring || status === 'active' || status === 'trialing') {
-      buttons.push({
-        label: 'Annuler',
-        action: 'cancel',
-        variant: 'danger' as const,
-        icon: <Ban className="w-4 h-4" />,
-      });
-    }
-
-    if (status === 'active') {
-      buttons.push({
-        label: 'Suspendre',
-        action: 'suspend',
-        variant: 'danger' as const,
-        icon: <PauseCircle className="w-4 h-4" />,
-      });
-    }
-
-    return buttons;
-  };
-
-  if (loading) {
-    return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-        <span>Chargement des abonnements...</span>
-      </div>
-    );
   }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
+      {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Abonnements</h1>
-          <p className="text-xs text-slate-500">Gérez tous les abonnements clients de la plateforme.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <KeyRound className="w-6 h-6 text-amber-500" />
+            Abonnements
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            La licence en cours de chaque client : essais, renouvellements à prévoir et licences expirées.
+          </p>
         </div>
-        <Link href="/platform/plans">
-          <Button variant="secondary" className="gap-2 font-semibold">
-            <Zap className="w-4 h-4" /> Gérer les plans
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/platform/subscriptions/expiring">
+            <Button variant="outline" size="sm" icon={History}>
+              Expirations
+            </Button>
+          </Link>
+          <Link href="/platform/plans">
+            <Button variant="secondary" size="sm" icon={Zap}>
+              Forfaits
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Search + Filter */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+      {/* Chiffres clés */}
+      <div
+        className={cn(
+          'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 transition-opacity',
+          loading && 'opacity-50'
+        )}
+      >
+        <StatTile
+          label="Licences payantes"
+          value={kpis?.paid_active ?? '—'}
+          icon={CheckCircle2}
+          accent="emerald"
+          hint="Forfait payant en cours"
+        />
+        <StatTile
+          label="Essais en cours"
+          value={kpis?.trials ?? '—'}
+          icon={Gift}
+          accent="blue"
+          hint="Essais gratuits actifs"
+        />
+        <StatTile
+          label="Expirent bientôt"
+          value={kpis?.expiring ?? '—'}
+          icon={AlertTriangle}
+          accent="amber"
+          hint={`Dans les ${EXPIRING_DAYS} jours`}
+          alert={!!kpis && kpis.expiring > 0}
+        />
+        <StatTile
+          label="Sans licence"
+          value={kpis?.without_licence ?? '—'}
+          icon={UserX}
+          accent="red"
+          hint="Clients validés"
+        />
+        <StatTile
+          label="Revenu mensuel"
+          value={kpis ? formatCurrencyFCFA(kpis.mrr) : '—'}
+          icon={Banknote}
+          accent="indigo"
+          hint="Licences en cours, par mois"
+          className="col-span-2 md:col-span-1"
+        />
+      </div>
+
+      {/* Recherche et filtres */}
+      <Card className="p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
-              placeholder="Rechercher par nom d'entreprise..."
+              type="search"
+              placeholder="Rechercher un client ou un forfait…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {STATUS_FILTERS.map((f: { value: string; label: string }) => (
-              <button
-                key={f.value}
-                onClick={() => setStatusFilter(f.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
-                  statusFilter === f.value
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500/10'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          <label className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={history}
+              onChange={(e) => {
+                setLoading(true);
+                setHistory(e.target.checked);
+              }}
+              className="w-4 h-4 accent-amber-500"
+            />
+            Historique complet
+          </label>
         </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap flex items-center gap-1.5',
+                filter === f.value
+                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500/10'
+              )}
+            >
+              {f.label}
+              <span
+                className={cn(
+                  'min-w-5 px-1 rounded-md text-[10px] tabular-nums',
+                  filter === f.value ? 'bg-slate-950/15' : 'bg-slate-200 dark:bg-slate-700'
+                )}
+              >
+                {counts[f.value] || 0}
+              </span>
+            </button>
+          ))}
+        </div>
+        {history && (
+          <p className="text-[11px] text-slate-500">
+            Historique complet : une ligne par période de licence. Les périodes remplacées par un renouvellement
+            apparaissent comme expirées.
+          </p>
+        )}
       </Card>
 
-      {/* Table */}
-      {subscriptions.length === 0 ? (
+      {/* Liste */}
+      {loading && rows.length === 0 ? (
+        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <span>Chargement des abonnements…</span>
+        </div>
+      ) : visible.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
           <Receipt className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun abonnement trouvé</h3>
-          <p className="text-xs text-slate-500">Aucun abonnement ne correspond à votre recherche.</p>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun abonnement</h3>
+          <p className="text-xs text-slate-500">Aucun abonnement ne correspond à ces critères.</p>
         </Card>
       ) : (
-        <Card className="p-0 overflow-hidden">
+        <Card className={cn('p-0 overflow-hidden transition-opacity', loading && 'opacity-50')}>
           <ResponsiveTable>
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-100 dark:bg-slate-800/60 text-[11px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
                   <th className="px-4 py-3">Client</th>
-                  <th className="px-4 py-3">Plan</th>
+                  <th className="px-4 py-3">Forfait</th>
                   <th className="px-4 py-3">Statut</th>
-                  <th className="px-4 py-3">Début</th>
-                  <th className="px-4 py-3">Expiration</th>
-                  <th className="px-4 py-3">Renouvellement</th>
-                  <th className="px-4 py-3">Actions</th>
+                  <th className="px-4 py-3">Période</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                {subscriptions.map((sub: SubscriptionWithPlan) => {
-                  const config = STATUS_CONFIG[sub.status] || { label: sub.status, color: 'neutral' as const };
-                  const actionButtons = getActionButtons(sub);
-
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {visible.map((s) => {
+                  const cfg = STATE_CONFIG[s.state];
+                  const live = s.state === 'active' || s.state === 'trial' || s.state === 'expiring';
+                  const progress =
+                    live && s.total_days && s.days_left !== null
+                      ? Math.min(100, Math.max(0, Math.round(((s.total_days - s.days_left) / s.total_days) * 100)))
+                      : null;
+                  const canReactivate =
+                    (s.state === 'suspended' || s.state === 'cancelled') && s.days_left !== null && s.days_left > 0;
+                  const busy = busyId === s.id;
                   return (
-                    <tr key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       <td className="px-4 py-3">
-                        <Link href={`/platform/clients/${sub.organization_id}`} className="font-semibold text-slate-900 dark:text-white hover:text-amber-500">
-                          {sub.organization?.name || '—'}
+                        <Link
+                          href={`/platform/clients/${s.organization_id}`}
+                          className="font-semibold text-slate-900 dark:text-white hover:text-amber-600"
+                        >
+                          {s.organization_name}
                         </Link>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                        {sub.plan?.name || '—'}
-                        {sub.plan && sub.plan?.price > 0 && (
-                          <span className="text-xs text-slate-500 block">
-                            {formatCurrencyFCFA(sub.plan.price)} / {sub.plan?.billing_period}
-                          </span>
+                        {s.organization_status === 'suspended' && (
+                          <span className="block text-[11px] text-red-600 dark:text-red-400">Espace suspendu</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={config.color} className="text-xs">
-                          {config.label}
-                        </Badge>
-                        {sub.cancel_at_period_end && (
-                          <Badge variant="warning" className="ml-1 text-xs">
-                            Annulation programmée
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{s.plan_name || '—'}</span>
+                        <span className="block text-[11px] text-slate-500">
+                          {s.is_trial
+                            ? 'Gratuit'
+                            : s.plan_price
+                              ? `${formatCurrencyFCFA(s.plan_price)} / ${PERIOD_LABELS[s.plan_period || ''] || s.plan_period}`
+                              : '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          <Badge variant={cfg.color} className="text-[11px]">
+                            {cfg.label}
                           </Badge>
+                          {s.cancel_at_period_end && live && (
+                            <Badge variant="warning" className="text-[11px]">
+                              Non renouvelé
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                        <div className="mb-0.5">
+                          {live && s.days_left !== null ? (
+                            <span
+                              className={cn(
+                                'text-xs font-bold tabular-nums',
+                                s.days_left <= 3
+                                  ? 'text-red-600 dark:text-red-400'
+                                  : s.days_left <= EXPIRING_DAYS
+                                    ? 'text-amber-600 dark:text-amber-400'
+                                    : 'text-slate-900 dark:text-white'
+                              )}
+                            >
+                              {s.days_left} jour{s.days_left > 1 ? 's' : ''} restant{s.days_left > 1 ? 's' : ''}
+                            </span>
+                          ) : s.state === 'expired' && s.days_left !== null ? (
+                            <span className="text-xs text-slate-500">
+                              expiré depuis {-s.days_left} jour{-s.days_left > 1 ? 's' : ''}
+                            </span>
+                          ) : null}
+                        </div>
+                        {s.start_date ? formatDateOnlyFR(s.start_date) : '—'} →{' '}
+                        {s.end_date ? formatDateOnlyFR(s.end_date) : 'sans fin'}
+                        {progress !== null && (
+                          <div className="mt-1.5 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                            <div
+                              className={cn(
+                                'h-full rounded-full',
+                                s.state === 'expiring'
+                                  ? 'bg-amber-500'
+                                  : s.state === 'trial'
+                                    ? 'bg-blue-500'
+                                    : 'bg-emerald-500'
+                              )}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
-                        {sub.start_date ? formatDateFR(sub.start_date) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500">
-                        {sub.end_date ? formatDateFR(sub.end_date) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500">
-                        {sub.auto_renew ? 'Activé' : 'Désactivé'}
-                      </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
-                          {actionButtons.map((btn: { label: string; action: string; variant: string; icon: React.ReactNode }) => (
-                            <Button
-                              key={btn.action}
-                              variant={btn.variant as "primary" | "secondary" | "outline" | "ghost" | "danger"}
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={() => handleAction(sub, btn.action)}
-                              disabled={actionLoading === sub.id}
-                            >
-                              {actionLoading === sub.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                btn.icon
-                              )}
-                              {btn.label}
-                            </Button>
-                          ))}
-                          <Button variant="primary" size="sm" className="text-xs h-7" onClick={() => setExtending(sub)}>
-                            <KeyRound className="w-3 h-3" /> Prolonger
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            variant={live && s.state !== 'expiring' ? 'outline' : 'primary'}
+                            className="text-xs h-8 whitespace-nowrap"
+                            onClick={() => setLicenseFor(s)}
+                            disabled={busy}
+                            icon={KeyRound}
+                          >
+                            {live ? 'Prolonger' : 'Activer un forfait'}
                           </Button>
-                          <Link href={`/platform/clients/${sub.organization_id}`}>
-                            <Button variant="ghost" size="sm" className="text-xs h-7">
-                              <ExternalLink className="w-3 h-3" /> Voir le client
-                            </Button>
+                          {canReactivate && (
+                            <IconAction title="Réactiver" onClick={() => runAction(s, 'reactivate')} busy={busy}>
+                              <PlayCircle className="w-4 h-4 text-emerald-600" />
+                            </IconAction>
+                          )}
+                          {live && (
+                            <IconAction title="Suspendre" onClick={() => runAction(s, 'suspend')} busy={busy}>
+                              <PauseCircle className="w-4 h-4 text-amber-600" />
+                            </IconAction>
+                          )}
+                          {live && (
+                            <IconAction title="Annuler l'abonnement" onClick={() => runAction(s, 'cancel')} busy={busy}>
+                              <Ban className="w-4 h-4 text-red-600" />
+                            </IconAction>
+                          )}
+                          <Link
+                            href={`/platform/clients/${s.organization_id}`}
+                            title="Voir le client"
+                            aria-label="Voir le client"
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          >
+                            <ExternalLink className="w-4 h-4 text-slate-500" />
                           </Link>
                         </div>
                       </td>
@@ -317,54 +481,45 @@ export default function PlatformSubscriptionsPage() {
         </Card>
       )}
 
-      {extending && (
+      {licenseFor && (
         <LicenseActivationModal
-          isOpen={!!extending}
-          onClose={() => setExtending(null)}
-          onActivated={loadSubscriptions}
-          organizationId={extending.organization_id}
-          organizationName={extending.organization?.name || ''}
-          currentEndDate={extending.status === 'active' || extending.status === 'trialing' ? extending.end_date : null}
-          defaultPlanId={extending.plan_id}
+          isOpen={!!licenseFor}
+          onClose={() => setLicenseFor(null)}
+          onActivated={reload}
+          organizationId={licenseFor.organization_id}
+          organizationName={licenseFor.organization_name}
+          currentEndDate={
+            licenseFor.status === 'active' || licenseFor.status === 'trialing' ? licenseFor.end_date : null
+          }
+          // Un essai ne se prolonge pas : on propose le forfait de base
+          defaultPlanId={licenseFor.is_trial ? null : licenseFor.plan_id}
         />
       )}
-
-      {/* Confirmation Modal */}
-      <Modal
-        isOpen={confirmModal.open}
-        onClose={() => setConfirmModal({ open: false, subscription: null, action: '' })}
-        title="Confirmation"
-      >
-        {confirmModal.subscription && (
-          <p className="text-sm text-slate-700 dark:text-slate-300">
-            Voulez-vous vraiment effectuer l&apos;action{' '}
-            <strong>
-              {confirmModal.action === 'cancel' ? 'Annuler' :
-               confirmModal.action === 'cancel_at_period_end' ? 'Annuler à la fin de la période' :
-               confirmModal.action === 'reactivate' ? 'Réactiver' :
-               confirmModal.action === 'suspend' ? 'Suspendre' : confirmModal.action}
-            </strong>
-            {' '}sur l&apos;abonnement du client{' '}
-            <strong>{confirmModal.subscription.organization?.name}</strong> ?
-          </p>
-        )}
-        <div className="flex justify-end gap-2 pt-4">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setConfirmModal({ open: false, subscription: null, action: '' })}
-          >
-            Annuler
-          </Button>
-          <Button
-            type="button"
-            variant="danger"
-            onClick={executeAction}
-          >
-            Confirmer
-          </Button>
-        </div>
-      </Modal>
     </div>
+  );
+}
+
+function IconAction({
+  title,
+  onClick,
+  busy,
+  children,
+}: {
+  title: string;
+  onClick: () => void;
+  busy: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      disabled={busy}
+      className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+    >
+      {busy ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : children}
+    </button>
   );
 }
