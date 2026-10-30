@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
 import { LicenseRequestDialog } from '@/components/payments/LicenseRequestDialog';
 import { Button } from '@/components/ui/Button';
+import { AccountNotices } from '@/components/layout/AccountNotices';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -282,6 +283,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Header onOpenMobileMenu={() => setIsMobileOpen(true)} />
 
         <main className="flex-1 p-4 sm:p-6 md:p-8 pb-28 sm:pb-32 lg:pb-8 overflow-y-auto">
+          <AccountNotices />
           {children}
         </main>
 

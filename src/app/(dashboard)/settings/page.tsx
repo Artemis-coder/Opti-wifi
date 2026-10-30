@@ -23,6 +23,9 @@ import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PhoneField } from '@/components/ui/PhoneField';
+import { ACCOUNT_NOTICES_REFRESH } from '@/components/layout/AccountNotices';
+import { DEFAULT_COUNTRY, isValidNationalNumber, splitInternationalPhone } from '@/lib/countries';
 import { Badge } from '@/components/ui/Badge';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -157,6 +160,8 @@ function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
+  // Arrivée depuis le bandeau « Complétez votre profil »
+  const completePhone = searchParams.get('complete') === 'phone';
   const tab: Tab = TABS.some((t) => t.value === tabParam) ? (tabParam as Tab) : 'profile';
   const selectTab = (value: Tab) => router.replace(value === 'profile' ? '/settings' : `/settings?tab=${value}`, { scroll: false });
 
@@ -167,7 +172,8 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
 
   const [nom, setNom] = useState('');
-  const [telephone, setTelephone] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState(DEFAULT_COUNTRY);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -187,7 +193,9 @@ function SettingsContent() {
       if (data) {
         setProfile(data);
         setNom(data.nom || '');
-        setTelephone(data.telephone || '');
+        const phone = splitInternationalPhone(data.telephone);
+        setPhoneCountry(phone.country);
+        setPhoneNumber(phone.national);
         if (data.organization_id) {
           const { data: org } = await supabase.from('organizations').select('*').eq('id', data.organization_id).single();
           if (!cancelled && org) setOrganization(org);
@@ -209,15 +217,31 @@ function SettingsContent() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    const { error } = await supabase.from('profiles').update({ nom, telephone, updated_at: new Date().toISOString() }).eq('id', user?.id);
-    if (error) {
-      toast.error('Erreur lors de la mise à jour du profil');
-    } else {
-      toast.success('Profil mis à jour');
-      if (user) setUser({ ...user, nom, telephone });
+    if (!isValidNationalNumber(phoneNumber)) {
+      toast.error('Numéro de téléphone invalide : choisissez le pays puis saisissez le numéro (6 à 14 chiffres).');
+      return;
     }
-    setSaving(false);
+    setSaving(true);
+    try {
+      const res = await fetch('/api/account/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom, country: phoneCountry, phone: phoneNumber }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast.error(result.error || 'Erreur lors de la mise à jour du profil');
+        return;
+      }
+      toast.success('Profil mis à jour');
+      if (user) setUser({ ...user, nom, telephone: result.data.telephone });
+      // Le bandeau « Complétez votre profil » disparaît
+      window.dispatchEvent(new Event(ACCOUNT_NOTICES_REFRESH));
+    } catch {
+      toast.error('Erreur réseau');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -312,13 +336,17 @@ function SettingsContent() {
                 disabled
                 helperText="L'adresse de connexion ne peut pas être modifiée ici."
               />
-              <Input
-                label="Téléphone"
-                inputMode="tel"
-                value={telephone}
-                onChange={(e) => setTelephone(e.target.value)}
-                placeholder="+225 07 00 00 00 00"
-              />
+              <div className={cn(completePhone && !phoneNumber && 'rounded-xl ring-2 ring-amber-400 ring-offset-4 ring-offset-white dark:ring-offset-slate-900')}>
+                <PhoneField
+                  label="Téléphone"
+                  country={phoneCountry}
+                  onCountryChange={setPhoneCountry}
+                  number={phoneNumber}
+                  onNumberChange={setPhoneNumber}
+                  helperText="Choisissez le pays (drapeau) puis saisissez le numéro."
+                  required
+                />
+              </div>
               <div className="flex justify-end">
                 <Button type="submit" icon={Save} variant="secondary" className="w-full sm:w-auto font-bold" isLoading={saving}>
                   Enregistrer
