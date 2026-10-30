@@ -4,7 +4,7 @@ Landing page de conversion, **application autonome** sur sa propre branche Git :
 Cette branche ne contient que le site ; l'outil vit sur `develop` / `main`.
 
 Toute amélioration du site se fait ici, sur `landing`. Chaque push déploie
-le projet Vercel `optispace-landing` (production : https://optispace-landing.vercel.app).
+le projet Vercel `optispace-landing` (production : https://space.optiwifi.site).
 
 Dans le dépôt local de l'outil, ce dossier est un worktree de la branche `landing`
 (`git worktree add landing landing`), ignoré par `develop`.
