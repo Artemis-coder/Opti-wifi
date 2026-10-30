@@ -33,6 +33,8 @@ export interface ActivateLicenseInput {
   requestId?: string | null;
   note?: string | null;
   platformUserId: string;
+  /** false : pas de notification au client (l'appelant envoie la sienne) */
+  notify?: boolean;
 }
 
 export const MAX_TRIAL_DAYS = 90;
@@ -169,7 +171,7 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   });
 
   const endLabel = frDate(sub.end_date);
-  notifyInBackground(() =>
+  if (input.notify !== false) notifyInBackground(() =>
     notifyOrganizationAdmins(organizationId, {
       type: 'license.activated',
       title: trial
@@ -263,7 +265,7 @@ export async function setOrganizationStatus(input: {
   reason?: string | null;
   platformUserId: string;
   ipAddress?: string | null;
-}): Promise<ActionResult<{ new_status: string }>> {
+}): Promise<ActionResult<{ new_status: string; trial: { days: number; end_date: string } | null }>> {
   const { organizationId, platformUserId } = input;
   const action = input.action as OrganizationAction;
   if (!organizationId || !input.action) return fail(400, 'organizationId et action requis');
@@ -291,8 +293,44 @@ export async function setOrganizationStatus(input: {
     ]
   );
 
+  // Validation d'une inscription sans abonnement : essai gratuit automatique, de la durée
+  // définie dans le forfait d'essai (Découverte). Un échec n'empêche pas la validation.
+  let trial: { days: number; end_date: string } | null = null;
+  if (action === 'approve') {
+    try {
+      const { rows } = await query(
+        `SELECT p.id, p.trial_days FROM subscription_plans p
+          WHERE p.status = 'active' AND COALESCE(p.trial_days, 0) > 0
+            AND NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.organization_id = $1)
+          ORDER BY p.price ASC, p.trial_days DESC LIMIT 1`,
+        [organizationId]
+      );
+      if (rows[0]) {
+        const res = await activateLicense({
+          organizationId,
+          planId: rows[0].id,
+          durationMonths: 0,
+          note: 'Essai automatique à la validation de l’inscription',
+          platformUserId,
+          notify: false,
+        });
+        if (res.ok) trial = { days: Number(rows[0].trial_days), end_date: res.data.end_date };
+        else console.error('Auto trial error:', res.error);
+      }
+    } catch (err) {
+      console.error('Auto trial error:', err);
+    }
+  }
+
   const CLIENT_NOTIFICATIONS: Record<OrganizationAction, NotificationInput> = {
-    approve: { type: 'registration.approved', title: 'Votre inscription est validée', body: 'Bienvenue sur OptiSpace : votre espace est maintenant accessible.', link: '/dashboard' },
+    approve: {
+      type: 'registration.approved',
+      title: 'Votre inscription est validée',
+      body: trial
+        ? `Bienvenue sur OptiSpace : votre espace est accessible avec un essai gratuit de ${trial.days} jour${trial.days > 1 ? 's' : ''}, jusqu'au ${frDate(trial.end_date)}.`
+        : 'Bienvenue sur OptiSpace : votre espace est maintenant accessible.',
+      link: '/dashboard',
+    },
     cancel: { type: 'registration.rejected', title: "Votre inscription n'a pas été validée", body: reason && reason !== 'Super admin action' ? `Motif : ${reason}` : 'Contactez le support pour plus d’informations.', link: '/login' },
     suspend: { type: 'organization.suspended', title: 'Votre espace a été suspendu', body: 'L’accès à vos données est temporairement coupé. Contactez le support.', link: '/dashboard' },
     reactivate: { type: 'organization.reactivated', title: 'Votre espace est réactivé', body: 'Vous avez de nouveau accès à toutes vos données.', link: '/dashboard' },
@@ -307,5 +345,6 @@ export async function setOrganizationStatus(input: {
     new_status: newStatus,
   });
 
-  return { ok: true, data: { new_status: newStatus }, message: `« ${org.name} » : ${ACTION_MESSAGES[action]}.` };
+  const trialNote = trial ? ` Essai gratuit de ${trial.days} jour${trial.days > 1 ? 's' : ''} jusqu'au ${frDate(trial.end_date)}.` : '';
+  return { ok: true, data: { new_status: newStatus, trial }, message: `« ${org.name} » : ${ACTION_MESSAGES[action]}.${trialNote}` };
 }

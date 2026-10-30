@@ -20,7 +20,7 @@ export async function PATCH(request: Request) {
       ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
-    return NextResponse.json({ success: true, message: result.message, new_status: result.data.new_status });
+    return NextResponse.json({ success: true, message: result.message, new_status: result.data.new_status, trial: result.data.trial });
   } catch (err) {
     console.error('Organization action error:', err);
     return NextResponse.json({ error: "Erreur lors de la mise à jour de l'organisation" }, { status: 500 });
