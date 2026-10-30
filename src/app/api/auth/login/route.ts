@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate, signToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import type { AuthUser } from "@/lib/neon/query-builder";
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = signToken(user);
+    trackServer(user.id, EVENTS.userLoggedIn, { role: user.role, organization_id: user.organization_id ?? null });
 
     // Ne retourner QUE les champs nécessaires côté client — jamais user_metadata, app_metadata, password_hash
     const sessionUser: AuthUser = {

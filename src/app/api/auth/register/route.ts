@@ -2,6 +2,8 @@ import { adminClient } from '@/lib/neon/admin';
 import { NextResponse } from 'next/server';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 import { notifyInBackground, notifySuperAdmins } from '@/lib/notifications';
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 // Route POST pour créer un compte et une organisation avec le statut "pending_approval"
 export async function POST(request: Request) {
@@ -118,6 +120,8 @@ export async function POST(request: Request) {
         link: '/platform/registrations',
       })
     );
+
+    trackServer(userId, EVENTS.organizationRegistered, { organization_id: orgData.id, role: 'administrateur' });
 
     return NextResponse.json({
       message: 'Compte créé avec succès. Votre compte est en attente de validation.',

@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
 import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,6 +78,17 @@ export async function POST(request: NextRequest) {
     if (collection && callerUser) {
       const actorId = callerUser.id;
       notifyInBackground(() => notifyCollectionCreated(orgId, actorId, collection));
+      const expected = Number(montant_attendu) || 0;
+      const collected = Number(montant_collecte) || 0;
+      trackServer(actorId, EVENTS.collectionRecorded, {
+        organization_id: orgId,
+        pos_id,
+        amount_expected: expected,
+        amount_collected: collected,
+        gap: collected - expected,
+        has_gap: collected !== expected,
+        commission: Number(commission) || 0,
+      });
     }
 
     return NextResponse.json({

@@ -3,6 +3,8 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getSessionContext } from '@/lib/tenant';
 import { query } from '@/lib/neon/db';
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 interface ExchangeItem {
   ticket_type_id: string;
@@ -144,6 +146,14 @@ export async function POST(request: NextRequest) {
     if (!result?.success) {
       return NextResponse.json({ error: result?.message || 'Échec de l\'échange.' }, { status: 400 });
     }
+
+    const sum = (items: { quantite: number }[]) => items.reduce((n, r) => n + r.quantite, 0);
+    trackServer(user.id, EVENTS.ticketsExchanged, {
+      organization_id: ctx.organizationId ?? null,
+      pos_id: body.pos_id,
+      tickets_returned: sum(returnsPayload),
+      tickets_received: sum(receivesPayload),
+    });
 
     return NextResponse.json({
       success: true,

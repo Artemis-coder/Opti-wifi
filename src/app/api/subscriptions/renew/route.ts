@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { query } from '@/lib/neon/db';
 import { hasUsedTrialPlan, isTrialPlan, TRIAL_ALREADY_USED_MESSAGE } from '@/lib/trial-plan';
 import { notifyInBackground, notifySuperAdmins } from '@/lib/notifications';
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 // Le client ne prolonge plus son abonnement lui-même : il envoie une demande de licence
 // que le super admin valide (POST /api/platform/licenses) ou refuse.
@@ -169,6 +171,14 @@ export async function POST(request: NextRequest) {
         } À valider.`,
         link: '/platform/license-requests',
       });
+    });
+
+    trackServer(ctx.userId, EVENTS.licenseRequested, {
+      organization_id: organizationId,
+      plan_id: targetPlanId,
+      request_type: type,
+      duration_months: months,
+      payment_method: paymentMethodName ?? null,
     });
 
     return NextResponse.json({

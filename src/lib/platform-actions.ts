@@ -7,6 +7,8 @@ import { query } from '@/lib/neon/db';
 import { hasUsedTrialPlan, isTrialPlan } from '@/lib/trial-plan';
 import { notifyInBackground, notifyOrganizationAdmins, type NotificationInput } from '@/lib/notifications';
 import { issueLicenseInvoice, type IssuedInvoice } from '@/lib/invoices';
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -140,6 +142,18 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
     console.error('License invoice error:', err);
   }
 
+  // Suivi par organisation : le revenu est rattaché au client, quel que soit le canal (back-office ou bot)
+  trackServer(`org:${organizationId}`, EVENTS.licenseActivated, {
+    organization_id: organizationId,
+    plan_id: planId,
+    plan_name: plan.name,
+    duration_months: months,
+    amount: invoice?.amount ?? 0,
+    currency: invoice?.currency ?? 'XOF',
+    from_request: Boolean(requestId),
+    is_trial: isTrialPlan(plan),
+  });
+
   const endLabel = frDate(sub.end_date);
   notifyInBackground(() =>
     notifyOrganizationAdmins(organizationId, {
@@ -187,6 +201,7 @@ export async function rejectLicenseRequest(input: { requestId: string; note?: st
   );
 
   const orgId = rows[0].organization_id as string;
+  trackServer(`org:${orgId}`, EVENTS.licenseRequestRejected, { organization_id: orgId });
   notifyInBackground(() =>
     notifyOrganizationAdmins(orgId, {
       type: 'license_request.rejected',
@@ -265,6 +280,12 @@ export async function setOrganizationStatus(input: {
     archive: { type: 'organization.archived', title: 'Votre espace a été fermé', body: 'Contactez le support pour plus d’informations.', link: '/login' },
   };
   notifyInBackground(() => notifyOrganizationAdmins(organizationId, CLIENT_NOTIFICATIONS[action]));
+  trackServer(`org:${organizationId}`, EVENTS.organizationStatusChanged, {
+    organization_id: organizationId,
+    action,
+    previous_status: org.status,
+    new_status: newStatus,
+  });
 
   return { ok: true, data: { new_status: newStatus }, message: `« ${org.name} » : ${ACTION_MESSAGES[action]}.` };
 }

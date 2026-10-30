@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/neon/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,6 +69,13 @@ export async function POST(request: NextRequest) {
       console.error('Erreur création allocation:', allocError);
       return NextResponse.json({ error: "Erreur lors de la création de l'allocation." }, { status: 500 });
     }
+
+    trackServer(callerUser?.id, EVENTS.ticketsAllocated, {
+      organization_id: orgId,
+      pos_id,
+      ticket_type_id,
+      quantity: Number(quantite) || 0,
+    });
 
     return NextResponse.json({
       success: true,
