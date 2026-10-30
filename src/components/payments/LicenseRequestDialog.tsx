@@ -14,7 +14,10 @@ import {
   type PublicPaymentMethod,
 } from '@/components/payments/PaymentMethodCard';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { COUNTRIES, countryFlag, countryName, DEFAULT_COUNTRY } from '@/lib/countries';
+import { COUNTRIES, countryFlag, countryName } from '@/lib/countries';
+
+/** Filtre « Tous les pays » : tous les moyens de paiement affichés */
+const ALL_COUNTRIES = '';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 
 export interface RequestedPlan {
@@ -41,7 +44,7 @@ interface LicenseRequestDialogProps {
 /**
  * Demande de licence :
  * 1. le forfait (seulement pour un changement de forfait ; « Me réabonner » passe directement au paiement) ;
- * 2. le pays (par défaut celui du compte) puis le moyen de paiement parmi ceux activés pour ce pays ;
+ * 2. le moyen de paiement : tous les moyens activés, que le client peut filtrer par pays ;
  * 3. le paiement : affiche « Payez avec <opérateur> » avec le QR code d'OptiWifi, numéro à copier,
  *    puis envoi du justificatif de paiement (WhatsApp).
  * « J'ai payé » envoie la demande au super admin, qui active la licence après vérification.
@@ -76,8 +79,9 @@ function RequestFlow({
   const [step, setStep] = useState<'package' | 'methods' | 'pay'>(renewal ? 'methods' : 'package');
   const [methods, setMethods] = useState<PublicPaymentMethod[] | null>(null);
   const [methodId, setMethodId] = useState('');
-  // Pays de paiement : celui du compte par défaut (renvoyé par l'API)
-  const [country, setCountry] = useState(DEFAULT_COUNTRY);
+  // Filtre par pays : tous les moyens par défaut ; le pays du compte est proposé en tête de liste
+  const [country, setCountry] = useState(ALL_COUNTRIES);
+  const [accountCountry, setAccountCountry] = useState<string | null>(null);
   const [reference, setReference] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -91,7 +95,7 @@ function RequestFlow({
       .then((json) => {
         if (cancelled) return;
         setMethods((json.data || []) as PublicPaymentMethod[]);
-        if (typeof json.default_country === 'string') setCountry(json.default_country);
+        if (typeof json.default_country === 'string') setAccountCountry(json.default_country);
       })
       .catch(() => !cancelled && setMethods([]));
     return () => {
@@ -100,13 +104,27 @@ function RequestFlow({
   }, [isFree]);
 
   const method = methods?.find((m) => m.id === methodId) || null;
-  // Moyens utilisables dans le pays choisi (liste de pays vide = tous les pays)
-  const available = (methods || []).filter((m) => !m.countries?.length || m.countries.includes(country));
+  // Moyens affichés : tous, ou ceux du pays choisi (liste de pays vide = disponible partout)
+  const available = (methods || []).filter(
+    (m) => country === ALL_COUNTRIES || !m.countries?.length || m.countries.includes(country)
+  );
   // Aucun moyen configuré : directement l'écran d'envoi de la demande
   const screen = step === 'methods' && methods !== null && methods.length === 0 ? 'pay' : step;
-  const countryOptions = COUNTRIES.filter((c, i, all) => all.findIndex((x) => x.code === c.code) === i)
-    .map((c) => ({ value: c.code, label: `${countryFlag(c.code)}  ${countryName(c.code)}` }))
-    .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+  const countryOptions = [
+    { value: ALL_COUNTRIES, label: '🌍  Tous les pays' },
+    ...COUNTRIES.filter((c, i, all) => all.findIndex((x) => x.code === c.code) === i)
+      .map((c) => ({
+        value: c.code,
+        label: `${countryFlag(c.code)}  ${countryName(c.code)}`,
+        sublabel: c.code === accountCountry ? 'Pays de votre compte' : undefined,
+      }))
+      // Pays du compte en premier, puis ordre alphabétique
+      .sort(
+        (a, b) =>
+          Number(b.value === accountCountry) - Number(a.value === accountCountry) ||
+          countryName(a.value).localeCompare(countryName(b.value), 'fr')
+      ),
+  ];
   const months = PERIOD_MONTHS[plan.billing_period] || 1;
 
   const send = async () => {
@@ -200,11 +218,12 @@ function RequestFlow({
             <Wallet className="w-5 h-5 text-brand-600" /> Choisissez votre moyen de paiement
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Choisissez votre pays, puis le moyen de paiement : vous scannerez ensuite le QR code ou copierez le numéro.
+            Choisissez le moyen qui vous convient (filtrez par pays si besoin) : vous scannerez ensuite le QR code ou
+            copierez le numéro.
           </p>
         </div>
         <CustomSelect
-          label="Pays"
+          label="Filtrer par pays"
           value={country}
           onChange={setCountry}
           options={countryOptions}
@@ -219,7 +238,8 @@ function RequestFlow({
         ) : available.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-5 text-center space-y-3">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Aucun moyen de paiement en ligne n&apos;est encore disponible pour {countryName(country)}. Envoyez votre
+              Aucun moyen de paiement en ligne n&apos;est encore disponible
+              {country ? ` pour ${countryName(country)}` : ''}. Envoyez votre
               demande : l&apos;équipe OptiWifi vous contactera pour le paiement.
             </p>
             <Button type="button" onClick={send} isLoading={sending} className="gap-2">

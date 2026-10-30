@@ -21,7 +21,8 @@ export function CountryMultiSelect({ label, value, onChange, emptyLabel = 'Tous 
     () =>
       COUNTRIES.filter((c, i, all) => all.findIndex((x) => x.code === c.code) === i && !value.includes(c.code))
         .map((c) => ({ value: c.code, label: `${countryFlag(c.code)}  ${countryName(c.code)}`, sublabel: `+${c.dial}` }))
-        .sort((a, b) => a.label.localeCompare(b.label, 'fr')),
+        // Tri sur le nom du pays (le libellé commence par le drapeau)
+        .sort((a, b) => countryName(a.value).localeCompare(countryName(b.value), 'fr')),
     [value]
   );
 
