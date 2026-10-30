@@ -3,6 +3,7 @@ import { authenticate, signToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import type { AuthUser } from "@/lib/neon/query-builder";
 import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
+import { countryFromRequest, rememberOrganizationCountry } from '@/lib/geo';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +37,9 @@ export async function POST(request: NextRequest) {
       created_at: user.created_at,
       updated_at: user.updated_at,
     };
+
+    // Pays de l'organisation (KPI du back-office), s'il n'est pas encore connu
+    await rememberOrganizationCountry(user.organization_id, countryFromRequest(request));
 
     const response = NextResponse.json({
       // Mot de passe temporaire : la page de connexion envoie vers /change-password
