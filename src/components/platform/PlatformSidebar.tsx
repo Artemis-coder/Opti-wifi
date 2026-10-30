@@ -26,6 +26,7 @@ import {
   WifiOff,
   AlertTriangle,
   Smartphone,
+  Globe,
 } from 'lucide-react';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
@@ -69,6 +70,7 @@ const sidebarItems = [
       { label: 'Utilisateurs', href: '/platform/users', icon: Users },
       { label: 'Notifications', href: '/platform/notifications', icon: Bell },
       { label: 'Support', href: '/platform/support', icon: LifeBuoy },
+      { label: 'Site vitrine', href: '/platform/site', icon: Globe },
       { label: 'Journal d\'audit', href: '/platform/audit-logs', icon: History },
       { label: 'Paramètres', href: '/platform/settings', icon: Settings },
     ],
