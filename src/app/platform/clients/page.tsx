@@ -303,8 +303,9 @@ export default function PlatformClientsPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        {getStatusBadge(client.status)}
-                        <div className="mt-1">
+                        {/* Statut de l'espace et de la licence côte à côte */}
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          {getStatusBadge(client.status)}
                           {getSubStatusBadge(client.subscription_status)}
                         </div>
                       </td>
