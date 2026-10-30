@@ -11,6 +11,10 @@ import {
   Ban,
   RefreshCw,
   XCircle,
+  CheckCircle2,
+  CalendarDays,
+  Banknote,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -112,18 +116,30 @@ export default function PlatformPaymentsPage() {
         tiles={[
           {
             label: 'Total encaissé',
+            icon: CheckCircle2,
+            accent: 'emerald',
             value: formatCurrencyFCFA(stats?.successful_amount ?? 0),
             sub: `${stats?.successful ?? 0} transaction${(stats?.successful ?? 0) > 1 ? 's' : ''} réussie${(stats?.successful ?? 0) > 1 ? 's' : ''}`,
             highlight: true,
           },
           {
             label: 'Ce mois-ci',
+            icon: CalendarDays,
+            accent: 'indigo',
             value: formatCurrencyFCFA(stats?.month_amount ?? 0),
             sub: `${stats?.month_count ?? 0} transaction${(stats?.month_count ?? 0) > 1 ? 's' : ''}`,
           },
-          { label: 'Montant moyen', value: formatCurrencyFCFA(stats?.average ?? 0), sub: 'par transaction réussie' },
+          {
+            label: 'Montant moyen',
+            icon: Banknote,
+            accent: 'purple',
+            value: formatCurrencyFCFA(stats?.average ?? 0),
+            sub: 'par transaction réussie',
+          },
           {
             label: 'À vérifier',
+            icon: AlertTriangle,
+            accent: 'amber',
             value: String((stats?.pending ?? 0) + (stats?.failed ?? 0)),
             sub: `${stats?.pending ?? 0} en attente · ${stats?.failed ?? 0} échouée${(stats?.failed ?? 0) > 1 ? 's' : ''}`,
           },
@@ -141,10 +157,17 @@ export default function PlatformPaymentsPage() {
                   <div className="flex items-baseline justify-between gap-3 text-sm">
                     <span className="font-semibold text-slate-800 dark:text-slate-200">{m.method}</span>
                     <span className="tabular-nums font-bold text-slate-900 dark:text-white">
-                      {formatCurrencyFCFA(m.amount)} <span className="font-medium text-slate-500">· {m.count} · {pct} %</span>
+                      {formatCurrencyFCFA(m.amount)}{' '}
+                      <span className="font-medium text-slate-500">
+                        · {m.count} · {pct} %
+                      </span>
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden" role="img" aria-label={`${m.method} : ${pct} % des encaissements`}>
+                  <div
+                    className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"
+                    role="img"
+                    aria-label={`${m.method} : ${pct} % des encaissements`}
+                  >
                     <div className="h-full rounded-full bg-[#2a78d6] dark:bg-[#3987e5]" style={{ width: `${Math.max(pct, 2)}%` }} />
                   </div>
                 </li>
@@ -226,31 +249,19 @@ export default function PlatformPaymentsPage() {
                   return (
                     <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {p.organization?.name || '—'}
-                        </p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{p.organization?.name || '—'}</p>
                         <p className="text-xs text-slate-500">{p.organization?.email || ''}</p>
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                        {p.plan?.name || '—'}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                        {formatCurrencyFCFA(Number(p.amount))}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500">
-                        {p.payment_method || '—'}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 font-mono text-[10px]">
-                        {p.transaction_reference || '—'}
-                      </td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{p.plan?.name || '—'}</td>
+                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(Number(p.amount))}</td>
+                      <td className="px-4 py-3 text-slate-500">{p.payment_method || '—'}</td>
+                      <td className="px-4 py-3 text-slate-500 font-mono text-[10px]">{p.transaction_reference || '—'}</td>
                       <td className="px-4 py-3">
                         <Badge variant={config.color} className="text-xs">
                           {config.label}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
-                        {p.paid_at ? formatDateFR(p.paid_at) : formatDateFR(p.created_at)}
-                      </td>
+                      <td className="px-4 py-3 text-slate-500">{p.paid_at ? formatDateFR(p.paid_at) : formatDateFR(p.created_at)}</td>
                     </tr>
                   );
                 })}

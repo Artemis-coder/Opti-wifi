@@ -14,6 +14,7 @@ import { WifiSpace, PointOfSale } from '@/types/database';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
 import { AddButton } from '@/components/ui/AddButton';
+import { StatTile } from '@/components/ui/StatTile';
 
 export default function WifiSpacesPage() {
   const { user } = useAuthStore();
@@ -207,35 +208,27 @@ export default function WifiSpacesPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Espaces</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
-              <MapPin className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{totalSpaces}</p>
-        </Card>
+        <StatTile
+          label="Total Espaces"
+          value={totalSpaces}
+          icon={MapPin}
+          accent="amber"
+        />
 
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Actifs</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
-              <Power className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{activeSpaces}</p>
-        </Card>
+        <StatTile
+          label="Actifs"
+          value={activeSpaces}
+          icon={Power}
+          accent="emerald"
+        />
 
-        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Désactivés</span>
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
-              <PowerOff className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{inactiveSpaces}</p>
-        </Card>
+        <StatTile
+          label="Désactivés"
+          value={inactiveSpaces}
+          icon={PowerOff}
+          accent="red"
+          className="col-span-2 sm:col-span-1"
+        />
       </div>
 
       {/* Filter Bar */}

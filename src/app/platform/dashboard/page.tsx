@@ -1,18 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Building2,
-  UserCheck,
-  PauseCircle,
-  Loader2,
-  Clock,
-  UserPlus,
-  Inbox,
-  KeyRound,
-  AlertTriangle,
-  ArrowRight,
-} from 'lucide-react';
+import { Building2, UserCheck, PauseCircle, Loader2, Clock, UserPlus, Inbox, KeyRound, AlertTriangle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -20,12 +9,21 @@ import { formatNumber, formatDateOnlyFR } from '@/lib/utils/format';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { cn } from '@/lib/utils/cn';
 import { DashboardKpis } from '@/types/platform';
+import { StatTile, type StatAccent } from '@/components/ui/StatTile';
 import type { PlatformStats } from '@/lib/platform-stats';
 import { PlatformStatsSection, type StatsRange } from '@/components/platform/PlatformStats';
 
 interface TodoData {
   pending_registrations: { id: string; name: string; contact_name: string | null; phone: string | null; created_at: string }[];
-  pending_license_requests: { id: string; type: string; organization_id: string; organization_name: string; plan_name: string | null; duration_months: number; created_at: string }[];
+  pending_license_requests: {
+    id: string;
+    type: string;
+    organization_id: string;
+    organization_name: string;
+    plan_name: string | null;
+    duration_months: number;
+    created_at: string;
+  }[];
   upcoming_expirations: { id: string; organization_id: string; organization_name: string; plan_name: string | null; end_date: string }[];
 }
 
@@ -34,7 +32,6 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
   new: 'Nouvelle licence',
   upgrade: 'Changement de forfait',
 };
-
 
 export default function PlatformDashboardPage() {
   const { platformUser } = usePlatformAuthStore();
@@ -71,48 +68,42 @@ export default function PlatformDashboardPage() {
       label: 'Clients',
       value: kpis?.total_clients ?? 0,
       icon: Building2,
-      color: 'bg-blue-900/10 text-blue-900 dark:text-blue-400',
-      border: 'border-l-blue-900',
+      accent: 'indigo' as StatAccent,
       href: '/platform/clients',
     },
     {
       label: 'Espaces actifs',
       value: kpis?.active_clients ?? 0,
       icon: UserCheck,
-      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-      border: 'border-l-emerald-500',
+      accent: 'emerald' as StatAccent,
       href: '/platform/clients',
     },
     {
       label: 'Espaces désactivés',
       value: kpis?.suspended_clients ?? 0,
       icon: PauseCircle,
-      color: 'bg-red-500/10 text-red-600 dark:text-red-400',
-      border: 'border-l-red-500',
+      accent: 'red' as StatAccent,
       href: '/platform/clients',
     },
     {
       label: 'Licences actives',
       value: kpis?.active_subscriptions ?? 0,
       icon: KeyRound,
-      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-      border: 'border-l-amber-500',
+      accent: 'amber' as StatAccent,
       href: '/platform/subscriptions',
     },
     {
       label: 'Expirent sous 30 j',
       value: kpis?.expiring_subscriptions ?? 0,
       icon: Clock,
-      color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-      border: 'border-l-orange-500',
+      accent: 'amber' as StatAccent,
       href: '/platform/subscriptions/expiring',
     },
     {
       label: 'Sans licence active',
       value: kpis?.clients_without_license ?? 0,
       icon: AlertTriangle,
-      color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-      border: 'border-l-purple-500',
+      accent: 'purple' as StatAccent,
       href: '/platform/clients',
     },
   ];
@@ -159,7 +150,6 @@ export default function PlatformDashboardPage() {
     },
   ];
 
-
   if (loading && !kpis) {
     return (
       <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
@@ -174,12 +164,8 @@ export default function PlatformDashboardPage() {
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-brand-900 to-brand-700 p-6 rounded-2xl text-white shadow-lg border border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold">
-            Tableau de Bord Super Administrateur
-          </h1>
-          <p className="text-sm text-slate-300 mt-1">
-            Vue globale de la plateforme SaaS OptiWifi
-          </p>
+          <h1 className="text-2xl font-bold">Tableau de Bord Super Administrateur</h1>
+          <p className="text-sm text-slate-300 mt-1">Vue globale de la plateforme SaaS OptiWifi</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-300">
           <Badge variant="neutral" className="text-amber-300 border-amber-400/30">
@@ -199,7 +185,9 @@ export default function PlatformDashboardPage() {
                   <Icon className="w-4 h-4 text-amber-500" />
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white">{col.title}</h2>
                 </div>
-                <Badge variant={col.count > 0 ? 'warning' : 'success'} className="text-xs">{col.count}</Badge>
+                <Badge variant={col.count > 0 ? 'warning' : 'success'} className="text-xs">
+                  {col.count}
+                </Badge>
               </div>
               {col.items.length === 0 ? (
                 <p className="text-xs text-slate-500 py-4 text-center">{col.empty}</p>
@@ -215,7 +203,10 @@ export default function PlatformDashboardPage() {
                   ))}
                 </ul>
               )}
-              <Link href={col.href} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-500">
+              <Link
+                href={col.href}
+                className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-500"
+              >
                 Tout voir <ArrowRight className="w-3 h-3" />
               </Link>
             </Card>
@@ -224,27 +215,18 @@ export default function PlatformDashboardPage() {
       </section>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {kpiCards.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <Link key={kpi.label} href={kpi.href}>
-            <Card className={cn('border-l-4 h-full hover:shadow-md transition', kpi.border)}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  {kpi.label}
-                </span>
-                <div className={cn('p-2 rounded-lg', kpi.color)}>
-                  <Icon className="w-5 h-5" />
-                </div>
-              </div>
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">
-                {formatNumber(kpi.value)}
-              </p>
-            </Card>
-            </Link>
-          );
-        })}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        {kpiCards.map((kpi) => (
+          <StatTile
+            key={kpi.label}
+            label={kpi.label}
+            value={formatNumber(kpi.value)}
+            icon={kpi.icon}
+            accent={kpi.accent}
+            href={kpi.href}
+            className="h-full"
+          />
+        ))}
       </div>
 
       <PlatformStatsSection stats={stats} range={timeRange} onRangeChange={setTimeRange} loading={loading} />
