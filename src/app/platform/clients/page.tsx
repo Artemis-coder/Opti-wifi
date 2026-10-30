@@ -18,6 +18,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StatTile } from '@/components/ui/StatTile';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
@@ -200,45 +201,15 @@ export default function PlatformClientsPage() {
         </div>
       </div>
 
-      {/* KPI Mini-cards */}
-      <div className={`grid gap-4 ${pendingCount > 0 ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
-        <Card className="border-l-4 border-l-blue-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Total</span>
-            <Building2 className="w-5 h-5 text-blue-900 dark:text-blue-400" />
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{clients.length}</p>
-        </Card>
+      {/* Chiffres clés */}
+      <div className={`grid gap-3 sm:gap-4 grid-cols-2 ${pendingCount > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
+        <StatTile label="Total" value={clients.length} icon={Building2} accent="indigo" hint="Clients inscrits" />
         {pendingCount > 0 && (
-          <Card className="border-l-4 border-l-amber-500 bg-amber-50/40 dark:bg-amber-950/20">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase">En Attente</span>
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 animate-pulse" />
-            </div>
-            <p className="text-2xl font-extrabold text-amber-700 dark:text-amber-400 mt-2">{pendingCount}</p>
-          </Card>
+          <StatTile label="En attente" value={pendingCount} icon={AlertCircle} accent="amber" hint="Inscriptions à valider" href="/platform/registrations" />
         )}
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Actifs</span>
-            <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{activeCount}</p>
-        </Card>
-        <Card className="border-l-4 border-l-red-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Suspendus</span>
-            <PauseCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{suspendedCount}</p>
-        </Card>
-        <Card className="border-l-4 border-l-cyan-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Nouveaux (7j)</span>
-            <Activity className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">{newClientsCount}</p>
-        </Card>
+        <StatTile label="Actifs" value={activeCount} icon={CheckCircle} accent="emerald" hint="Espaces en service" />
+        <StatTile label="Suspendus" value={suspendedCount} icon={PauseCircle} accent="red" hint="Accès coupé" />
+        <StatTile label="Nouveaux (7 j)" value={newClientsCount} icon={Activity} accent="blue" hint="Inscrits cette semaine" />
       </div>
 
       {/* Search + Filter */}

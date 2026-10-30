@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useSyncExternalStore } from 'react';
-import { ArrowDownRight, ArrowUpRight, Minus, Table2, BarChart3 } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Minus, Table2, BarChart3, UserPlus, KeyRound, Banknote, Repeat } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card } from '@/components/ui/Card';
+import { StatTile, type StatAccent } from '@/components/ui/StatTile';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import type { PlatformStats, StatsBucket } from '@/lib/platform-stats';
@@ -32,7 +33,11 @@ function subscribeDark(cb: () => void) {
 }
 /** L'application suit le thème du système (pas de classe .dark) */
 function useDarkMode() {
-  return useSyncExternalStore(subscribeDark, () => window.matchMedia(darkQuery).matches, () => false);
+  return useSyncExternalStore(
+    subscribeDark,
+    () => window.matchMedia(darkQuery).matches,
+    () => false,
+  );
 }
 
 const LICENSE_SERIES = [
@@ -44,7 +49,8 @@ const LICENSE_SERIES = [
 
 function bucketLabel(iso: string, unit: PlatformStats['unit'], long = false) {
   const d = new Date(iso);
-  if (unit === 'month') return new Intl.DateTimeFormat('fr-FR', { month: long ? 'long' : 'short', year: long ? 'numeric' : '2-digit' }).format(d);
+  if (unit === 'month')
+    return new Intl.DateTimeFormat('fr-FR', { month: long ? 'long' : 'short', year: long ? 'numeric' : '2-digit' }).format(d);
   const day = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(d);
   return unit === 'week' ? `${long ? 'Semaine du ' : 'sem. '}${day}` : day;
 }
@@ -70,7 +76,7 @@ function Delta({ current, previous }: { current: number; previous: number }) {
     <span
       className={cn(
         'inline-flex items-center gap-0.5 text-xs font-semibold',
-        pct > 0 ? 'text-emerald-700 dark:text-emerald-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500'
+        pct > 0 ? 'text-emerald-700 dark:text-emerald-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500',
       )}
     >
       <Icon className="w-3.5 h-3.5" /> {pct > 0 ? '+' : ''}
@@ -79,16 +85,35 @@ function Delta({ current, previous }: { current: number; previous: number }) {
   );
 }
 
-function StatTile({ label, value, sub, delta }: { label: string; value: string; sub?: React.ReactNode; delta?: React.ReactNode }) {
+/** Chiffre clé des statistiques : cadre StatTile du design system, avec sous-titre et évolution. */
+function StatsTile({
+  label,
+  value,
+  sub,
+  delta,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: React.ReactNode;
+  delta?: React.ReactNode;
+  icon: React.ElementType;
+  accent: StatAccent;
+}) {
   return (
-    <Card className="p-4 space-y-1.5">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tabular-nums">{value}</p>
-      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 min-h-5">
-        {sub && <span className="text-xs text-slate-500">{sub}</span>}
-        {delta}
-      </div>
-    </Card>
+    <StatTile
+      label={label}
+      value={value}
+      icon={icon}
+      accent={accent}
+      footer={
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 min-h-5">
+          {sub && <span className="text-[11px] text-slate-400">{sub}</span>}
+          {delta}
+        </div>
+      }
+    />
   );
 }
 
@@ -203,7 +228,14 @@ function DataTable({ headers, rows }: { headers: string[]; rows: (string | numbe
         {rows.map((r, i) => (
           <tr key={i}>
             {r.map((c, j) => (
-              <td key={j} className={cn('py-1.5 text-slate-700 dark:text-slate-300', j > 0 && 'text-right tabular-nums', j === 0 && 'first-letter:uppercase')}>
+              <td
+                key={j}
+                className={cn(
+                  'py-1.5 text-slate-700 dark:text-slate-300',
+                  j > 0 && 'text-right tabular-nums',
+                  j === 0 && 'first-letter:uppercase',
+                )}
+              >
                 {c}
               </td>
             ))}
@@ -262,7 +294,7 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
                 'shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold transition border',
                 range === r.value
                   ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
               )}
             >
               {r.label}
@@ -273,27 +305,35 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
 
       <div className={cn('space-y-4 transition-opacity', loading && 'opacity-60')}>
         {/* Chiffres clés */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatTile
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <StatsTile
             label="Inscriptions"
+            icon={UserPlus}
+            accent="indigo"
             value={formatNumber(stats?.totals.registrations ?? 0)}
             sub={rangeLabel}
             delta={stats && <Delta current={stats.totals.registrations} previous={stats.previous.registrations} />}
           />
-          <StatTile
+          <StatsTile
             label="Licences vendues"
+            icon={KeyRound}
+            accent="amber"
             value={formatNumber(stats?.totals.paid_licenses ?? 0)}
             sub={`+ ${stats?.totals.trials ?? 0} essai${(stats?.totals.trials ?? 0) > 1 ? 's' : ''}`}
             delta={stats && <Delta current={stats.totals.paid_licenses} previous={stats.previous.paid_licenses} />}
           />
-          <StatTile
+          <StatsTile
             label="Revenus"
+            icon={Banknote}
+            accent="emerald"
             value={formatCurrencyFCFA(stats?.totals.revenue ?? 0)}
             sub={rangeLabel}
             delta={stats && <Delta current={stats.totals.revenue} previous={stats.previous.revenue} />}
           />
-          <StatTile
+          <StatsTile
             label="Revenu mensuel récurrent"
+            icon={Repeat}
+            accent="purple"
             value={formatCurrencyFCFA(stats?.mrr ?? 0)}
             sub={`${totalActive} licence${totalActive > 1 ? 's' : ''} en cours`}
           />
