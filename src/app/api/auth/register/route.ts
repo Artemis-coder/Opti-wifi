@@ -2,6 +2,7 @@ import { adminClient } from '@/lib/neon/admin';
 import { NextResponse } from 'next/server';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 import { notifyInBackground, notifySuperAdmins } from '@/lib/notifications';
+import { countryFromRequest, rememberOrganizationCountry } from '@/lib/geo';
 
 // Route POST pour créer un compte et une organisation avec le statut "pending_approval"
 export async function POST(request: Request) {
@@ -68,6 +69,9 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // Pays de l'inscription (KPI « Top 3 des pays » du back-office)
+    await rememberOrganizationCountry(orgData.id, countryFromRequest(request));
 
     // 3. Create the User via Admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
