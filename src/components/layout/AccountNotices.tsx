@@ -12,6 +12,12 @@ export const ACCOUNT_NOTICES_REFRESH = 'account-notices:refresh';
 
 const DISMISSED_KEY = 'account-notices:dismissed';
 
+/** Avis masqués (« Plus tard ») pour une connexion donnée. */
+interface Dismissed {
+  session: string | null;
+  ids: string[];
+}
+
 const TONES: Record<AccountNotice['tone'], { box: string; icon: string; button: string }> = {
   info: {
     box: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/60',
@@ -30,30 +36,35 @@ const TONES: Record<AccountNotice['tone'], { box: string; icon: string; button: 
   },
 };
 
-function readDismissed(): string[] {
-  if (typeof window === 'undefined') return [];
+function readDismissed(): Dismissed {
+  if (typeof window === 'undefined') return { session: null, ids: [] };
   try {
-    return JSON.parse(sessionStorage.getItem(DISMISSED_KEY) || '[]');
+    const value = JSON.parse(localStorage.getItem(DISMISSED_KEY) || 'null');
+    return value && Array.isArray(value.ids) ? value : { session: null, ids: [] };
   } catch {
-    return [];
+    return { session: null, ids: [] };
   }
 }
 
 /**
  * Bandeau en haut de l'espace client : informations du compte à compléter, abonnement qui
  * se termine… (avis calculés par /api/account/notices). « Plus tard » masque un avis
- * jusqu'à la prochaine session.
+ * pour la connexion en cours seulement : il réapparaît à chaque nouvelle connexion.
  */
 export function AccountNotices() {
   const pathname = usePathname();
   const [notices, setNotices] = useState<AccountNotice[]>([]);
+  const [session, setSession] = useState<string | null>(null);
   // Le bandeau n'apparaît qu'une fois les avis chargés (après le rendu serveur) : pas de décalage d'hydratation
-  const [dismissed, setDismissed] = useState<string[]>(readDismissed);
+  const [dismissed, setDismissed] = useState<Dismissed>(readDismissed);
 
   const load = useCallback(() => {
     fetch('/api/account/notices')
       .then((r) => (r.ok ? r.json() : { data: [] }))
-      .then((res) => setNotices(res.data || []))
+      .then((res) => {
+        setNotices(res.data || []);
+        setSession(res.session ?? null);
+      })
       .catch(() => {});
   }, []);
 
@@ -63,13 +74,16 @@ export function AccountNotices() {
     return () => window.removeEventListener(ACCOUNT_NOTICES_REFRESH, load);
   }, [load]);
 
+  // Un « Plus tard » d'une connexion précédente ne compte plus
+  const dismissedIds = session && dismissed.session === session ? dismissed.ids : [];
+
   const dismiss = (id: string) => {
-    const next = [...new Set([...dismissed, id])];
+    const next: Dismissed = { session, ids: [...new Set([...dismissedIds, id])] };
     setDismissed(next);
-    sessionStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
   };
 
-  const visible = notices.filter((n) => !dismissed.includes(n.id));
+  const visible = notices.filter((n) => !dismissedIds.includes(n.id));
   if (visible.length === 0) return null;
 
   return (
