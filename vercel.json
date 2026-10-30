@@ -1,4 +1,4 @@
 {
   "framework": "nextjs",
-  "ignoreCommand": "case \"$VERCEL_PROJECT_PRODUCTION_URL\" in *optiwifi.site*) echo 'Projet de l outil : branche landing ignoree'; exit 0;; *) exit 1;; esac"
+  "ignoreCommand": "case \"$VERCEL_PROJECT_PRODUCTION_URL\" in www.optiwifi.site|optiwifi.site|opti-wifi.vercel.app) echo 'Projet de l outil : branche landing ignoree'; exit 0;; *) exit 1;; esac"
 }
