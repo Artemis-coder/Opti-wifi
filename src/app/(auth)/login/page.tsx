@@ -7,6 +7,8 @@ import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PhoneField } from '@/components/ui/PhoneField';
+import { DEFAULT_COUNTRY, findCountry, isValidNationalNumber } from '@/lib/countries';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { UserRole } from '@/types/database';
 import { Eye, EyeOff } from 'lucide-react';
@@ -59,6 +61,8 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [nom, setNom] = useState('');
   const [orgName, setOrgName] = useState('');
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
+  const [phone, setPhone] = useState('');
   const [role, setRole] = useState<UserRole>('administrateur');
 
   const [loading, setLoading] = useState(false);
@@ -144,8 +148,13 @@ export default function LoginPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nom || !email || !password || !orgName) {
+    if (!nom || !email || !password || !orgName || !phone) {
       setError('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    if (!findCountry(country) || !isValidNationalNumber(phone)) {
+      setError('Numéro de téléphone invalide : choisissez le pays puis saisissez le numéro (6 à 14 chiffres).');
       return;
     }
 
@@ -162,7 +171,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, nom, orgName }),
+        body: JSON.stringify({ email, password, nom, orgName, country, phone }),
       });
 
       const data = await res.json();
@@ -374,6 +383,15 @@ export default function LoginPage() {
               placeholder="ex: Yao Brice"
               value={nom}
               onChange={(e) => setNom(e.target.value)}
+              required
+            />
+            <PhoneField
+              label="Téléphone"
+              country={country}
+              onCountryChange={setCountry}
+              number={phone}
+              onNumberChange={setPhone}
+              helperText="Choisissez le pays (drapeau) puis saisissez le numéro."
               required
             />
             <Input
