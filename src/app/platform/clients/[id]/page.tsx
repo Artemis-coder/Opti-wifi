@@ -24,7 +24,6 @@ import {
   Receipt,
   BarChart3,
   Wallet,
-  ExternalLink,
   Trash2,
   KeyRound,
   Loader2,
@@ -190,22 +189,6 @@ export default function ClientDetailPage() {
     }
   };
 
-  const handleImpersonate = async () => {
-    const res = await fetch('/api/platform/clients/impersonate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ organizationId: clientId }),
-    });
-
-    const result = await res.json();
-    if (res.ok && result.url) {
-      window.open(result.url, '_blank', 'noopener,noreferrer');
-      toast.success(`Accès au compte client ouvert dans un nouvel onglet.`);
-    } else {
-      toast.error(result.error || 'Erreur d\'impersonation');
-    }
-  };
-
   const copyId = (id: string) => {
     navigator.clipboard.writeText(id);
     toast.success('ID copié dans le presse-papier');
@@ -289,10 +272,6 @@ export default function ClientDetailPage() {
               Activer une licence
             </Button>
           )}
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleImpersonate}>
-            <ExternalLink className="w-4 h-4" />
-            Accéder à l&apos;espace client
-          </Button>
         </div>
       </div>
 
