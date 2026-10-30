@@ -132,6 +132,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // Le super admin n'accède pas aux espaces clients : il reste dans le back-office
+  if (isClientRoute && (user?.role === 'super_admin' || user?.app_metadata?.role === 'super_admin')) {
+    return NextResponse.redirect(new URL('/platform/dashboard', request.url));
+  }
+
   return NextResponse.next();
 }
 
