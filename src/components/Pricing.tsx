@@ -65,6 +65,8 @@ export function Pricing() {
 
                 <a
                   href={links.signup_url}
+              target="_blank"
+              rel="noopener noreferrer"
                   className={`group mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-2xl font-bold transition ${
                     p.featured
                       ? "bg-brand-400 text-brand-on hover:bg-brand-300"

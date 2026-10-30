@@ -44,6 +44,8 @@ export function FinalCta() {
         <Item className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
             href={links.signup_url}
+              target="_blank"
+              rel="noopener noreferrer"
             className="group relative inline-flex h-14 items-center gap-2 overflow-hidden rounded-2xl bg-brand-400 px-8 text-base font-bold text-brand-on shadow-[0_10px_40px_-10px_rgb(132_200_101/0.7)] transition hover:bg-brand-300"
           >
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
@@ -60,7 +62,9 @@ export function FinalCta() {
               <MessageCircle className="h-5 w-5" /> Nous écrire sur WhatsApp
             </a>
           ) : (
-            <a href={links.login_url} className="inline-flex h-14 items-center px-6 font-semibold text-white/75 hover:text-white">
+            <a href={links.login_url}
+              target="_blank"
+              rel="noopener noreferrer" className="inline-flex h-14 items-center px-6 font-semibold text-white/75 hover:text-white">
               J&apos;ai déjà un compte
             </a>
           )}
@@ -102,7 +106,9 @@ export function Footer() {
           {sections.showcase && <a href="#fonctionnalites" className="hover:text-white">Fonctionnalités</a>}
           {sections.pricing && <a href="#tarifs" className="hover:text-white">Tarifs</a>}
           {sections.faq && <a href="#faq" className="hover:text-white">FAQ</a>}
-          <a href={links.login_url} className="hover:text-white">Connexion</a>
+          <a href={links.login_url}
+              target="_blank"
+              rel="noopener noreferrer" className="hover:text-white">Connexion</a>
         </nav>
       </div>
       <p className="pb-8 text-center text-xs text-white/35">© {new Date().getFullYear()} OptiSpace. Tous droits réservés.</p>

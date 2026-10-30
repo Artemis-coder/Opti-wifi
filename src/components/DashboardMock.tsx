@@ -22,9 +22,9 @@ import { CountUp, EASE_OUT } from "./motion";
  */
 
 const KPIS = [
-  { label: "Tickets vendus", value: 4812, suffix: "", accent: "border-l-amber-500", icon: Ticket, tint: "bg-amber-50 text-amber-600" },
-  { label: "Chiffre d'affaires", value: 962400, suffix: " F", accent: "border-l-blue-900", icon: Receipt, tint: "bg-slate-100 text-blue-900" },
-  { label: "Total encaissé", value: 948400, suffix: " F", accent: "border-l-emerald-500", icon: CheckCircle2, tint: "bg-emerald-50 text-emerald-600" },
+  { label: "Tickets vendus", value: 4812, suffix: "", icon: Ticket, tint: "bg-amber-50 text-amber-600" },
+  { label: "Chiffre d'affaires", value: 962400, suffix: " F", icon: Receipt, tint: "bg-slate-100 text-blue-900" },
+  { label: "Total encaissé", value: 948400, suffix: " F", icon: CheckCircle2, tint: "bg-emerald-50 text-emerald-600" },
 ];
 
 const BARS = [
@@ -87,10 +87,20 @@ export function DashboardMock({ start = true }: { start?: boolean }) {
           <div className="min-w-0 flex-1 bg-[#f7faf8] p-3 sm:p-5">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-soft">Ce mois-ci</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-soft">Depuis le début</p>
                 <p className="text-sm font-bold text-ink sm:text-base">Tableau de bord</p>
               </div>
               <div className="flex items-center gap-2">
+                <div className="hidden items-center gap-1 md:flex">
+                  {["Tout", "Aujourd'hui", "7 jours", "Ce mois-ci"].map((p, i) => (
+                    <span
+                      key={p}
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${i === 0 ? "bg-ink text-white" : "bg-white text-ink-soft ring-1 ring-line"}`}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
                 <span className="relative grid h-7 w-7 place-items-center rounded-full bg-white ring-1 ring-line">
                   <Bell className="h-3.5 w-3.5 text-ink-soft" />
                   <motion.span
@@ -113,7 +123,7 @@ export function DashboardMock({ start = true }: { start?: boolean }) {
                   initial={{ opacity: 0, y: 14 }}
                   animate={start ? { opacity: 1, y: 0 } : {}}
                   transition={{ delay: 0.9 + i * 0.1, duration: 0.6, ease: EASE_OUT }}
-                  className={`rounded-xl border-l-4 bg-white p-2.5 ring-1 ring-line sm:p-3 ${k.accent} ${i === 2 ? "hidden sm:block" : ""}`}
+                  className={`rounded-xl bg-white p-2.5 ring-1 ring-line sm:p-3 ${i === 2 ? "hidden sm:block" : ""}`}
                 >
                   <div className="flex items-start justify-between">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-ink-soft sm:text-[10px]">{k.label}</p>
@@ -130,8 +140,8 @@ export function DashboardMock({ start = true }: { start?: boolean }) {
                 initial={{ opacity: 0, y: 14 }}
                 animate={start ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: 1.2, duration: 0.6, ease: EASE_OUT }}
-                className={`rounded-xl border-l-4 bg-white p-2.5 ring-1 sm:p-3 transition-colors duration-500 ${
-                  toast >= 1 ? "border-l-danger ring-danger/30" : "border-l-red-500 ring-line"
+                className={`rounded-xl bg-white p-2.5 ring-1 sm:p-3 transition-colors duration-500 ${
+                  toast >= 1 ? "ring-danger/40" : "ring-line"
                 }`}
               >
                 <div className="flex items-start justify-between">

@@ -87,6 +87,8 @@ export function Calculator() {
             </div>
             <a
               href={content.links.signup_url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="group relative inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-brand-400 px-6 font-bold text-brand-on transition hover:bg-brand-300"
             >
               Arrêter les fuites dès aujourd&apos;hui
