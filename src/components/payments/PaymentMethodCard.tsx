@@ -24,6 +24,8 @@ export interface PublicPaymentMethod {
   brand_logo: string | null;
   /** Couleur de l'affiche (#rrggbb) */
   brand_color: string | null;
+  /** Pays où le moyen est utilisable ; vide = tous les pays */
+  countries?: string[];
 }
 
 /** Bleu Wave, utilisé si aucune couleur n'est renseignée */
@@ -107,7 +109,7 @@ export function PayNumber({ method }: { method: PublicPaymentMethod }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5">
       <div className="min-w-0">
-        <p className="font-mono text-lg font-bold text-slate-900 dark:text-white tracking-wide break-all">{method.account_number}</p>
+        <p className="font-mono text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-wide break-words">{method.account_number}</p>
         {method.account_name && <p className="text-xs text-slate-500">Au nom de {method.account_name}</p>}
       </div>
       <button
