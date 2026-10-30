@@ -2,20 +2,61 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, Banknote, CheckCircle2, ChevronRight, Inbox, Loader2, Ticket } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  Banknote,
+  CheckCircle2,
+  ChevronRight,
+  Inbox,
+  Loader2,
+  Ticket,
+  ArrowLeftRight,
+  Receipt,
+  Store,
+} from 'lucide-react';
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { Card } from '@/components/ui/Card';
 import { AddButton } from '@/components/ui/AddButton';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
+import { useAuthStore } from '@/lib/stores/authStore';
 import type { ClientDashboard, DashboardPeriod } from '@/lib/client-dashboard';
 
 const PERIODS: { value: DashboardPeriod; label: string; eyebrow: string }[] = [
+  { value: 'all', label: 'Tout', eyebrow: 'Depuis le début' },
   { value: 'today', label: "Aujourd'hui", eyebrow: "Aujourd'hui" },
   { value: 'week', label: '7 jours', eyebrow: '7 derniers jours' },
   { value: 'month', label: 'Ce mois-ci', eyebrow: 'Ce mois-ci' },
-  { value: 'all', label: 'Tout', eyebrow: 'Depuis le début' },
+];
+
+const SHORTCUTS: { href: string; label: string; hint: string; icon: React.ElementType; tone: string; adminOnly?: boolean }[] = [
+  {
+    href: '/allocations/new',
+    label: 'Allouer des tickets',
+    hint: 'Distribuer du stock aux POS',
+    icon: ArrowLeftRight,
+    tone: 'bg-purple-600 text-white',
+    adminOnly: true,
+  },
+  {
+    href: '/collections/new',
+    label: 'Nouvelle collecte',
+    hint: 'Saisir un encaissement de caisse',
+    icon: Receipt,
+    tone: 'bg-amber-500 text-slate-950',
+  },
+  { href: '/pos', label: 'Points de vente', hint: 'Gérer le réseau de distribution', icon: Store, tone: 'bg-indigo-900 text-white' },
+  {
+    href: '/tickets',
+    label: 'Types de tickets',
+    hint: 'Consulter et modifier les tarifs',
+    icon: Ticket,
+    tone: 'bg-emerald-600 text-white',
+    adminOnly: true,
+  },
 ];
 
 const PREVIOUS_LABEL: Record<DashboardPeriod, string> = { today: 'hier', week: '7 jours précédents', month: 'mois dernier', all: '' };
@@ -112,7 +153,8 @@ function PosTooltip({ active, payload }: { active?: boolean; payload?: { payload
 
 export default function DashboardPage() {
   const { currentSpaceId } = useSpaceStore();
-  const [period, setPeriod] = useState<DashboardPeriod>('month');
+  const isAdmin = useAuthStore((s) => s.user?.role) === 'administrateur';
+  const [period, setPeriod] = useState<DashboardPeriod>('all');
   const key = `${period}|${currentSpaceId || ''}`;
   const [result, setResult] = useState<{ key: string; data: ClientDashboard | null } | null>(null);
   const loading = result?.key !== key;
@@ -205,8 +247,35 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Raccourcis */}
+        <Card className="p-4 sm:p-5 space-y-3">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Raccourcis</h2>
+          <ul className="space-y-2">
+            {SHORTCUTS.filter((s) => !s.adminOnly || isAdmin).map((s) => {
+              const Icon = s.icon;
+              return (
+                <li key={s.href}>
+                  <Link
+                    href={s.href}
+                    className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 px-3.5 py-3 hover:border-slate-300 dark:hover:border-slate-700 transition"
+                  >
+                    <span className={cn('w-9 h-9 shrink-0 rounded-lg flex items-center justify-center', s.tone)}>
+                      <Icon className="w-4 h-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">{s.label}</span>
+                      <span className="block text-xs text-slate-500 truncate">{s.hint}</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4 shrink-0 text-slate-300" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+
         {/* Ventes par point de vente */}
-        <Card className="lg:col-span-2 p-4 sm:p-5 space-y-3">
+        <Card className="p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">Ventes par point de vente</h2>
             <span className="text-xs text-slate-500">{data?.pos_count ?? 0} POS</span>
