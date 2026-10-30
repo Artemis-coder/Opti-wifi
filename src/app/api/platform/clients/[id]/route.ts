@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { TicketAllocation, CollectionItem, Collection } from "@/types/database";
+import { query } from '@/lib/neon/db';
+import { hasUsedTrialPlan } from '@/lib/trial-plan';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -45,6 +47,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .select('*, plan:subscription_plans(*)')
       .eq('organization_id', id)
       .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle(),
     supabase
       .from('subscriptions')
@@ -141,8 +144,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     last_activity: lastActivityResult.data?.created_at || null,
   };
 
+  // Période d'essai proposée quand aucun forfait n'est actif : forfait d'essai et sa durée
+  const [trialPlanRes, trialUsed] = await Promise.all([
+    query(
+      `SELECT id, name, trial_days FROM subscription_plans
+        WHERE status = 'active' AND COALESCE(trial_days, 0) > 0
+        ORDER BY price ASC, trial_days DESC LIMIT 1`
+    ),
+    hasUsedTrialPlan(id),
+  ]);
+  const trialPlan = trialPlanRes.rows[0];
+
   return NextResponse.json({
     data: {
+      trial_offer: trialPlan
+        ? { plan_id: trialPlan.id, plan_name: trialPlan.name, days: Number(trialPlan.trial_days), used: trialUsed }
+        : null,
       organization: enrichedOrg,
       subscription: subRes.data || null,
       subscriptions_history: historyRes.data || [],

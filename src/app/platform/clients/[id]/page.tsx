@@ -31,12 +31,13 @@ import {
   AlertCircle,
   Copy,
   Activity,
+  Gift,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
-import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/format';
+import { formatCurrencyFCFA, formatNumber, formatDateFR, formatDateOnlyFR } from '@/lib/utils/format';
 import { toast } from 'sonner';
 import {
   Organization,
@@ -67,6 +68,7 @@ interface ClientDetailData {
       features?: Record<string, unknown> | null;
     };
   }) | null;
+  trial_offer: { plan_id: string; plan_name: string; days: number; used: boolean } | null;
   subscriptions_history: (Subscription & {
     plan: { id: string; name: string; price: number; currency: string };
   })[];
@@ -120,6 +122,8 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [licenseModalOpen, setLicenseModalOpen] = useState(false);
+  // Instant de référence pour les durées affichées (jours restants, fin d'essai)
+  const [now] = useState(() => Date.now());
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmModalOpen, setConfirmModalOpen] = useState<{
     open: boolean;
@@ -219,6 +223,12 @@ export default function ClientDetailPage() {
   const org = data.organization;
   const sub = data.subscription;
   const subStatus = sub ? SUB_STATUS_CONFIG[sub.status] || { label: sub.status, color: 'neutral' } : null;
+  // Forfait actif : licence ou essai en cours
+  const liveSub =
+    sub && (sub.status === 'active' || sub.status === 'trialing') && (!sub.end_date || new Date(sub.end_date).getTime() > now) ? sub : null;
+  const daysLeft = liveSub?.end_date ? Math.ceil((new Date(liveSub.end_date).getTime() - now) / 86_400_000) : null;
+  const trial = data.trial_offer;
+  const trialEnd = trial ? new Date(now + trial.days * 86_400_000) : null;
   const orgConfig = STATUS_CONFIG[org.status] || { label: org.status, color: 'neutral' };
 
   const getSubAction = () => {
@@ -294,8 +304,8 @@ export default function ClientDetailPage() {
         organizationId={org.id}
         organizationName={org.name}
         currentEndDate={sub?.status === 'active' || sub?.status === 'trialing' ? sub?.end_date : null}
-        defaultPlanId={sub?.plan_id}
-        preferTrial={!sub}
+        defaultPlanId={sub && Number((sub.plan as { trial_days?: number } | null)?.trial_days ?? 0) === 0 ? sub.plan_id : null}
+        preferTrial={!liveSub && !!trial && !trial.used}
       />
       )}
 
@@ -451,6 +461,36 @@ export default function ClientDetailPage() {
             <Receipt className="w-5 h-5 text-amber-500" />
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Abonnement</h2>
           </div>
+          {!liveSub && trial && (
+            <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-950/20 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Gift className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <p className="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">Période d&apos;essai</p>
+                <Badge variant={trial.used ? 'neutral' : 'info'} className="ml-auto">
+                  {trial.used ? 'Déjà utilisée' : 'Disponible'}
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                {trial.used ? (
+                  <>Ce client a déjà bénéficié de l&apos;essai gratuit ({trial.plan_name}) : activez un forfait payant.</>
+                ) : (
+                  <>
+                    Essai gratuit <strong>{trial.plan_name}</strong> de <strong>{trial.days} jour{trial.days > 1 ? 's' : ''}</strong>
+                    {trialEnd && <> : du {formatDateOnlyFR(new Date(now).toISOString())} au {formatDateOnlyFR(trialEnd.toISOString())} s&apos;il démarre aujourd&apos;hui</>}.
+                  </>
+                )}
+              </p>
+              {!trial.used && org.status !== 'pending_approval' && (
+                <Button size="sm" className="gap-2" onClick={() => setLicenseModalOpen(true)}>
+                  <Gift className="w-4 h-4" />
+                  Démarrer l&apos;essai
+                </Button>
+              )}
+              {!trial.used && org.status === 'pending_approval' && (
+                <p className="text-[11px] text-slate-500">L&apos;essai démarre automatiquement à la validation de l&apos;inscription.</p>
+              )}
+            </div>
+          )}
           {sub ? (
             <div className="space-y-3 text-sm">
               <div>
@@ -480,6 +520,14 @@ export default function ClientDetailPage() {
                 <span className="font-semibold text-slate-500">Date d&apos;expiration</span>
                 <p className="text-slate-900 dark:text-white">{formatDateFR(sub.end_date || '—')}</p>
               </div>
+              {liveSub && daysLeft !== null && (
+                <div>
+                  <span className="font-semibold text-slate-500">{liveSub.status === 'trialing' ? "Jours d'essai restants" : 'Jours restants'}</span>
+                  <p className="text-slate-900 dark:text-white font-bold">
+                    {daysLeft} jour{daysLeft > 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
               <div>
                 <span className="font-semibold text-slate-500">Renouvellement auto</span>
                 <p className="text-slate-900 dark:text-white">
@@ -495,7 +543,7 @@ export default function ClientDetailPage() {
               )}
             </div>
           ) : (
-            <p className="text-xs text-slate-500">Aucun abonnement lié à cet organisation.</p>
+            !trial && <p className="text-xs text-slate-500">Aucun abonnement lié à cette organisation.</p>
           )}
         </Card>
       </div>
