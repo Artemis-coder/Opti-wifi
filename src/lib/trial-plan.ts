@@ -1,26 +1,24 @@
 // ============================================================
-// OPTIWIFI - Forfait d'essai (Découverte) : une seule fois par organisation.
-// Un forfait d'essai est un forfait avec des jours d'essai (trial_days > 0).
-// Une organisation qui en a déjà bénéficié (actif, expiré ou remplacé) ne peut
-// ni le redemander ni le renouveler : elle doit choisir un forfait payant.
+// OPTIWIFI - Essai gratuit : seulement à la première souscription d'un client.
+// Un forfait peut prévoir des jours d'essai (trial_days > 0) : ils ne sont offerts qu'à une
+// organisation qui n'a encore jamais eu d'abonnement. Ensuite, tout forfait (Découverte
+// compris) est une licence payée, en mois, facturée.
+// Un abonnement d'essai se reconnaît à son statut « trialing ».
 // ============================================================
 import { query } from '@/lib/neon/db';
 
-export const TRIAL_ALREADY_USED_MESSAGE =
-  'Le forfait Découverte ne peut être utilisé qu’une seule fois. Choisissez un autre forfait pour continuer.';
-
+/** Vrai si le forfait prévoit des jours d'essai pour une première souscription. */
 export function isTrialPlan(plan: { trial_days?: number | string | null } | null | undefined): boolean {
   return Number(plan?.trial_days ?? 0) > 0;
 }
 
-/** Vrai si l'organisation a déjà eu un abonnement sur un forfait d'essai. */
+/**
+ * Vrai si l'organisation n'a plus droit à l'essai : elle a déjà eu un abonnement
+ * (essai ou licence payée, en cours ou terminé).
+ */
 export async function hasUsedTrialPlan(organizationId: string): Promise<boolean> {
-  const { rows } = await query(
-    `SELECT EXISTS (
-       SELECT 1 FROM subscriptions s JOIN subscription_plans p ON p.id = s.plan_id
-        WHERE s.organization_id = $1 AND COALESCE(p.trial_days, 0) > 0
-     ) AS used`,
-    [organizationId]
-  );
+  const { rows } = await query(`SELECT EXISTS (SELECT 1 FROM subscriptions WHERE organization_id = $1) AS used`, [
+    organizationId,
+  ]);
   return rows[0]?.used === true;
 }

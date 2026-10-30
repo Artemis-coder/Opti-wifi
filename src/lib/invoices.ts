@@ -26,7 +26,8 @@ export async function issueLicenseInvoice(input: {
               p.name AS plan_name, p.currency,
               ROUND(p.price / CASE p.billing_period WHEN 'quarterly' THEN 3 WHEN 'semiannual' THEN 6
                                                      WHEN 'annual' THEN 12 ELSE 1 END, 2) AS unit_price,
-              (p.price > 0 AND COALESCE(p.trial_days, 0) = 0) AS billable
+              -- Facturable : forfait payant, hors essai gratuit (abonnement « trialing »)
+              (p.price > 0 AND s.status <> 'trialing') AS billable
          FROM subscriptions s
          JOIN subscription_plans p ON p.id = s.plan_id
         WHERE s.id = $1::uuid

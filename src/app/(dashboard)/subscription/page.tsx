@@ -29,6 +29,8 @@ interface Subscription {
   status: string;
   start_date: string;
   end_date: string | null;
+  /** Renseignée seulement pour un essai gratuit */
+  trial_end?: string | null;
   plan_id: string;
   organization_id: string;
   plan?: SubscriptionPlan;
@@ -108,7 +110,7 @@ export default function SubscriptionPage() {
         // Lien des rappels de fin d'essai (/subscription?plan=…) : ouvre la demande du forfait proposé
         const wanted = new URLSearchParams(window.location.search).get('plan');
         const target = wanted ? plansData?.find((p: SubscriptionPlan) => p.id === wanted) : null;
-        if (target && Number(target.trial_days ?? 0) === 0) {
+        if (target) {
           setOpenPlanOnLoad(target);
           window.history.replaceState(null, '', '/subscription');
         }
@@ -172,9 +174,10 @@ export default function SubscriptionPage() {
 
   const isExpired = subscription ? (subscription.status === 'expired' || (subscription.end_date && new Date(subscription.end_date).getTime() < new Date().getTime())) : false;
   const isExpiringSoon = subscription && !isExpired && daysRemaining !== null && daysRemaining <= 7;
-  const onTrial = Number(subscription?.plan?.trial_days ?? 0) > 0;
+  // Essai gratuit (première souscription) : abonnement avec date de fin d'essai
+  const onTrial = subscription?.status === 'trialing' || !!subscription?.trial_end;
   // Forfait de base proposé à la fin de l'essai : le moins cher des forfaits payants
-  const basePlan = allPlans.find((p) => Number(p.price) > 0 && Number(p.trial_days ?? 0) === 0) ?? null;
+  const basePlan = allPlans.find((p) => Number(p.price) > 0) ?? null;
   const trialLengthDays =
     onTrial && subscription?.end_date
       ? Math.max(1, Math.ceil((new Date(subscription.end_date).getTime() - new Date(subscription.start_date).getTime()) / 86_400_000))
@@ -377,7 +380,7 @@ export default function SubscriptionPage() {
               )}
             </div>
           )}
-          {subscription.plan && !pendingRequest && Number(subscription.plan.trial_days ?? 0) === 0 && (
+          {subscription.plan && !pendingRequest && !onTrial && (
             <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
               <Button
                 variant={isExpired ? 'danger' : 'primary'}
@@ -492,18 +495,13 @@ export default function SubscriptionPage() {
               </div>
               {/* Pied de carte aligné en bas : le bouton est au même endroit sur tous les forfaits */}
               <div className="mt-auto space-y-2 pt-2">
-                {Number(plan.trial_days ?? 0) > 0 && (
-                  <p className="text-xs text-slate-500">
-                    {trialUsed ? 'Forfait d’essai déjà utilisé : non disponible.' : `Forfait d’essai : ${plan.trial_days} jours, une seule fois.`}
-                  </p>
+                {/* Essai gratuit : seulement pour une première souscription */}
+                {!trialUsed && Number(plan.trial_days ?? 0) > 0 && (
+                  <p className="text-xs text-slate-500">Essai gratuit de {plan.trial_days} jours pour démarrer.</p>
                 )}
-                {subscription?.plan_id === plan.id ? (
+                {subscription?.plan_id === plan.id && !onTrial ? (
                   <div className="h-11 rounded-xl bg-brand-500/10 text-brand-700 dark:text-brand-300 text-sm font-bold flex items-center justify-center gap-2">
                     <CheckCircle2 className="w-4 h-4" /> Forfait actuel
-                  </div>
-                ) : trialUsed && Number(plan.trial_days ?? 0) > 0 ? (
-                  <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 text-sm font-semibold flex items-center justify-center">
-                    Déjà utilisé
                   </div>
                 ) : pendingRequest ? (
                   <div className="h-11 rounded-xl bg-blue-500/10 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center justify-center gap-1.5 text-center px-2">

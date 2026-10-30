@@ -148,7 +148,7 @@ export async function GET(request: Request) {
       ),
       query(
         `SELECT s.id, s.end_date, o.id AS organization_id, o.name AS organization_name, p.name AS plan_name,
-                COALESCE(p.trial_days, 0) > 0 AS is_trial,
+                s.trial_end IS NOT NULL AS is_trial,
                 CEIL(EXTRACT(EPOCH FROM (s.end_date - NOW())) / 86400)::int AS days_left
            FROM subscriptions s
            JOIN organizations o ON o.id = s.organization_id

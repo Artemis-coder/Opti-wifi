@@ -283,7 +283,8 @@ export default function ClientDetailPage() {
         organizationId={org.id}
         organizationName={org.name}
         currentEndDate={sub?.status === 'active' || sub?.status === 'trialing' ? sub?.end_date : null}
-        defaultPlanId={sub && Number((sub.plan as { trial_days?: number } | null)?.trial_days ?? 0) === 0 ? sub.plan_id : null}
+        // Forfait actuel par défaut, sauf après un essai gratuit (le client choisit alors son forfait)
+        defaultPlanId={sub && !sub.trial_end ? sub.plan_id : null}
         preferTrial={!liveSub && !!trial && !trial.used}
       />
       )}
@@ -446,12 +447,12 @@ export default function ClientDetailPage() {
                 <Gift className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <p className="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">Période d&apos;essai</p>
                 <Badge variant={trial.used ? 'neutral' : 'info'} className="ml-auto">
-                  {trial.used ? 'Déjà utilisée' : 'Disponible'}
+                  {trial.used ? 'Non disponible' : 'Disponible'}
                 </Badge>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400">
                 {trial.used ? (
-                  <>Ce client a déjà bénéficié de l&apos;essai gratuit ({trial.plan_name}) : activez un forfait payant.</>
+                  <>Ce client a déjà eu un abonnement : l&apos;essai gratuit n&apos;est offert qu&apos;à la première souscription. Activez une licence payante.</>
                 ) : (
                   <>
                     Essai gratuit <strong>{trial.plan_name}</strong> de <strong>{trial.days} jour{trial.days > 1 ? 's' : ''}</strong>

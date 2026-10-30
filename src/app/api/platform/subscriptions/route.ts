@@ -27,7 +27,7 @@ export async function GET(request: Request) {
          SELECT s.id, s.organization_id, s.plan_id, s.status, s.start_date, s.end_date, s.cancel_at_period_end, s.created_at,
                 o.name AS organization_name, o.status AS organization_status,
                 p.name AS plan_name, p.price::float AS plan_price, p.currency AS plan_currency, p.billing_period AS plan_period,
-                COALESCE(p.trial_days, 0) > 0 AS is_trial,
+                s.trial_end IS NOT NULL AS is_trial,
                 CASE WHEN s.end_date IS NULL THEN NULL
                      ELSE CEIL(EXTRACT(EPOCH FROM (s.end_date - NOW())) / 86400)::int END AS days_left,
                 CASE WHEN s.end_date IS NULL OR s.start_date IS NULL THEN NULL
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       ),
       query(
         `WITH live AS (
-           SELECT s.organization_id, s.end_date, p.price, p.billing_period, COALESCE(p.trial_days, 0) > 0 AS is_trial
+           SELECT s.organization_id, s.end_date, p.price, p.billing_period, s.trial_end IS NOT NULL AS is_trial
              FROM subscriptions s
              JOIN organizations o ON o.id = s.organization_id
              LEFT JOIN subscription_plans p ON p.id = s.plan_id
@@ -131,8 +131,7 @@ export async function PATCH(request: Request) {
     case 'reactivate': {
       // Un essai réactivé reste un essai
       const { rows } = await query(
-        `SELECT COALESCE(p.trial_days, 0) > 0 AS is_trial FROM subscriptions s
-           LEFT JOIN subscription_plans p ON p.id = s.plan_id WHERE s.id = $1`,
+        `SELECT trial_end IS NOT NULL AS is_trial FROM subscriptions WHERE id = $1`,
         [subscriptionId]
       );
       updates.status = rows[0]?.is_trial ? 'trialing' : 'active';

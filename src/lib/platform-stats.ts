@@ -53,7 +53,8 @@ const LICENSES_CTE = `
            p.price, p.trial_days,
            CASE p.billing_period WHEN 'quarterly' THEN 3 WHEN 'semiannual' THEN 6 WHEN 'annual' THEN 12 ELSE 1 END AS period_months,
            GREATEST(1, ROUND(EXTRACT(EPOCH FROM (s.end_date - s.start_date)) / (30.4375 * 86400)))::int AS months,
-           (p.price <= 0 OR COALESCE(p.trial_days, 0) > 0) AS is_trial
+           -- Essai gratuit (première souscription) : abonnement avec date de fin d'essai
+           (p.price <= 0 OR s.trial_end IS NOT NULL) AS is_trial
       FROM subscriptions s
       JOIN subscription_plans p ON p.id = s.plan_id
      WHERE s.start_date IS NOT NULL AND s.end_date IS NOT NULL
@@ -140,10 +141,10 @@ export async function getPlatformStats(range: StatsRange): Promise<PlatformStats
     )
     SELECT p.id AS plan_id, p.name, COUNT(c.id)::int AS count,
            COALESCE(SUM(CASE WHEN c.is_trial THEN 0 ELSE c.price / c.period_months END), 0)::float AS mrr,
-           (p.price <= 0 OR COALESCE(p.trial_days, 0) > 0) AS is_trial
+           BOOL_AND(c.is_trial) AS is_trial
       FROM current c
       JOIN subscription_plans p ON p.id = c.plan_id
-     GROUP BY p.id, p.name, p.price, p.trial_days
+     GROUP BY p.id, p.name, p.price
      ORDER BY count DESC, p.price DESC`;
 
   const params = [unit, count, step];
