@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useSite } from "./SiteProvider";
+import { track } from "@/lib/analytics";
 import { EASE_OUT, Item, Reveal, SectionTag } from "./motion";
 
 export function Faq() {
@@ -31,7 +32,10 @@ export function Faq() {
                 <div className={`rounded-2xl bg-white ring-1 transition-colors ${isOpen ? "ring-brand-300" : "ring-line"}`}>
                   <button
                     type="button"
-                    onClick={() => setOpen(isOpen ? null : i)}
+                    onClick={() => {
+                      if (!isOpen) track("faq_opened", { question: f.q.slice(0, 120), position: i + 1 });
+                      setOpen(isOpen ? null : i);
+                    }}
                     aria-expanded={isOpen}
                     className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
                   >

@@ -43,7 +43,7 @@ export function FinalCta() {
         </Item>
         <Item className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
-            href={links.signup_url}
+            href={links.signup_url} data-cta="signup" data-cta-location="final_cta"
               target="_blank"
               rel="noopener noreferrer"
             className="group relative inline-flex h-14 items-center gap-2 overflow-hidden rounded-2xl bg-brand-400 px-8 text-base font-bold text-brand-on shadow-[0_10px_40px_-10px_rgb(132_200_101/0.7)] transition hover:bg-brand-300"
@@ -54,7 +54,7 @@ export function FinalCta() {
           </a>
           {links.whatsapp_url ? (
             <a
-              href={links.whatsapp_url}
+              href={links.whatsapp_url} data-cta="whatsapp" data-cta-location="final_cta"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex h-14 items-center gap-2 rounded-2xl px-6 font-semibold text-white/85 ring-1 ring-white/15 hover:bg-white/5 hover:text-white"
@@ -62,7 +62,7 @@ export function FinalCta() {
               <MessageCircle className="h-5 w-5" /> Nous écrire sur WhatsApp
             </a>
           ) : (
-            <a href={links.login_url}
+            <a href={links.login_url} data-cta="login" data-cta-location="final_cta"
               target="_blank"
               rel="noopener noreferrer" className="inline-flex h-14 items-center px-6 font-semibold text-white/75 hover:text-white">
               J&apos;ai déjà un compte
@@ -106,7 +106,7 @@ export function Footer() {
           {sections.showcase && <a href="#fonctionnalites" className="hover:text-white">Fonctionnalités</a>}
           {sections.pricing && <a href="#tarifs" className="hover:text-white">Tarifs</a>}
           {sections.faq && <a href="#faq" className="hover:text-white">FAQ</a>}
-          <a href={links.login_url}
+          <a href={links.login_url} data-cta="login" data-cta-location="footer"
               target="_blank"
               rel="noopener noreferrer" className="hover:text-white">Connexion</a>
         </nav>

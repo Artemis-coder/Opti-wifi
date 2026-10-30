@@ -64,7 +64,7 @@ export function Pricing() {
                 </ul>
 
                 <a
-                  href={links.signup_url}
+                  href={links.signup_url} data-cta="signup" data-cta-location="pricing" data-cta-plan={p.name}
               target="_blank"
               rel="noopener noreferrer"
                   className={`group mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-2xl font-bold transition ${

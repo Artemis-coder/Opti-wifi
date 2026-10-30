@@ -2,9 +2,10 @@
 
 import { motion } from "motion/react";
 import { ArrowRight, Info } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { formatFcfa, planForPos } from "@/lib/content";
 import { useSite } from "./SiteProvider";
+import { track } from "@/lib/analytics";
 import { AnimatedNumber, Item, Reveal, SectionTag } from "./motion";
 
 type Field = { key: "pos" | "perDay" | "price" | "leak"; label: string; min: number; max: number; step: number; unit: string };
@@ -19,6 +20,7 @@ const FIELDS: Field[] = [
 export function Calculator() {
   const { content, plans } = useSite();
   const [v, setV] = useState({ pos: 5, perDay: 30, price: 200, leak: 6 });
+  const used = useRef(false);
 
   const monthly = v.pos * v.perDay * v.price * 30;
   const lost = monthly * (v.leak / 100);
@@ -37,7 +39,13 @@ export function Calculator() {
             </Item>
             <div className="mt-8 space-y-6">
               {FIELDS.map((f) => (
-                <Slider key={f.key} field={f} value={v[f.key]} onChange={(n) => setV((s) => ({ ...s, [f.key]: n }))} />
+                <Slider key={f.key} field={f} value={v[f.key]} onChange={(n) => {
+                    setV((s) => ({ ...s, [f.key]: n }));
+                    if (!used.current) {
+                      used.current = true;
+                      track("calculator_used", { first_field: f.key });
+                    }
+                  }} />
               ))}
             </div>
             <p className="mt-6 flex items-start gap-2 text-xs leading-relaxed text-white/50">
@@ -86,7 +94,7 @@ export function Calculator() {
               )}
             </div>
             <a
-              href={content.links.signup_url}
+              href={content.links.signup_url} data-cta="signup" data-cta-location="calculator"
               target="_blank"
               rel="noopener noreferrer"
               className="group relative inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-brand-400 px-6 font-bold text-brand-on transition hover:bg-brand-300"

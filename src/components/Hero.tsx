@@ -72,7 +72,7 @@ export function Hero() {
 
           <motion.div variants={word} className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
-              href={links.signup_url}
+              href={links.signup_url} data-cta="signup" data-cta-location="hero"
               target="_blank"
               rel="noopener noreferrer"
               className="group relative inline-flex h-14 items-center gap-2 overflow-hidden rounded-2xl bg-brand-400 px-7 text-base font-bold text-brand-on shadow-[0_10px_40px_-10px_rgb(132_200_101/0.7)] transition hover:bg-brand-300"

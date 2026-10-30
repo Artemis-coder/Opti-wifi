@@ -61,7 +61,7 @@ export function Nav() {
 
         <div className="flex items-center gap-2">
           <a
-            href={links.login_url}
+            href={links.login_url} data-cta="login" data-cta-location="nav"
               target="_blank"
               rel="noopener noreferrer"
             className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-white/80 transition-colors hover:text-white sm:block"
@@ -69,7 +69,7 @@ export function Nav() {
             Se connecter
           </a>
           <a
-            href={links.signup_url}
+            href={links.signup_url} data-cta="signup" data-cta-location="nav"
               target="_blank"
               rel="noopener noreferrer"
             className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-bold text-brand-on shadow-[0_0_0_0_rgb(132_200_101/0.5)] transition-all hover:bg-brand-300 hover:shadow-[0_0_24px_0_rgb(132_200_101/0.45)]"
@@ -109,7 +109,7 @@ export function Nav() {
               </li>
             ))}
             <li>
-              <a href={links.login_url}
+              <a href={links.login_url} data-cta="login" data-cta-location="nav_mobile"
               target="_blank"
               rel="noopener noreferrer" className="block rounded-xl px-4 py-3 text-base font-semibold text-brand-300">
                 Se connecter
