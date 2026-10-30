@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
-import { formatDateFR } from '@/lib/utils/format';
+import { formatDateFR, formatDateOnlyFR } from '@/lib/utils/format';
 import type { OrganizationStatus } from '@/types/platform';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
@@ -83,7 +83,7 @@ export default function PlatformRegistrationsPage() {
         toast.error(result.error || 'Action impossible');
         return false;
       }
-      return true;
+      return { trial: (result.trial ?? null) as { days: number; end_date: string } | null };
     } catch {
       toast.error('Erreur réseau');
       return false;
@@ -93,11 +93,18 @@ export default function PlatformRegistrationsPage() {
   }
 
   async function handleApprove(org: Registration) {
-    if (await runAction(org, 'approve')) {
+    const result = await runAction(org, 'approve');
+    if (!result) return;
+    if (result.trial) {
+      // Essai gratuit démarré automatiquement (durée du forfait d'essai)
+      toast.success(
+        `Compte « ${org.name} » validé : essai gratuit de ${result.trial.days} jour${result.trial.days > 1 ? 's' : ''} jusqu'au ${formatDateOnlyFR(result.trial.end_date)}`
+      );
+    } else {
       toast.success(`Compte « ${org.name} » validé`);
       setLicenseFor(org);
-      reload();
     }
+    reload();
   }
 
   async function handleReject() {
