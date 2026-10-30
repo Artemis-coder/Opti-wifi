@@ -9,6 +9,9 @@ const subscribe = () => () => {};
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
+/** Texte de recherche sans accents ni majuscules (« Sénégal » est trouvé avec « sen »). */
+const fold = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
 export interface SelectOption {
   value: string;
   label: string;
@@ -34,6 +37,8 @@ export interface CustomSelectProps {
   size?: 'sm' | 'md';
   leadingIcon?: React.ReactNode;
   id?: string;
+  /** N'affiche que le libellé dans le bouton (le sous-libellé reste visible dans la liste). */
+  compactTrigger?: boolean;
 }
 
 export function CustomSelect({
@@ -53,6 +58,7 @@ export function CustomSelect({
   size = 'md',
   leadingIcon,
   id,
+  compactTrigger = false,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,10 +74,10 @@ export function CustomSelect({
 
   const filteredOptions = useMemo(() => {
     if (!isSearchEnabled || !searchQuery.trim()) return options;
-    const query = searchQuery.toLowerCase().trim();
+    const query = fold(searchQuery);
     return options.filter((opt) => {
-      const labelMatch = opt.label.toLowerCase().includes(query);
-      const sublabelMatch = opt.sublabel?.toLowerCase().includes(query);
+      const labelMatch = fold(opt.label).includes(query);
+      const sublabelMatch = opt.sublabel ? fold(opt.sublabel).includes(query) : false;
       return labelMatch || sublabelMatch;
     });
   }, [options, searchQuery, isSearchEnabled]);
@@ -146,7 +152,7 @@ export function CustomSelect({
               <span className="truncate block text-slate-900 dark:text-slate-100 font-medium">
                 {selectedOption.label}
               </span>
-              {selectedOption.sublabel && size !== 'sm' && (
+              {selectedOption.sublabel && size !== 'sm' && !compactTrigger && (
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
                   {selectedOption.sublabel}
                 </span>

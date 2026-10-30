@@ -5,42 +5,14 @@
 // Secours : indicatif du numéro de téléphone de l'organisation.
 // ============================================================
 import { query } from '@/lib/neon/db';
+import { countryFlag, countryFromPhone, countryName } from '@/lib/countries';
+
+export { countryFlag, countryFromPhone, countryName };
 
 /** Code pays ISO alpha-2 de la requête (Vercel), ou null (local, inconnu, Tor…). */
 export function countryFromRequest(request: Request): string | null {
   const code = request.headers.get('x-vercel-ip-country')?.trim().toUpperCase();
   return code && /^[A-Z]{2}$/.test(code) && code !== 'XX' && code !== 'T1' ? code : null;
-}
-
-// Indicatifs les plus probables pour la clientèle (Afrique francophone en tête)
-const DIAL_CODES: [string, string][] = [
-  ['225', 'CI'], ['221', 'SN'], ['223', 'ML'], ['226', 'BF'], ['227', 'NE'], ['228', 'TG'], ['229', 'BJ'],
-  ['224', 'GN'], ['237', 'CM'], ['241', 'GA'], ['242', 'CG'], ['243', 'CD'], ['235', 'TD'], ['236', 'CF'],
-  ['222', 'MR'], ['212', 'MA'], ['213', 'DZ'], ['216', 'TN'], ['261', 'MG'], ['250', 'RW'], ['257', 'BI'],
-  ['233', 'GH'], ['234', 'NG'], ['230', 'MU'], ['269', 'KM'], ['253', 'DJ'], ['32', 'BE'], ['41', 'CH'],
-  ['44', 'GB'], ['33', 'FR'], ['1', 'US'],
-];
-
-/** Pays déduit d'un numéro au format international (+225…, 00225…). */
-export function countryFromPhone(phone: string | null | undefined): string | null {
-  const digits = (phone || '').replace(/[\s.\-()]/g, '');
-  const m = digits.match(/^(?:\+|00)(\d+)/);
-  if (!m) return null;
-  return DIAL_CODES.find(([dial]) => m[1].startsWith(dial))?.[1] ?? null;
-}
-
-/** Nom du pays en français (« Côte d’Ivoire »). */
-export function countryName(code: string): string {
-  try {
-    return new Intl.DisplayNames(['fr'], { type: 'region' }).of(code) || code;
-  } catch {
-    return code;
-  }
-}
-
-/** Drapeau emoji d'un code pays. */
-export function countryFlag(code: string): string {
-  return String.fromCodePoint(...code.split('').map((c) => 0x1f1a5 + c.charCodeAt(0)));
 }
 
 /** Enregistre le pays d'une organisation s'il n'est pas encore connu. N'échoue jamais. */
