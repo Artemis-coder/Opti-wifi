@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   try {
     // Licence en cours qui se termine dans les 10 jours, sans autre licence prenant le relais
     const expiring = await query(
-      `SELECT s.id, s.organization_id, s.end_date, p.name AS plan, COALESCE(p.trial_days, 0) > 0 AS is_trial,
+      `SELECT s.id, s.organization_id, s.end_date, p.name AS plan, s.trial_end IS NOT NULL AS is_trial,
               GREATEST(1, CEIL(EXTRACT(EPOCH FROM (s.end_date - s.start_date)) / 86400))::int AS length_days
          FROM subscriptions s
          JOIN organizations o ON o.id = s.organization_id
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
 
     // Organisations dont la licence a expiré récemment et qui n'en ont plus aucune en cours
     const expired = await query(
-      `SELECT DISTINCT ON (s.organization_id) s.id, s.organization_id, s.end_date, COALESCE(p.trial_days, 0) > 0 AS is_trial
+      `SELECT DISTINCT ON (s.organization_id) s.id, s.organization_id, s.end_date, s.trial_end IS NOT NULL AS is_trial
          FROM subscriptions s
          JOIN organizations o ON o.id = s.organization_id
          LEFT JOIN subscription_plans p ON p.id = s.plan_id
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     // Forfait de base proposé à la fin d'un essai
     const base = await query(
       `SELECT id, name, price::float AS price, currency, billing_period FROM subscription_plans
-        WHERE status = 'active' AND price > 0 AND COALESCE(trial_days, 0) = 0
+        WHERE status = 'active' AND price > 0
         ORDER BY price ASC LIMIT 1`
     );
     const basePlan = (base.rows[0] as OfferedPlan | undefined) ?? null;

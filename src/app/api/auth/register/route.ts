@@ -2,13 +2,14 @@ import { adminClient } from '@/lib/neon/admin';
 import { NextResponse } from 'next/server';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 import { notifyInBackground, notifySuperAdmins } from '@/lib/notifications';
-import { countryFromRequest, rememberOrganizationCountry } from '@/lib/geo';
+import { rememberOrganizationCountry } from '@/lib/geo';
+import { findCountry, formatInternationalPhone, isValidNationalNumber } from '@/lib/countries';
 
 // Route POST pour créer un compte et une organisation avec le statut "pending_approval"
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, nom, orgName } = body;
+    const { email, password, nom, orgName, country: countryCode, phone: nationalPhone } = body;
 
     if (!email || !password || !nom || !orgName) {
       return NextResponse.json(
@@ -16,6 +17,16 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Téléphone international : pays choisi (drapeau) + numéro
+    const country = findCountry(typeof countryCode === 'string' ? countryCode : '');
+    if (!country || typeof nationalPhone !== 'string' || !isValidNationalNumber(nationalPhone)) {
+      return NextResponse.json(
+        { error: 'Numéro de téléphone invalide : choisissez le pays puis saisissez le numéro (6 à 14 chiffres).' },
+        { status: 400 }
+      );
+    }
+    const phone = formatInternationalPhone(country, nationalPhone);
 
     const testEmailError = rejectTestEmailInProduction(email);
     if (testEmailError) {
@@ -57,6 +68,7 @@ export async function POST(request: Request) {
         name: orgName,
         email: email,
         contact_name: nom,
+        phone,
         status: 'pending_approval'
       })
       .select('id')
@@ -70,8 +82,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Pays de l'inscription (KPI « Top 3 des pays » du back-office)
-    await rememberOrganizationCountry(orgData.id, countryFromRequest(request));
+    // Pays du compte (KPI « Top 3 des pays ») : celui choisi avec le téléphone
+    await rememberOrganizationCountry(orgData.id, country.code);
 
     // 3. Create the User via Admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -104,6 +116,7 @@ export async function POST(request: Request) {
         nom: nom,
         email: email,
         role: 'administrateur',
+        telephone: phone,
         organization_id: orgData.id,
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
