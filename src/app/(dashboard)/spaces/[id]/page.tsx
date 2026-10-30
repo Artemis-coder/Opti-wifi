@@ -44,6 +44,7 @@ import { PosSummary } from '@/components/ui/PosSummary';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
+import { StatTile } from '@/components/ui/StatTile';
 
 export default function SpaceDashboardPage() {
   const params = useParams();
@@ -349,130 +350,59 @@ export default function SpaceDashboardPage() {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Tickets Alloués */}
-        <Card className="border-l-4 border-l-purple-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Tickets Alloués
-            </span>
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
-              <Package className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatNumber(ticketsAllouesTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Stock distribué aux POS de cet espace
-            </p>
-          </div>
-        </Card>
+        <StatTile
+          label="Tickets Alloués"
+          value={formatNumber(ticketsAllouesTotal)}
+          icon={Package}
+          accent="purple"
+          hint="Stock distribué aux POS de cet espace"
+        />
 
         {/* Tickets Vendus */}
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Tickets Vendus
-            </span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Ticket className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatNumber(ticketsSoldTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Nombre total de pass écoulés
-            </p>
-          </div>
-        </Card>
+        <StatTile
+          label="Tickets Vendus"
+          value={formatNumber(ticketsSoldTotal)}
+          icon={Ticket}
+          accent="amber"
+          hint="Nombre total de pass écoulés"
+        />
 
         {/* Chiffre d'Affaires */}
-        <Card className="border-l-4 border-l-blue-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Chiffre d'Affaires
-            </span>
-            <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
-              <Banknote className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatCurrencyFCFA(chiffreAffairesTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Montant théorique attendu
-            </p>
-          </div>
-        </Card>
+        <StatTile
+          label="Chiffre d'Affaires"
+          value={formatCurrencyFCFA(chiffreAffairesTotal)}
+          icon={Banknote}
+          accent="indigo"
+          hint="Montant théorique attendu"
+        />
 
          {/* Montant Encaissé */}
-          <Card className="border-l-4 border-l-emerald-500">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Total Encaissé
-              </span>
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Receipt className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                {formatCurrencyFCFA(montantCollecteTotal)}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                Total espèces perçues
-              </p>
-            </div>
-          </Card>
+          <StatTile
+            label="Total Encaissé"
+            value={formatCurrencyFCFA(montantCollecteTotal)}
+            icon={Receipt}
+            accent="emerald"
+            hint="Total espèces perçues"
+          />
 
           {/* Commission Versée */}
-          <Card className="border-l-4 border-l-teal-500">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Commission Versée
-              </span>
-              <div className="p-2 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
-                <Receipt className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                {formatCurrencyFCFA(totalCommission)}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                Total commissions aux POS de l&apos;espace
-              </p>
-            </div>
-          </Card>
+          <StatTile
+            label="Commission Versée"
+            value={formatCurrencyFCFA(totalCommission)}
+            icon={Receipt}
+            accent="slate"
+            hint="Total commissions aux POS de l&apos;espace"
+          />
 
           {/* Écart / Différence */}
-          <Card className="border-l-4 border-l-red-500">
-            <div className="flex items-center justify-between">
-             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-               Écart / Différence
-             </span>
-             <div className="p-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400">
-               <ArrowDownRight className="w-5 h-5" />
-             </div>
-           </div>
-           <div className="mt-3">
-             <p
-               className={`text-2xl font-extrabold ${
-                 ecartTotal < 0
-                   ? 'text-red-600'
-                   : 'text-emerald-600'
-               }`}
-             >
-               {formatCurrencyFCFA(ecartTotal)}
-             </p>
-             <p className="text-xs text-slate-500 mt-1">
-               Écart entre attendu et encaissé
-             </p>
-           </div>
-         </Card>
+          <StatTile
+            label="Écart / Différence"
+            value={formatCurrencyFCFA(ecartTotal)}
+            icon={ArrowDownRight}
+            accent="emerald"
+            alert={ecartTotal < 0}
+            hint="Écart entre attendu et encaissé"
+          />
        </div>
 
       {/* Main Content Grid: Raccourcis & Recent Encaissements */}

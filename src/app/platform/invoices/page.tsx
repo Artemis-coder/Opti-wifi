@@ -13,6 +13,9 @@ import {
   AlertCircle,
   Ban,
   Eye,
+  CheckCircle2,
+  CalendarDays,
+  RefreshCw,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -118,22 +121,30 @@ export default function PlatformInvoicesPage() {
         tiles={[
           {
             label: 'Montant encaissé',
+            icon: CheckCircle2,
+            accent: 'emerald',
             value: formatCurrencyFCFA(stats?.paid_amount ?? 0),
             sub: `${stats?.paid ?? 0} facture${(stats?.paid ?? 0) > 1 ? 's' : ''} payée${(stats?.paid ?? 0) > 1 ? 's' : ''}`,
             highlight: true,
           },
           {
             label: 'Ce mois-ci',
+            icon: CalendarDays,
+            accent: 'indigo',
             value: formatCurrencyFCFA(stats?.month_amount ?? 0),
             sub: `${stats?.month_count ?? 0} facture${(stats?.month_count ?? 0) > 1 ? 's' : ''} émise${(stats?.month_count ?? 0) > 1 ? 's' : ''}`,
           },
           {
             label: 'Renouvellements',
+            icon: RefreshCw,
+            accent: 'amber',
             value: String(stats?.renewals ?? 0),
             sub: `${stats?.new_count ?? 0} nouvelle${(stats?.new_count ?? 0) > 1 ? 's' : ''} · ${stats?.upgrades ?? 0} changement${(stats?.upgrades ?? 0) > 1 ? 's' : ''} de forfait`,
           },
           {
             label: 'Facture moyenne',
+            icon: Receipt,
+            accent: 'purple',
             value: formatCurrencyFCFA(stats?.average ?? 0),
             sub: `${stats?.clients ?? 0} client${(stats?.clients ?? 0) > 1 ? 's' : ''} facturé${(stats?.clients ?? 0) > 1 ? 's' : ''}`,
           },
@@ -195,26 +206,18 @@ export default function PlatformInvoicesPage() {
                   const config = STATUS_CONFIG[inv.status as InvoiceStatus] || STATUS_CONFIG.draft;
                   return (
                     <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">
-                        {inv.invoice_number}
-                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">{inv.invoice_number}</td>
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {inv.organization?.name || '—'}
-                        </p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{inv.organization?.name || '—'}</p>
                         <p className="text-xs text-slate-500">{inv.organization?.email || ''}</p>
                       </td>
-                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                        {formatCurrencyFCFA(Number(inv.amount))}
-                      </td>
+                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(Number(inv.amount))}</td>
                       <td className="px-4 py-3">
                         <Badge variant={config.color} className="text-xs">
                           {config.label}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
-                        {inv.issued_at ? formatDateFR(inv.issued_at) : '—'}
-                      </td>
+                      <td className="px-4 py-3 text-slate-500">{inv.issued_at ? formatDateFR(inv.issued_at) : '—'}</td>
                       <td className="px-4 py-3 text-slate-500">
                         {inv.plan_name ? `${inv.plan_name}${inv.duration_months ? ` · ${inv.duration_months} mois` : ''}` : '—'}
                       </td>

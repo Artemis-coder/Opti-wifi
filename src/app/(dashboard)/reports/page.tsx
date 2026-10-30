@@ -10,6 +10,7 @@ import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { Collection, CollectionItem, PointOfSale } from '@/types/database';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { DateField } from '@/components/ui/DateField';
+import { StatTile } from '@/components/ui/StatTile';
 
 export default function ReportsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -122,35 +123,26 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Points de Vente</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
-              <Store className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{posCount}</p>
-        </Card>
+        <StatTile
+          label="Points de Vente"
+          value={posCount}
+          icon={Store}
+          accent="amber"
+        />
 
-        <Card className="border-l-4 border-l-blue-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Collecteurs</span>
-            <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
-              <Users className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{collectorsCount}</p>
-        </Card>
+        <StatTile
+          label="Collecteurs"
+          value={collectorsCount}
+          icon={Users}
+          accent="indigo"
+        />
 
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Vendus</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
-              <Ticket className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{ticketsSold}</p>
-        </Card>
+        <StatTile
+          label="Tickets Vendus"
+          value={ticketsSold}
+          icon={Ticket}
+          accent="emerald"
+        />
       </div>
 
       <Card className="space-y-4">

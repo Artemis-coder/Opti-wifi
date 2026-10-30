@@ -14,6 +14,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StatTile, type StatAccent } from '@/components/ui/StatTile';
 import { Button } from '@/components/ui/Button';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 
@@ -30,12 +31,23 @@ interface ReportKpis {
   currency: string;
 }
 
+const BORDER_ACCENTS: Record<string, StatAccent> = {
+  'border-l-blue-900': 'indigo',
+  'border-l-emerald-500': 'emerald',
+  'border-l-red-500': 'red',
+  'border-l-amber-500': 'amber',
+  'border-l-orange-500': 'amber',
+  'border-l-purple-500': 'purple',
+  'border-l-blue-500': 'blue',
+  'border-l-cyan-500': 'blue',
+};
+
+/** Cadre de chiffre clé (composant StatTile du design system), avec tendance facultative. */
 function StatCard({
   label,
   value,
   sub,
-  icon: Icon,
-  color,
+  icon,
   border,
   trend,
 }: {
@@ -43,33 +55,31 @@ function StatCard({
   value: string;
   sub?: string;
   icon: React.ElementType;
-  color: string;
+  color?: string;
   border: string;
   trend?: { value: number; label: string };
 }) {
   return (
-    <Card className={`border-l-4 ${border}`}>
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</span>
-        <div className={`p-2 rounded-lg ${color}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-      <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{value}</p>
-      {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
-      {trend !== undefined && (
-        <div className={`flex items-center gap-1 mt-2 text-xs font-semibold ${trend.value >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-          {trend.value >= 0 ? (
-            <TrendingUp className="w-3 h-3" />
-          ) : (
-            <TrendingDown className="w-3 h-3" />
+    <StatTile
+      label={label}
+      value={value}
+      icon={icon}
+      accent={BORDER_ACCENTS[border] || 'slate'}
+      footer={
+        <>
+          {sub && <p className="text-[11px] text-slate-400">{sub}</p>}
+          {trend !== undefined && (
+            <p
+              className={`flex items-center gap-1 text-[11px] font-semibold ${trend.value >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600'}`}
+            >
+              {trend.value >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {trend.value >= 0 ? '+' : ''}
+              {trend.value.toFixed(1)} % {trend.label}
+            </p>
           )}
-          <span>
-            {trend.value >= 0 ? '+' : ''}{trend.value.toFixed(1)}% {trend.label}
-          </span>
-        </div>
-      )}
-    </Card>
+        </>
+      }
+    />
   );
 }
 
@@ -79,7 +89,7 @@ const EXPORTS: { type: ExportType; label: string; description: string }[] = [
   { type: 'csv_clients', label: 'Clients (CSV)', description: 'Liste complète des organisations clientes' },
   { type: 'csv_payments', label: 'Paiements (CSV)', description: 'Historique de tous les paiements' },
   { type: 'csv_subscriptions', label: 'Abonnements (CSV)', description: 'Tous les abonnements avec statut' },
-  { type: 'csv_audit', label: 'Journal d\'audit (CSV)', description: '5 000 dernières actions admin (max)' },
+  { type: 'csv_audit', label: "Journal d'audit (CSV)", description: '5 000 dernières actions admin (max)' },
 ];
 
 export default function PlatformReportsPage() {
@@ -114,8 +124,9 @@ export default function PlatformReportsPage() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const filename = res.headers.get('content-disposition')?.match(/filename="?([^"]+)"?/)?.[1]
-        || `export-${type}-${new Date().toISOString().split('T')[0]}.csv`;
+      const filename =
+        res.headers.get('content-disposition')?.match(/filename="?([^"]+)"?/)?.[1] ||
+        `export-${type}-${new Date().toISOString().split('T')[0]}.csv`;
       a.href = url;
       a.download = filename;
       a.click();
@@ -133,17 +144,9 @@ export default function PlatformReportsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Rapports</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Indicateurs commerciaux SaaS et exports de données.
-          </p>
+          <p className="text-xs text-slate-500 mt-0.5">Indicateurs commerciaux SaaS et exports de données.</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2 font-semibold"
-          onClick={fetchKpis}
-          isLoading={loading}
-        >
+        <Button variant="outline" size="sm" className="gap-2 font-semibold" onClick={fetchKpis} isLoading={loading}>
           <RefreshCw className="w-4 h-4" />
           Actualiser
         </Button>
@@ -158,9 +161,7 @@ export default function PlatformReportsPage() {
       ) : kpis ? (
         <>
           <div>
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
-              Indicateurs Clés (SaaS)
-            </h2>
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Indicateurs Clés (SaaS)</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               <StatCard
                 label="MRR"
@@ -231,9 +232,7 @@ export default function PlatformReportsPage() {
 
       {/* Exports Section */}
       <div>
-        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
-          Export de Données (CSV)
-        </h2>
+        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Export de Données (CSV)</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {EXPORTS.map((exp: { type: ExportType; label: string; description: string }) => (
             <Card key={exp.type} className="flex items-center justify-between gap-4 p-5">

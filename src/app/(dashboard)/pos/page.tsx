@@ -11,6 +11,7 @@ import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { AddButton } from '@/components/ui/AddButton';
+import { StatTile } from '@/components/ui/StatTile';
 
 export default function PosPage() {
   const [search, setSearch] = useState('');
@@ -85,35 +86,27 @@ async function loadData() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total POS</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600">
-              <Store className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{totalPos}</p>
-        </Card>
+        <StatTile
+          label="Total POS"
+          value={totalPos}
+          icon={Store}
+          accent="amber"
+        />
 
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Actifs</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
-              <Power className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{activePos}</p>
-        </Card>
+        <StatTile
+          label="Actifs"
+          value={activePos}
+          icon={Power}
+          accent="emerald"
+        />
 
-        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Désactivés</span>
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
-              <PowerOff className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{inactivePos}</p>
-        </Card>
+        <StatTile
+          label="Désactivés"
+          value={inactivePos}
+          icon={PowerOff}
+          accent="red"
+          className="col-span-2 sm:col-span-1"
+        />
       </div>
 
       {/* Filter Bar */}

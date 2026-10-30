@@ -19,6 +19,7 @@ import {
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { Card } from '@/components/ui/Card';
 import { AddButton } from '@/components/ui/AddButton';
+import { StatTile } from '@/components/ui/StatTile';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
@@ -79,53 +80,6 @@ function Evolution({ current, previous, period }: { current: number; previous: n
       <Icon className="w-3.5 h-3.5" /> {pct > 0 ? '+' : ''}
       {pct} % <span className="font-normal text-slate-400">vs {PREVIOUS_LABEL[period]}</span>
     </p>
-  );
-}
-
-interface TileProps {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  accent: 'amber' | 'indigo' | 'emerald' | 'red';
-  alert?: boolean;
-  footer?: React.ReactNode;
-}
-
-const ACCENTS = {
-  amber: { border: 'border-l-amber-500', icon: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
-  indigo: { border: 'border-l-indigo-900 dark:border-l-indigo-400', icon: 'bg-indigo-900/10 text-indigo-900 dark:text-indigo-300' },
-  emerald: { border: 'border-l-emerald-500', icon: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
-  red: { border: 'border-l-red-500', icon: 'bg-red-500/10 text-red-600 dark:text-red-400' },
-};
-
-function Tile({ label, value, icon: Icon, accent, alert, footer }: TileProps) {
-  const a = ACCENTS[accent];
-  return (
-    <div
-      className={cn(
-        'rounded-2xl border border-l-4 p-4 sm:p-5 space-y-2 shadow-xs',
-        a.border,
-        alert
-          ? 'bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-900/50'
-          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
-        <span className={cn('w-8 h-8 shrink-0 rounded-lg flex items-center justify-center', a.icon)}>
-          <Icon className="w-4 h-4" />
-        </span>
-      </div>
-      <p
-        className={cn(
-          'text-xl sm:text-2xl font-extrabold tabular-nums',
-          alert ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white',
-        )}
-      >
-        {value}
-      </p>
-      {footer}
-    </div>
   );
 }
 
@@ -207,7 +161,7 @@ export default function DashboardPage() {
 
       {/* Chiffres clés */}
       <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-60')}>
-        <Tile
+        <StatTile
           label="Tickets vendus"
           value={formatNumber(t?.tickets ?? 0)}
           icon={Ticket}
@@ -218,21 +172,21 @@ export default function DashboardPage() {
             </p>
           }
         />
-        <Tile
+        <StatTile
           label="Chiffre d'affaires"
           value={money(t?.revenue ?? 0)}
           icon={Banknote}
           accent="indigo"
           footer={<Evolution current={t?.revenue ?? 0} previous={data?.previous?.revenue} period={period} />}
         />
-        <Tile
+        <StatTile
           label="Total encaissé"
           value={money(t?.collected ?? 0)}
           icon={CheckCircle2}
           accent="emerald"
           footer={<Evolution current={t?.collected ?? 0} previous={data?.previous?.collected} period={period} />}
         />
-        <Tile
+        <StatTile
           label="Écart"
           value={`${(t?.gap ?? 0) > 0 ? '+' : ''}${money(t?.gap ?? 0)}`}
           icon={AlertTriangle}
