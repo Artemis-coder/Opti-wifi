@@ -28,14 +28,20 @@ export interface ActivateLicenseInput {
   organizationId: string;
   planId: string;
   durationMonths: number;
+  /** Forfait d'essai : durée en jours (par défaut, les jours d'essai du forfait). */
+  durationDays?: number | null;
   requestId?: string | null;
   note?: string | null;
   platformUserId: string;
 }
 
+export const MAX_TRIAL_DAYS = 90;
+
 /**
  * Attribue un forfait pour une durée donnée. La nouvelle période démarre à la fin de la
  * licence en cours (si elle court encore), sinon maintenant. Écritures atomiques.
+ * Forfait d'essai (Découverte) : durée en jours, statut « Essai », sans facture ; à la fin
+ * de l'essai, le client choisit un forfait payant.
  */
 export async function activateLicense(input: ActivateLicenseInput): Promise<ActionResult<{
   subscription_id: string;
@@ -46,9 +52,7 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   invoice_number: string | null;
 }>> {
   const { organizationId, planId, requestId, platformUserId } = input;
-  const months = Number(input.durationMonths);
   if (!UUID_RE.test(organizationId || '') || !UUID_RE.test(planId || '')) return fail(400, 'Organisation et forfait requis');
-  if (!Number.isInteger(months) || months < 1 || months > 36) return fail(400, 'Durée invalide (1 à 36 mois)');
   if (requestId && !UUID_RE.test(requestId)) return fail(400, 'Demande invalide');
   const adminNote = typeof input.note === 'string' ? input.note.trim().slice(0, 500) || null : null;
 
@@ -60,10 +64,18 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   const plan = planRes.rows[0];
   if (!org) return fail(404, 'Organisation introuvable');
   if (!plan) return fail(404, 'Forfait introuvable ou inactif');
+  const trial = isTrialPlan(plan);
   // Forfait d'essai (Découverte) : une seule fois par organisation, y compris par le super admin
-  if (isTrialPlan(plan) && (await hasUsedTrialPlan(organizationId))) {
+  if (trial && (await hasUsedTrialPlan(organizationId))) {
     return fail(409, `${org.name} a déjà bénéficié du forfait « ${plan.name} ». Choisissez un autre forfait.`, 'TRIAL_ALREADY_USED');
   }
+  // Essai : en jours ; licence : en mois
+  const days = trial ? Number(input.durationDays ?? plan.trial_days) : 0;
+  const months = trial ? 0 : Number(input.durationMonths);
+  if (trial && (!Number.isInteger(days) || days < 1 || days > MAX_TRIAL_DAYS)) {
+    return fail(400, `Durée d'essai invalide (1 à ${MAX_TRIAL_DAYS} jours)`);
+  }
+  if (!trial && (!Number.isInteger(months) || months < 1 || months > 36)) return fail(400, 'Durée invalide (1 à 36 mois)');
 
   if (requestId) {
     const reqRes = await query('SELECT status FROM license_requests WHERE id = $1 AND organization_id = $2', [requestId, organizationId]);
@@ -82,12 +94,13 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
         RETURNING id
      ),
      ins AS (
-       INSERT INTO subscriptions (organization_id, plan_id, status, start_date, end_date, auto_renew, cancel_at_period_end)
-       SELECT $1, $2, 'active',
-              GREATEST(NOW(), COALESCE(cur.cur_end, NOW())),
-              GREATEST(NOW(), COALESCE(cur.cur_end, NOW())) + make_interval(months => $3),
+       INSERT INTO subscriptions (organization_id, plan_id, status, start_date, end_date, trial_end, auto_renew, cancel_at_period_end)
+       SELECT $1, $2, CASE WHEN $7::int > 0 THEN 'trialing' ELSE 'active' END::subscription_status,
+              p.start_date,
+              p.start_date + make_interval(months => $3, days => $7::int),
+              CASE WHEN $7::int > 0 THEN p.start_date + make_interval(days => $7::int) END,
               false, false
-         FROM cur
+         FROM cur, LATERAL (SELECT GREATEST(NOW(), COALESCE(cur.cur_end, NOW())) AS start_date) p
        RETURNING id, start_date, end_date
      ),
      org AS (
@@ -109,7 +122,7 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
             (SELECT COUNT(*) FROM superseded) AS superseded_count,
             (SELECT COUNT(*) FROM req) AS request_updated
        FROM ins`,
-    [organizationId, planId, months, requestId || null, platformUserId, adminNote]
+    [organizationId, planId, months, requestId || null, platformUserId, adminNote, days]
   );
   const sub = rows[0];
 
@@ -124,7 +137,7 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
       JSON.stringify({
         plan_id: planId,
         plan_name: plan.name,
-        duration_months: months,
+        ...(trial ? { duration_days: days } : { duration_months: months }),
         start_date: sub.start_date,
         end_date: sub.end_date,
         request_id: requestId || null,
@@ -148,18 +161,23 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
     plan_id: planId,
     plan_name: plan.name,
     duration_months: months,
+    duration_days: days,
     amount: invoice?.amount ?? 0,
     currency: invoice?.currency ?? 'XOF',
     from_request: Boolean(requestId),
-    is_trial: isTrialPlan(plan),
+    is_trial: trial,
   });
 
   const endLabel = frDate(sub.end_date);
   notifyInBackground(() =>
     notifyOrganizationAdmins(organizationId, {
       type: 'license.activated',
-      title: requestId ? 'Votre demande de licence est approuvée' : 'Votre licence est activée',
-      body: `Forfait ${plan.name} actif jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} disponible.` : ''}`,
+      title: trial
+        ? `Votre période d'essai de ${days} jour${days > 1 ? 's' : ''} est activée`
+        : requestId ? 'Votre demande de licence est approuvée' : 'Votre licence est activée',
+      body: trial
+        ? `Essai gratuit jusqu'au ${endLabel}. Choisissez ensuite un forfait pour continuer.`
+        : `Forfait ${plan.name} actif jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} disponible.` : ''}`,
       link: invoice ? `/subscription/invoices/${invoice.id}` : '/subscription',
     })
   );
@@ -174,7 +192,9 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
       invoice_id: invoice?.id ?? null,
       invoice_number: invoice?.invoice_number ?? null,
     },
-    message: `Licence ${plan.name} activée pour « ${org.name} » jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} émise.` : ''}`,
+    message: trial
+      ? `Essai ${plan.name} de ${days} jour${days > 1 ? 's' : ''} activé pour « ${org.name} » jusqu'au ${endLabel}.`
+      : `Licence ${plan.name} activée pour « ${org.name} » jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} émise.` : ''}`,
   };
 }
 

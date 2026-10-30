@@ -11,10 +11,11 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const { organizationId, planId, durationMonths, requestId, note } = body as {
+  const { organizationId, planId, durationMonths, durationDays, requestId, note } = body as {
     organizationId?: string;
     planId?: string;
     durationMonths?: number;
+    durationDays?: number | null;
     requestId?: string | null;
     note?: string | null;
   };
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
       organizationId: organizationId || '',
       planId: planId || '',
       durationMonths: Number(durationMonths),
+      durationDays: durationDays == null ? null : Number(durationDays),
       requestId,
       note,
       platformUserId: auth.platformUser.id,

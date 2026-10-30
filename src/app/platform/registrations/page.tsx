@@ -264,6 +264,7 @@ export default function PlatformRegistrationsPage() {
           onActivated={reload}
           organizationId={licenseFor.id}
           organizationName={licenseFor.name}
+          preferTrial
         />
       )}
     </div>

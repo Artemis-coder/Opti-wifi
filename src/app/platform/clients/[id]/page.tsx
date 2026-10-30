@@ -295,6 +295,7 @@ export default function ClientDetailPage() {
         organizationName={org.name}
         currentEndDate={sub?.status === 'active' || sub?.status === 'trialing' ? sub?.end_date : null}
         defaultPlanId={sub?.plan_id}
+        preferTrial={!sub}
       />
       )}
 
