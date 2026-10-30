@@ -1,459 +1,325 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { 
-  Ticket, 
-  Banknote, 
-  ArrowDownRight, 
-  Store, 
-  Receipt, 
-  PlusCircle, 
-  ArrowLeftRight,
-  Loader2,
-  Inbox,
-  Package,
-  User,
-  Calendar,
-  ChevronRight,
-} from 'lucide-react';
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, Banknote, CheckCircle2, ChevronRight, Inbox, Loader2, Ticket } from 'lucide-react';
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/format';
-import { useAuthStore } from '@/lib/stores/authStore';
+import { AddButton } from '@/components/ui/AddButton';
+import { cn } from '@/lib/utils/cn';
+import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
-import { createClient } from '@/lib/supabase/client';
-import { Collection, CollectionItem, TicketAllocation } from '@/types/database';
+import type { ClientDashboard, DashboardPeriod } from '@/lib/client-dashboard';
+
+const PERIODS: { value: DashboardPeriod; label: string; eyebrow: string }[] = [
+  { value: 'today', label: "Aujourd'hui", eyebrow: "Aujourd'hui" },
+  { value: 'week', label: '7 jours', eyebrow: '7 derniers jours' },
+  { value: 'month', label: 'Ce mois-ci', eyebrow: 'Ce mois-ci' },
+  { value: 'all', label: 'Tout', eyebrow: 'Depuis le début' },
+];
+
+const PREVIOUS_LABEL: Record<DashboardPeriod, string> = { today: 'hier', week: '7 jours précédents', month: 'mois dernier', all: '' };
+
+/** Montant compact sur l'axe et dans les infobulles : 962 400 F */
+const money = (n: number) => `${formatNumber(Math.round(n))} F`;
+
+function Evolution({ current, previous, period }: { current: number; previous: number | undefined; period: DashboardPeriod }) {
+  if (previous === undefined || period === 'all') return null;
+  if (previous === 0) return <p className="text-[11px] text-slate-400">{current > 0 ? `Rien sur ${PREVIOUS_LABEL[period]}` : ' '}</p>;
+  const pct = Math.round(((current - previous) / previous) * 100);
+  const Icon = pct >= 0 ? ArrowUpRight : ArrowDownRight;
+  return (
+    <p
+      className={cn(
+        'inline-flex items-center gap-0.5 text-[11px] font-semibold',
+        pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
+      )}
+    >
+      <Icon className="w-3.5 h-3.5" /> {pct > 0 ? '+' : ''}
+      {pct} % <span className="font-normal text-slate-400">vs {PREVIOUS_LABEL[period]}</span>
+    </p>
+  );
+}
+
+interface TileProps {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+  accent: 'amber' | 'indigo' | 'emerald' | 'red';
+  alert?: boolean;
+  footer?: React.ReactNode;
+}
+
+const ACCENTS = {
+  amber: { border: 'border-l-amber-500', icon: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  indigo: { border: 'border-l-indigo-900 dark:border-l-indigo-400', icon: 'bg-indigo-900/10 text-indigo-900 dark:text-indigo-300' },
+  emerald: { border: 'border-l-emerald-500', icon: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+  red: { border: 'border-l-red-500', icon: 'bg-red-500/10 text-red-600 dark:text-red-400' },
+};
+
+function Tile({ label, value, icon: Icon, accent, alert, footer }: TileProps) {
+  const a = ACCENTS[accent];
+  return (
+    <div
+      className={cn(
+        'rounded-2xl border border-l-4 p-4 sm:p-5 space-y-2 shadow-xs',
+        a.border,
+        alert
+          ? 'bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-900/50'
+          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
+        <span className={cn('w-8 h-8 shrink-0 rounded-lg flex items-center justify-center', a.icon)}>
+          <Icon className="w-4 h-4" />
+        </span>
+      </div>
+      <p
+        className={cn(
+          'text-xl sm:text-2xl font-extrabold tabular-nums',
+          alert ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white',
+        )}
+      >
+        {value}
+      </p>
+      {footer}
+    </div>
+  );
+}
+
+function PosTooltip({ active, payload }: { active?: boolean; payload?: { payload: ClientDashboard['by_pos'][number] }[] }) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0].payload;
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg px-3 py-2 text-xs space-y-1 min-w-40">
+      <p className="font-bold text-slate-900 dark:text-white">{p.name}</p>
+      <p className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
+        Ventes <span className="font-semibold tabular-nums text-slate-900 dark:text-white">{money(p.revenue)}</span>
+      </p>
+      <p className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
+        Encaissé <span className="font-semibold tabular-nums text-slate-900 dark:text-white">{money(p.collected)}</span>
+      </p>
+      <p className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
+        Écart{' '}
+        <span className={cn('font-semibold tabular-nums', p.gap < 0 ? 'text-red-600' : 'text-emerald-700 dark:text-emerald-400')}>
+          {money(p.gap)}
+        </span>
+      </p>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { user } = useAuthStore();
   const { currentSpaceId } = useSpaceStore();
-  const [loading, setLoading] = useState(true);
-  const [collections, setCollections] = useState<Collection[]>([]);
-
-  // Computed KPIs from real Supabase DB
-  const [ticketsSoldTotal, setTicketsSoldTotal] = useState(0);
-  const [chiffreAffairesTotal, setChiffreAffairesTotal] = useState(0);
-  const [montantCollecteTotal, setMontantCollecteTotal] = useState(0);
-  const [ecartTotal, setEcartTotal] = useState(0);
-  const [posActifsCount, setPosActifsCount] = useState(0);
-  const [ticketsAllouesTotal, setTicketsAllouesTotal] = useState(0);
-
-  const supabase = createClient();
+  const [period, setPeriod] = useState<DashboardPeriod>('month');
+  const key = `${period}|${currentSpaceId || ''}`;
+  const [result, setResult] = useState<{ key: string; data: ClientDashboard | null } | null>(null);
+  const loading = result?.key !== key;
+  const data = result?.data ?? null;
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadDashboardData() {
-      setLoading(true);
-
-      try {
-        let posQuery = supabase.from('points_of_sale').select('id', { count: 'exact' });
-        if (currentSpaceId) {
-          posQuery = posQuery.eq('space_id', currentSpaceId);
-        }
-
-        let colQuery = supabase
-          .from('collections')
-          .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
-          .order('created_at', { ascending: false });
-        if (currentSpaceId) {
-          colQuery = colQuery.eq('space_id', currentSpaceId);
-        }
-
-        let itemsQuery = supabase.from('collection_items').select('quantite_vendue');
-        if (currentSpaceId) {
-          itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
-        }
-
-        let allocQuery = supabase.from('ticket_allocations').select('quantite');
-        if (currentSpaceId) {
-          allocQuery = allocQuery.eq('space_id', currentSpaceId);
-        }
-
-        const [posRes, colRes, itemsRes, allocRes] = await Promise.all([
-          posQuery,
-          colQuery,
-          itemsQuery,
-          allocQuery,
-        ]);
-
-        if (!isMounted) return;
-
-        const posData = posRes.data;
-        const colData = colRes.data;
-        const itemsData = itemsRes.data;
-        const allocData = allocRes.data;
-
-        setPosActifsCount(posData?.length || 0);
-
-        if (colData && colData.length > 0) {
-          setCollections(colData);
-
-          let totalExpected = 0;
-          let totalCollected = 0;
-          let totalDiff = 0;
-
-          colData.forEach((c: Collection) => {
-            totalExpected += Number(c.montant_attendu || 0);
-            totalCollected += Number(c.montant_collecte || 0);
-            totalDiff += Number(c.difference || 0);
-          });
-
-          setChiffreAffairesTotal(totalExpected);
-          setMontantCollecteTotal(totalCollected);
-          setEcartTotal(totalDiff);
-        } else {
-          setCollections([]);
-          setChiffreAffairesTotal(0);
-          setMontantCollecteTotal(0);
-          setEcartTotal(0);
-        }
-
-        if (itemsData && itemsData.length > 0) {
-          const totalSold = itemsData.reduce((acc: number, curr: CollectionItem) => acc + (curr.quantite_vendue || 0), 0);
-          setTicketsSoldTotal(totalSold);
-        } else {
-          setTicketsSoldTotal(0);
-        }
-
-        if (allocData && allocData.length > 0) {
-          const totalAllocated = allocData.reduce((acc: number, curr: TicketAllocation) => acc + (curr.quantite || 0), 0);
-          setTicketsAllouesTotal(totalAllocated);
-        } else {
-          setTicketsAllouesTotal(0);
-        }
-      } catch (err) {
-        console.error('Erreur de chargement du tableau de bord:', err);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadDashboardData();
-
+    let cancelled = false;
+    const params = new URLSearchParams({ period });
+    if (currentSpaceId) params.set('space', currentSpaceId);
+    fetch(`/api/dashboard?${params}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : { data: null }))
+      .then((json) => !cancelled && setResult({ key, data: json.data }))
+      .catch(() => !cancelled && setResult({ key, data: null }));
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [currentSpaceId]);
+  }, [period, currentSpaceId, key]);
+
+  const eyebrow = PERIODS.find((p) => p.value === period)!.eyebrow;
+  const t = data?.totals;
+  const gapAlert = !!t && t.gap < 0;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-brand-900 to-brand-700 p-6 rounded-2xl text-white shadow-lg border border-slate-800">
+    <div className="space-y-5 max-w-7xl mx-auto pb-6">
+      {/* En-tête : période en surtitre, filtres de période */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Bienvenue dans votre espace, {user?.nom || 'Utilisateur'} 👋
-          </h1>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{eyebrow}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Tableau de bord</h1>
+        </div>
+        <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+          {PERIODS.map((p) => (
+            <button
+              key={p.value}
+              type="button"
+              onClick={() => setPeriod(p.value)}
+              aria-pressed={period === p.value}
+              className={cn(
+                'shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold border transition',
+                period === p.value
+                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {/* KPI 1: Tickets Vendus */}
-        <Card className="border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Vendus</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Ticket className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatNumber(ticketsSoldTotal)}
+      {/* Chiffres clés */}
+      <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-60')}>
+        <Tile
+          label="Tickets vendus"
+          value={formatNumber(t?.tickets ?? 0)}
+          icon={Ticket}
+          accent="amber"
+          footer={
+            <p className="text-[11px] text-slate-400">
+              {t?.collections ?? 0} encaissement{(t?.collections ?? 0) > 1 ? 's' : ''}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Nombre total de pass écoulés</p>
-          </div>
-        </Card>
-
-        {/* KPI 1b: Tickets Alloués */}
-        <Card className="border-l-4 border-l-purple-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Alloués</span>
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
-              <Package className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatNumber(ticketsAllouesTotal)}
+          }
+        />
+        <Tile
+          label="Chiffre d'affaires"
+          value={money(t?.revenue ?? 0)}
+          icon={Banknote}
+          accent="indigo"
+          footer={<Evolution current={t?.revenue ?? 0} previous={data?.previous?.revenue} period={period} />}
+        />
+        <Tile
+          label="Total encaissé"
+          value={money(t?.collected ?? 0)}
+          icon={CheckCircle2}
+          accent="emerald"
+          footer={<Evolution current={t?.collected ?? 0} previous={data?.previous?.collected} period={period} />}
+        />
+        <Tile
+          label="Écart"
+          value={`${(t?.gap ?? 0) > 0 ? '+' : ''}${money(t?.gap ?? 0)}`}
+          icon={AlertTriangle}
+          accent="red"
+          alert={gapAlert}
+          footer={
+            <p className={cn('text-[11px]', gapAlert ? 'text-red-600/80 dark:text-red-400/80' : 'text-slate-400')}>
+              {gapAlert ? 'Manque à justifier' : 'Aucun manque'}
             </p>
-            <p className="text-xs text-slate-500 mt-1">Stock total distribué aux POS</p>
-          </div>
-        </Card>
-
-        {/* KPI 2: Chiffre d'Affaires */}
-        <Card className="border-l-4 border-l-blue-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chiffre d&apos;Affaires</span>
-            <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
-              <Banknote className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatCurrencyFCFA(chiffreAffairesTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Montant théorique attendu</p>
-          </div>
-        </Card>
-
-        {/* KPI 3: Montant Encaissé */}
-        <Card className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Encaissé</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Receipt className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {formatCurrencyFCFA(montantCollecteTotal)}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Total espèces perçues</p>
-          </div>
-        </Card>
-
-        {/* KPI 4: Écart Global */}
-        <Card className="border-l-4 border-l-red-500 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Écart / Différence</span>
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400">
-              <ArrowDownRight className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <p className={`text-2xl font-extrabold ${ecartTotal < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-              {formatCurrencyFCFA(ecartTotal)}
-            </p>
-            <div className="flex items-center justify-between mt-1 text-xs text-slate-500">
-              <span>POS Enregistrés</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{posActifsCount} points</span>
-            </div>
-          </div>
-        </Card>
+          }
+        />
       </div>
 
-      {/* Main Content Grid: Quick Actions & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Raccourcis Métier */}
-        <div className="lg:col-span-1 space-y-4 max-w-[405px]">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Raccourcis Métier</h2>
-          
-          <Card className="grid grid-cols-1 auto-rows-fr gap-3">
-            {user?.role === 'administrateur' && (
-              <Link
-                href="/allocations/new"
-                className="flex items-center justify-between p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 hover:scale-[1.01] transition h-full"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-600 text-white">
-                    <ArrowLeftRight className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Allouer des Tickets</p>
-                    <p className="text-xs text-slate-500">Distribuer du stock aux POS</p>
-                  </div>
-                </div>
-                <span className="text-purple-600 font-bold">→</span>
-              </Link>
-            )}
-
-            <Link
-              href="/collections/new"
-              className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 hover:scale-[1.01] transition h-full"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500 text-slate-950">
-                  <Receipt className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Nouvelle Collecte</p>
-                  <p className="text-xs text-slate-500">Saisir un encaissement de caisse</p>
-                </div>
-              </div>
-              <span className="text-amber-600 font-bold">→</span>
-            </Link>
-
-            <Link
-              href="/pos"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition h-full"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-900 text-white">
-                  <Store className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Points de Vente</p>
-                  <p className="text-xs text-slate-500">Gérer le réseau de distribution</p>
-                </div>
-              </div>
-              <span className="text-slate-400 font-bold">→</span>
-            </Link>
-
-            <Link
-              href="/tickets"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition h-full"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-600 text-white">
-                  <Ticket className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Types de Tickets</p>
-                  <p className="text-xs text-slate-500">Consulter et modifier les tarifs</p>
-                </div>
-              </div>
-              <span className="text-slate-400 font-bold">→</span>
-            </Link>
-          </Card>
-        </div>
-
-        {/* Left Column: Recent Collections */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Derniers Encaissements</h2>
-            <Link href="/collections" className="text-xs font-semibold text-amber-600 hover:text-amber-700">
-              Voir tout →
-            </Link>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Ventes par point de vente */}
+        <Card className="lg:col-span-2 p-4 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Ventes par point de vente</h2>
+            <span className="text-xs text-slate-500">{data?.pos_count ?? 0} POS</span>
           </div>
-
-          {loading ? (
-            <Card className="p-8 text-center text-slate-500">
-              <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
-              <p className="text-xs font-medium mt-2">Chargement des encaissements...</p>
-            </Card>
-          ) : collections.length === 0 ? (
-            <Card className="p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
-                <Inbox className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement enregistré</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Vous n&apos;avez pas encore effectué d&apos;encaissement de caisse. Commencez par créer un point de vente ou enregistrer votre première collecte.
-              </p>
-              <Link href="/collections/new" className="inline-block pt-2">
-                <Button variant="secondary" size="sm" className="font-bold gap-2">
-                  <PlusCircle className="w-4 h-4" /> Effectuer une collecte
-                </Button>
-              </Link>
-            </Card>
+          {loading && !data ? (
+            <div className="h-56 flex items-center justify-center text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+          ) : !data?.by_pos.length ? (
+            <div className="h-56 flex flex-col items-center justify-center gap-2 text-center">
+              <Inbox className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+              <p className="text-sm text-slate-500">Aucune vente sur cette période.</p>
+            </div>
           ) : (
-            <Card className="p-0 overflow-hidden border-slate-200 dark:border-slate-800">
-              {/* Desktop Table View (hidden on mobile, visible from md upwards) */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                    <tr>
-                      <th className="px-4 py-3">Point de Vente</th>
-                      <th className="px-4 py-3">Collecteur</th>
-                      <th className="px-4 py-3 text-right">Montant Encaissé</th>
-                      <th className="px-4 py-3 text-center">Statut</th>
-                      <th className="px-4 py-3">Enregistré le</th>
-                      <th className="px-4 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                    {collections.slice(0, 5).map((col: Collection) => (
-                      <tr
-                        key={col.id}
-                        onClick={() => router.push(`/collections/${col.id}`)}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer group"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Store className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
-                            <span className="font-semibold text-slate-900 dark:text-white">
-                              {col.pos?.nom || 'POS'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                          {col.collecteur?.nom || 'Collecteur'}
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
-                          {formatCurrencyFCFA(col.montant_collecte)}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <Badge
-                            variant={col.statut === 'validee' ? 'success' : col.statut === 'annulee' ? 'danger' : 'warning'}
-                          >
-                            {col.statut === 'validee' ? 'Validée' : col.statut === 'annulee' ? 'Annulée' : 'Brouillon'}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                          {formatDateFR(col.created_at)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition" />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.by_pos} margin={{ top: 8, right: 4, left: 4, bottom: 0 }} barCategoryGap="14%">
+                    <defs>
+                      <linearGradient id="pos-ok" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6cc06c" />
+                        <stop offset="100%" stopColor="#2f8a3f" />
+                      </linearGradient>
+                      <linearGradient id="pos-gap" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#e05a5a" />
+                        <stop offset="100%" stopColor="#c23a3a" />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                      tick={{ fontSize: 11, fill: '#64748b' }}
+                      tickFormatter={(v: string) => (v.length > 11 ? `${v.slice(0, 10)}…` : v)}
+                    />
+                    <Tooltip cursor={{ fill: 'rgba(100,116,139,0.08)' }} content={<PosTooltip />} />
+                    <Bar dataKey="revenue" radius={[6, 6, 0, 0]} maxBarSize={72}>
+                      {data.by_pos.map((p) => (
+                        <Cell key={p.pos_id} fill={p.gap < 0 ? 'url(#pos-gap)' : 'url(#pos-ok)'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-
-              {/* Mobile Card Layout (visible on mobile, hidden from md upwards) */}
-              <div className="md:hidden p-3 space-y-2.5">
-                {collections.slice(0, 5).map((col: Collection) => (
-                  <div
-                    key={`dashboard-col-${col.id}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => router.push(`/collections/${col.id}`)}
-                    onKeyDown={(e) => e.key === 'Enter' && router.push(`/collections/${col.id}`)}
-                    className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs cursor-pointer hover:border-brand-500/50 hover:shadow-sm transition active:scale-[0.99]"
-                  >
-                    {/* Header: POS + Status */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
-                          <Store className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
-                            {col.pos?.nom || 'POS'}
-                          </h4>
-                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                            <User className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span className="truncate">{col.collecteur?.nom || 'Collecteur'}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Badge
-                        variant={col.statut === 'validee' ? 'success' : col.statut === 'annulee' ? 'danger' : 'warning'}
-                        className="text-[10px] px-2 py-0.5 shrink-0"
-                      >
-                        {col.statut === 'validee' ? 'Validée' : col.statut === 'annulee' ? 'Annulée' : 'Brouillon'}
-                      </Badge>
-                    </div>
-
-                    {/* Financial Inset & Date */}
-                    <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs">
-                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
-                        <Calendar className="w-3.5 h-3.5 shrink-0" />
-                        <span>{formatDateFR(col.created_at)}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
-                          Encaissé
-                        </span>
-                        <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
-                          {formatCurrencyFCFA(col.montant_collecte)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+              <p className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#3f9a4c]" /> Ventes du point de vente
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#d04848]" /> Avec un écart de caisse
+                </span>
+              </p>
+            </>
           )}
-        </div>
+        </Card>
+
+        {/* Derniers encaissements */}
+        <Card className="p-4 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers encaissements</h2>
+            <Link href="/collections" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+              Voir tout
+            </Link>
+          </div>
+          {loading && !data ? (
+            <div className="py-10 flex justify-center text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+          ) : !data?.recent.length ? (
+            <div className="py-6 text-center space-y-3">
+              <p className="text-sm text-slate-500">Aucun encaissement enregistré.</p>
+              <AddButton what="une collecte de caisse" href="/collections/new" />
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {data.recent.map((c) => {
+                const gap = c.gap < 0;
+                const draft = c.status === 'brouillon';
+                return (
+                  <li key={c.id}>
+                    <Link
+                      href={`/collections/${c.id}`}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 px-3.5 py-3 hover:border-slate-300 dark:hover:border-slate-700 transition"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">{c.pos}</span>
+                        <span className="block text-xs text-slate-500 truncate">
+                          {c.collector || 'Collecteur'} · {formatCurrencyFCFA(c.collected)}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <span
+                          className={cn(
+                            'text-[11px] font-bold px-2.5 py-1 rounded-full',
+                            draft
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+                              : gap
+                                ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
+                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
+                          )}
+                        >
+                          {draft ? 'Brouillon' : gap ? 'Écart' : 'Validée'}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
       </div>
     </div>
   );
