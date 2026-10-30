@@ -1043,3 +1043,18 @@ CREATE TABLE IF NOT EXISTS integration_secrets (
 
 -- Accès uniquement par l'API serveur (jamais via /api/db)
 ALTER TABLE integration_secrets ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- Contenu du site vitrine (landing page), géré depuis le back-office
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS site_content (
+  key         VARCHAR(40) PRIMARY KEY
+              CHECK (key IN ('links', 'hero', 'sections', 'pricing', 'faq', 'final_cta', 'seo')),
+  value       JSONB NOT NULL,
+  updated_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Accès uniquement par l'API serveur (jamais via /api/db)
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;

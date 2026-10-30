@@ -24,6 +24,7 @@ export const AUDIT_ACTIONS: Record<string, { label: string; tone: AuditTone }> =
   payment_method_updated: { label: 'Moyen de paiement modifié', tone: 'info' },
   payment_method_deleted: { label: 'Moyen de paiement supprimé', tone: 'danger' },
   'platform_settings.update': { label: 'Paramètre modifié', tone: 'info' },
+  'site_content.update': { label: 'Site vitrine modifié', tone: 'info' },
   'telegram_config.update': { label: 'Bot Telegram configuré', tone: 'info' },
   'telegram_config.reset': { label: 'Réglage du bot rétabli (Vercel)', tone: 'neutral' },
   'subscription.cancel': { label: 'Abonnement annulé', tone: 'danger' },
@@ -49,6 +50,7 @@ export const AUDIT_CATEGORIES: { value: string; label: string }[] = [
   { value: 'subscription_plan', label: 'Forfaits' },
   { value: 'payment_method', label: 'Moyens de paiement' },
   { value: 'platform_settings', label: 'Paramètres' },
+  { value: 'site_content', label: 'Site vitrine' },
 ];
 
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
@@ -59,6 +61,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   subscription_plan: 'Forfait',
   payment_method: 'Moyen de paiement',
   platform_settings: 'Paramètre',
+  site_content: 'Site vitrine',
 };
 
 const SETTING_LABELS: Record<string, string> = {
