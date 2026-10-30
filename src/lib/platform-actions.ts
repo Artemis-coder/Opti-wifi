@@ -26,14 +26,22 @@ export interface ActivateLicenseInput {
   organizationId: string;
   planId: string;
   durationMonths: number;
+  /** Forfait d'essai : durée en jours (par défaut, les jours d'essai du forfait). */
+  durationDays?: number | null;
   requestId?: string | null;
   note?: string | null;
   platformUserId: string;
+  /** false : pas de notification au client (l'appelant envoie la sienne) */
+  notify?: boolean;
 }
+
+export const MAX_TRIAL_DAYS = 90;
 
 /**
  * Attribue un forfait pour une durée donnée. La nouvelle période démarre à la fin de la
  * licence en cours (si elle court encore), sinon maintenant. Écritures atomiques.
+ * Forfait d'essai (Découverte) : durée en jours, statut « Essai », sans facture ; à la fin
+ * de l'essai, le client choisit un forfait payant.
  */
 export async function activateLicense(input: ActivateLicenseInput): Promise<ActionResult<{
   subscription_id: string;
@@ -44,9 +52,7 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   invoice_number: string | null;
 }>> {
   const { organizationId, planId, requestId, platformUserId } = input;
-  const months = Number(input.durationMonths);
   if (!UUID_RE.test(organizationId || '') || !UUID_RE.test(planId || '')) return fail(400, 'Organisation et forfait requis');
-  if (!Number.isInteger(months) || months < 1 || months > 36) return fail(400, 'Durée invalide (1 à 36 mois)');
   if (requestId && !UUID_RE.test(requestId)) return fail(400, 'Demande invalide');
   const adminNote = typeof input.note === 'string' ? input.note.trim().slice(0, 500) || null : null;
 
@@ -58,10 +64,18 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   const plan = planRes.rows[0];
   if (!org) return fail(404, 'Organisation introuvable');
   if (!plan) return fail(404, 'Forfait introuvable ou inactif');
+  const trial = isTrialPlan(plan);
   // Forfait d'essai (Découverte) : une seule fois par organisation, y compris par le super admin
-  if (isTrialPlan(plan) && (await hasUsedTrialPlan(organizationId))) {
+  if (trial && (await hasUsedTrialPlan(organizationId))) {
     return fail(409, `${org.name} a déjà bénéficié du forfait « ${plan.name} ». Choisissez un autre forfait.`, 'TRIAL_ALREADY_USED');
   }
+  // Essai : en jours ; licence : en mois
+  const days = trial ? Number(input.durationDays ?? plan.trial_days) : 0;
+  const months = trial ? 0 : Number(input.durationMonths);
+  if (trial && (!Number.isInteger(days) || days < 1 || days > MAX_TRIAL_DAYS)) {
+    return fail(400, `Durée d'essai invalide (1 à ${MAX_TRIAL_DAYS} jours)`);
+  }
+  if (!trial && (!Number.isInteger(months) || months < 1 || months > 36)) return fail(400, 'Durée invalide (1 à 36 mois)');
 
   if (requestId) {
     const reqRes = await query('SELECT status FROM license_requests WHERE id = $1 AND organization_id = $2', [requestId, organizationId]);
@@ -80,12 +94,13 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
         RETURNING id
      ),
      ins AS (
-       INSERT INTO subscriptions (organization_id, plan_id, status, start_date, end_date, auto_renew, cancel_at_period_end)
-       SELECT $1, $2, 'active',
-              GREATEST(NOW(), COALESCE(cur.cur_end, NOW())),
-              GREATEST(NOW(), COALESCE(cur.cur_end, NOW())) + make_interval(months => $3),
+       INSERT INTO subscriptions (organization_id, plan_id, status, start_date, end_date, trial_end, auto_renew, cancel_at_period_end)
+       SELECT $1, $2, CASE WHEN $7::int > 0 THEN 'trialing' ELSE 'active' END::subscription_status,
+              p.start_date,
+              p.start_date + make_interval(months => $3, days => $7::int),
+              CASE WHEN $7::int > 0 THEN p.start_date + make_interval(days => $7::int) END,
               false, false
-         FROM cur
+         FROM cur, LATERAL (SELECT GREATEST(NOW(), COALESCE(cur.cur_end, NOW())) AS start_date) p
        RETURNING id, start_date, end_date
      ),
      org AS (
@@ -107,7 +122,7 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
             (SELECT COUNT(*) FROM superseded) AS superseded_count,
             (SELECT COUNT(*) FROM req) AS request_updated
        FROM ins`,
-    [organizationId, planId, months, requestId || null, platformUserId, adminNote]
+    [organizationId, planId, months, requestId || null, platformUserId, adminNote, days]
   );
   const sub = rows[0];
 
@@ -122,7 +137,7 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
       JSON.stringify({
         plan_id: planId,
         plan_name: plan.name,
-        duration_months: months,
+        ...(trial ? { duration_days: days } : { duration_months: months }),
         start_date: sub.start_date,
         end_date: sub.end_date,
         request_id: requestId || null,
@@ -141,11 +156,15 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   }
 
   const endLabel = frDate(sub.end_date);
-  notifyInBackground(() =>
+  if (input.notify !== false) notifyInBackground(() =>
     notifyOrganizationAdmins(organizationId, {
       type: 'license.activated',
-      title: requestId ? 'Votre demande de licence est approuvée' : 'Votre licence est activée',
-      body: `Forfait ${plan.name} actif jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} disponible.` : ''}`,
+      title: trial
+        ? `Votre période d'essai de ${days} jour${days > 1 ? 's' : ''} est activée`
+        : requestId ? 'Votre demande de licence est approuvée' : 'Votre licence est activée',
+      body: trial
+        ? `Essai gratuit jusqu'au ${endLabel}. Choisissez ensuite un forfait pour continuer.`
+        : `Forfait ${plan.name} actif jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} disponible.` : ''}`,
       link: invoice ? `/subscription/invoices/${invoice.id}` : '/subscription',
     })
   );
@@ -160,7 +179,9 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
       invoice_id: invoice?.id ?? null,
       invoice_number: invoice?.invoice_number ?? null,
     },
-    message: `Licence ${plan.name} activée pour « ${org.name} » jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} émise.` : ''}`,
+    message: trial
+      ? `Essai ${plan.name} de ${days} jour${days > 1 ? 's' : ''} activé pour « ${org.name} » jusqu'au ${endLabel}.`
+      : `Licence ${plan.name} activée pour « ${org.name} » jusqu'au ${endLabel}.${invoice ? ` Facture ${invoice.invoice_number} émise.` : ''}`,
   };
 }
 
@@ -228,7 +249,7 @@ export async function setOrganizationStatus(input: {
   reason?: string | null;
   platformUserId: string;
   ipAddress?: string | null;
-}): Promise<ActionResult<{ new_status: string }>> {
+}): Promise<ActionResult<{ new_status: string; trial: { days: number; end_date: string } | null }>> {
   const { organizationId, platformUserId } = input;
   const action = input.action as OrganizationAction;
   if (!organizationId || !input.action) return fail(400, 'organizationId et action requis');
@@ -256,8 +277,44 @@ export async function setOrganizationStatus(input: {
     ]
   );
 
+  // Validation d'une inscription sans abonnement : essai gratuit automatique, de la durée
+  // définie dans le forfait d'essai (Découverte). Un échec n'empêche pas la validation.
+  let trial: { days: number; end_date: string } | null = null;
+  if (action === 'approve') {
+    try {
+      const { rows } = await query(
+        `SELECT p.id, p.trial_days FROM subscription_plans p
+          WHERE p.status = 'active' AND COALESCE(p.trial_days, 0) > 0
+            AND NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.organization_id = $1)
+          ORDER BY p.price ASC, p.trial_days DESC LIMIT 1`,
+        [organizationId]
+      );
+      if (rows[0]) {
+        const res = await activateLicense({
+          organizationId,
+          planId: rows[0].id,
+          durationMonths: 0,
+          note: 'Essai automatique à la validation de l’inscription',
+          platformUserId,
+          notify: false,
+        });
+        if (res.ok) trial = { days: Number(rows[0].trial_days), end_date: res.data.end_date };
+        else console.error('Auto trial error:', res.error);
+      }
+    } catch (err) {
+      console.error('Auto trial error:', err);
+    }
+  }
+
   const CLIENT_NOTIFICATIONS: Record<OrganizationAction, NotificationInput> = {
-    approve: { type: 'registration.approved', title: 'Votre inscription est validée', body: 'Bienvenue sur OptiSpace : votre espace est maintenant accessible.', link: '/dashboard' },
+    approve: {
+      type: 'registration.approved',
+      title: 'Votre inscription est validée',
+      body: trial
+        ? `Bienvenue sur OptiSpace : votre espace est accessible avec un essai gratuit de ${trial.days} jour${trial.days > 1 ? 's' : ''}, jusqu'au ${frDate(trial.end_date)}.`
+        : 'Bienvenue sur OptiSpace : votre espace est maintenant accessible.',
+      link: '/dashboard',
+    },
     cancel: { type: 'registration.rejected', title: "Votre inscription n'a pas été validée", body: reason && reason !== 'Super admin action' ? `Motif : ${reason}` : 'Contactez le support pour plus d’informations.', link: '/login' },
     suspend: { type: 'organization.suspended', title: 'Votre espace a été suspendu', body: 'L’accès à vos données est temporairement coupé. Contactez le support.', link: '/dashboard' },
     reactivate: { type: 'organization.reactivated', title: 'Votre espace est réactivé', body: 'Vous avez de nouveau accès à toutes vos données.', link: '/dashboard' },
@@ -266,5 +323,6 @@ export async function setOrganizationStatus(input: {
   };
   notifyInBackground(() => notifyOrganizationAdmins(organizationId, CLIENT_NOTIFICATIONS[action]));
 
-  return { ok: true, data: { new_status: newStatus }, message: `« ${org.name} » : ${ACTION_MESSAGES[action]}.` };
+  const trialNote = trial ? ` Essai gratuit de ${trial.days} jour${trial.days > 1 ? 's' : ''} jusqu'au ${frDate(trial.end_date)}.` : '';
+  return { ok: true, data: { new_status: newStatus, trial }, message: `« ${org.name} » : ${ACTION_MESSAGES[action]}.${trialNote}` };
 }

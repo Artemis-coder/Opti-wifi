@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle, Layers, Store, Users, MapPin } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle, Layers, Store, Users, MapPin, Gift, ArrowRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -54,6 +54,7 @@ export default function SubscriptionPage() {
   const [pendingRequest, setPendingRequest] = useState<LicenseRequestInfo | null>(null);
   const [lastRequest, setLastRequest] = useState<LicenseRequestInfo | null>(null);
   const [trialUsed, setTrialUsed] = useState(false);
+  const [openPlanOnLoad, setOpenPlanOnLoad] = useState<SubscriptionPlan | null>(null);
   const [usage, setUsage] = useState({ posCount: 0, usersCount: 0, spacesCount: 0 });
   const { user } = useAuthStore();
   const supabase = createClient();
@@ -104,6 +105,13 @@ export default function SubscriptionPage() {
           usersCount: usersRes.count ?? 0,
           spacesCount: spacesRes.count ?? 0,
         });
+        // Lien des rappels de fin d'essai (/subscription?plan=…) : ouvre la demande du forfait proposé
+        const wanted = new URLSearchParams(window.location.search).get('plan');
+        const target = wanted ? plansData?.find((p: SubscriptionPlan) => p.id === wanted) : null;
+        if (target && Number(target.trial_days ?? 0) === 0) {
+          setOpenPlanOnLoad(target);
+          window.history.replaceState(null, '', '/subscription');
+        }
       } catch (error) {
         console.error('Error loading subscription:', error);
       } finally {
@@ -127,7 +135,8 @@ export default function SubscriptionPage() {
       case 'active':
         return <Badge variant="success" className="gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Actif</Badge>;
       case 'trial':
-        return <Badge variant="warning" className="gap-1"><Clock className="w-3.5 h-3.5" /> Essai</Badge>;
+      case 'trialing':
+        return <Badge variant="warning" className="gap-1"><Gift className="w-3.5 h-3.5" /> Essai gratuit</Badge>;
       case 'past_due':
         return <Badge variant="danger" className="gap-1"><AlertCircle className="w-3.5 h-3.5" /> Impayé</Badge>;
       case 'cancelled':
@@ -163,6 +172,13 @@ export default function SubscriptionPage() {
 
   const isExpired = subscription ? (subscription.status === 'expired' || (subscription.end_date && new Date(subscription.end_date).getTime() < new Date().getTime())) : false;
   const isExpiringSoon = subscription && !isExpired && daysRemaining !== null && daysRemaining <= 7;
+  const onTrial = Number(subscription?.plan?.trial_days ?? 0) > 0;
+  // Forfait de base proposé à la fin de l'essai : le moins cher des forfaits payants
+  const basePlan = allPlans.find((p) => Number(p.price) > 0 && Number(p.trial_days ?? 0) === 0) ?? null;
+  const trialLengthDays =
+    onTrial && subscription?.end_date
+      ? Math.max(1, Math.ceil((new Date(subscription.end_date).getTime() - new Date(subscription.start_date).getTime()) / 86_400_000))
+      : null;
 
   // Ouvre la demande de licence : montant, moyens de paiement, référence du paiement
   const handleRequest = (plan?: SubscriptionPlan) => {
@@ -181,6 +197,12 @@ export default function SubscriptionPage() {
       renewal: !plan,
     });
   };
+
+  // Ouverture différée (après chargement) de la demande demandée par le lien du rappel
+  if (!loading && openPlanOnLoad && !pendingRequest && !requestPlan) {
+    handleRequest(openPlanOnLoad);
+    setOpenPlanOnLoad(null);
+  }
 
   if (loading) {
     return (
@@ -233,10 +255,12 @@ export default function SubscriptionPage() {
               <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-red-800 dark:text-red-200">
-                  Votre abonnement a expiré
+                  {onTrial ? 'Votre essai gratuit est terminé' : 'Votre abonnement a expiré'}
                 </p>
                 <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
-                  Vous n&apos;avez plus accès à votre espace tant que vous n&apos;aurez pas renouvelé votre abonnement.
+                  {onTrial
+                    ? 'Choisissez un forfait pour retrouver l’accès à votre espace et à vos données.'
+                    : 'Vous n’avez plus accès à votre espace tant que vous n’aurez pas renouvelé votre abonnement.'}
                 </p>
               </div>
             </div>
@@ -246,10 +270,10 @@ export default function SubscriptionPage() {
               <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                  Votre abonnement expire bientôt
+                  {onTrial ? 'Votre essai gratuit se termine bientôt' : 'Votre abonnement expire bientôt'}
                 </p>
                 <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-                  il vous reste {daysRemaining} jour{daysRemaining && daysRemaining > 1 ? 's' : ''} avant expiration.
+                  Il vous reste {daysRemaining} jour{daysRemaining && daysRemaining > 1 ? 's' : ''} avant expiration.
                 </p>
               </div>
             </div>
@@ -320,18 +344,37 @@ export default function SubscriptionPage() {
                 <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-xs text-slate-500">Durée du forfait</p>
+                <p className="text-xs text-slate-500">{onTrial ? "Durée de l'essai" : 'Durée du forfait'}</p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {subscription.plan ? `${getDurationMonths(subscription.plan.billing_period)} mois` : '-'}
+                  {trialLengthDays
+                    ? `${trialLengthDays} jour${trialLengthDays > 1 ? 's' : ''}`
+                    : subscription.plan
+                      ? `${getDurationMonths(subscription.plan.billing_period)} mois`
+                      : '-'}
                 </p>
               </div>
             </div>
           </div>
 
-          {subscription.plan && !pendingRequest && Number(subscription.plan.trial_days ?? 0) > 0 && (
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400">
-              Le forfait <strong>{subscription.plan.name}</strong> est un forfait d&apos;essai : il n&apos;est pas renouvelable.
-              Choisissez un autre forfait ci-dessous pour continuer.
+          {subscription.plan && !pendingRequest && onTrial && (
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {isExpired ? 'Votre essai gratuit est terminé' : `Votre essai gratuit se termine le ${subscription.end_date ? formatDateFR(subscription.end_date) : '—'}`}
+                {basePlan ? (
+                  <>
+                    {' '}: passez au forfait <strong>{basePlan.name}</strong> ({formatCurrencyFCFA(Number(basePlan.price))} /{' '}
+                    {getBillingPeriodLabel(basePlan.billing_period).toLowerCase()}) pour continuer.
+                  </>
+                ) : (
+                  <> : choisissez un forfait ci-dessous pour continuer.</>
+                )}
+              </p>
+              {basePlan && (
+                <Button variant={isExpired ? 'danger' : 'primary'} size="sm" className="shrink-0" onClick={() => handleRequest(basePlan)}>
+                  <span className="mr-2">Choisir {basePlan.name}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           )}
           {subscription.plan && !pendingRequest && Number(subscription.plan.trial_days ?? 0) === 0 && (
