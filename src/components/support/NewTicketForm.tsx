@@ -64,7 +64,7 @@ export function NewTicketForm({ endpoint, clients, onCreated, onCancel }: NewTic
       )}
       <Input
         label="Sujet *"
-        placeholder="ex : Impossible d'enregistrer une collecte"
+        placeholder={category === 'feature' ? 'ex : Exporter les collectes en Excel' : "ex : Impossible d'enregistrer une collecte"}
         value={subject}
         maxLength={200}
         onChange={(e) => setSubject(e.target.value)}
@@ -93,7 +93,9 @@ export function NewTicketForm({ endpoint, clients, onCreated, onCancel }: NewTic
           placeholder={
             forSupport
               ? 'Message adressé au client…'
-              : 'Décrivez votre problème : ce que vous faisiez, ce qui s’est passé, le message d’erreur…'
+              : category === 'feature'
+                ? 'Décrivez la fonctionnalité souhaitée : ce que vous aimeriez pouvoir faire, et en quoi cela vous aiderait…'
+                : 'Décrivez votre problème : ce que vous faisiez, ce qui s’est passé, le message d’erreur…'
           }
           className="w-full px-4 sm:px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
         />

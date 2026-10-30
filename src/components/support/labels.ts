@@ -4,6 +4,7 @@ export const CATEGORY_OPTIONS = [
   { value: 'billing', label: 'Abonnement et paiement' },
   { value: 'technical', label: 'Problème technique' },
   { value: 'account', label: 'Compte et accès' },
+  { value: 'feature', label: 'Proposition de fonctionnalité' },
   { value: 'other', label: 'Autre demande' },
 ];
 
