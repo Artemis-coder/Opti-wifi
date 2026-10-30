@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { KeyRound } from 'lucide-react';
+import { Gift, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +10,7 @@ import { formatCurrencyFCFA, formatDateOnlyFR } from '@/lib/utils/format';
 import type { SubscriptionPlan } from '@/types/platform';
 
 const DURATIONS = [1, 3, 6, 12, 24];
+const TRIAL_DAYS = [3, 5, 7, 14, 30];
 
 const PERIOD_LABELS: Record<string, string> = {
   monthly: 'mois',
@@ -30,7 +31,11 @@ interface LicenseActivationModalProps {
   defaultDurationMonths?: number;
   /** Demande client à approuver en même temps que l'activation. */
   requestId?: string | null;
+  /** Nouveau client : propose d'abord le forfait d'essai (jours d'essai avant le forfait de base). */
+  preferTrial?: boolean;
 }
+
+const isTrial = (p?: SubscriptionPlan) => Number(p?.trial_days ?? 0) > 0;
 
 export function LicenseActivationModal({
   isOpen,
@@ -42,10 +47,13 @@ export function LicenseActivationModal({
   defaultPlanId,
   defaultDurationMonths = 1,
   requestId,
+  preferTrial = false,
 }: LicenseActivationModalProps) {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [planId, setPlanId] = useState(defaultPlanId || '');
   const [months, setMonths] = useState(defaultDurationMonths);
+  // Jours d'essai choisis ; null = jours d'essai prévus par le forfait
+  const [days, setDays] = useState<number | null>(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -57,16 +65,23 @@ export function LicenseActivationModal({
       .then((res) => {
         const active = ((res.data || []) as SubscriptionPlan[]).filter((p) => p.status === 'active');
         setPlans(active);
-        if (active[0]) setPlanId((current) => current || active[0].id);
+        const first = (preferTrial && active.find(isTrial)) || active.find((p) => !isTrial(p)) || active[0];
+        if (first) setPlanId((current) => current || first.id);
       })
       .catch(() => toast.error('Impossible de charger les forfaits'));
-  }, [isOpen]);
+  }, [isOpen, preferTrial]);
 
   const now = new Date();
   const start = currentEndDate && new Date(currentEndDate) > now ? new Date(currentEndDate) : now;
-  const end = new Date(start);
-  end.setMonth(end.getMonth() + months);
   const plan = plans.find((p) => p.id === planId);
+  const trial = isTrial(plan);
+  const trialDays = days ?? Number(plan?.trial_days ?? 0);
+  const end = new Date(start);
+  if (trial) end.setDate(end.getDate() + trialDays);
+  else end.setMonth(end.getMonth() + months);
+  const dayOptions = Array.from(new Set([...TRIAL_DAYS, Number(plan?.trial_days ?? 0)]))
+    .filter((d) => d > 0)
+    .sort((a, b) => a - b);
 
   async function handleSubmit() {
     if (!planId) {
@@ -78,14 +93,25 @@ export function LicenseActivationModal({
       const res = await fetch('/api/platform/licenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizationId, planId, durationMonths: months, requestId: requestId || null, note }),
+        body: JSON.stringify({
+          organizationId,
+          planId,
+          durationMonths: months,
+          durationDays: trial ? trialDays : null,
+          requestId: requestId || null,
+          note,
+        }),
       });
       const result = await res.json();
       if (!res.ok) {
         toast.error(result.error || "Erreur lors de l'activation");
         return;
       }
-      toast.success(`Licence activée jusqu'au ${formatDateOnlyFR(result.data.end_date)}`);
+      toast.success(
+        trial
+          ? `Essai activé jusqu'au ${formatDateOnlyFR(result.data.end_date)}`
+          : `Licence activée jusqu'au ${formatDateOnlyFR(result.data.end_date)}`
+      );
       onActivated();
       onClose();
     } catch {
@@ -105,31 +131,57 @@ export function LicenseActivationModal({
         <CustomSelect
           label="Forfait"
           value={planId}
-          onChange={setPlanId}
+          onChange={(id) => {
+            setPlanId(id);
+            setDays(null);
+          }}
           options={plans.map((p) => ({
             value: p.id,
             label: p.name,
-            sublabel: formatCurrencyFCFA(Number(p.price)),
+            sublabel: isTrial(p) ? `Essai gratuit · ${p.trial_days} jours` : formatCurrencyFCFA(Number(p.price)),
           }))}
           placeholder="Choisir un forfait"
         />
 
-        <div>
-          <span className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Durée</span>
-          <div className="flex flex-wrap gap-2">
-            {DURATIONS.map((d) => (
-              <Button
-                key={d}
-                type="button"
-                size="sm"
-                variant={months === d ? 'primary' : 'outline'}
-                onClick={() => setMonths(d)}
-              >
-                {d} mois
-              </Button>
-            ))}
+        {trial ? (
+          <div>
+            <span className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Jours d&apos;essai</span>
+            <div className="flex flex-wrap gap-2">
+              {dayOptions.map((d) => (
+                <Button
+                  key={d}
+                  type="button"
+                  size="sm"
+                  variant={trialDays === d ? 'primary' : 'outline'}
+                  onClick={() => setDays(d)}
+                >
+                  {d} jour{d > 1 ? 's' : ''}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Essai gratuit, une seule fois par client, sans facture. À la fin de l&apos;essai, le client choisit un
+              forfait payant pour continuer.
+            </p>
           </div>
-        </div>
+        ) : (
+          <div>
+            <span className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Durée</span>
+            <div className="flex flex-wrap gap-2">
+              {DURATIONS.map((d) => (
+                <Button
+                  key={d}
+                  type="button"
+                  size="sm"
+                  variant={months === d ? 'primary' : 'outline'}
+                  onClick={() => setMonths(d)}
+                >
+                  {d} mois
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <label htmlFor="license-note" className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">
@@ -151,9 +203,10 @@ export function LicenseActivationModal({
             Période : <strong>{formatDateOnlyFR(start.toISOString())}</strong> →{' '}
             <strong>{formatDateOnlyFR(end.toISOString())}</strong>
           </p>
-          {plan && (
+          {plan && !trial && (
             <p className="text-xs text-slate-500 mt-1">
-              Tarif du forfait : {formatCurrencyFCFA(Number(plan.price))} / {PERIOD_LABELS[plan.billing_period] || plan.billing_period}
+              Tarif du forfait : {formatCurrencyFCFA(Number(plan.price))} /{' '}
+              {PERIOD_LABELS[plan.billing_period] || plan.billing_period}
             </p>
           )}
           {start > now && (
@@ -166,8 +219,8 @@ export function LicenseActivationModal({
             Annuler
           </Button>
           <Button type="button" onClick={handleSubmit} isLoading={submitting} disabled={!planId}>
-            <KeyRound className="w-4 h-4 mr-1.5" />
-            Activer la licence
+            {trial ? <Gift className="w-4 h-4 mr-1.5" /> : <KeyRound className="w-4 h-4 mr-1.5" />}
+            {trial ? "Activer l'essai" : 'Activer la licence'}
           </Button>
         </div>
       </div>
