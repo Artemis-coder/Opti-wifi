@@ -104,7 +104,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isSubscriptionExpired = licenceExpired;
 
-  // Abonnement expiré : forfaits que l'on peut demander (le forfait d'essai n'est proposé qu'une fois)
+  // Abonnement expiré : forfaits que l'on peut demander (tous, au tarif normal)
   useEffect(() => {
     if (!isSubscriptionExpired) return;
     Promise.all([
@@ -114,9 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .then(([state, plansRes]) => {
         if (state?.data?.pendingRequest) setRenewState('pending');
         const currentPlanId = state?.data?.subscription?.plan_id;
-        const trialUsed = state?.data?.trialUsed === true;
         const plans = ((plansRes?.data || []) as { id: string; name: string; price: number; billing_period: string; trial_days: number | null }[])
-          .filter((p) => !(trialUsed && Number(p.trial_days ?? 0) > 0))
           .map((p) => ({ id: p.id, name: p.name, price: Number(p.price), billing_period: p.billing_period, current: p.id === currentPlanId }));
         setRenewPlans(plans);
       })

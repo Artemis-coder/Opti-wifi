@@ -37,7 +37,7 @@ export async function getAccountNotices(ctx: {
       : Promise.resolve(null),
     ctx.organizationId && isAdmin
       ? query(
-          `SELECT s.end_date, p.name AS plan_name, COALESCE(p.trial_days, 0) > 0 AS is_trial,
+          `SELECT s.end_date, p.name AS plan_name, s.trial_end IS NOT NULL AS is_trial,
                   CEIL(EXTRACT(EPOCH FROM (s.end_date - NOW())) / 86400)::int AS days_left
              FROM subscriptions s
              LEFT JOIN subscription_plans p ON p.id = s.plan_id

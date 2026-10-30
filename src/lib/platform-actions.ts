@@ -28,7 +28,12 @@ export interface ActivateLicenseInput {
   organizationId: string;
   planId: string;
   durationMonths: number;
-  /** Forfait d'essai : durée en jours (par défaut, les jours d'essai du forfait). */
+  /**
+   * Essai gratuit, seulement pour la première souscription et un forfait avec jours d'essai.
+   * Par défaut : essai si l'organisation y a droit ; false pour une première licence payée.
+   */
+  trial?: boolean;
+  /** Essai : durée en jours (par défaut, les jours d'essai du forfait). */
   durationDays?: number | null;
   requestId?: string | null;
   note?: string | null;
@@ -42,8 +47,9 @@ export const MAX_TRIAL_DAYS = 90;
 /**
  * Attribue un forfait pour une durée donnée. La nouvelle période démarre à la fin de la
  * licence en cours (si elle court encore), sinon maintenant. Écritures atomiques.
- * Forfait d'essai (Découverte) : durée en jours, statut « Essai », sans facture ; à la fin
- * de l'essai, le client choisit un forfait payant.
+ * Essai gratuit (première souscription d'un client, forfait avec jours d'essai) : durée en
+ * jours, statut « Essai », sans facture. Ensuite, tout forfait, Découverte compris, est une
+ * licence payée en mois et facturée.
  */
 export async function activateLicense(input: ActivateLicenseInput): Promise<ActionResult<{
   subscription_id: string;
@@ -66,11 +72,12 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   const plan = planRes.rows[0];
   if (!org) return fail(404, 'Organisation introuvable');
   if (!plan) return fail(404, 'Forfait introuvable ou inactif');
-  const trial = isTrialPlan(plan);
-  // Forfait d'essai (Découverte) : une seule fois par organisation, y compris par le super admin
-  if (trial && (await hasUsedTrialPlan(organizationId))) {
-    return fail(409, `${org.name} a déjà bénéficié du forfait « ${plan.name} ». Choisissez un autre forfait.`, 'TRIAL_ALREADY_USED');
+  // Essai : seulement à la première souscription ; un client qui revient sur ce forfait paie
+  const trialAvailable = isTrialPlan(plan) && !(await hasUsedTrialPlan(organizationId));
+  if (input.trial === true && !trialAvailable) {
+    return fail(409, `${org.name} n'a plus droit à l'essai gratuit : activez une licence payante.`, 'TRIAL_ALREADY_USED');
   }
+  const trial = trialAvailable && input.trial !== false;
   // Essai : en jours ; licence : en mois
   const days = trial ? Number(input.durationDays ?? plan.trial_days) : 0;
   const months = trial ? 0 : Number(input.durationMonths);

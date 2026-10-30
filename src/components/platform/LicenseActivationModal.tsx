@@ -31,10 +31,11 @@ interface LicenseActivationModalProps {
   defaultDurationMonths?: number;
   /** Demande client à approuver en même temps que l'activation. */
   requestId?: string | null;
-  /** Nouveau client : propose d'abord le forfait d'essai (jours d'essai avant le forfait de base). */
+  /** Nouveau client : propose d'abord l'essai gratuit (s'il y a droit) sur le forfait le moins cher qui en prévoit un. */
   preferTrial?: boolean;
 }
 
+/** Forfait qui prévoit des jours d'essai (offerts à la première souscription seulement). */
 const isTrial = (p?: SubscriptionPlan) => Number(p?.trial_days ?? 0) > 0;
 
 export function LicenseActivationModal({
@@ -54,6 +55,9 @@ export function LicenseActivationModal({
   const [months, setMonths] = useState(defaultDurationMonths);
   // Jours d'essai choisis ; null = jours d'essai prévus par le forfait
   const [days, setDays] = useState<number | null>(null);
+  // Droit à l'essai : seulement si le client n'a encore jamais eu d'abonnement (null = en cours de vérification)
+  const [trialAvailable, setTrialAvailable] = useState<boolean | null>(null);
+  const [useTrial, setUseTrial] = useState(preferTrial);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -65,16 +69,22 @@ export function LicenseActivationModal({
       .then((res) => {
         const active = ((res.data || []) as SubscriptionPlan[]).filter((p) => p.status === 'active');
         setPlans(active);
-        const first = (preferTrial && active.find(isTrial)) || active.find((p) => !isTrial(p)) || active[0];
+        const first = (preferTrial && active.find(isTrial)) || active[0];
         if (first) setPlanId((current) => current || first.id);
       })
       .catch(() => toast.error('Impossible de charger les forfaits'));
-  }, [isOpen, preferTrial]);
+    fetch(`/api/platform/licenses?organizationId=${encodeURIComponent(organizationId)}`)
+      .then((r) => r.json())
+      .then((res) => setTrialAvailable(res.data?.trial_available === true))
+      .catch(() => setTrialAvailable(false));
+  }, [isOpen, preferTrial, organizationId]);
 
   const now = new Date();
   const start = currentEndDate && new Date(currentEndDate) > now ? new Date(currentEndDate) : now;
   const plan = plans.find((p) => p.id === planId);
-  const trial = isTrial(plan);
+  // Essai : forfait qui en prévoit un, client qui y a droit, et choix « Essai gratuit »
+  const canTrial = isTrial(plan) && trialAvailable === true;
+  const trial = canTrial && useTrial;
   const trialDays = days ?? Number(plan?.trial_days ?? 0);
   const end = new Date(start);
   if (trial) end.setDate(end.getDate() + trialDays);
@@ -98,6 +108,7 @@ export function LicenseActivationModal({
           planId,
           durationMonths: months,
           durationDays: trial ? trialDays : null,
+          trial: canTrial ? useTrial : undefined,
           requestId: requestId || null,
           note,
         }),
@@ -138,10 +149,46 @@ export function LicenseActivationModal({
           options={plans.map((p) => ({
             value: p.id,
             label: p.name,
-            sublabel: isTrial(p) ? `Essai gratuit · ${p.trial_days} jours` : formatCurrencyFCFA(Number(p.price)),
+            sublabel:
+              formatCurrencyFCFA(Number(p.price)) +
+              (isTrial(p) && trialAvailable ? ` · essai gratuit possible (${p.trial_days} j)` : ''),
           }))}
           placeholder="Choisir un forfait"
         />
+
+        {canTrial ? (
+          <div>
+            <span className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Type</span>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={useTrial ? 'primary' : 'outline'}
+                onClick={() => setUseTrial(true)}
+              >
+                <Gift className="w-4 h-4 mr-1.5" /> Essai gratuit
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={useTrial ? 'outline' : 'primary'}
+                onClick={() => setUseTrial(false)}
+              >
+                <KeyRound className="w-4 h-4 mr-1.5" /> Licence payante
+              </Button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Première souscription de ce client : il peut bénéficier d&apos;un essai gratuit, une seule fois.
+            </p>
+          </div>
+        ) : (
+          isTrial(plan) &&
+          trialAvailable === false && (
+            <p className="text-xs text-slate-500 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2">
+              Ce client a déjà eu un abonnement : pas d&apos;essai gratuit, licence payante au tarif du forfait.
+            </p>
+          )
+        )}
 
         {trial ? (
           <div>
@@ -160,8 +207,7 @@ export function LicenseActivationModal({
               ))}
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              Essai gratuit, une seule fois par client, sans facture. À la fin de l&apos;essai, le client choisit un
-              forfait payant pour continuer.
+              Essai gratuit, sans facture. À la fin de l&apos;essai, le client choisit un forfait payant pour continuer.
             </p>
           </div>
         ) : (

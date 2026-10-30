@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { query } from '@/lib/neon/db';
-import { hasUsedTrialPlan, isTrialPlan, TRIAL_ALREADY_USED_MESSAGE } from '@/lib/trial-plan';
+import { hasUsedTrialPlan } from '@/lib/trial-plan';
 import { notifyInBackground, notifySuperAdmins } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
@@ -84,7 +84,7 @@ export async function GET() {
       getRequestState(ctx.organizationId),
       hasUsedTrialPlan(ctx.organizationId),
     ]);
-    // trialUsed : la page masque le forfait Découverte s'il a déjà été utilisé
+    // trialUsed : l'organisation a déjà eu un abonnement, plus d'essai gratuit à proposer
     return NextResponse.json({ success: true, data: { ...state, trialUsed, canRequest: !state.pendingRequest } });
   } catch (err) {
     console.error('Renew request GET error:', err);
@@ -130,10 +130,6 @@ export async function POST(request: NextRequest) {
     );
     if (!planRes.rows[0]) {
       return NextResponse.json({ error: 'Forfait introuvable ou inactif' }, { status: 404 });
-    }
-    // Forfait d'essai (Découverte) : une seule fois par organisation, ni redemandé ni renouvelé
-    if (isTrialPlan(planRes.rows[0]) && (await hasUsedTrialPlan(ctx.organizationId))) {
-      return NextResponse.json({ error: TRIAL_ALREADY_USED_MESSAGE, code: 'TRIAL_ALREADY_USED' }, { status: 400 });
     }
 
     let paymentMethodName: string | null = null;
