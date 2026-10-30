@@ -4,6 +4,13 @@ import { NextResponse } from 'next/server';
 import { Organization, Subscription, Payment } from "@/types/platform";
 import { query } from '@/lib/neon/db';
 import { getPlatformStats, parseStatsRange } from '@/lib/platform-stats';
+import { getClientCountries } from '@/lib/geo';
+
+// Licences « alarmantes » : se terminent dans les 7 prochains jours sans renouvellement prévu
+const ALARMING_EXPIRY = `s.status IN ('active', 'trialing') AND s.end_date BETWEEN NOW() AND NOW() + interval '7 days'
+            AND o.status NOT IN ('suspended', 'cancelled', 'archived')
+            AND NOT EXISTS (SELECT 1 FROM subscriptions s2 WHERE s2.organization_id = s.organization_id AND s2.id <> s.id
+                              AND s2.status IN ('active', 'trialing') AND s2.end_date > s.end_date)`;
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -140,20 +147,21 @@ export async function GET(request: Request) {
           ORDER BY r.created_at ASC LIMIT 5`
       ),
       query(
-        `SELECT s.id, s.end_date, o.id AS organization_id, o.name AS organization_name, p.name AS plan_name
+        `SELECT s.id, s.end_date, o.id AS organization_id, o.name AS organization_name, p.name AS plan_name,
+                COALESCE(p.trial_days, 0) > 0 AS is_trial,
+                CEIL(EXTRACT(EPOCH FROM (s.end_date - NOW())) / 86400)::int AS days_left
            FROM subscriptions s
            JOIN organizations o ON o.id = s.organization_id
            LEFT JOIN subscription_plans p ON p.id = s.plan_id
-          WHERE s.status IN ('active', 'trialing') AND s.end_date BETWEEN NOW() AND NOW() + interval '30 days'
-            AND o.status NOT IN ('suspended', 'cancelled', 'archived')
+          WHERE ${ALARMING_EXPIRY}
           ORDER BY s.end_date ASC LIMIT 5`
       ),
       query(
         `SELECT
            (SELECT COUNT(*) FROM organizations WHERE status = 'pending_approval') AS pending_registrations,
            (SELECT COUNT(*) FROM license_requests WHERE status = 'pending') AS pending_license_requests,
-           (SELECT COUNT(*) FROM subscriptions WHERE status IN ('active', 'trialing')
-              AND end_date BETWEEN NOW() AND NOW() + interval '7 days') AS expiring_7d,
+           (SELECT COUNT(*) FROM subscriptions s JOIN organizations o ON o.id = s.organization_id
+             WHERE ${ALARMING_EXPIRY}) AS expiring_7d,
            (SELECT COUNT(*) FROM organizations o
              WHERE o.status IN ('active', 'trial', 'expiring')
                AND NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.organization_id = o.id
@@ -184,5 +192,13 @@ export async function GET(request: Request) {
     console.error('Platform dashboard stats error:', err);
   }
 
-  return NextResponse.json({ kpis, todo, stats });
+  // Pays des clients (Top 3 sur le tableau de bord)
+  let countries = null;
+  try {
+    countries = await getClientCountries();
+  } catch (err) {
+    console.error('Platform dashboard countries error:', err);
+  }
+
+  return NextResponse.json({ kpis, todo, stats, countries });
 }
