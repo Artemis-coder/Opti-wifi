@@ -69,3 +69,12 @@ export function isValidNationalNumber(value: string): boolean {
 export function formatInternationalPhone(country: Country, national: string): string {
   return `+${country.dial} ${national.replace(/[\s.\-]/g, '')}`;
 }
+
+/** Découpe « +225 0700000000 » en pays et numéro national (pour pré-remplir le champ). */
+export function splitInternationalPhone(phone: string | null | undefined): { country: string; national: string } {
+  const code = countryFromPhone(phone);
+  const country = findCountry(code);
+  if (!phone || !country) return { country: DEFAULT_COUNTRY, national: (phone || '').trim() };
+  const digits = phone.replace(/[^\d+]/g, '').replace(/^(\+|00)/, '');
+  return { country: country.code, national: digits.slice(country.dial.length) };
+}
