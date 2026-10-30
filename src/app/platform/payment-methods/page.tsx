@@ -18,6 +18,8 @@ import {
 import { cn } from '@/lib/utils/cn';
 import { normalizeWhatsappUrl, whatsappFromNumber } from '@/lib/whatsapp';
 import { AddButton } from '@/components/ui/AddButton';
+import { CountryMultiSelect } from '@/components/ui/CountryMultiSelect';
+import { countryFlag, countryName } from '@/lib/countries';
 
 interface PaymentMethod extends PublicPaymentMethod {
   is_active: boolean;
@@ -33,6 +35,8 @@ const EMPTY_FORM = {
   logo: null as string | null,
   brand_logo: null as string | null,
   brand_color: DEFAULT_BRAND_COLOR,
+  /** Pays où le moyen est utilisable ; vide = tous les pays */
+  countries: [] as string[],
   is_active: true,
 };
 type FormState = typeof EMPTY_FORM;
@@ -165,6 +169,7 @@ export default function PaymentMethodsPage() {
             logo: m.logo,
             brand_logo: m.brand_logo,
             brand_color: m.brand_color || DEFAULT_BRAND_COLOR,
+            countries: m.countries || [],
             is_active: m.is_active,
           }
         : EMPTY_FORM
@@ -346,6 +351,14 @@ export default function PaymentMethodsPage() {
                       <p className="text-xs text-slate-500">
                         Paiement : <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{m.account_number}</span>
                       </p>
+                      <p className="text-xs text-slate-500">
+                        Pays :{' '}
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {m.countries && m.countries.length > 0
+                            ? m.countries.map((c) => `${countryFlag(c)} ${countryName(c)}`).join(', ')
+                            : 'tous les pays'}
+                        </span>
+                      </p>
                       <p className="text-xs text-slate-500 break-all">
                         Justificatif :{' '}
                         <a
@@ -502,6 +515,13 @@ export default function PaymentMethodsPage() {
                 className="w-full px-4 sm:px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
             </div>
+            <CountryMultiSelect
+              label="Pays où ce moyen est disponible"
+              value={form.countries}
+              onChange={(countries) => setForm((f) => ({ ...f, countries }))}
+              emptyLabel="Tous les pays"
+              helperText="Au paiement, le client choisit son pays (par défaut celui de son compte) et ne voit que les moyens de ce pays. Aucun pays = disponible partout."
+            />
             <label className="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
               <input
                 type="checkbox"
