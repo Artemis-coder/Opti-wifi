@@ -9,7 +9,7 @@ import { query } from '@/lib/neon/db';
 export type DashboardPeriod = 'today' | 'week' | 'month' | 'all';
 
 export function parseDashboardPeriod(v: string | null): DashboardPeriod {
-  return v === 'today' || v === 'week' || v === 'all' ? v : 'month';
+  return v === 'today' || v === 'week' || v === 'month' ? v : 'all';
 }
 
 export interface ClientDashboard {
