@@ -225,10 +225,8 @@ En local, `.env.local` (non versionné) contient typiquement :
 SITE_CONTENT_API_URL=http://localhost:3000/api/public/site-content
 ```
 
-> ⚠️ **Provisoire** : sur Vercel, `SITE_CONTENT_API_URL` pointe vers l'outil de **dev**
-> (`https://dev.optiwifi.site/api/public/site-content`) tant que l'onglet *Site vitrine*
-> n'est pas en production. À basculer sur `https://www.optiwifi.site/api/public/site-content`
-> après la mise en production de l'outil.
+En production (Vercel), `SITE_CONTENT_API_URL` = `https://www.optiwifi.site/api/public/site-content` :
+le site lit le contenu géré dans le back-office de **production**.
 
 ---
 
