@@ -18,8 +18,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * accès, on en redonne de nouveaux.
  * - temporary_password : nouveau mot de passe temporaire (à changer à la connexion),
  *   renvoyé une seule fois pour être transmis (copie, WhatsApp) ; e-mail si demandé.
- * - invite_link : e-mail avec un lien pour que le membre choisisse son mot de passe
- *   (7 jours, usage unique) ; son mot de passe actuel reste valable jusque-là.
+ * - invite_link : lien pour que le membre choisisse son mot de passe (7 jours, usage
+ *   unique), renvoyé pour être copié / envoyé sur WhatsApp, et envoyé par e-mail si
+ *   l'envoi est configuré ; son mot de passe actuel reste valable jusque-là.
  */
 export async function POST(request: NextRequest, context: RouteContext) {
   const ctx = await getSessionContext();
@@ -64,17 +65,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
     };
 
     if (action === 'invite_link') {
-      if (!isEmailConfigured()) {
-        return NextResponse.json({ error: "L'envoi d'e-mails n'est pas disponible. Générez un mot de passe temporaire." }, { status: 503 });
-      }
       const token = await createPasswordToken(id, 'invite');
-      const sent = await sendInvitationEmail({ ...base, setPasswordUrl: appUrl(`/reset-password?token=${encodeURIComponent(token)}`, request) });
-      if (!sent.success) {
-        console.error('Invite link email error:', sent.error);
-        return NextResponse.json({ error: "L'e-mail n'a pas pu être envoyé. Réessayez ou générez un mot de passe temporaire." }, { status: 502 });
+      const link = appUrl(`/reset-password?token=${encodeURIComponent(token)}`, request);
+      // E-mail en plus quand il est configuré ; le lien reste toujours copiable / partageable
+      let emailSent = false;
+      if (sendByEmail && isEmailConfigured()) {
+        const sent = await sendInvitationEmail({ ...base, setPasswordUrl: link });
+        emailSent = sent.success;
+        if (!sent.success) console.error('Invite link email error:', sent.error);
       }
       await audit(ctx.organizationId, ctx.userId, id, 'invite_sent');
-      return NextResponse.json({ success: true, email_sent: true, email: member.email });
+      return NextResponse.json({ success: true, email_sent: emailSent, email: member.email, link });
     }
 
     // Nouveau mot de passe temporaire

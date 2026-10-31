@@ -112,6 +112,56 @@ export function AccessCard({ member, access, emailSent }: { member: Member; acce
   );
 }
 
+/** Lien « choisir mon mot de passe » à transmettre (copie, WhatsApp) ; e-mail en plus si envoyé. */
+export function InviteLinkCard({ member, link, emailSent }: { member: Member; link: string; emailSent: boolean }) {
+  const text = [
+    `Bonjour ${member.nom}, voici votre lien pour choisir votre mot de passe OptiSpace (valable 7 jours) :`,
+    link,
+    `Ensuite, connectez-vous avec votre e-mail : ${member.email}`,
+  ].join('\n');
+  const phone = (member.telephone || '').replace(/\D/g, '');
+  return (
+    <div className="space-y-4 text-left">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 divide-y divide-slate-100 dark:divide-slate-800">
+        <CopyRow label="Lien pour choisir son mot de passe" value={link} />
+        <CopyRow label="E-mail de connexion" value={member.email} />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 font-semibold"
+          onClick={() => navigator.clipboard.writeText(text).then(() => toast.success('Message copié : collez-le dans une conversation.'))}
+        >
+          <Copy className="w-4 h-4 mr-1.5" /> Copier le message
+        </Button>
+        <a
+          href={`https://wa.me/${phone}?text=${encodeURIComponent(text)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="h-11 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-[#128C7E] hover:bg-[#0e7268]"
+        >
+          <MessageCircle className="w-4 h-4" /> Envoyer sur WhatsApp
+        </a>
+      </div>
+      <p
+        className={cn(
+          'flex items-start gap-2 rounded-xl px-3 py-2 text-xs',
+          emailSent
+            ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
+            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+        )}
+      >
+        <Mail className="w-4 h-4 shrink-0 mt-0.5" />
+        {emailSent ? `Le lien a aussi été envoyé par e-mail à ${member.email}.` : 'Aucun e-mail envoyé : transmettez le lien par WhatsApp ou copiez-le.'}
+      </p>
+      <p className="text-xs text-slate-500">
+        Le lien ne sert qu&apos;une fois. Son mot de passe actuel reste valable jusqu&apos;à ce qu&apos;il en choisisse un nouveau.
+      </p>
+    </div>
+  );
+}
+
 /**
  * « Accès » d'un membre existant : lien par e-mail pour choisir son mot de passe, ou
  * nouveau mot de passe temporaire à transmettre (copie, WhatsApp, e-mail).
@@ -119,7 +169,10 @@ export function AccessCard({ member, access, emailSent }: { member: Member; acce
 export function MemberAccessDialog({ member, onClose }: { member: Member | null; onClose: () => void }) {
   const [busy, setBusy] = useState<'invite_link' | 'temporary_password' | null>(null);
   const [alsoEmail, setAlsoEmail] = useState(true);
-  const [result, setResult] = useState<{ access: MemberAccessInfo; emailSent: boolean } | null>(null);
+  const [linkByEmail, setLinkByEmail] = useState(true);
+  const [result, setResult] = useState<
+    { kind: 'password'; access: MemberAccessInfo; emailSent: boolean } | { kind: 'link'; link: string; emailSent: boolean } | null
+  >(null);
 
   const close = () => {
     setResult(null);
@@ -133,7 +186,7 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
       const res = await fetch(`/api/users/${member.id}/access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, send_email: action === 'temporary_password' ? alsoEmail : true }),
+        body: JSON.stringify({ action, send_email: action === 'temporary_password' ? alsoEmail : linkByEmail }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -141,10 +194,9 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
         return;
       }
       if (action === 'invite_link') {
-        toast.success(`Lien envoyé à ${data.email} : ${member.nom} choisira son mot de passe.`);
-        close();
+        setResult({ kind: 'link', link: data.link, emailSent: data.email_sent === true });
       } else {
-        setResult({ access: data.access, emailSent: data.email_sent === true });
+        setResult({ kind: 'password', access: data.access, emailSent: data.email_sent === true });
       }
     } catch {
       toast.error('Erreur réseau.');
@@ -154,10 +206,24 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
   };
 
   return (
-    <Modal isOpen={!!member} onClose={close} title={result ? `Nouveaux accès de ${member?.nom}` : `Accès de ${member?.nom ?? ''}`}>
+    <Modal
+      isOpen={!!member}
+      onClose={close}
+      title={
+        result?.kind === 'link'
+          ? `Lien pour ${member?.nom}`
+          : result
+            ? `Nouveaux accès de ${member?.nom}`
+            : `Accès de ${member?.nom ?? ''}`
+      }
+    >
       {member && result ? (
         <div className="space-y-4">
-          <AccessCard member={member} access={result.access} emailSent={result.emailSent} />
+          {result.kind === 'link' ? (
+            <InviteLinkCard member={member} link={result.link} emailSent={result.emailSent} />
+          ) : (
+            <AccessCard member={member} access={result.access} emailSent={result.emailSent} />
+          )}
           <div className="flex justify-end">
             <Button onClick={close}>Terminé</Button>
           </div>
@@ -172,14 +238,18 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
 
             <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
               <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <Mail className="w-4 h-4 text-brand-600" /> Lui envoyer un lien par e-mail
+                <Mail className="w-4 h-4 text-brand-600" /> Lui envoyer un lien pour choisir son mot de passe
               </p>
               <p className="text-xs text-slate-500">
-                Il choisit lui-même son mot de passe (lien valable 7 jours). Son mot de passe actuel reste valable
-                d&apos;ici là.
+                Il choisit lui-même son mot de passe (lien valable 7 jours). Vous transmettez le lien par WhatsApp ou en
+                le copiant ; son mot de passe actuel reste valable d&apos;ici là.
               </p>
+              <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+                <input type="checkbox" checked={linkByEmail} onChange={(e) => setLinkByEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
+                L&apos;envoyer aussi par e-mail
+              </label>
               <Button variant="outline" className="w-full h-10 font-semibold" isLoading={busy === 'invite_link'} disabled={!!busy} onClick={() => run('invite_link')}>
-                Envoyer le lien
+                Créer le lien
               </Button>
             </div>
 
