@@ -13,6 +13,8 @@ import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { TicketType } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { AddButton } from '@/components/ui/AddButton';
+import { DurationField } from '@/components/tickets/DurationField';
+import { durationToHours, formatTicketDuration, type DurationUnit } from '@/lib/ticket-duration';
 
 export default function TicketTypesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,7 +23,9 @@ export default function TicketTypesPage() {
   const [tickets, setTickets] = useState<TicketType[]>([]);
 
   const [nom, setNom] = useState('');
-  const [duree, setDuree] = useState('24');
+  // Durée saisie en jours par défaut (enregistrée en heures)
+  const [duree, setDuree] = useState('1');
+  const [dureeUnit, setDureeUnit] = useState<DurationUnit>('jours');
   const [prix, setPrix] = useState('1000');
 
   const supabase = createClient();
@@ -41,12 +45,17 @@ export default function TicketTypesPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nom || !prix) return;
+    const hours = durationToHours(duree, dureeUnit);
+    if (!hours) {
+      toast.error('Durée invalide.');
+      return;
+    }
 
     setCreating(true);
 
     const newTicketData = {
       nom,
-      duree_heures: parseInt(duree) || 24,
+      duree_heures: hours,
       prix: parseFloat(prix) || 500,
       actif: true,
     };
@@ -127,7 +136,7 @@ export default function TicketTypesPage() {
                     <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.nom}</h3>
                     <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                       <Clock className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Durée : {t.duree_heures} heure(s)</span>
+                      <span>Durée : {formatTicketDuration(t.duree_heures)}</span>
                     </div>
                   </div>
                 </div>
@@ -138,33 +147,28 @@ export default function TicketTypesPage() {
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-medium">Prix public :</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-extrabold text-brand-900 dark:text-brand-400">
-                    {formatCurrencyFCFA(t.prix)}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-1.5 h-7 w-7"
-                    onClick={() => setEditingTicket(t)}
-                    title="Modifier"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-1.5 h-7 w-7"
-                    onClick={() => handleToggleActif(t)}
-                    title={t.actif ? 'Désactiver' : 'Activer'}
-                  >
-                    {t.actif ? (
-                      <PauseCircle className="w-3.5 h-3.5 text-slate-600" />
-                    ) : (
-                      <PlayCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    )}
-                  </Button>
-                </div>
+                <span className="text-lg font-extrabold text-brand-900 dark:text-brand-400">{formatCurrencyFCFA(t.prix)}</span>
+              </div>
+
+              {/* Actions bien visibles, avec libellé */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" className="h-10 font-semibold" onClick={() => setEditingTicket(t)}>
+                  <Edit className="w-4 h-4 mr-1.5" />
+                  Modifier
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleToggleActif(t)}
+                  className={
+                    t.actif
+                      ? 'h-10 font-semibold text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-950/30'
+                      : 'h-10 font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950/30'
+                  }
+                >
+                  {t.actif ? <PauseCircle className="w-4 h-4 mr-1.5" /> : <PlayCircle className="w-4 h-4 mr-1.5" />}
+                  {t.actif ? 'Désactiver' : 'Activer'}
+                </Button>
               </div>
             </Card>
           ))}
@@ -173,8 +177,15 @@ export default function TicketTypesPage() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Type de Ticket">
         <form onSubmit={handleCreate} className="space-y-4">
-          <Input label="Nom du Pass" placeholder="ex: Pass 12h Découverte" value={nom} onChange={(e) => setNom(e.target.value)} required />
-          <Input label="Durée (en heures)" type="number" placeholder="12" value={duree} onChange={(e) => setDuree(e.target.value)} required />
+          <Input label="Nom du Pass" placeholder="ex : Pass 7 jours" value={nom} onChange={(e) => setNom(e.target.value)} required />
+          <DurationField
+            value={duree}
+            unit={dureeUnit}
+            onChange={(v, u) => {
+              setDuree(v);
+              setDureeUnit(u);
+            }}
+          />
           <Input label="Prix Vente (FCFA)" type="number" placeholder="500" value={prix} onChange={(e) => setPrix(e.target.value)} required />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Annuler</Button>
