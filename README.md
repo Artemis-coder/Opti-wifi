@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.4.0</strong> — <a href="./RELEASE_NOTES_v1.4.0.md">notes de version</a>
+  <strong>Version actuelle : v1.5.0</strong> — <a href="./RELEASE_NOTES_v1.5.0.md">notes de version</a>
 </p>
 
 ---
@@ -548,6 +548,7 @@ Consulter [`AGENTS.md`](./AGENTS.md) pour les règles de sécurité complètes :
 
 ## Release Notes
 
+- [**v1.5.0**](./RELEASE_NOTES_v1.5.0.md) — Essai gratuit automatique à la première souscription seulement, réabonnement par moyen de paiement filtrable par pays, téléphone avec pays à l'inscription, bandeau du compte, espace collecteur cloisonné, nombre de collecteurs par forfait, Top 3 des pays, abonnements retravaillés, site vitrine, bot Telegram configurable, mesure d'audience PostHog
 - [**v1.4.0**](./RELEASE_NOTES_v1.4.0.md) — Réabonnement et paiement par Wave (QR code, justificatif WhatsApp), factures de licence en PDF, statistiques et KPI du back-office, support par tickets, rappels J-10 / J-5 / J-2, bot Telegram fiabilisé et sécurisé
 - [**v1.3.0**](./RELEASE_NOTES_v1.3.0.md) — Suspension et suppression avec révocation immédiate, essai unique et licence expirée appliquée côté serveur, notifications (cloche, push, Telegram), assistant Telegram sur Claude avec relais open source, back-office mobile first, fenêtres natives du téléphone remplacées
 - [**v1.2.0**](./RELEASE_NOTES_v1.2.0.md) — Back-office Super Admin (inscriptions, licences, demandes), isolation des données par client, connexion unique, mot de passe temporaire à changer, correctifs de sécurité
