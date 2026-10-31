@@ -62,3 +62,6 @@ skills-lock.json
 
 # Site vitrine : branche dédiée `landing`, extraite ici en worktree
 /landing/
+
+# Dépôt local d'outils d'agents, non suivi (enregistré par erreur comme sous-module : avertissement Vercel)
+/agents/
