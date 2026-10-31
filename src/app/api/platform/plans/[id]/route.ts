@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/neon/admin';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { normalizePlanFeatures } from '@/lib/plan-features';
 
 function getServiceClient() {
   return createAdminClient();
@@ -99,7 +100,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (max_points_of_sale !== undefined) updates.max_points_of_sale = max_points_of_sale;
   if (max_collectors !== undefined) updates.max_collectors = max_collectors;
   if (max_tickets_per_month !== undefined) updates.max_tickets_per_month = max_tickets_per_month;
-  if (features !== undefined) updates.features = features;
+  if (features !== undefined) updates.features = normalizePlanFeatures(features);
   if (status !== undefined) updates.status = status;
 
   const { data: plan, error } = await adminClient
