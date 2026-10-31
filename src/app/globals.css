@@ -400,3 +400,31 @@
     background: #fff !important;
   }
 }
+
+/* Rapport d'activité (« Exporter en PDF ») : seul le rapport est imprimé, en A4, couleurs conservées. */
+@media print {
+  body:has(.report-print) * {
+    visibility: hidden;
+  }
+  body:has(.report-print) .report-print,
+  body:has(.report-print) .report-print * {
+    visibility: visible;
+  }
+  body:has(.report-print) .report-print {
+    position: absolute;
+    inset: 0 0 auto 0;
+    color-scheme: light;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body:has(.report-print) {
+    background: #fff !important;
+  }
+  /* Les lignes d'un tableau ne sont pas coupées entre deux pages ; l'en-tête se répète */
+  .report-print tr {
+    break-inside: avoid;
+  }
+  .report-print thead {
+    display: table-header-group;
+  }
+}
