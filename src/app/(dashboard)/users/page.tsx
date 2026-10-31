@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, Loader2, Trash2, Info } from 'lucide-react';
+import Link from 'next/link';
+import { Users, Mail, Loader2, Trash2, Info, KeyRound, UserCheck, Clock, CheckCircle2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +15,8 @@ import { createClient } from '@/lib/supabase/client';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AddButton } from '@/components/ui/AddButton';
 import { PlanLimitDialog, type LimitKind, type PlanLimits } from '@/components/team/PlanLimitDialog';
+import { AccessCard, MemberAccessDialog, type MemberAccessInfo } from '@/components/team/MemberAccess';
+import { cn } from '@/lib/utils/cn';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,6 +29,24 @@ export default function UsersPage() {
   const [role, setRole] = useState<UserRole>('collecteur');
   const [telephone, setTelephone] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
+  const [sendEmail, setSendEmail] = useState(true);
+
+  // Accès du membre qui vient d'être créé (affichés une seule fois)
+  const [created, setCreated] = useState<{ member: Profile; access: MemberAccessInfo; emailSent: boolean } | null>(null);
+  // « Accès » d'un membre existant
+  const [accessMember, setAccessMember] = useState<Profile | null>(null);
+  // Dernière connexion et accès pas encore utilisés (mot de passe temporaire)
+  const [status, setStatus] = useState<Record<string, { last_sign_in_at: string | null; pending_password: boolean }>>({});
+  const loadStatus = () =>
+    fetch('/api/users/access-status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (!res?.data) return;
+        const map: Record<string, { last_sign_in_at: string | null; pending_password: boolean }> = {};
+        for (const s of res.data) map[s.id] = s;
+        setStatus(map);
+      })
+      .catch(() => {});
 
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
 
@@ -44,6 +65,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     loadLimits();
+    loadStatus();
   }, []);
 
   // « Ajouter » : note d'information si le forfait ne permet pas un membre de plus
@@ -71,11 +93,12 @@ export default function UsersPage() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nom || !email || !motDePasse) {
+    if (!nom || !email) {
       toast.error('Veuillez remplir tous les champs obligatoires.');
       return;
     }
-    if (motDePasse.length < 6) {
+    // Vide : le serveur génère un mot de passe temporaire sûr
+    if (motDePasse && motDePasse.length < 6) {
       toast.error('Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
@@ -85,7 +108,7 @@ export default function UsersPage() {
     const res = await fetch('/api/users/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom, email, role, telephone, mot_de_passe: motDePasse }),
+      body: JSON.stringify({ nom, email, role, telephone, mot_de_passe: motDePasse, send_email: sendEmail }),
     });
 
     const result = await res.json();
@@ -102,7 +125,10 @@ export default function UsersPage() {
     if (res.ok && result.success) {
       loadLimits();
       setUsers([result.profile, ...users]);
-      toast.success('Utilisateur créé avec succès.');
+      toast.success('Utilisateur créé : transmettez-lui ses accès.');
+      // Fiche des accès à transmettre (copie, WhatsApp, e-mail)
+      if (result.access) setCreated({ member: result.profile, access: result.access, emailSent: result.email_sent === true });
+      loadStatus();
       setNom('');
       setEmail('');
       setTelephone('');
@@ -137,19 +163,66 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gestion des Utilisateurs</h1>
           <p className="text-xs text-slate-500">Profils et rôles d&apos;accès à la plateforme.</p>
         </div>
-        <div className="flex flex-col items-stretch sm:items-end gap-1">
-          <AddButton what="un utilisateur" onClick={openAdd} />
-          {limits?.plan && (
-            <p className="text-[11px] text-slate-500 sm:text-right">
-              Forfait {limits.plan.name} : {limits.users.current}
-              {limits.users.limit !== null ? ` / ${limits.users.limit}` : ''} utilisateur
-              {limits.users.current > 1 ? 's' : ''}
-              {limits.collectors.limit !== null &&
-                ` · ${limits.collectors.current} / ${limits.collectors.limit} collecteur${limits.collectors.limit > 1 ? 's' : ''}`}
-            </p>
-          )}
-        </div>
+        <AddButton what="un utilisateur" onClick={openAdd} />
       </div>
+
+      {/* Forfait : places utilisées et disponibles, bien visibles */}
+      {limits?.plan && (
+        <Card className="p-4 sm:p-5">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            <div className="lg:w-56 shrink-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Votre forfait</p>
+              <p className="text-lg font-extrabold text-slate-900 dark:text-white">{limits.plan.name}</p>
+              <Link href="/subscription" className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline">
+                Changer de forfait <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+              {[
+                { label: 'Utilisateurs', icon: Users, usage: limits.users },
+                { label: 'Collecteurs', icon: UserCheck, usage: limits.collectors },
+              ].map(({ label, icon: Icon, usage }) => {
+                const full = isFull(usage);
+                const percent =
+                  usage.limit === null ? 0 : usage.limit === 0 ? 100 : Math.min(100, Math.round((usage.current / usage.limit) * 100));
+                return (
+                  <div
+                    key={label}
+                    className={cn(
+                      'rounded-xl border p-3',
+                      full ? 'border-amber-300 bg-amber-50/70 dark:bg-amber-950/20 dark:border-amber-900/60' : 'border-slate-200 dark:border-slate-800'
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        <Icon className="w-4 h-4 text-slate-400" /> {label}
+                      </span>
+                      <span className="text-xl font-extrabold tabular-nums text-slate-900 dark:text-white">
+                        {usage.current}
+                        <span className="text-sm font-semibold text-slate-400"> / {usage.limit === null ? '∞' : usage.limit}</span>
+                      </span>
+                    </div>
+                    {usage.limit !== null && (
+                      <div className="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                        <div className={cn('h-full rounded-full', full ? 'bg-amber-500' : 'bg-emerald-500')} style={{ width: `${percent}%` }} />
+                      </div>
+                    )}
+                    <p className={cn('mt-1.5 text-xs', full ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-slate-500')}>
+                      {usage.limit === null
+                        ? 'Illimité'
+                        : usage.limit === 0
+                          ? 'Non inclus dans votre forfait'
+                          : full
+                            ? 'Limite atteinte'
+                            : `${usage.limit - usage.current} place${usage.limit - usage.current > 1 ? 's' : ''} disponible${usage.limit - usage.current > 1 ? 's' : ''}`}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
@@ -196,16 +269,44 @@ export default function UsersPage() {
                     </Badge>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-center gap-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
-                  onClick={() => setDeleteTarget(u)}
-                  disabled={u.is_active === false}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Supprimer de l’équipe
-                </Button>
+                {/* Accès : jamais utilisés, ou dernière connexion */}
+                {status[u.id] && (
+                  <p
+                    className={cn(
+                      'flex items-center gap-1.5 text-xs',
+                      status[u.id].pending_password ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-slate-500'
+                    )}
+                  >
+                    {status[u.id].pending_password ? <Clock className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                    {status[u.id].pending_password
+                      ? 'Accès pas encore utilisés'
+                      : status[u.id].last_sign_in_at
+                        ? `Dernière connexion le ${new Date(status[u.id].last_sign_in_at as string).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                        : 'Jamais connecté'}
+                  </p>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-10 font-semibold"
+                    onClick={() => setAccessMember(u)}
+                    disabled={u.is_active === false}
+                  >
+                    <KeyRound className="w-4 h-4 mr-1.5" />
+                    Accès
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-10 font-semibold text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/60 dark:hover:bg-red-900/30"
+                    onClick={() => setDeleteTarget(u)}
+                    disabled={u.is_active === false}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1.5" />
+                    Retirer
+                  </Button>
+                </div>
               </Card>
           ))}
         </div>
@@ -216,7 +317,19 @@ export default function UsersPage() {
           <Input label="Nom Complet" placeholder="ex: Konan Philippe" value={nom} onChange={(e) => setNom(e.target.value)} required />
           <Input label="Adresse Email" type="email" placeholder="agent@optiwifi.ci" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <Input label="Téléphone" type="tel" placeholder="ex: +225 07 07 07 07" value={telephone} onChange={(e) => setTelephone(e.target.value)} />
-          <Input label="Mot de Passe" type="password" placeholder="•••••••• (6+ caractères)" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} required />
+          <Input
+            label="Mot de passe temporaire (facultatif)"
+            type="text"
+            placeholder="Laisser vide : généré automatiquement"
+            value={motDePasse}
+            onChange={(e) => setMotDePasse(e.target.value)}
+            helperText="Le membre choisira son propre mot de passe à sa première connexion."
+            autoComplete="off"
+          />
+          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+            <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
+            Envoyer les accès par e-mail
+          </label>
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Rôle</label>
             <CustomSelect
@@ -261,6 +374,26 @@ export default function UsersPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Accès du membre créé : à transmettre maintenant */}
+      <Modal isOpen={!!created} onClose={() => setCreated(null)} title={created ? `Accès de ${created.member.nom}` : ''}>
+        {created && (
+          <div className="space-y-4">
+            <AccessCard member={created.member} access={created.access} emailSent={created.emailSent} />
+            <div className="flex justify-end">
+              <Button onClick={() => setCreated(null)}>Terminé</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <MemberAccessDialog
+        member={accessMember}
+        onClose={() => {
+          setAccessMember(null);
+          loadStatus();
+        }}
+      />
 
       <PlanLimitDialog open={limitKind !== null} kind={limitKind ?? 'users'} limits={limits} onClose={() => setLimitKind(null)} />
 

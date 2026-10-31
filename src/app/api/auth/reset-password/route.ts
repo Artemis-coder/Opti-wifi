@@ -1,50 +1,34 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
-import { signToken } from '@/lib/neon/auth';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { appUrl, createPasswordToken } from '@/lib/password-tokens';
 
+// « Mot de passe oublié » : envoie un lien de réinitialisation (valable 1 h, usage unique).
+// Réponse identique que le compte existe ou non (pas de fuite des adresses inscrites).
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email } = body;
-
+    const body = await request.json().catch(() => ({}));
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     if (!email) {
       return NextResponse.json({ error: 'Email requis' }, { status: 400 });
     }
 
-    // Check if user exists in Neon database
     const result = await query(
-      'SELECT id, email FROM users WHERE email = $1',
-      [email.toLowerCase()]
+      `SELECT u.id, u.email, p.nom
+         FROM users u LEFT JOIN profiles p ON p.id = u.id
+        WHERE lower(u.email) = $1 AND (u.banned_until IS NULL OR u.banned_until <= NOW())`,
+      [email]
     );
-
-    if (!result.rows || result.rows.length === 0) {
-      // Still return success to avoid email enumeration
-      return NextResponse.json({ data: { message_id: 'sent' }, error: null });
+    const user = result.rows[0];
+    if (user) {
+      const token = await createPasswordToken(user.id, 'reset');
+      const sent = await sendPasswordResetEmail(user.email, appUrl(`/reset-password?token=${encodeURIComponent(token)}`, request), user.nom);
+      if (!sent.success) console.error('Reset email not sent:', sent.error);
     }
 
-    const user = result.rows[0];
-    const token = signToken({
-      id: user.id,
-      email: user.email,
-      role: 'administrateur',
-      email_confirmed: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
-
-    // Generate the reset URL using production domain
-    const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.optiwifi.site'}/reset-password?token=${token}`;
-
-    // Send email with reset link
-    await sendPasswordResetEmail(user.email, resetUrl);
-
-    return NextResponse.json({
-      data: {
-        message_id: 'sent',
-      },
-    });
+    return NextResponse.json({ data: { message_id: 'sent' } });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) || 'Internal error' }, { status: 500 });
+    console.error('Reset password error:', err);
+    return NextResponse.json({ error: "Impossible d'envoyer le lien pour le moment." }, { status: 500 });
   }
 }
