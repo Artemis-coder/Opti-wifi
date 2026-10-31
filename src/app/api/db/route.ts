@@ -35,11 +35,13 @@ const CLIENT_POLICIES: Record<string, TablePolicy> = {
   platform_users: { actions: ['select'], scope: 'own_platform_user' },
 };
 
-// Un collecteur ne fait que consulter, sauf pour enregistrer ses collectes et modifier son profil.
+// Un collecteur ne fait que consulter, sauf pour enregistrer ses collectes, attribuer des tickets
+// à ses points de vente et modifier son profil.
 // Son périmètre (ses points de vente et leurs collectes) est imposé dans restrictToCollector.
 const COLLECTOR_ACTIONS: Record<string, Action[]> = {
   collections: ['select', 'insert'],
   collection_items: ['select', 'insert'],
+  ticket_allocations: ['select', 'insert'],
   profiles: ['select', 'update'],
 };
 
@@ -93,7 +95,20 @@ async function restrictToCollector(spec: QuerySpec, ctx: SessionContext): Promis
       and('collecteur_id', '=', ctx.userId);
       break;
     case 'ticket_allocations':
-      and('pos_id', 'IN', await getVisiblePosIds(ctx.userId, org));
+      if (spec.action === 'insert') {
+        // Allocation simple sur un de ses points de vente (l'échange entre POS reste à l'administrateur)
+        const assigned = await getAssignedPosIds(ctx.userId, org);
+        for (const row of rows()) {
+          if (typeof row.pos_id !== 'string' || !assigned.includes(row.pos_id)) {
+            throw new ForbiddenError('Ce point de vente ne vous est pas attribué');
+          }
+          if (row.type !== undefined && row.type !== 'allocation') throw new ForbiddenError('Action réservée à l’administrateur');
+          delete row.exchange_group_id;
+          row.alloue_par = ctx.userId;
+        }
+      } else {
+        and('pos_id', 'IN', await getVisiblePosIds(ctx.userId, org));
+      }
       break;
     case 'collections':
       if (spec.action === 'insert') {

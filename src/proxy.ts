@@ -17,7 +17,7 @@ const PROTECTED_CLIENT_ROUTES = [
 
 // Pages de gestion réservées à l'administrateur : le collecteur est renvoyé vers sa tournée.
 // (Simple confort de navigation : les données restent protégées côté serveur.)
-const ADMIN_ONLY_ROUTES = ['/allocations', '/spaces', '/tickets', '/users', '/reports', '/subscription'];
+const ADMIN_ONLY_ROUTES = ['/spaces', '/tickets', '/users', '/reports', '/subscription'];
 
 const CSRF_EXEMPT_ROUTES = [
   '/api/auth/login',

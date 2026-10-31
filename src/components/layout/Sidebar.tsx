@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   LifeBuoy,
   PlusCircle,
+  Repeat,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
@@ -83,6 +84,14 @@ const collectorSections: NavSection[] = [
     items: [
       { label: 'Ma tournée', href: '/dashboard', icon: LayoutDashboard, roles: ['collecteur'] },
       { label: 'Mes points de vente', href: '/pos', icon: Store, roles: ['collecteur'] },
+    ],
+  },
+  {
+    title: 'Tickets',
+    items: [
+      { label: 'Attribuer des tickets', href: '/allocations/new', icon: PlusCircle, roles: ['collecteur'] },
+      { label: 'Échange de tickets', href: '/allocations/exchange', icon: Repeat, roles: ['collecteur'] },
+      { label: 'Mes allocations', href: '/allocations', icon: ArrowLeftRight, roles: ['collecteur'] },
     ],
   },
   {

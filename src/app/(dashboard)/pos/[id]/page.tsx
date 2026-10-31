@@ -401,17 +401,13 @@ export default function PosDetailPage() {
             <Package className="w-10 h-10 text-slate-300 mx-auto" />
             <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune allocation pour ce POS</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              {isAdmin
-                ? 'Aucun ticket n’a été alloué à ce point de vente. Rendez-vous sur la page des allocations pour distribuer du stock.'
-                : 'Aucun ticket n’a encore été confié à ce point de vente par votre administrateur.'}
+              Aucun ticket n&apos;a été alloué à ce point de vente.
             </p>
-            {isAdmin && (
-              <Link href="/allocations/new">
-                <Button variant="secondary" size="sm" className="gap-2 font-bold">
-                  <Package className="w-4 h-4" /> Allouer des Tickets
-                </Button>
-              </Link>
-            )}
+            <Link href={`/allocations/new?pos=${pos.id}`}>
+              <Button variant="secondary" size="sm" className="gap-2 font-bold">
+                <Package className="w-4 h-4" /> Allouer des Tickets
+              </Button>
+            </Link>
           </div>
         ) : (
           <>

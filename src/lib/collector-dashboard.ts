@@ -1,13 +1,15 @@
 import { query } from '@/lib/neon/db';
+import type { DashboardPeriod } from '@/lib/client-dashboard';
 
 /**
- * Accueil du collecteur (« Ma tournée ») : ses encaissements du jour et du mois, ses points
- * de vente classés par priorité de passage, ses dernières collectes. Toujours limité au
- * collecteur de la session, dans son organisation. Encaissements annulés exclus des totaux.
+ * Accueil du collecteur (« Ma tournée ») : ses encaissements sur la période choisie, ses points
+ * de vente classés par priorité de passage, ses dernières collectes. Toujours limité aux collectes
+ * faites par le collecteur de la session (comme « Mes collectes »), dans son organisation.
+ * Encaissements annulés exclus des totaux.
  */
 export interface CollectorDashboard {
-  today: { collected: number; collections: number };
-  month: { collected: number; expected: number; gap: number; collections: number; tickets: number };
+  period: DashboardPeriod;
+  totals: { collected: number; expected: number; gap: number; collections: number; tickets: number };
   pos: {
     id: string;
     name: string;
@@ -27,34 +29,39 @@ export interface CollectorDashboard {
   recent: { id: string; pos: string; collected: number; gap: number; status: string; date: string }[];
 }
 
+// Début de la période (fuseau Abidjan = UTC), comme le tableau de bord de l'administrateur
+const PERIOD_START: Record<DashboardPeriod, string> = {
+  today: "date_trunc('day', NOW())",
+  week: "date_trunc('day', NOW()) - interval '6 days'",
+  month: "date_trunc('month', NOW())",
+  all: "'-infinity'::timestamptz",
+};
+
 export async function getCollectorDashboard(
   userId: string,
   organizationId: string,
   spaceId: string | null,
+  period: DashboardPeriod,
 ): Promise<CollectorDashboard> {
+  const start = PERIOD_START[period];
   const when = `COALESCE(c.date_collecte::timestamptz, c.created_at)`;
   const mine = `c.collecteur_id = $1 AND COALESCE(c.organization_id, c.organisation_id) = $2
                 AND ($3::uuid IS NULL OR c.space_id = $3::uuid) AND c.statut <> 'annulee'`;
   const params = [userId, organizationId, spaceId];
 
-  const [today, month, monthTickets, pos, recent] = await Promise.all([
-    query(
-      `SELECT COUNT(*)::int AS n, COALESCE(SUM(c.montant_collecte), 0)::float AS collected
-         FROM collections c WHERE ${mine} AND ${when} >= date_trunc('day', NOW())`,
-      params,
-    ),
+  const [totals, tickets, pos, recent] = await Promise.all([
     query(
       `SELECT COUNT(*)::int AS n,
               COALESCE(SUM(c.montant_collecte), 0)::float AS collected,
               COALESCE(SUM(c.montant_attendu), 0)::float AS expected,
               COALESCE(SUM(c.difference), 0)::float AS gap
-         FROM collections c WHERE ${mine} AND ${when} >= date_trunc('month', NOW())`,
+         FROM collections c WHERE ${mine} AND ${when} >= ${start}`,
       params,
     ),
     query(
       `SELECT COALESCE(SUM(ci.quantite_vendue), 0)::int AS n
          FROM collection_items ci JOIN collections c ON c.id = ci.collection_id
-        WHERE ${mine} AND ${when} >= date_trunc('month', NOW())`,
+        WHERE ${mine} AND ${when} >= ${start}`,
       params,
     ),
     query(
@@ -114,16 +121,15 @@ export async function getCollectorDashboard(
     ),
   ]);
 
-  const d = today.rows[0] || {};
-  const m = month.rows[0] || {};
+  const m = totals.rows[0] || {};
   return {
-    today: { collected: Number(d.collected || 0), collections: Number(d.n || 0) },
-    month: {
+    period,
+    totals: {
       collected: Number(m.collected || 0),
       expected: Number(m.expected || 0),
       gap: Number(m.gap || 0),
       collections: Number(m.n || 0),
-      tickets: Number(monthTickets.rows[0]?.n || 0),
+      tickets: Number(tickets.rows[0]?.n || 0),
     },
     pos: pos.rows.map((r) => ({
       id: r.id,

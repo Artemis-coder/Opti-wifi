@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getSessionContext } from '@/lib/tenant';
 import { query } from '@/lib/neon/db';
+import { getAssignedPosIds } from '@/lib/collector-scope';
 import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 
@@ -125,6 +126,13 @@ export async function POST(request: NextRequest) {
       const row = owned.rows[0];
       if (Number(row?.pos_ok) !== 1 || Number(row?.types_ok) !== ticketTypeIds.length) {
         return NextResponse.json({ error: 'Point de vente ou type de ticket introuvable.' }, { status: 404 });
+      }
+      // Un collecteur n'échange des tickets que sur ses propres points de vente
+      if (ctx.role !== 'administrateur') {
+        const assigned = ctx.organizationId ? await getAssignedPosIds(ctx.userId, ctx.organizationId) : [];
+        if (!assigned.includes(body.pos_id)) {
+          return NextResponse.json({ error: 'Ce point de vente ne vous est pas attribué.' }, { status: 403 });
+        }
       }
     }
 

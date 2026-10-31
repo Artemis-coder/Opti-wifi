@@ -34,6 +34,8 @@ const COLLECTOR_TITLES: Record<string, string> = {
   '/dashboard': 'Ma tournée',
   '/pos': 'Mes points de vente',
   '/collections': 'Mes collectes',
+  '/allocations': 'Mes allocations',
+  '/allocations/new': 'Attribuer des tickets',
 };
 
 function resolveTitle(pathname: string, isCollector: boolean): string {

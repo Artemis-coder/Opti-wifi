@@ -32,7 +32,8 @@ export default function CollectionsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const supabase = createClient();
   const { currentSpaceId } = useSpaceStore();
-  const isCollector = useAuthStore((s) => s.user?.role) === 'collecteur';
+  const user = useAuthStore((s) => s.user);
+  const isCollector = user?.role === 'collecteur';
 
   useEffect(() => {
     async function loadCollections() {
@@ -45,17 +46,22 @@ export default function CollectionsPage() {
       if (currentSpaceId) {
         query = query.eq('space_id', currentSpaceId);
       }
+      // Le collecteur ne voit ici que les collectes qu'il a faites (mêmes chiffres que « Ma tournée »)
+      if (isCollector && user?.id) {
+        query = query.eq('collecteur_id', user.id);
+      }
 
       const { data } = await query;
       setCollections(data || []);
       setLoading(false);
     }
     loadCollections();
-  }, [currentSpaceId, supabase]);
+  }, [currentSpaceId, supabase, isCollector, user?.id]);
 
   // Financial KPIs
   const { totalEncaissé, totalAttendu, totalDifference, totalCommissions } = useMemo(() => {
-    return collections.reduce(
+    // Les collectes annulées ne comptent pas dans les totaux (comme sur les tableaux de bord)
+    return collections.filter((c) => c.statut !== 'annulee').reduce(
       (acc, c) => ({
         totalEncaissé: acc.totalEncaissé + Number(c.montant_collecte || 0),
         totalAttendu: acc.totalAttendu + Number(c.montant_attendu || 0),

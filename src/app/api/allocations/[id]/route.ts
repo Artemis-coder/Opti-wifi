@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
+import { getVisiblePosIds } from '@/lib/collector-scope';
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -43,6 +44,14 @@ export async function GET(
         { error: 'Allocation introuvable', details: allocError?.message },
         { status: 404 }
       );
+    }
+
+    // Un collecteur ne consulte que les allocations de ses points de vente
+    if (!ctx.isPlatformAdmin && ctx.role !== 'administrateur' && ctx.organizationId) {
+      const visible = await getVisiblePosIds(ctx.userId, ctx.organizationId);
+      if (!visible.includes(allocation.pos_id)) {
+        return NextResponse.json({ error: 'Allocation introuvable' }, { status: 404 });
+      }
     }
 
     let allocatorProfile = null;

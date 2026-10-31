@@ -22,6 +22,14 @@ import { formatCurrencyFCFA, formatDateOnlyFR, formatNumber } from '@/lib/utils/
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { CollectorDashboard as Data } from '@/lib/collector-dashboard';
+import type { DashboardPeriod } from '@/lib/client-dashboard';
+
+const PERIODS: { value: DashboardPeriod; label: string }[] = [
+  { value: 'all', label: 'Tout' },
+  { value: 'today', label: "Aujourd'hui" },
+  { value: 'week', label: '7 jours' },
+  { value: 'month', label: 'Ce mois-ci' },
+];
 
 /** Au-delà, un point de vente est signalé « à visiter ». */
 const OVERDUE_DAYS = 7;
@@ -39,14 +47,15 @@ function lastVisit(days: number | null): { text: string; tone: string } {
 export function CollectorDashboard() {
   const user = useAuthStore((s) => s.user);
   const { currentSpaceId } = useSpaceStore();
+  const [period, setPeriod] = useState<DashboardPeriod>('all');
   const [result, setResult] = useState<{ key: string; data: Data | null } | null>(null);
-  const key = currentSpaceId || '';
+  const key = `${period}|${currentSpaceId || ''}`;
   const loading = result?.key !== key;
   const data = result?.data ?? null;
 
   useEffect(() => {
     let cancelled = false;
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ period });
     if (currentSpaceId) params.set('space', currentSpaceId);
     fetch(`/api/collector/dashboard?${params}`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : { data: null }))
@@ -55,12 +64,14 @@ export function CollectorDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [currentSpaceId, key]);
+  }, [period, currentSpaceId, key]);
 
   const firstName = (user?.nom || '').trim().split(/\s+/)[0];
   const today = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   const pending = data?.pos.filter((p) => p.status === 'actif' && (p.days_since === null || p.days_since >= OVERDUE_DAYS)).length ?? 0;
-  const gapAlert = !!data && data.month.gap < 0;
+  const t = data?.totals;
+  const gapAlert = !!t && t.gap < 0;
+  const count = t?.collections ?? 0;
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-6">
@@ -77,41 +88,66 @@ export function CollectorDashboard() {
               : 'Votre tournée est à jour.'}
           </p>
         </div>
-        <Link href="/collections/new" className={buttonClassName({ className: 'w-full sm:w-auto' })}>
-          <Receipt className="w-4 h-4" /> Nouvelle collecte
-        </Link>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Link href="/allocations/new" className={buttonClassName({ variant: 'outline', className: 'flex-1 sm:flex-initial' })}>
+            <Ticket className="w-4 h-4" /> Attribuer des tickets
+          </Link>
+          <Link href="/collections/new" className={buttonClassName({ className: 'flex-1 sm:flex-initial' })}>
+            <Receipt className="w-4 h-4" /> Nouvelle collecte
+          </Link>
+        </div>
       </div>
 
-      {/* Chiffres clés du collecteur */}
+      {/* Période des chiffres : mêmes collectes que « Mes collectes » (les siennes) */}
+      <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+        {PERIODS.map((p) => (
+          <button
+            key={p.value}
+            type="button"
+            onClick={() => setPeriod(p.value)}
+            aria-pressed={period === p.value}
+            className={cn(
+              'shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold border transition',
+              period === p.value
+                ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+            )}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Chiffres clés : uniquement les collectes faites par le collecteur */}
       <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-60')}>
         <StatTile
-          label="Encaissé aujourd'hui"
-          value={money(data?.today.collected ?? 0)}
+          label="Total encaissé"
+          value={money(t?.collected ?? 0)}
           icon={Banknote}
           accent="emerald"
-          hint={`${data?.today.collections ?? 0} collecte${(data?.today.collections ?? 0) > 1 ? 's' : ''}`}
+          hint={count ? `${count} collecte${count > 1 ? 's' : ''}` : 'Aucune collecte sur la période'}
         />
         <StatTile
-          label="Encaissé ce mois"
-          value={money(data?.month.collected ?? 0)}
+          label="Montant attendu"
+          value={money(t?.expected ?? 0)}
           icon={CalendarCheck}
           accent="indigo"
-          hint={`${data?.month.collections ?? 0} collecte${(data?.month.collections ?? 0) > 1 ? 's' : ''}`}
+          hint="Ventes déclarées"
         />
         <StatTile
-          label="Écart du mois"
-          value={`${(data?.month.gap ?? 0) > 0 ? '+' : ''}${money(data?.month.gap ?? 0)}`}
+          label="Écart"
+          value={`${(t?.gap ?? 0) > 0 ? '+' : ''}${money(t?.gap ?? 0)}`}
           icon={AlertTriangle}
           accent="red"
           alert={gapAlert}
           hint={gapAlert ? 'Manque à justifier' : 'Aucun manque'}
         />
         <StatTile
-          label="Tickets vendus ce mois"
-          value={formatNumber(data?.month.tickets ?? 0)}
+          label="Tickets vendus"
+          value={formatNumber(t?.tickets ?? 0)}
           icon={Ticket}
           accent="amber"
-          hint={`Attendu : ${money(data?.month.expected ?? 0)}`}
+          hint="Déclarés lors des collectes"
         />
       </div>
 
@@ -171,12 +207,20 @@ export function CollectorDashboard() {
                       </span>
                     </Link>
                     {active ? (
-                      <Link
-                        href={`/collections/new?pos=${p.id}`}
-                        className={buttonClassName({ size: 'sm', className: 'shrink-0 w-full sm:w-auto' })}
-                      >
-                        <Receipt className="w-4 h-4" /> Collecter
-                      </Link>
+                      <span className="flex gap-2 shrink-0 w-full sm:w-auto">
+                        <Link
+                          href={`/allocations/new?pos=${p.id}`}
+                          className={buttonClassName({ size: 'sm', variant: 'outline', className: 'flex-1 sm:flex-initial' })}
+                        >
+                          <Ticket className="w-4 h-4" /> Tickets
+                        </Link>
+                        <Link
+                          href={`/collections/new?pos=${p.id}`}
+                          className={buttonClassName({ size: 'sm', className: 'flex-1 sm:flex-initial' })}
+                        >
+                          <Receipt className="w-4 h-4" /> Collecter
+                        </Link>
+                      </span>
                     ) : (
                       <span className="shrink-0 text-xs text-slate-400 sm:w-24 sm:text-right">Point inactif</span>
                     )}
