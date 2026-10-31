@@ -58,6 +58,7 @@ export default function PlatformPlansPage() {
   const [formTrialDays, setFormTrialDays] = useState('');
   const [formMaxUsers, setFormMaxUsers] = useState('');
   const [formMaxPos, setFormMaxPos] = useState('');
+  const [formMaxCollectors, setFormMaxCollectors] = useState('');
   const [formMaxTickets, setFormMaxTickets] = useState('');
   const [formStatus, setFormStatus] = useState<PlanStatus>('active');
 
@@ -91,6 +92,7 @@ export default function PlatformPlansPage() {
     setFormTrialDays('');
     setFormMaxUsers('');
     setFormMaxPos('');
+    setFormMaxCollectors('');
     setFormMaxTickets('');
     setFormStatus('active');
     setEditingPlan(null);
@@ -107,6 +109,7 @@ export default function PlatformPlansPage() {
       setFormTrialDays(plan.trial_days?.toString() || '');
       setFormMaxUsers(plan.max_users?.toString() || '');
       setFormMaxPos(plan.max_points_of_sale?.toString() || '');
+      setFormMaxCollectors(plan.max_collectors?.toString() || '');
       setFormMaxTickets(plan.max_tickets_per_month?.toString() || '');
       setFormStatus(plan.status);
     } else {
@@ -138,6 +141,7 @@ export default function PlatformPlansPage() {
       trial_days: formTrialDays ? parseInt(formTrialDays) : 14,
       max_users: formMaxUsers ? parseInt(formMaxUsers) : null,
       max_points_of_sale: formMaxPos ? parseInt(formMaxPos) : null,
+      max_collectors: formMaxCollectors ? parseInt(formMaxCollectors) : null,
       max_tickets_per_month: formMaxTickets ? parseInt(formMaxTickets) : null,
       features: null,
       status: formStatus,
@@ -278,6 +282,9 @@ export default function PlatformPlansPage() {
                 {plan.max_points_of_sale && (
                   <p><span className="font-semibold">POS :</span> {plan.max_points_of_sale === -1 ? 'Illimités' : plan.max_points_of_sale}</p>
                 )}
+                {plan.max_collectors && (
+                  <p><span className="font-semibold">Collecteurs :</span> {plan.max_collectors === -1 ? 'Illimités' : plan.max_collectors}</p>
+                )}
                 {plan.max_tickets_per_month && (
                   <p><span className="font-semibold">Tickets/mois :</span> {plan.max_tickets_per_month === -1 ? 'Illimités' : plan.max_tickets_per_month}</p>
                 )}
@@ -376,6 +383,13 @@ export default function PlatformPlansPage() {
             placeholder="-1"
             value={formMaxPos}
             onChange={(e) => setFormMaxPos(e.target.value)}
+          />
+          <Input
+            label="Max Collecteurs (-1 = illimité)"
+            type="number"
+            placeholder="-1"
+            value={formMaxCollectors}
+            onChange={(e) => setFormMaxCollectors(e.target.value)}
           />
           <Input
             label="Max Tickets/mois (-1 = illimité)"

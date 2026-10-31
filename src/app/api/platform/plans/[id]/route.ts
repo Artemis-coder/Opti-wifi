@@ -78,7 +78,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const body = await request.json();
-  const { name, description, price, currency, billing_period, trial_days, max_users, max_points_of_sale, max_tickets_per_month, features, status } = body;
+  const { name, description, price, currency, billing_period, trial_days, max_users, max_points_of_sale, max_collectors, max_tickets_per_month, features, status } = body;
 
   const adminClient = getServiceClient();
 
@@ -97,6 +97,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (trial_days !== undefined) updates.trial_days = trial_days;
   if (max_users !== undefined) updates.max_users = max_users;
   if (max_points_of_sale !== undefined) updates.max_points_of_sale = max_points_of_sale;
+  if (max_collectors !== undefined) updates.max_collectors = max_collectors;
   if (max_tickets_per_month !== undefined) updates.max_tickets_per_month = max_tickets_per_month;
   if (features !== undefined) updates.features = features;
   if (status !== undefined) updates.status = status;

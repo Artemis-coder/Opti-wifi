@@ -11,6 +11,7 @@ import { Profile } from '@/types/database';
 import { LicenseRequestDialog } from '@/components/payments/LicenseRequestDialog';
 import { Button } from '@/components/ui/Button';
 import { AccountNotices } from '@/components/layout/AccountNotices';
+import { PendingWhatsappButton } from '@/components/layout/PendingWhatsappButton';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -167,6 +168,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </p>
           </div>
           <div className="pt-2 flex flex-col gap-2">
+            {/* Écrire au support pour accélérer la validation */}
+            <PendingWhatsappButton />
             <button
               onClick={() => window.location.reload()}
               className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition"

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle, Layers, Store, Users, MapPin, Gift, ArrowRight } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle, Layers, Store, Users, MapPin, Gift, ArrowRight, UserCheck } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +20,7 @@ interface SubscriptionPlan {
   features?: unknown;
   max_users?: number;
   max_points_of_sale?: number;
+  max_collectors?: number | null;
   max_tickets_per_month?: number;
   trial_days?: number;
 }
@@ -48,6 +49,9 @@ interface LicenseRequestInfo {
   plan_name: string | null;
 }
 
+/** Limite d'un forfait : null ou négative (-1) = illimitée */
+const planLimit = (v: number | null | undefined) => (v && v > 0 ? v : null);
+
 export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [requestPlan, setRequestPlan] = useState<{ plan: RequestedPlan; renewal: boolean } | null>(null);
@@ -57,7 +61,7 @@ export default function SubscriptionPage() {
   const [lastRequest, setLastRequest] = useState<LicenseRequestInfo | null>(null);
   const [trialUsed, setTrialUsed] = useState(false);
   const [openPlanOnLoad, setOpenPlanOnLoad] = useState<SubscriptionPlan | null>(null);
-  const [usage, setUsage] = useState({ posCount: 0, usersCount: 0, spacesCount: 0 });
+  const [usage, setUsage] = useState({ posCount: 0, usersCount: 0, collectorsCount: 0, spacesCount: 0 });
   const { user } = useAuthStore();
   const supabase = createClient();
 
@@ -97,14 +101,16 @@ export default function SubscriptionPage() {
         await loadRequestState();
 
         // Utilisation actuelle (les requêtes sont limitées à l'organisation côté serveur)
-        const [posRes, usersRes, spacesRes] = await Promise.all([
+        const [posRes, usersRes, collectorsRes, spacesRes] = await Promise.all([
           supabase.from('points_of_sale').select('id', { count: 'exact', head: true }),
           supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true),
+          supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('role', 'collecteur'),
           supabase.from('wifi_spaces').select('id', { count: 'exact', head: true }),
         ]);
         setUsage({
           posCount: posRes.count ?? 0,
           usersCount: usersRes.count ?? 0,
+          collectorsCount: collectorsRes.count ?? 0,
           spacesCount: spacesRes.count ?? 0,
         });
         // Lien des rappels de fin d'essai (/subscription?plan=…) : ouvre la demande du forfait proposé
@@ -195,6 +201,7 @@ export default function SubscriptionPage() {
         billing_period: target.billing_period,
         max_users: target.max_users,
         max_points_of_sale: target.max_points_of_sale,
+        max_collectors: target.max_collectors,
         max_tickets_per_month: target.max_tickets_per_month,
       },
       renewal: !plan,
@@ -405,10 +412,11 @@ export default function SubscriptionPage() {
             <Layers className="w-4 h-4 text-brand-500" />
             Utilisation de votre forfait
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Points de vente', icon: Store, count: usage.posCount, limit: subscription.plan.max_points_of_sale ?? null },
-              { label: "Membres d'équipe", icon: Users, count: usage.usersCount, limit: subscription.plan.max_users ?? null },
+              { label: 'Points de vente', icon: Store, count: usage.posCount, limit: planLimit(subscription.plan.max_points_of_sale) },
+              { label: "Membres d'équipe", icon: Users, count: usage.usersCount, limit: planLimit(subscription.plan.max_users) },
+              { label: 'Collecteurs', icon: UserCheck, count: usage.collectorsCount, limit: planLimit(subscription.plan.max_collectors) },
               { label: 'Espaces Wi-Fi', icon: MapPin, count: usage.spacesCount, limit: null },
             ].map((q) => {
               const Icon = q.icon;
@@ -484,6 +492,16 @@ export default function SubscriptionPage() {
                   <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     <span>Jusqu&apos;à {plan.max_points_of_sale} points de vente</span>
+                  </div>
+                )}
+                {!!plan.max_collectors && (
+                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span>
+                      {plan.max_collectors < 0
+                        ? 'Collecteurs illimités'
+                        : `Jusqu'à ${plan.max_collectors} collecteur${plan.max_collectors > 1 ? 's' : ''}`}
+                    </span>
                   </div>
                 )}
                 {plan.max_tickets_per_month && (

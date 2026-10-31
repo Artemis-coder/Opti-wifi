@@ -77,6 +77,8 @@ export interface SubscriptionPlan {
   trial_days?: number | null;
   max_users?: number | null;
   max_points_of_sale?: number | null;
+  /** Collecteurs (profils « collecteur » actifs) ; null ou -1 = illimité */
+  max_collectors?: number | null;
   max_tickets_per_month?: number | null;
   features?: Record<string, unknown> | null;
   status: PlanStatus;
