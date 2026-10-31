@@ -284,8 +284,11 @@ export default function PlatformPlansPage() {
                 {plan.max_points_of_sale && (
                   <p><span className="font-semibold">POS :</span> {plan.max_points_of_sale === -1 ? 'Illimités' : plan.max_points_of_sale}</p>
                 )}
-                {plan.max_collectors && (
-                  <p><span className="font-semibold">Collecteurs :</span> {plan.max_collectors === -1 ? 'Illimités' : plan.max_collectors}</p>
+                {plan.max_collectors !== null && plan.max_collectors !== undefined && (
+                  <p>
+                    <span className="font-semibold">Collecteurs :</span>{' '}
+                    {plan.max_collectors < 0 ? 'Illimités' : plan.max_collectors === 0 ? 'Aucun' : plan.max_collectors}
+                  </p>
                 )}
                 {plan.max_tickets_per_month && (
                   <p><span className="font-semibold">Tickets/mois :</span> {plan.max_tickets_per_month === -1 ? 'Illimités' : plan.max_tickets_per_month}</p>

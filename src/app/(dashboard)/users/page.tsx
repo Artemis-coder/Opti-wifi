@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Mail, Loader2, Trash2, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +13,7 @@ import { isActiveProfile } from '@/lib/utils/profiles';
 import { createClient } from '@/lib/supabase/client';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AddButton } from '@/components/ui/AddButton';
+import { PlanLimitDialog, type LimitKind, type PlanLimits } from '@/components/team/PlanLimitDialog';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +28,33 @@ export default function UsersPage() {
   const [motDePasse, setMotDePasse] = useState('');
 
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
+
+  // Limites du forfait : un membre ou un collecteur de plus est-il possible ?
+  const [limits, setLimits] = useState<PlanLimits | null>(null);
+  const [limitKind, setLimitKind] = useState<LimitKind | null>(null);
+  const isFull = (u?: { current: number; limit: number | null }) => !!u && u.limit !== null && u.current >= u.limit;
+  const usersFull = isFull(limits?.users);
+  const collectorsFull = isFull(limits?.collectors);
+
+  const loadLimits = () =>
+    fetch('/api/account/plan-limits')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => res?.data && setLimits(res.data as PlanLimits))
+      .catch(() => {});
+
+  useEffect(() => {
+    loadLimits();
+  }, []);
+
+  // « Ajouter » : note d'information si le forfait ne permet pas un membre de plus
+  const openAdd = () => {
+    if (usersFull) {
+      setLimitKind('users');
+      return;
+    }
+    if (collectorsFull) setRole('administrateur');
+    setIsModalOpen(true);
+  };
 
   const supabase = createClient();
 
@@ -63,7 +91,16 @@ export default function UsersPage() {
     const result = await res.json();
     setIsSubmitting(false);
 
+    // Limite atteinte entre-temps (contrôle serveur) : on montre les forfaits
+    if (res.status === 403 && typeof result.error === 'string' && result.error.startsWith('Limite')) {
+      setIsModalOpen(false);
+      setLimitKind(result.error.includes('collecteurs') ? 'collectors' : 'users');
+      loadLimits();
+      return;
+    }
+
     if (res.ok && result.success) {
+      loadLimits();
       setUsers([result.profile, ...users]);
       toast.success('Utilisateur créé avec succès.');
       setNom('');
@@ -85,6 +122,7 @@ export default function UsersPage() {
 
     if (res.ok && result.success) {
       setUsers(users.filter((u) => u.id !== user.id));
+      loadLimits();
       toast.success(result.message || 'Utilisateur supprimé avec succès.');
     } else {
       toast.error(result.error || 'Erreur lors de la suppression.');
@@ -99,7 +137,18 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gestion des Utilisateurs</h1>
           <p className="text-xs text-slate-500">Profils et rôles d&apos;accès à la plateforme.</p>
         </div>
-        <AddButton what="un utilisateur" onClick={() => setIsModalOpen(true)} />
+        <div className="flex flex-col items-stretch sm:items-end gap-1">
+          <AddButton what="un utilisateur" onClick={openAdd} />
+          {limits?.plan && (
+            <p className="text-[11px] text-slate-500 sm:text-right">
+              Forfait {limits.plan.name} : {limits.users.current}
+              {limits.users.limit !== null ? ` / ${limits.users.limit}` : ''} utilisateur
+              {limits.users.current > 1 ? 's' : ''}
+              {limits.collectors.limit !== null &&
+                ` · ${limits.collectors.current} / ${limits.collectors.limit} collecteur${limits.collectors.limit > 1 ? 's' : ''}`}
+            </p>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -116,7 +165,7 @@ export default function UsersPage() {
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             Créez des profils pour attribuer des points de vente aux collecteurs de votre équipe.
           </p>
-          <AddButton what="un utilisateur" onClick={() => setIsModalOpen(true)} />
+          <AddButton what="un utilisateur" onClick={openAdd} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -174,19 +223,46 @@ export default function UsersPage() {
               value={role}
               onChange={(v) => setRole(v as UserRole)}
               options={[
-                { value: 'collecteur', label: 'Collecteur / Agent Terrain' },
+                {
+                  value: 'collecteur',
+                  label: 'Collecteur / Agent Terrain',
+                  sublabel: collectorsFull ? 'Non inclus dans votre forfait actuel' : undefined,
+                },
                 { value: 'administrateur', label: 'Administrateur Système' },
               ]}
             />
           </div>
+          {role === 'collecteur' && collectorsFull && (
+            <div className="flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/60 p-3 text-xs text-slate-700 dark:text-slate-300">
+              <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+              <div className="space-y-1.5">
+                <p>
+                  Votre forfait {limits?.plan?.name} ne permet pas{' '}
+                  {limits?.collectors.limit === 0 ? 'de collecteur' : "d'autre collecteur"}.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setLimitKind('collectors');
+                  }}
+                  className="font-bold text-amber-700 dark:text-amber-400 hover:underline"
+                >
+                  Voir les forfaits
+                </button>
+              </div>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Annuler</Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || (role === 'collecteur' && collectorsFull)}>
               {isSubmitting ? 'Création...' : 'Créer le Compte'}
             </Button>
           </div>
         </form>
       </Modal>
+
+      <PlanLimitDialog open={limitKind !== null} kind={limitKind ?? 'users'} limits={limits} onClose={() => setLimitKind(null)} />
 
       {/* Delete Confirmation Modal */}
       <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Supprimer l'utilisateur">
