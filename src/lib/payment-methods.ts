@@ -1,5 +1,6 @@
 import { query } from '@/lib/neon/db';
 import { normalizeWhatsappUrl } from '@/lib/whatsapp';
+import { findCountry } from '@/lib/countries';
 
 export interface PaymentMethod {
   id: string;
@@ -19,6 +20,8 @@ export interface PaymentMethod {
   brand_logo: string | null;
   /** Couleur de l'affiche (#rrggbb) */
   brand_color: string | null;
+  /** Pays où le moyen est utilisable (codes ISO, ex. CI) ; vide = tous les pays */
+  countries: string[];
   is_active: boolean;
   sort_order: number;
   created_at?: string;
@@ -33,7 +36,17 @@ const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 export type PaymentMethodInput = Pick<
   PaymentMethod,
-  'name' | 'account_number' | 'account_name' | 'whatsapp_url' | 'description' | 'logo' | 'brand_logo' | 'brand_color' | 'is_active' | 'sort_order'
+  | 'name'
+  | 'account_number'
+  | 'account_name'
+  | 'whatsapp_url'
+  | 'description'
+  | 'logo'
+  | 'brand_logo'
+  | 'brand_color'
+  | 'countries'
+  | 'is_active'
+  | 'sort_order'
 >;
 
 /**
@@ -90,6 +103,13 @@ export function parsePaymentMethodInput(
     else if (logo.length > MAX_LOGO_LENGTH) return { ok: false, error: 'QR code trop lourd' };
     else data.logo = logo;
   }
+  if ('countries' in body) {
+    const v = body.countries;
+    if (!Array.isArray(v) || v.length > 100 || !v.every((c) => typeof c === 'string' && findCountry(c))) {
+      return { ok: false, error: 'Liste de pays invalide' };
+    }
+    data.countries = [...new Set(v as string[])];
+  }
   if ('is_active' in body) {
     if (typeof body.is_active !== 'boolean') return { ok: false, error: 'Statut invalide' };
     data.is_active = body.is_active;
@@ -103,7 +123,7 @@ export function parsePaymentMethodInput(
 }
 
 export const PAYMENT_METHOD_COLUMNS =
-  'id, name, account_number, account_name, whatsapp_url, description, logo, brand_logo, brand_color, is_active, sort_order, created_at, updated_at';
+  'id, name, account_number, account_name, whatsapp_url, description, logo, brand_logo, brand_color, countries, is_active, sort_order, created_at, updated_at';
 
 export async function listPaymentMethods(activeOnly: boolean): Promise<PaymentMethod[]> {
   const { rows } = await query(

@@ -18,7 +18,7 @@ async function notifyTicketClient(organizationId: string, createdBy: string | nu
   await notifyUsers(createdBy ? [...ids, createdBy] : ids, n);
 }
 
-export const SUPPORT_CATEGORIES = ['billing', 'technical', 'account', 'other'] as const;
+export const SUPPORT_CATEGORIES = ['billing', 'technical', 'account', 'feature', 'other'] as const;
 export const SUPPORT_PRIORITIES = ['low', 'normal', 'high'] as const;
 export const SUPPORT_STATUSES = ['new', 'in_progress', 'resolved', 'closed'] as const;
 export type SupportCategory = (typeof SUPPORT_CATEGORIES)[number];

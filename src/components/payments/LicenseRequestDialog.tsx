@@ -1,13 +1,23 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Loader2, RotateCcw, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, RotateCcw, Send, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PaymentPoster, PayNumber, WhatsappReceiptButton, type PublicPaymentMethod } from '@/components/payments/PaymentMethodCard';
-import { cn } from '@/lib/utils/cn';
+import {
+  DEFAULT_BRAND_COLOR,
+  PaymentPoster,
+  PayNumber,
+  WhatsappReceiptButton,
+  type PublicPaymentMethod,
+} from '@/components/payments/PaymentMethodCard';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { COUNTRIES, countryFlag, countryName } from '@/lib/countries';
+
+/** Filtre « Tous les pays » : tous les moyens de paiement affichés */
+const ALL_COUNTRIES = '';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 
 export interface RequestedPlan {
@@ -32,9 +42,10 @@ interface LicenseRequestDialogProps {
 }
 
 /**
- * Réabonnement en deux écrans :
- * 1. le forfait (package) et le bouton « Me réabonner » ;
- * 2. le paiement : affiche « Payez avec Wave » avec le QR code d'OptiWifi, numéro à copier,
+ * Demande de licence :
+ * 1. le forfait (seulement pour un changement de forfait ; « Me réabonner » passe directement au paiement) ;
+ * 2. le moyen de paiement : tous les moyens activés, que le client peut filtrer par pays ;
+ * 3. le paiement : affiche « Payez avec <opérateur> » avec le QR code d'OptiWifi, numéro à copier,
  *    puis envoi du justificatif de paiement (WhatsApp).
  * « J'ai payé » envoie la demande au super admin, qui active la licence après vérification.
  */
@@ -48,20 +59,33 @@ export function LicenseRequestDialog({ plan, renewal, onClose, onSent }: License
       className="md:max-w-3xl"
     >
       {/* key : chaque ouverture repart du premier écran */}
-      {plan && <RequestFlow key={plan.id} plan={plan} onClose={onClose} onSent={onSent} />}
+      {plan && <RequestFlow key={plan.id} plan={plan} renewal={!!renewal} onClose={onClose} onSent={onSent} />}
     </Modal>
   );
 }
 
-function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: () => void; onSent: () => void }) {
-  const [step, setStep] = useState<'package' | 'pay'>('package');
+function RequestFlow({
+  plan,
+  renewal,
+  onClose,
+  onSent,
+}: {
+  plan: RequestedPlan;
+  renewal: boolean;
+  onClose: () => void;
+  onSent: () => void;
+}) {
+  // Réabonnement : directement au choix du moyen de paiement
+  const [step, setStep] = useState<'package' | 'methods' | 'pay'>(renewal ? 'methods' : 'package');
   const [methods, setMethods] = useState<PublicPaymentMethod[] | null>(null);
   const [methodId, setMethodId] = useState('');
+  // Filtre par pays : tous les moyens par défaut ; le pays du compte est proposé en tête de liste
+  const [country, setCountry] = useState(ALL_COUNTRIES);
+  const [accountCountry, setAccountCountry] = useState<string | null>(null);
   const [reference, setReference] = useState('');
   const [sending, setSending] = useState(false);
 
   const isFree = Number(plan.price) <= 0;
-  const months = PERIOD_MONTHS[plan.billing_period] || 1;
 
   useEffect(() => {
     if (isFree) return;
@@ -70,9 +94,8 @@ function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: 
       .then((res) => (res.ok ? res.json() : { data: [] }))
       .then((json) => {
         if (cancelled) return;
-        const list = (json.data || []) as PublicPaymentMethod[];
-        setMethods(list);
-        if (list[0]) setMethodId(list[0].id);
+        setMethods((json.data || []) as PublicPaymentMethod[]);
+        if (typeof json.default_country === 'string') setAccountCountry(json.default_country);
       })
       .catch(() => !cancelled && setMethods([]));
     return () => {
@@ -81,6 +104,28 @@ function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: 
   }, [isFree]);
 
   const method = methods?.find((m) => m.id === methodId) || null;
+  // Moyens affichés : tous, ou ceux du pays choisi (liste de pays vide = disponible partout)
+  const available = (methods || []).filter(
+    (m) => country === ALL_COUNTRIES || !m.countries?.length || m.countries.includes(country)
+  );
+  // Aucun moyen configuré : directement l'écran d'envoi de la demande
+  const screen = step === 'methods' && methods !== null && methods.length === 0 ? 'pay' : step;
+  const countryOptions = [
+    { value: ALL_COUNTRIES, label: '🌍  Tous les pays' },
+    ...COUNTRIES.filter((c, i, all) => all.findIndex((x) => x.code === c.code) === i)
+      .map((c) => ({
+        value: c.code,
+        label: `${countryFlag(c.code)}  ${countryName(c.code)}`,
+        sublabel: c.code === accountCountry ? 'Pays de votre compte' : undefined,
+      }))
+      // Pays du compte en premier, puis ordre alphabétique
+      .sort(
+        (a, b) =>
+          Number(b.value === accountCountry) - Number(a.value === accountCountry) ||
+          countryName(a.value).localeCompare(countryName(b.value), 'fr')
+      ),
+  ];
+  const months = PERIOD_MONTHS[plan.billing_period] || 1;
 
   const send = async () => {
     setSending(true);
@@ -114,7 +159,7 @@ function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: 
   };
 
   // ── Écran 1 : le forfait ──────────────────────────────────────────────
-  if (step === 'package' || isFree) {
+  if (screen === 'package' || isFree) {
     const features = [
       plan.max_points_of_sale ? `Jusqu'à ${plan.max_points_of_sale} points de vente` : null,
       plan.max_users ? `Jusqu'à ${plan.max_users} utilisateurs` : null,
@@ -153,8 +198,8 @@ function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: 
               {!sending && <Send className="w-4 h-4" />} Envoyer la demande
             </Button>
           ) : (
-            <Button type="button" onClick={() => setStep('pay')} className="gap-2">
-              <RotateCcw className="w-4 h-4" /> Me réabonner
+            <Button type="button" onClick={() => setStep('methods')} className="gap-2">
+              <RotateCcw className="w-4 h-4" /> {renewal ? 'Me réabonner' : 'Continuer vers le paiement'}
             </Button>
           )}
         </div>
@@ -162,17 +207,95 @@ function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: 
     );
   }
 
-  // ── Écran 2 : le paiement ─────────────────────────────────────────────
+  // ── Écran 2 : le choix du moyen de paiement ─────────────────────────
+  if (screen === 'methods') {
+    return (
+      <div className="space-y-5 text-left">
+        {!renewal && <BackButton label={`Forfait ${plan.name}`} onClick={() => setStep('package')} />}
+        <PlanSummary plan={plan} months={months} />
+        <div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-brand-600" /> Choisissez votre moyen de paiement
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Choisissez le moyen qui vous convient (filtrez par pays si besoin) : vous scannerez ensuite le QR code ou
+            copierez le numéro.
+          </p>
+        </div>
+        <CustomSelect
+          label="Filtrer par pays"
+          value={country}
+          onChange={setCountry}
+          options={countryOptions}
+          searchable
+          searchPlaceholder="Rechercher un pays…"
+          title="Pays de paiement"
+        />
+        {methods === null ? (
+          <div className="py-10 flex justify-center text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+        ) : available.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-5 text-center space-y-3">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Aucun moyen de paiement en ligne n&apos;est encore disponible
+              {country ? ` pour ${countryName(country)}` : ''}. Envoyez votre
+              demande : l&apos;équipe OptiWifi vous contactera pour le paiement.
+            </p>
+            <Button type="button" onClick={send} isLoading={sending} className="gap-2">
+              {!sending && <Send className="w-4 h-4" />} Envoyer la demande
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {available.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => {
+                  setMethodId(m.id);
+                  setStep('pay');
+                }}
+                className="group rounded-2xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+                style={{ background: m.brand_color || DEFAULT_BRAND_COLOR }}
+              >
+                <span className="w-14 h-14 shrink-0 rounded-xl bg-white/95 flex items-center justify-center overflow-hidden">
+                  {m.brand_logo ? (
+                    // Data URL stockée en base : next/image n'apporte rien ici
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.brand_logo} alt="" className="w-11 h-11 object-contain" />
+                  ) : (
+                    <Wallet className="w-6 h-6 text-slate-500" />
+                  )}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-lg font-extrabold leading-tight drop-shadow-sm">{m.name}</span>
+                  <span className="block text-xs text-white/90">Payer avec {m.name}</span>
+                </span>
+                <ArrowRight className="w-5 h-5 shrink-0 transition group-hover:translate-x-0.5" />
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="flex justify-end">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Annuler
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Écran 3 : le paiement ─────────────────────────────────────────────
   const receiptMessage = `Bonjour, voici le justificatif de mon paiement ${method?.name ?? ''} de ${formatCurrencyFCFA(plan.price)} pour mon abonnement OptiWifi (forfait ${plan.name}).`;
   return (
     <div className="space-y-5 text-left">
-      <button
-        type="button"
-        onClick={() => setStep('package')}
-        className="inline-flex items-center gap-1.5 -ml-1 px-1 py-1 text-sm font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-      >
-        <ArrowLeft className="w-4 h-4" /> Forfait {plan.name}
-      </button>
+      {methods && methods.length > 0 ? (
+        <BackButton label="Changer de pays ou de moyen de paiement" onClick={() => setStep('methods')} />
+      ) : (
+        !renewal && <BackButton label={`Forfait ${plan.name}`} onClick={() => setStep('package')} />
+      )}
+      {renewal && <PlanSummary plan={plan} months={months} />}
 
       {methods === null ? (
         <div className="py-10 flex justify-center text-slate-400">
@@ -185,29 +308,6 @@ function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: 
         </p>
       ) : (
         <>
-          {/* Plusieurs opérateurs : choix en une rangée (aujourd'hui, Wave seul) */}
-          {methods.length > 1 && (
-            <div role="tablist" aria-label="Opérateur" className="flex gap-1.5 overflow-x-auto pb-1">
-              {methods.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={m.id === methodId}
-                  onClick={() => setMethodId(m.id)}
-                  className={cn(
-                    'shrink-0 h-9 px-4 rounded-full text-sm font-semibold border transition',
-                    m.id === methodId
-                      ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                  )}
-                >
-                  {m.name}
-                </button>
-              ))}
-            </div>
-          )}
-
           <div className="grid gap-5 md:grid-cols-2 md:items-start">
             <PaymentPoster method={method} />
 
@@ -262,6 +362,34 @@ function RequestFlow({ plan, onClose, onSent }: { plan: RequestedPlan; onClose: 
           {method ? "J'ai payé" : 'Envoyer la demande'}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function BackButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 -ml-1 px-1 py-1 text-sm font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+    >
+      <ArrowLeft className="w-4 h-4" /> {label}
+    </button>
+  );
+}
+
+/** Rappel compact du forfait payé (réabonnement et choix du moyen de paiement) */
+function PlanSummary({ plan, months }: { plan: RequestedPlan; months: number }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-brand-500/30 bg-brand-50/50 dark:bg-brand-950/20 px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">Forfait</p>
+        <p className="font-bold text-slate-900 dark:text-white truncate">{plan.name}</p>
+      </div>
+      <p className="text-right shrink-0">
+        <span className="block text-lg font-extrabold text-slate-900 dark:text-white">{formatCurrencyFCFA(plan.price)}</span>
+        <span className="text-xs text-slate-500">pour {months} mois</span>
+      </p>
     </div>
   );
 }
