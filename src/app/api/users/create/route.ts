@@ -57,6 +57,13 @@ export async function POST(request: NextRequest) {
         error: quotaCheck.message
       }, { status: 403 });
     }
+    // Nombre de collecteurs limité par le forfait
+    if (role === 'collecteur') {
+      const collectorCheck = await checkQuota(clientSupabase, orgId, 'collectors');
+      if (!collectorCheck.allowed) {
+        return NextResponse.json({ error: collectorCheck.message }, { status: 403 });
+      }
+    }
 
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: String(email).trim().toLowerCase(),
