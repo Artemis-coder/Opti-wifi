@@ -31,6 +31,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils/cn';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { PlanBadge } from '@/components/layout/PlanBadge';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -171,11 +172,8 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
               <h2 className="font-bold text-base leading-tight tracking-wide text-white truncate">
                 OptiSpace
               </h2>
-              {isAdmin && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  PRO
-                </span>
-              )}
+              {/* Forfait de l'organisation : ESSAI, DÉCO, STANDARD ou PRO */}
+              <PlanBadge userId={user?.id} />
             </div>
             <p className="text-[11px] text-slate-400 font-medium tracking-wide truncate">
               {isAdmin ? 'Espace Administrateur' : 'Espace Collecteur'}
