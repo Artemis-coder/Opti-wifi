@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Download,
   FileSpreadsheet,
+  FileText,
   Percent,
   Receipt,
   Store,
@@ -23,6 +24,8 @@ import { DateField } from '@/components/ui/DateField';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
+import { ReportDocument } from '@/components/reports/ReportDocument';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { formatCurrencyFCFA, formatDateOnlyFR } from '@/lib/utils/format';
 import { cn } from '@/lib/utils/cn';
@@ -145,6 +148,8 @@ function addTo(t: Totals, c: Collection) {
 export default function ReportsPage() {
   const supabase = createClient();
   const { currentSpaceId } = useSpaceStore();
+  const { user } = useAuthStore();
+  const [organizationName, setOrganizationName] = useState('');
 
   const [collections, setCollections] = useState<Collection[]>([]);
   const [items, setItems] = useState<ItemRow[]>([]);
@@ -177,8 +182,15 @@ export default function ReportsPage() {
         colQuery = colQuery.eq('space_id', currentSpaceId);
         itemsQuery = itemsQuery.eq('space_id', currentSpaceId);
       }
-      const [posRes, colRes, itemsRes] = await Promise.all([posQuery, colQuery, itemsQuery]);
+      const orgId = (user as { organization_id?: string | null } | null)?.organization_id;
+      const [posRes, colRes, itemsRes, orgRes] = await Promise.all([
+        posQuery,
+        colQuery,
+        itemsQuery,
+        orgId ? supabase.from('organizations').select('name').eq('id', orgId).maybeSingle() : Promise.resolve({ data: null }),
+      ]);
       if (cancelled) return;
+      setOrganizationName((orgRes.data as { name?: string } | null)?.name || '');
       setPosList((posRes.data || []) as PointOfSale[]);
       setCollections((colRes.data || []) as Collection[]);
       setItems((itemsRes.data || []) as ItemRow[]);
@@ -188,7 +200,7 @@ export default function ReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [currentSpaceId, supabase]);
+  }, [currentSpaceId, supabase, user]);
 
   const { start, end } = periodBounds(period, customStart, customEnd);
 
@@ -312,6 +324,20 @@ export default function ReportsPage() {
     trackClient(EVENTS.reportExported, { report: 'ticket_summary', format: 'csv' });
   };
 
+  // PDF : le navigateur imprime le seul rapport (ReportDocument) ; « Enregistrer en PDF »
+  // propose le nom du fichier via le titre de la page
+  const exportPdf = () => {
+    const previousTitle = document.title;
+    document.title = `rapport_activite_${fileSuffix}`;
+    const restore = () => {
+      document.title = previousTitle;
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+    window.print();
+    trackClient(EVENTS.reportExported, { report: 'activity', format: 'pdf' });
+  };
+
   const exportPosList = () => {
     downloadCsv(
       `points_de_vente_${iso(new Date())}.csv`,
@@ -349,9 +375,14 @@ export default function ReportsPage() {
             Vos encaissements sur la période choisie, en synthèse ou en détail, exportables pour Excel.
           </p>
         </div>
-        <Button variant="outline" size="sm" icon={Store} onClick={exportPosList} disabled={posList.length === 0}>
-          Liste des points de vente
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button size="sm" icon={FileText} onClick={exportPdf} disabled={loading || filtered.length === 0}>
+            Exporter en PDF
+          </Button>
+          <Button variant="outline" size="sm" icon={Store} onClick={exportPosList} disabled={posList.length === 0}>
+            Liste des points de vente
+          </Button>
+        </div>
       </div>
 
       {/* Filtres */}
@@ -600,9 +631,37 @@ export default function ReportsPage() {
       </Card>
 
       <p className="text-xs text-slate-500">
-        Les fichiers s&apos;ouvrent directement dans Excel ou Google Sheets (accents et colonnes conservés). Les
+        « Exporter en PDF » produit un rapport A4 complet (chiffres clés, synthèses et détail) : choisissez « Enregistrer
+        en PDF » dans la fenêtre d&apos;impression. Les fichiers Excel s&apos;ouvrent aussi dans Google Sheets. Les
         encaissements annulés ne sont comptés que si vous choisissez le statut « Annulées ».
       </p>
+
+      {/* Document imprimé par « Exporter en PDF » (invisible à l'écran) */}
+      <ReportDocument
+        organizationName={organizationName}
+        periodLabel={periodLabel}
+        filters={[
+          posFilter && `Point de vente : ${posOptions.find((o) => o.value === posFilter)?.label}`,
+          collectorFilter && `Collecteur : ${collectorOptions.find((o) => o.value === collectorFilter)?.label}`,
+          `Statut : ${STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label}`,
+        ].filter((f): f is string => !!f)}
+        totals={totals}
+        ticketsSold={ticketsSold}
+        byPos={byPos.map((r) => ({ ...r, detail: r.city || undefined }))}
+        byCollector={byCollector}
+        byTicket={byTicket}
+        collections={filtered.map((c) => ({
+          id: c.id,
+          date: formatDateOnlyFR(dateOf(c)),
+          pos: c.pos?.nom || '—',
+          collector: c.collecteur?.nom || '—',
+          expected: amount(c.montant_attendu),
+          collected: amount(c.montant_collecte),
+          commission: amount(c.commission),
+          gap: amount(c.difference),
+          status: STATUS_BADGE[c.statut]?.label || c.statut,
+        }))}
+      />
     </div>
   );
 }
