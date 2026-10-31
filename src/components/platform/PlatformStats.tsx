@@ -323,11 +323,11 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
             delta={stats && <Delta current={stats.totals.paid_licenses} previous={stats.previous.paid_licenses} />}
           />
           <StatsTile
-            label="Revenus"
+            label="Revenus encaissés"
             icon={Banknote}
             accent="emerald"
             value={formatCurrencyFCFA(stats?.totals.revenue ?? 0)}
-            sub={rangeLabel}
+            sub={`Factures payées, ${rangeLabel}`}
             delta={stats && <Delta current={stats.totals.revenue} previous={stats.previous.revenue} />}
           />
           <StatsTile
@@ -393,7 +393,7 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
 
           <StatsChartCard
             title="Évolution des revenus"
-            subtitle={`Licences payantes : prix du forfait × durée · ${formatCurrencyFCFA(stats?.totals.revenue ?? 0)}`}
+            subtitle={`Montants des factures payées, à la date du paiement · ${formatCurrencyFCFA(stats?.totals.revenue ?? 0)}`}
             table={<DataTable headers={['Période', 'Revenus']} rows={rows((b) => [formatCurrencyFCFA(b.revenue)])} />}
           >
             <ResponsiveContainer width="100%" height={240}>

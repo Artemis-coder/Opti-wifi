@@ -45,8 +45,9 @@ export interface PlatformStats {
   plan_breakdown: { plan_id: string; name: string; count: number; mrr: number; is_trial: boolean }[];
 }
 
-// Licences avec leur type (essai / nouvelle / renouvellement / changement) et leur revenu.
+// Licences avec leur type (essai / nouvelle / renouvellement / changement).
 // Types déduits de la licence payante précédente de la même organisation.
+// Les revenus, eux, viennent des factures payées (INVOICES_CTE) : montants réellement encaissés.
 const LICENSES_CTE = `
   lic AS (
     SELECT s.id, s.organization_id, s.plan_id, s.created_at, s.start_date, s.end_date, s.status,
@@ -73,6 +74,15 @@ const LICENSES_CTE = `
       FROM paid
   )`;
 
+// Revenus : factures payées, datées au paiement (montant figé à l'émission, prix de l'époque).
+// Les licences antérieures à la facturation (v1.4.0) n'ont pas de facture et ne comptent pas.
+const INVOICES_CTE = `
+  paid_invoices AS (
+    SELECT COALESCE(i.paid_at, i.issued_at) AS paid_at, i.amount
+      FROM invoices i
+     WHERE i.status = 'paid'
+  )`;
+
 export async function getPlatformStats(range: StatsRange): Promise<PlatformStats> {
   const { unit, count } = RANGES[range];
   const step = `1 ${unit}`;
@@ -87,6 +97,13 @@ export async function getPlatformStats(range: StatsRange): Promise<PlatformStats
       SELECT generate_series((SELECT start_at FROM bounds), date_trunc($1, NOW()), $3::interval) AS bucket
     ),
     ${LICENSES_CTE},
+    ${INVOICES_CTE},
+    inv AS (
+      SELECT date_trunc($1, paid_at) AS bucket, COALESCE(SUM(amount), 0)::float AS revenue
+        FROM paid_invoices, bounds
+       WHERE paid_at >= bounds.start_at AND paid_at < bounds.end_at
+       GROUP BY 1
+    ),
     reg AS (
       SELECT date_trunc($1, created_at) AS bucket, COUNT(*)::int AS n
         FROM organizations, bounds
@@ -98,8 +115,7 @@ export async function getPlatformStats(range: StatsRange): Promise<PlatformStats
              COUNT(*) FILTER (WHERE kind = 'trial')::int AS trial,
              COUNT(*) FILTER (WHERE kind = 'new')::int AS new,
              COUNT(*) FILTER (WHERE kind = 'renewal')::int AS renewal,
-             COUNT(*) FILTER (WHERE kind = 'upgrade')::int AS upgrade,
-             COALESCE(SUM(revenue), 0)::float AS revenue
+             COUNT(*) FILTER (WHERE kind = 'upgrade')::int AS upgrade
         FROM typed, bounds
        WHERE created_at >= bounds.start_at AND created_at < bounds.end_at
        GROUP BY 1
@@ -108,10 +124,11 @@ export async function getPlatformStats(range: StatsRange): Promise<PlatformStats
            COALESCE(reg.n, 0) AS registrations,
            COALESCE(sub.trial, 0) AS trial, COALESCE(sub.new, 0) AS new,
            COALESCE(sub.renewal, 0) AS renewal, COALESCE(sub.upgrade, 0) AS upgrade,
-           COALESCE(sub.revenue, 0) AS revenue
+           COALESCE(inv.revenue, 0) AS revenue
       FROM buckets b
       LEFT JOIN reg ON reg.bucket = b.bucket
       LEFT JOIN sub ON sub.bucket = b.bucket
+      LEFT JOIN inv ON inv.bucket = b.bucket
      ORDER BY b.bucket`;
 
   // Période précédente de même longueur, pour la comparaison
@@ -120,12 +137,13 @@ export async function getPlatformStats(range: StatsRange): Promise<PlatformStats
       SELECT date_trunc($1, NOW()) - (2 * $2::int - 1) * $3::interval AS start_at,
              date_trunc($1, NOW()) - ($2::int - 1) * $3::interval AS end_at
     ),
-    ${LICENSES_CTE}
+    ${LICENSES_CTE},
+    ${INVOICES_CTE}
     SELECT
       (SELECT COUNT(*) FROM organizations, bounds WHERE created_at >= start_at AND created_at < end_at)::int AS registrations,
       (SELECT COUNT(*) FROM typed, bounds WHERE kind <> 'trial' AND created_at >= start_at AND created_at < end_at)::int AS paid_licenses,
       (SELECT COUNT(*) FROM typed, bounds WHERE kind = 'trial' AND created_at >= start_at AND created_at < end_at)::int AS trials,
-      (SELECT COALESCE(SUM(revenue), 0) FROM typed, bounds WHERE created_at >= start_at AND created_at < end_at)::float AS revenue`;
+      (SELECT COALESCE(SUM(amount), 0) FROM paid_invoices, bounds WHERE paid_at >= start_at AND paid_at < end_at)::float AS revenue`;
 
   // Licences en cours (une par organisation : celle qui va le plus loin), hors clients fermés.
   // Une prolongation démarre à la fin de la licence précédente (start_date futur) : seule end_date compte.
