@@ -28,6 +28,7 @@ import { formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from
 import { TicketAllocation, PointOfSale, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
+import { formatTicketDuration } from '@/lib/ticket-duration';
 
 interface ExtendedAllocation extends TicketAllocation {
   allocateur?: Profile | null;
@@ -258,7 +259,7 @@ export default function AllocationDetailPage() {
               {allocation.ticket_type?.nom || `Type ${allocation.ticket_type_id.slice(0, 8)}`}
             </p>
             {allocation.ticket_type?.duree_heures && (
-              <p className="text-[11px] text-slate-500">{allocation.ticket_type.duree_heures}h</p>
+              <p className="text-[11px] text-slate-500">{formatTicketDuration(allocation.ticket_type.duree_heures)}</p>
             )}
           </div>
 
