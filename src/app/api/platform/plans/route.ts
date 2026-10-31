@@ -85,7 +85,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, description, price, currency, billing_period, trial_days, max_users, max_points_of_sale, max_tickets_per_month, features, status } = body;
+  const { name, description, price, currency, billing_period, trial_days, max_users, max_points_of_sale, max_collectors, max_tickets_per_month, features, status } = body;
 
   if (!name || price === undefined) {
     return NextResponse.json({ error: 'Nom et prix requis' }, { status: 400 });
@@ -104,6 +104,7 @@ export async function POST(request: Request) {
       trial_days: trial_days || 14,
       max_users: max_users || null,
       max_points_of_sale: max_points_of_sale || null,
+      max_collectors: max_collectors || null,
       max_tickets_per_month: max_tickets_per_month || null,
       features: features || null,
       status: status || 'active',

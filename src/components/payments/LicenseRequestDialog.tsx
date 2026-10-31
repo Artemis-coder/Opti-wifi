@@ -27,6 +27,7 @@ export interface RequestedPlan {
   billing_period: string;
   max_users?: number | null;
   max_points_of_sale?: number | null;
+  max_collectors?: number | null;
   max_tickets_per_month?: number | null;
 }
 
@@ -163,6 +164,9 @@ function RequestFlow({
     const features = [
       plan.max_points_of_sale ? `Jusqu'à ${plan.max_points_of_sale} points de vente` : null,
       plan.max_users ? `Jusqu'à ${plan.max_users} utilisateurs` : null,
+      plan.max_collectors && plan.max_collectors > 0
+        ? `Jusqu'à ${plan.max_collectors} collecteur${plan.max_collectors > 1 ? 's' : ''}`
+        : null,
       plan.max_tickets_per_month ? `Jusqu'à ${plan.max_tickets_per_month.toLocaleString('fr-FR')} tickets / mois` : null,
     ].filter(Boolean) as string[];
     return (

@@ -1,11 +1,12 @@
 import { createServerClient } from '@/lib/neon/server';
 import { getSessionContext } from '@/lib/tenant';
 
-export type QuotaType = 'users' | 'points_of_sale' | 'tickets_per_month';
+export type QuotaType = 'users' | 'collectors' | 'points_of_sale' | 'tickets_per_month';
 
 export interface QuotaLimits {
   max_users: number | null;
   max_points_of_sale: number | null;
+  max_collectors: number | null;
   max_tickets_per_month: number | null;
   plan_name: string | null;
 }
@@ -30,7 +31,7 @@ export async function getOrganizationQuotaLimits(
     .from('subscriptions')
     .select(`
       *,
-      plan:subscription_plans(max_users, max_points_of_sale, max_tickets_per_month, name)
+      plan:subscription_plans(max_users, max_points_of_sale, max_collectors, max_tickets_per_month, name)
     `)
     .eq('organization_id', organizationId)
     .in('status', ['active', 'trialing'])
@@ -42,6 +43,7 @@ export async function getOrganizationQuotaLimits(
     return {
       max_users: null,
       max_points_of_sale: null,
+      max_collectors: null,
       max_tickets_per_month: null,
       plan_name: null,
     };
@@ -50,6 +52,7 @@ export async function getOrganizationQuotaLimits(
   return {
     max_users: sub.plan.max_users ?? null,
     max_points_of_sale: sub.plan.max_points_of_sale ?? null,
+    max_collectors: sub.plan.max_collectors ?? null,
     max_tickets_per_month: sub.plan.max_tickets_per_month ?? null,
     plan_name: sub.plan.name ?? null,
   };
@@ -82,6 +85,21 @@ export async function checkQuota(
         .eq('organization_id', organizationId)
         .eq('is_active', true); // les membres supprimés ne comptent plus
       current = userCount ?? 0;
+      break;
+
+    case 'collectors':
+      limit = limits.max_collectors;
+      quotaLabel = 'max_collectors';
+      if (limit === null || limit < 0) {
+        return { allowed: true, quota: quotaType, current: 0, limit: -1, plan_name: limits.plan_name };
+      }
+      const { count: collectorCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('role', 'collecteur')
+        .eq('is_active', true);
+      current = collectorCount ?? 0;
       break;
 
     case 'points_of_sale':
@@ -118,6 +136,10 @@ export async function checkQuota(
       return { allowed: true, quota: quotaType, current: 0, limit: -1, plan_name: limits.plan_name };
   }
 
+  // -1 (ou toute valeur négative) = illimité
+  if (limit < 0) {
+    return { allowed: true, quota: quotaType, current, limit: -1, plan_name: limits.plan_name };
+  }
   if (current >= limit) {
     return {
       allowed: false,
@@ -162,6 +184,8 @@ function getQuotaLabel(quota: QuotaType): string {
   switch (quota) {
     case 'users':
       return 'utilisateurs';
+    case 'collectors':
+      return 'collecteurs';
     case 'points_of_sale':
       return 'points de vente';
     case 'tickets_per_month':
