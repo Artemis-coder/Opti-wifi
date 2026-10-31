@@ -22,12 +22,13 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from '../edit-pos-modal';
 import { ResetPosModal } from './reset-pos-modal';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem, WifiSpace } from '@/types/database';
+import { isActiveProfile } from '@/lib/utils/profiles';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { StatTile } from '@/components/ui/StatTile';
@@ -78,7 +79,7 @@ export default function PosDetailPage() {
         .from('profiles')
         .select('*')
         .eq('role', 'collecteur');
-      setCollectors(colData || []);
+      setCollectors((colData || []).filter(isActiveProfile));
 
       const { data: profilesData } = await supabase.from('profiles').select('*');
       if (profilesData) setProfiles(profilesData);
@@ -259,13 +260,24 @@ export default function PosDetailPage() {
               <span>Vider</span>
             </Button>
           )}
-          <Button
-            size="sm"
-            onClick={() => setIsEditModalOpen(true)}
-            className="flex-1 sm:flex-initial"
-          >
-            <Edit className="w-4 h-4 shrink-0" /> <span>Modifier</span>
-          </Button>
+          {isAdmin ? (
+            <Button
+              size="sm"
+              onClick={() => setIsEditModalOpen(true)}
+              className="flex-1 sm:flex-initial"
+            >
+              <Edit className="w-4 h-4 shrink-0" /> <span>Modifier</span>
+            </Button>
+          ) : (
+            pos.statut === 'actif' && (
+              <Link
+                href={`/collections/new?pos=${pos.id}`}
+                className={buttonClassName({ size: 'sm', className: 'flex-1 sm:flex-initial' })}
+              >
+                <Receipt className="w-4 h-4 shrink-0" /> <span>Collecter</span>
+              </Link>
+            )
+          )}
         </div>
       </div>
 
@@ -310,9 +322,15 @@ export default function PosDetailPage() {
             <MapPin className="w-4 h-4 text-amber-500" />
             <span className="text-slate-500">Espace Wi-Fi :</span>
             {pos.space_id ? (
-              <Link href="/spaces" className="font-semibold text-amber-600 hover:text-amber-700 hover:underline">
-                {pos.space?.nom || spaces.find((s: WifiSpace) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
-              </Link>
+              isAdmin ? (
+                <Link href="/spaces" className="font-semibold text-amber-600 hover:text-amber-700 hover:underline">
+                  {pos.space?.nom || spaces.find((s: WifiSpace) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
+                </Link>
+              ) : (
+                <strong className="text-slate-800 dark:text-slate-200">
+                  {pos.space?.nom || spaces.find((s: WifiSpace) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
+                </strong>
+              )
             ) : (
               <strong className="text-slate-500 italic">Non rattaché à un espace</strong>
             )}
@@ -383,13 +401,17 @@ export default function PosDetailPage() {
             <Package className="w-10 h-10 text-slate-300 mx-auto" />
             <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune allocation pour ce POS</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Aucun ticket n&apos;a été alloué à ce point de vente. Rendez-vous sur la page des allocations pour distribuer du stock.
+              {isAdmin
+                ? 'Aucun ticket n’a été alloué à ce point de vente. Rendez-vous sur la page des allocations pour distribuer du stock.'
+                : 'Aucun ticket n’a encore été confié à ce point de vente par votre administrateur.'}
             </p>
-            <Link href="/allocations/new">
-              <Button variant="secondary" size="sm" className="gap-2 font-bold">
-                <Package className="w-4 h-4" /> Allouer des Tickets
-              </Button>
-            </Link>
+            {isAdmin && (
+              <Link href="/allocations/new">
+                <Button variant="secondary" size="sm" className="gap-2 font-bold">
+                  <Package className="w-4 h-4" /> Allouer des Tickets
+                </Button>
+              </Link>
+            )}
           </div>
         ) : (
           <>

@@ -49,7 +49,8 @@ export default function ReportsPage() {
       const { count: collectors } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('role', 'collecteur');
+        .eq('role', 'collecteur')
+        .eq('is_active', true);
       setCollectorsCount(collectors || 0);
 
       const { data: itemsData } = await itemsQuery;

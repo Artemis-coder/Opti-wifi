@@ -5,6 +5,8 @@ import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
 import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
+import { getSessionContext } from '@/lib/tenant';
+import { getAssignedPosIds } from '@/lib/collector-scope';
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,6 +52,15 @@ export async function POST(request: NextRequest) {
     ]);
     if (!posCheck.data || !collecteurCheck.data) {
       return NextResponse.json({ error: 'Point de vente ou collecteur introuvable.' }, { status: 404 });
+    }
+
+    // Un collecteur n'enregistre qu'à son nom, sur un point de vente qui lui est attribué
+    const ctx = await getSessionContext();
+    if (ctx?.role !== 'administrateur') {
+      const assigned = ctx ? await getAssignedPosIds(ctx.userId, orgId) : [];
+      if (!ctx || collecteur_id !== ctx.userId || !assigned.includes(pos_id)) {
+        return NextResponse.json({ error: 'Ce point de vente ne vous est pas attribué.' }, { status: 403 });
+      }
     }
 
     const { data: collection, error: colError } = await supabase

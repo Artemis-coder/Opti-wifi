@@ -9,6 +9,7 @@ import {
   Receipt,
   ArrowLeftRight,
   Menu,
+  PlusCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { cn } from '@/lib/utils/cn';
@@ -35,11 +36,19 @@ const primaryItems: BottomNavItem[] = [
   { label: 'Allocations', href: '/allocations', icon: ArrowLeftRight, adminOnly: true },
 ];
 
-export function BottomNav({ onOpenMobileMenu, items = primaryItems }: BottomNavProps) {
+// Barre du collecteur : la saisie d'une collecte au centre, à portée de pouce
+const collectorItems: BottomNavItem[] = [
+  { label: 'Tournée', href: '/dashboard', icon: LayoutDashboard, exact: true },
+  { label: 'Mes POS', href: '/pos', icon: Store },
+  { label: 'Collecter', href: '/collections/new', icon: PlusCircle, exact: true },
+  { label: 'Collectes', href: '/collections', icon: Receipt },
+];
+
+export function BottomNav({ onOpenMobileMenu, items }: BottomNavProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
 
-  const filteredItems = items.filter(
+  const filteredItems = (items ?? (user?.role === 'collecteur' ? collectorItems : primaryItems)).filter(
     (item) => !item.adminOnly || user?.role === 'administrateur'
   );
 
@@ -51,8 +60,11 @@ export function BottomNav({ onOpenMobileMenu, items = primaryItems }: BottomNavP
       <div className="flex items-stretch justify-around h-16 px-1">
         {filteredItems.map((item) => {
           const Icon = item.icon;
+          const matches = (it: BottomNavItem) =>
+            pathname === it.href || (!it.exact && pathname.startsWith(it.href + '/'));
+          // Une entrée plus précise l'emporte (« Collecter » plutôt que « Collectes » sur /collections/new)
           const isActive =
-            pathname === item.href || (!item.exact && pathname.startsWith(item.href + '/'));
+            matches(item) && !filteredItems.some((o) => o.href.length > item.href.length && pathname === o.href);
 
           return (
             <Link

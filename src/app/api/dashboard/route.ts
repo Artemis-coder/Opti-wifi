@@ -8,7 +8,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export async function GET(request: Request) {
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  if (!ctx.organizationId || ctx.organizationBlocked) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  // Chiffres de toute l'organisation : réservés à l'administrateur (le collecteur a /api/collector/dashboard)
+  if (!ctx.organizationId || ctx.organizationBlocked || ctx.role !== 'administrateur') {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  }
 
   const params = new URL(request.url).searchParams;
   const space = params.get('space');

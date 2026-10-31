@@ -24,6 +24,7 @@ import {
   ChevronRight,
   ShieldCheck,
   LifeBuoy,
+  PlusCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
@@ -75,6 +76,31 @@ const navSections: NavSection[] = [
   },
 ];
 
+// Espace collecteur : sa tournée, ses points de vente et ses collectes
+const collectorSections: NavSection[] = [
+  {
+    title: 'Ma tournée',
+    items: [
+      { label: 'Ma tournée', href: '/dashboard', icon: LayoutDashboard, roles: ['collecteur'] },
+      { label: 'Mes points de vente', href: '/pos', icon: Store, roles: ['collecteur'] },
+    ],
+  },
+  {
+    title: 'Encaissements',
+    items: [
+      { label: 'Nouvelle collecte', href: '/collections/new', icon: PlusCircle, roles: ['collecteur'] },
+      { label: 'Mes collectes', href: '/collections', icon: Receipt, roles: ['collecteur'] },
+    ],
+  },
+  {
+    title: 'Compte',
+    items: [
+      { label: 'Support', href: '/support', icon: LifeBuoy, roles: ['collecteur'] },
+      { label: 'Paramètres', href: '/settings', icon: Settings, roles: ['collecteur'] },
+    ],
+  },
+];
+
 export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -108,7 +134,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const isAdmin = user?.role === 'administrateur';
 
   // Filter sections by user role
-  const filteredSections = navSections
+  const filteredSections = (user?.role === 'collecteur' ? collectorSections : navSections)
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => !user?.role || item.roles.includes(user.role)),
@@ -210,9 +236,14 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon;
+                // Entrée la plus précise : « Nouvelle collecte » ne rend pas « Mes collectes » actif
+                const matches = (href: string) =>
+                  pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'));
                 const isActive =
-                  pathname === item.href ||
-                  (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                  matches(item.href) &&
+                  !filteredSections.some((s) =>
+                    s.items.some((other) => other.href.length > item.href.length && matches(other.href))
+                  );
 
                 return (
                   <Link

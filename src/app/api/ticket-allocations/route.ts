@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
 import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
+import { getSessionContext } from '@/lib/tenant';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +25,12 @@ export async function POST(request: NextRequest) {
 
     if (!orgId) {
       return NextResponse.json({ error: 'Organisation requise.' }, { status: 400 });
+    }
+
+    // Seul l'administrateur distribue des tickets aux points de vente
+    const ctx = await getSessionContext();
+    if (ctx?.role !== 'administrateur') {
+      return NextResponse.json({ error: 'Action réservée à l’administrateur.' }, { status: 403 });
     }
 
     const body = await request.json();

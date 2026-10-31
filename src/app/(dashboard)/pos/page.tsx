@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from './edit-pos-modal';
 import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
+import { isActiveProfile } from '@/lib/utils/profiles';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { AddButton } from '@/components/ui/AddButton';
@@ -41,7 +42,7 @@ async function loadData() {
 
     const { data: spacesData } = await supabase.from('wifi_spaces').select('*');
 
-    if (colData) setCollectors(colData);
+    if (colData) setCollectors(colData.filter(isActiveProfile));
     if (spacesData) setSpaces(spacesData);
     setPosList(posData || []);
     setLoading(false);
@@ -78,10 +79,14 @@ async function loadData() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Points de Vente (POS)</h1>
-          <p className="text-xs text-slate-500">Gérez le réseau de distribution et l&apos;attribution des collecteurs.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{isAdmin ? 'Points de Vente (POS)' : 'Mes points de vente'}</h1>
+          <p className="text-xs text-slate-500">
+            {isAdmin
+              ? 'Gérez le réseau de distribution et l’attribution des collecteurs.'
+              : 'Les points de vente que votre administrateur vous a confiés.'}
+          </p>
         </div>
-        <AddButton what="un point de vente" onClick={() => setIsModalOpen(true)} />
+        {isAdmin && <AddButton what="un point de vente" onClick={() => setIsModalOpen(true)} />}
       </div>
 
       {/* KPI Cards */}
@@ -136,9 +141,11 @@ async function loadData() {
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun point de vente trouvé</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Vous n&apos;avez pas encore configuré de point de vente. Ajoutez votre premier emplacement pour démarrer les encaissements.
+            {isAdmin
+              ? 'Vous n’avez pas encore configuré de point de vente. Ajoutez votre premier emplacement pour démarrer les encaissements.'
+              : 'Aucun point de vente ne vous est attribué pour le moment. Demandez à votre administrateur de vous en confier.'}
           </p>
-          <AddButton what="un point de vente" onClick={() => setIsModalOpen(true)} />
+          {isAdmin && <AddButton what="un point de vente" onClick={() => setIsModalOpen(true)} />}
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

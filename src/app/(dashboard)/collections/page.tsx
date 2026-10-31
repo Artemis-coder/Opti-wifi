@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/Input';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
+import { useAuthStore } from '@/lib/stores/authStore';
 import { Collection } from '@/types/database';
 import { AddButton } from '@/components/ui/AddButton';
 
@@ -31,6 +32,7 @@ export default function CollectionsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const supabase = createClient();
   const { currentSpaceId } = useSpaceStore();
+  const isCollector = useAuthStore((s) => s.user?.role) === 'collecteur';
 
   useEffect(() => {
     async function loadCollections() {
@@ -83,10 +85,12 @@ export default function CollectionsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Receipt className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
-            <span>Encaissements &amp; Collectes</span>
+            <span>{isCollector ? 'Mes collectes' : 'Encaissements & Collectes'}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Historique et suivi des levées de fonds et encaissements de caisse.
+            {isCollector
+              ? 'Les encaissements faits sur vos points de vente.'
+              : 'Historique et suivi des levées de fonds et encaissements de caisse.'}
           </p>
         </div>
         <AddButton what="une collecte de caisse" href="/collections/new" />

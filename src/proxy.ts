@@ -15,6 +15,10 @@ const PROTECTED_CLIENT_ROUTES = [
   '/support',
 ];
 
+// Pages de gestion réservées à l'administrateur : le collecteur est renvoyé vers sa tournée.
+// (Simple confort de navigation : les données restent protégées côté serveur.)
+const ADMIN_ONLY_ROUTES = ['/allocations', '/spaces', '/tickets', '/users', '/reports', '/subscription'];
+
 const CSRF_EXEMPT_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
@@ -135,6 +139,13 @@ export async function proxy(request: NextRequest) {
   // Le super admin n'accède pas aux espaces clients : il reste dans le back-office
   if (isClientRoute && (user?.role === 'super_admin' || user?.app_metadata?.role === 'super_admin')) {
     return NextResponse.redirect(new URL('/platform/dashboard', request.url));
+  }
+
+  if (
+    user?.role === 'collecteur' &&
+    ADMIN_ONLY_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/'))
+  ) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
