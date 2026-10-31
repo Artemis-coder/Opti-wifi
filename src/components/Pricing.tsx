@@ -55,7 +55,7 @@ export function Pricing() {
                 <p className={`mt-1 text-sm ${p.featured ? "text-white/55" : "text-ink-soft"}`}>{p.period}</p>
 
                 <ul className="mt-7 space-y-3 border-t border-current/10 pt-6">
-                  {[...p.limits, ...p.extras].map((l) => (
+                  {[...p.limits, ...p.features].map((l) => (
                     <li key={l} className="flex items-start gap-2.5 text-[15px]">
                       <Check className={`mt-0.5 h-4.5 w-4.5 shrink-0 ${p.featured ? "text-brand-400" : "text-brand-500"}`} />
                       {l}
@@ -81,18 +81,21 @@ export function Pricing() {
           ))}
         </Reveal>
 
-        <Reveal className="mt-10 rounded-3xl bg-surface-low p-6 ring-1 ring-line sm:p-8">
-          <Item as="p" className="text-center text-sm font-bold uppercase tracking-wider text-ink-soft">
-            Inclus dans tous les forfaits
-          </Item>
-          <Item className="mt-5 flex flex-wrap justify-center gap-2">
-            {INCLUDED.map((f) => (
-              <span key={f} className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-sm font-medium text-ink ring-1 ring-line">
-                <Check className="h-3.5 w-3.5 text-brand-500" /> {f}
-              </span>
-            ))}
-          </Item>
-        </Reveal>
+        {/* Liste générique seulement tant qu'aucun forfait n'a ses propres fonctionnalités (back-office → Forfaits) */}
+        {!PLANS.some((p) => p.features.length > 0) && (
+          <Reveal className="mt-10 rounded-3xl bg-surface-low p-6 ring-1 ring-line sm:p-8">
+            <Item as="p" className="text-center text-sm font-bold uppercase tracking-wider text-ink-soft">
+              Inclus dans tous les forfaits
+            </Item>
+            <Item className="mt-5 flex flex-wrap justify-center gap-2">
+              {INCLUDED.map((f) => (
+                <span key={f} className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-sm font-medium text-ink ring-1 ring-line">
+                  <Check className="h-3.5 w-3.5 text-brand-500" /> {f}
+                </span>
+              ))}
+            </Item>
+          </Reveal>
+        )}
       </div>
     </section>
   );

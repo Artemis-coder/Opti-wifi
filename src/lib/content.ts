@@ -47,7 +47,10 @@ export type ApiPlan = {
   trial_days: number | null;
   max_users: number | null;
   max_points_of_sale: number | null;
+  max_collectors?: number | null;
   max_tickets_per_month: number | null;
+  /** Fonctionnalités saisies dans le back-office (Forfaits) */
+  features?: string[];
 };
 
 export type Plan = {
@@ -57,7 +60,7 @@ export type Plan = {
   period: string;
   pitch: string;
   limits: string[];
-  extras: string[];
+  features: string[];
   cta: string;
   featured: boolean;
   maxPos: number | null;
@@ -141,9 +144,9 @@ export const DEFAULT_CONTENT: SiteContent = {
 
 /** Forfaits de secours (relevés sur la base dev le 29/10/2026). */
 const DEFAULT_PLANS: ApiPlan[] = [
-  { id: "c656bcbe-a203-4523-9aa9-7a91a4f666d8", name: "Découverte", description: "Testez OptiSpace sur un vrai point de vente, sans payer.", price: 0, currency: "XOF", billing_period: "monthly", trial_days: 5, max_users: 1, max_points_of_sale: 1, max_tickets_per_month: 500 },
-  { id: "400f0254-bf85-4b8c-840c-0fdec024cacc", name: "Standard", description: "Pour le gérant qui fait grandir son réseau de revendeurs.", price: 2000, currency: "XOF", billing_period: "monthly", trial_days: 0, max_users: 2, max_points_of_sale: 10, max_tickets_per_month: 2000 },
-  { id: "6f792040-96aa-401d-88a1-c31c8c1e879a", name: "Décideur (Pro)", description: "Pour les réseaux établis avec plusieurs collecteurs sur le terrain.", price: 20000, currency: "XOF", billing_period: "monthly", trial_days: 0, max_users: 5, max_points_of_sale: 25, max_tickets_per_month: 10000 },
+  { id: "c656bcbe-a203-4523-9aa9-7a91a4f666d8", name: "Découverte", description: "Testez OptiSpace sur un vrai point de vente, sans payer.", price: 0, currency: "XOF", billing_period: "monthly", trial_days: 5, max_users: 1, max_points_of_sale: 1, max_collectors: null, max_tickets_per_month: 500, features: [] },
+  { id: "400f0254-bf85-4b8c-840c-0fdec024cacc", name: "Standard", description: "Pour le gérant qui fait grandir son réseau de revendeurs.", price: 2000, currency: "XOF", billing_period: "monthly", trial_days: 0, max_users: 2, max_points_of_sale: 10, max_collectors: null, max_tickets_per_month: 2000, features: [] },
+  { id: "6f792040-96aa-401d-88a1-c31c8c1e879a", name: "Décideur (Pro)", description: "Pour les réseaux établis avec plusieurs collecteurs sur le terrain.", price: 20000, currency: "XOF", billing_period: "monthly", trial_days: 0, max_users: 5, max_points_of_sale: 25, max_collectors: null, max_tickets_per_month: 10000, features: [] },
 ];
 
 export const INCLUDED = [
@@ -168,25 +171,35 @@ function plural(n: number, one: string, many: string) {
   return `${fr.format(n)} ${n > 1 ? many : one}`;
 }
 
+/**
+ * Carte de tarif telle que configurée dans le back-office (Forfaits) : rien n'est
+ * inventé ici. Limite vide = non affichée, -1 = illimité.
+ */
 export function toPlans(api: ApiPlan[], featuredId: string | null): Plan[] {
+  const limit = (n: number | null | undefined, one: string, many: string, suffix = "") =>
+    n == null ? null : n < 0 ? `${many.charAt(0).toUpperCase()}${many.slice(1)} illimités${suffix}` : `${plural(n, one, many)}${suffix}`;
+
   return api.map((p) => {
     const free = p.price === 0;
+    const trial = p.trial_days && p.trial_days > 0 ? p.trial_days : 0;
     const limits = [
-      p.max_points_of_sale == null ? "Points de vente illimités" : plural(p.max_points_of_sale, "point de vente", "points de vente"),
-      p.max_users == null ? "Utilisateurs illimités" : plural(p.max_users, "utilisateur", "utilisateurs"),
-      p.max_tickets_per_month == null ? "Tickets illimités" : `${fr.format(p.max_tickets_per_month)} tickets / mois`,
-    ];
+      limit(p.max_points_of_sale, "point de vente", "points de vente"),
+      limit(p.max_users, "utilisateur", "utilisateurs"),
+      limit(p.max_collectors, "collecteur", "collecteurs"),
+      p.max_tickets_per_month == null ? null : p.max_tickets_per_month < 0 ? "Tickets illimités" : `${fr.format(p.max_tickets_per_month)} tickets / mois`,
+      !free && trial ? `${plural(trial, "jour", "jours")} d'essai gratuit` : null,
+    ].filter((l): l is string => Boolean(l));
     return {
       id: p.id,
       name: p.name,
       price: p.price,
-      period: free && p.trial_days ? `${plural(p.trial_days, "jour", "jours")} d'essai` : PERIODS[p.billing_period] ?? "par mois",
+      period: free && trial ? `${plural(trial, "jour", "jours")} d'essai` : PERIODS[p.billing_period] ?? "par mois",
       pitch: p.description ?? "",
       limits,
-      extras: ["Toutes les fonctionnalités", free ? "Sans engagement, sans carte" : "Paiement Wave, facture PDF"],
+      features: Array.isArray(p.features) ? p.features : [],
       cta: free ? "Commencer l'essai" : `Choisir ${p.name}`,
       featured: p.id === featuredId,
-      maxPos: p.max_points_of_sale,
+      maxPos: p.max_points_of_sale == null || p.max_points_of_sale < 0 ? null : p.max_points_of_sale,
     };
   });
 }
