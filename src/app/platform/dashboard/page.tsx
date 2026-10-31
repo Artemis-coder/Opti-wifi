@@ -42,6 +42,9 @@ interface CountriesData {
   unknown: number;
 }
 
+/** Colonnes de la rangée du Top pays selon le nombre de pays affichés (classes Tailwind complètes) */
+const COUNTRY_COLUMNS: Record<number, string> = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3' };
+
 const PODIUM: { rank: string; accent: StatAccent }[] = [
   { rank: '1er', accent: 'amber' },
   { rank: '2e', accent: 'indigo' },
@@ -281,7 +284,8 @@ export default function PlatformDashboardPage() {
           )}
         </div>
         {countries && countries.top.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          // Les cartes se partagent toute la ligne : 1, 2 ou 3 colonnes selon le nombre de pays
+          <div className={cn('grid grid-cols-1 gap-3 sm:gap-4', COUNTRY_COLUMNS[Math.min(3, countries.top.length)])}>
             {countries.top.slice(0, 3).map((c, i) => (
               <StatTile
                 key={c.code}
