@@ -173,11 +173,17 @@ function plural(n: number, one: string, many: string) {
 
 /**
  * Carte de tarif telle que configurée dans le back-office (Forfaits) : rien n'est
- * inventé ici. Limite vide = non affichée, -1 = illimité.
+ * inventé ici. Limite vide = non affichée, -1 = illimité, 0 = « Aucun … ».
  */
 export function toPlans(api: ApiPlan[], featuredId: string | null): Plan[] {
   const limit = (n: number | null | undefined, one: string, many: string, suffix = "") =>
-    n == null ? null : n < 0 ? `${many.charAt(0).toUpperCase()}${many.slice(1)} illimités${suffix}` : `${plural(n, one, many)}${suffix}`;
+    n == null
+      ? null
+      : n < 0
+        ? `${many.charAt(0).toUpperCase()}${many.slice(1)} illimités${suffix}`
+        : n === 0
+          ? `Aucun ${one}${suffix}`
+          : `${plural(n, one, many)}${suffix}`;
 
   return api.map((p) => {
     const free = p.price === 0;
