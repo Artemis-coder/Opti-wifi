@@ -4,6 +4,7 @@ import { AUTH_COOKIE_NAME, verifyToken, getUserById, hashPassword, signToken } f
 import { getPlatformUser } from '@/lib/neon/server';
 import { query } from '@/lib/neon/db';
 import { MUST_CHANGE_PASSWORD_KEY, setAuthCookie, validatePasswordStrength } from '@/lib/password-change';
+import { sendPasswordChangedEmail } from '@/lib/email';
 
 // L'utilisateur connecté choisit son propre mot de passe :
 // - obligatoirement après une connexion avec un mot de passe temporaire (pas d'ancien mot de passe à saisir) ;
@@ -72,6 +73,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Utilisateur introuvable.' }, { status: 404 });
     }
+    // E-mail de confirmation « mot de passe modifié » (alerte si ce n'est pas l'utilisateur)
+    sendPasswordChangedEmail(user.email).catch((err) => console.error('Password changed email error:', err));
+
     const platformUser = await getPlatformUser(user.id);
     const redirect = platformUser?.role === 'super_admin' ? '/platform/dashboard' : '/dashboard';
 

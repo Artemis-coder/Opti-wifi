@@ -105,7 +105,8 @@ export async function POST(request: Request) {
       trial_days: trial_days || 14,
       max_users: max_users || null,
       max_points_of_sale: max_points_of_sale || null,
-      max_collectors: max_collectors || null,
+      // 0 = aucun collecteur (ne pas le confondre avec « non renseigné »)
+      max_collectors: max_collectors ?? null,
       max_tickets_per_month: max_tickets_per_month || null,
       features: normalizePlanFeatures(features),
       status: status || 'active',

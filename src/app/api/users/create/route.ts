@@ -7,6 +7,9 @@ import { getSessionContext } from '@/lib/tenant';
 import { setMustChangePassword } from '@/lib/password-change';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 import { notifyInBackground, notifyOrganizationAdmins } from '@/lib/notifications';
+import { query } from '@/lib/neon/db';
+import { appUrl, generateTemporaryPassword } from '@/lib/password-tokens';
+import { isEmailConfigured, sendInvitationEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,8 +26,12 @@ export async function POST(request: NextRequest) {
     const orgId = ctx.organizationId;
 
     const body = await request.json();
-    const { nom, email, telephone, mot_de_passe } = body;
+    const { nom, email, telephone } = body;
     const role = body.role || 'collecteur';
+    // Mot de passe temporaire : saisi par l'administrateur, ou généré s'il est laissé vide
+    const mot_de_passe: string =
+      typeof body.mot_de_passe === 'string' && body.mot_de_passe.trim() ? body.mot_de_passe.trim() : generateTemporaryPassword();
+    const sendByEmail = body.send_email === true;
 
     if (!nom || !email || !mot_de_passe) {
       return NextResponse.json(
@@ -143,9 +150,32 @@ export async function POST(request: NextRequest) {
       )
     );
 
+    // Invitation par e-mail avec les accès (si demandé et si l'envoi d'e-mails est configuré)
+    let emailSent = false;
+    if (sendByEmail && isEmailConfigured()) {
+      const info = await query(
+        `SELECT o.name AS org, p.nom AS inviter FROM organizations o LEFT JOIN profiles p ON p.id = $2 WHERE o.id = $1`,
+        [orgId, ctx.userId]
+      );
+      const sent = await sendInvitationEmail({
+        to: String(email).trim().toLowerCase(),
+        name: String(nom).trim(),
+        organizationName: info.rows[0]?.org || 'votre organisation',
+        inviterName: info.rows[0]?.inviter || null,
+        role: role === 'administrateur' ? 'administrateur' : 'collecteur',
+        loginUrl: appUrl('/login', request),
+        temporaryPassword: mot_de_passe,
+      });
+      emailSent = sent.success;
+      if (!sent.success) console.error('Invitation email not sent:', sent.error);
+    }
+
     return NextResponse.json({
       success: true,
       profile: savedProfile ?? profile,
+      // Accès à transmettre au membre (affichés une seule fois : le mot de passe n'est pas conservé en clair)
+      access: { email: String(email).trim().toLowerCase(), temporary_password: mot_de_passe, login_url: appUrl('/login', request) },
+      email_sent: emailSent,
     });
   } catch (error: unknown) {
     console.error('Create user error:', error);

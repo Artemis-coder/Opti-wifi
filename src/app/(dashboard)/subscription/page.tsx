@@ -49,8 +49,8 @@ interface LicenseRequestInfo {
   plan_name: string | null;
 }
 
-/** Limite d'un forfait : null ou négative (-1) = illimitée */
-const planLimit = (v: number | null | undefined) => (v && v > 0 ? v : null);
+/** Limite d'un forfait : null ou négative (-1) = illimitée ; 0 = aucun */
+const planLimit = (v: number | null | undefined) => (v === null || v === undefined || v < 0 ? null : v);
 
 export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
@@ -420,7 +420,8 @@ export default function SubscriptionPage() {
               { label: 'Espaces Wi-Fi', icon: MapPin, count: usage.spacesCount, limit: null },
             ].map((q) => {
               const Icon = q.icon;
-              const percent = q.limit ? Math.min(100, Math.round((q.count / q.limit) * 100)) : 0;
+              const percent =
+                q.limit === null ? 0 : q.limit === 0 ? (q.count > 0 ? 100 : 0) : Math.min(100, Math.round((q.count / q.limit) * 100));
               return (
                 <div key={q.label} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
                   <div className="flex items-center justify-between text-xs">
@@ -431,7 +432,7 @@ export default function SubscriptionPage() {
                       {q.count} / {q.limit ?? 'Illimité'}
                     </span>
                   </div>
-                  {q.limit ? (
+                  {q.limit !== null ? (
                     <>
                       <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                         <div
@@ -494,12 +495,14 @@ export default function SubscriptionPage() {
                     <span>Jusqu&apos;à {plan.max_points_of_sale} points de vente</span>
                   </div>
                 )}
-                {!!plan.max_collectors && (
+                {plan.max_collectors !== null && plan.max_collectors !== undefined && (
                   <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     <span>
                       {plan.max_collectors < 0
                         ? 'Collecteurs illimités'
+                        : plan.max_collectors === 0
+                          ? 'Sans collecteur'
                         : `Jusqu'à ${plan.max_collectors} collecteur${plan.max_collectors > 1 ? 's' : ''}`}
                     </span>
                   </div>
