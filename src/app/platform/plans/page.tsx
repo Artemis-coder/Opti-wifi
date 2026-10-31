@@ -64,25 +64,23 @@ export default function PlatformPlansPage() {
   const [formFeatures, setFormFeatures] = useState('');
   const [formStatus, setFormStatus] = useState<PlanStatus>('active');
 
-  // Appelé une seule fois au montage : `loading` vaut déjà true
-  async function loadPlans() {
-    try {
-      const res = await fetch('/api/platform/plans');
-      const result = await res.json();
-      if (res.ok) {
-        setPlans(result.data);
-      } else {
-        toast.error(result.error || 'Erreur de chargement');
-      }
-    } catch {
-      toast.error('Erreur de chargement des plans');
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // Chargement initial (`loading` vaut déjà true)
   useEffect(() => {
-    loadPlans();
+    (async () => {
+      try {
+        const res = await fetch('/api/platform/plans');
+        const result = await res.json();
+        if (res.ok) {
+          setPlans(result.data);
+        } else {
+          toast.error(result.error || 'Erreur de chargement');
+        }
+      } catch {
+        toast.error('Erreur de chargement des plans');
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const resetForm = () => {
