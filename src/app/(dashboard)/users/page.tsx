@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Profile, UserRole } from '@/types/database';
+import { isActiveProfile } from '@/lib/utils/profiles';
 import { createClient } from '@/lib/supabase/client';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AddButton } from '@/components/ui/AddButton';
@@ -33,7 +34,8 @@ export default function UsersPage() {
     async function loadUsers() {
       setLoading(true);
       const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      setUsers(data || []);
+      // Les comptes supprimés disparaissent de l'équipe (leurs collectes restent dans l'historique)
+      setUsers((data || []).filter(isActiveProfile));
       setLoading(false);
     }
     loadUsers();
@@ -82,7 +84,7 @@ export default function UsersPage() {
     const result = await res.json();
 
     if (res.ok && result.success) {
-      setUsers(users.map(u => u.id === user.id ? { ...u, is_active: false, deleted_at: new Date().toISOString() } : u));
+      setUsers(users.filter((u) => u.id !== user.id));
       toast.success(result.message || 'Utilisateur supprimé avec succès.');
     } else {
       toast.error(result.error || 'Erreur lors de la suppression.');
@@ -153,7 +155,7 @@ export default function UsersPage() {
                   disabled={u.is_active === false}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Supprimer de l'équipe
+                  Supprimer de l’équipe
                 </Button>
               </Card>
           ))}
@@ -189,10 +191,10 @@ export default function UsersPage() {
       {/* Delete Confirmation Modal */}
       <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Supprimer l'utilisateur">
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-          Êtes-vous sûr de vouloir supprimer <strong className="font-bold text-slate-900 dark:text-white">{deleteTarget?.nom}</strong> de l'équipe ?
+          Êtes-vous sûr de vouloir supprimer <strong className="font-bold text-slate-900 dark:text-white">{deleteTarget?.nom}</strong> de l’équipe ?
         </p>
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-          Toutes les collectes et allocations historiques conserveront les noms d'utilisateur d'origine, mais cet utilisateur ne pourra plus se connecter ni être affecté à de nouvelles tâches.
+          Toutes les collectes et allocations historiques conserveront les noms d’utilisateur d’origine, mais cet utilisateur ne pourra plus se connecter ni être affecté à de nouvelles tâches.
         </p>
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>Annuler</Button>

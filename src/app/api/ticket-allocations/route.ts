@@ -2,6 +2,10 @@ import { createServerClient } from '@/lib/neon/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
+import { getSessionContext } from '@/lib/tenant';
+import { getAssignedPosIds } from '@/lib/collector-scope';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +26,11 @@ export async function POST(request: NextRequest) {
 
     if (!orgId) {
       return NextResponse.json({ error: 'Organisation requise.' }, { status: 400 });
+    }
+
+    const ctx = await getSessionContext();
+    if (!ctx) {
+      return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -49,6 +58,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Point de vente ou type de ticket introuvable.' }, { status: 404 });
     }
 
+    // Un collecteur n'attribue des tickets qu'à ses propres points de vente
+    if (ctx.role !== 'administrateur' && !(await getAssignedPosIds(ctx.userId, orgId)).includes(pos_id)) {
+      return NextResponse.json({ error: 'Ce point de vente ne vous est pas attribué.' }, { status: 403 });
+    }
+
     const { data: allocation, error: allocError } = await supabase
       .from('ticket_allocations')
       .insert({
@@ -67,6 +81,13 @@ export async function POST(request: NextRequest) {
       console.error('Erreur création allocation:', allocError);
       return NextResponse.json({ error: "Erreur lors de la création de l'allocation." }, { status: 500 });
     }
+
+    trackServer(callerUser?.id, EVENTS.ticketsAllocated, {
+      organization_id: orgId,
+      pos_id,
+      ticket_type_id,
+      quantity: Number(quantite) || 0,
+    });
 
     return NextResponse.json({
       success: true,

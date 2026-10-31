@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/neon/admin';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { normalizePlanFeatures } from '@/lib/plan-features';
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
       max_points_of_sale: max_points_of_sale || null,
       max_collectors: max_collectors || null,
       max_tickets_per_month: max_tickets_per_month || null,
-      features: features || null,
+      features: normalizePlanFeatures(features),
       status: status || 'active',
     })
     .select()

@@ -10,6 +10,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { trackClient } from '@/lib/analytics/client';
+import { EVENTS } from '@/lib/analytics/events';
 
 interface EditPosModalProps {
   isOpen: boolean;
@@ -104,6 +106,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
       toast.error(`Erreur: ${(error as { message?: string })?.message || 'Échec de lenregistrement.'}`);
     } else {
       toast.success(pos ? 'Point de vente modifié.' : 'Point de vente créé.');
+      if (!pos) trackClient(EVENTS.posCreated, { organization_id: user?.organization_id ?? null });
       onSuccess(result);
       onClose();
     }

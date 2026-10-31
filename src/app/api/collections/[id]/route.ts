@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
+import { getVisiblePosIds } from '@/lib/collector-scope';
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -44,6 +45,14 @@ export async function GET(
       !canAccessOrganization(ctx, collection.organization_id || collection.organisation_id)
     ) {
       return NextResponse.json({ error: 'Collecte introuvable' }, { status: 404 });
+    }
+
+    // Un collecteur ne consulte que les collectes de ses points de vente
+    if (!ctx.isPlatformAdmin && ctx.role !== 'administrateur' && ctx.organizationId) {
+      const visible = await getVisiblePosIds(ctx.userId, ctx.organizationId);
+      if (!visible.includes(collection.pos_id)) {
+        return NextResponse.json({ error: 'Collecte introuvable' }, { status: 404 });
+      }
     }
 
     // 2. Items avec le type de ticket

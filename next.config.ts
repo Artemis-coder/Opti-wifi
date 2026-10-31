@@ -1,8 +1,23 @@
 import type { NextConfig } from "next";
 
+// PostHog : les envois du navigateur passent par /ingest (même domaine) pour ne pas
+// être bloqués par les bloqueurs de publicité. POSTHOG_HOST = https://us.i.posthog.com ou https://eu.i.posthog.com
+const POSTHOG_HOST = process.env.POSTHOG_HOST || process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+const POSTHOG_ASSETS = POSTHOG_HOST.replace('.i.posthog.com', '-assets.i.posthog.com');
+
 const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
+  },
+
+  // Requis par le relais PostHog (/ingest/... avec barre oblique finale)
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    return [
+      { source: '/ingest/static/:path*', destination: `${POSTHOG_ASSETS}/static/:path*` },
+      { source: '/ingest/array/:path*', destination: `${POSTHOG_ASSETS}/array/:path*` },
+      { source: '/ingest/:path*', destination: `${POSTHOG_HOST}/:path*` },
+    ];
   },
 
   // ── En-têtes de sécurité HTTP ────────────────────────────────────────────

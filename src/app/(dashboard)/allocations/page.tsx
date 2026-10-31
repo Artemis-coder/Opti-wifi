@@ -26,6 +26,7 @@ import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { AddButton } from '@/components/ui/AddButton';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function AllocationsPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function AllocationsPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const supabase = createClient();
+  const isCollector = useAuthStore((s) => s.user?.role) === 'collecteur';
 
   useEffect(() => {
     async function loadData() {
@@ -163,10 +165,12 @@ export default function AllocationsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
-            <span>Suivi des Allocations</span>
+            <span>{isCollector ? 'Mes allocations' : 'Suivi des Allocations'}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Historique complet des mouvements et attributions de tickets par point de vente.
+            {isCollector
+              ? 'Les tickets attribués à vos points de vente.'
+              : 'Historique complet des mouvements et attributions de tickets par point de vente.'}
           </p>
         </div>
 

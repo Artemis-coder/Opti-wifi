@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PointOfSale, TicketType } from '@/types/database';
 import { DateField } from '@/components/ui/DateField';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 interface AllocationLine {
   ticketTypeId: string;
@@ -34,6 +35,7 @@ export default function NewAllocationPage() {
   const [notes, setNotes] = useState('');
 
   const supabase = createClient();
+  const isCollector = useAuthStore((s) => s.user?.role) === 'collecteur';
 
   useEffect(() => {
     async function loadData() {
@@ -46,7 +48,9 @@ export default function NewAllocationPage() {
 
       if (posRes.data && posRes.data.length > 0) {
         setPosList(posRes.data);
-        setPosId(posRes.data[0].id);
+        // Lien « Attribuer » depuis la tournée : point de vente présélectionné
+        const requested = new URLSearchParams(window.location.search).get('pos');
+        setPosId(posRes.data.some((p: PointOfSale) => p.id === requested) ? requested! : posRes.data[0].id);
       } else {
         setPosList([]);
       }
@@ -133,7 +137,11 @@ const addLine = () => {
           <ArrowLeftRight className="w-6 h-6 text-amber-500" />
           Allocation de Tickets aux Points de Vente
         </h1>
-        <p className="text-xs text-slate-500">Distribuez du stock de tickets à un point de vente de votre réseau.</p>
+        <p className="text-xs text-slate-500">
+          {isCollector
+            ? 'Attribuez des tickets à un de vos points de vente.'
+            : 'Distribuez du stock de tickets à un point de vente de votre réseau.'}
+        </p>
       </div>
 
       {loading ? (
@@ -146,9 +154,13 @@ const addLine = () => {
           <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Référentiel incomplet</h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Pour effectuer une allocation de stock, vous devez d&apos;abord avoir configuré au moins un <strong>Point de Vente</strong> et un <strong>Type de Ticket</strong>.
+            {isCollector ? (
+              <>Il vous faut au moins un <strong>point de vente attribué</strong> et un <strong>type de ticket</strong> créé par votre administrateur.</>
+            ) : (
+              <>Pour effectuer une allocation de stock, vous devez d&apos;abord avoir configuré au moins un <strong>Point de Vente</strong> et un <strong>Type de Ticket</strong>.</>
+            )}
           </p>
-          <div className="flex justify-center gap-3 pt-2">
+          {!isCollector && <div className="flex justify-center gap-3 pt-2">
             {posList.length === 0 && (
               <Link href="/pos">
                 <Button size="sm" variant="secondary" className="gap-2 font-bold">
@@ -163,7 +175,7 @@ const addLine = () => {
                 </Button>
               </Link>
             )}
-          </div>
+          </div>}
         </Card>
       ) : submitted ? (
         <Card className="p-8 text-center space-y-3 border-emerald-500">

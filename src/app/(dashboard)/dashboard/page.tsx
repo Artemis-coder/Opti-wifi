@@ -25,6 +25,7 @@ import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { ClientDashboard, DashboardPeriod } from '@/lib/client-dashboard';
+import { CollectorDashboard } from '@/components/collector/CollectorDashboard';
 
 const PERIODS: { value: DashboardPeriod; label: string; eyebrow: string }[] = [
   { value: 'all', label: 'Tout', eyebrow: 'Depuis le début' },
@@ -105,7 +106,13 @@ function PosTooltip({ active, payload }: { active?: boolean; payload?: { payload
   );
 }
 
+// Le collecteur a son propre accueil (sa tournée) ; l'administrateur voit toute l'organisation.
 export default function DashboardPage() {
+  const role = useAuthStore((s) => s.user?.role);
+  return role === 'collecteur' ? <CollectorDashboard /> : <AdminDashboard />;
+}
+
+function AdminDashboard() {
   const { currentSpaceId } = useSpaceStore();
   const isAdmin = useAuthStore((s) => s.user?.role) === 'administrateur';
   const [period, setPeriod] = useState<DashboardPeriod>('all');

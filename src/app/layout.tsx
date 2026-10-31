@@ -5,6 +5,7 @@ import "./globals.css";
 import { ConnectionStatus } from "@/components/offline/ConnectionStatus";
 import { ConfirmHost } from "@/components/ui/ConfirmDialog";
 import { ErrorReporter } from "@/components/ErrorReporter";
+import { AnalyticsIdentity } from "@/components/AnalyticsIdentity";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </ErrorReporter>
         <ConnectionStatus />
+        <AnalyticsIdentity />
         <ConfirmHost />
         <Toaster closeButton position="top-center" offset={72} />
       </body>

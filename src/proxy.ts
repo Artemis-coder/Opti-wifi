@@ -15,6 +15,10 @@ const PROTECTED_CLIENT_ROUTES = [
   '/support',
 ];
 
+// Pages de gestion réservées à l'administrateur : le collecteur est renvoyé vers sa tournée.
+// (Simple confort de navigation : les données restent protégées côté serveur.)
+const ADMIN_ONLY_ROUTES = ['/spaces', '/tickets', '/users', '/reports', '/subscription'];
+
 const CSRF_EXEMPT_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
@@ -137,11 +141,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/platform/dashboard', request.url));
   }
 
+  if (
+    user?.role === 'collecteur' &&
+    ADMIN_ONLY_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/'))
+  ) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico|css|js|woff2|ttf|eot)$).*)',
+    '/((?!_next/static|_next/image|ingest|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico|css|js|woff2|ttf|eot)$).*)',
   ],
 };

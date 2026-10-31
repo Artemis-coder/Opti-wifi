@@ -13,7 +13,13 @@ async function loadOwnTicket(params: Promise<{ id: string }>) {
   if (!UUID_RE.test(id)) return { error: NextResponse.json({ error: 'Ticket introuvable' }, { status: 404 }) } as const;
   const data = await getTicket(id);
   // Même réponse qu'un ticket inexistant : ne révèle pas les tickets des autres clients
-  if (!data || !ctx.organizationId || data.ticket.organization_id !== ctx.organizationId) {
+  // Un collecteur n'accède qu'aux tickets qu'il a ouverts
+  if (
+    !data ||
+    !ctx.organizationId ||
+    data.ticket.organization_id !== ctx.organizationId ||
+    (ctx.role !== 'administrateur' && data.ticket.created_by !== ctx.userId)
+  ) {
     return { error: NextResponse.json({ error: 'Ticket introuvable' }, { status: 404 }) } as const;
   }
   return { ctx, id, data } as const;

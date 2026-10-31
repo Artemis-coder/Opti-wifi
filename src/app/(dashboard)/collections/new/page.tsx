@@ -34,6 +34,7 @@ import { DateField } from '@/components/ui/DateField';
 export default function NewCollectionWizard() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const isCollector = user?.role === 'collecteur';
   const { currentSpaceId } = useSpaceStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,9 @@ export default function NewCollectionWizard() {
 
       if (posData && posData.length > 0) {
         setPosList(posData);
-        setPosId(posData[0].id);
+        // Lien « Collecter » depuis la tournée : point de vente présélectionné
+        const requested = new URLSearchParams(window.location.search).get('pos');
+        setPosId(posData.some((p: PointOfSale) => p.id === requested) ? requested! : posData[0].id);
       } else {
         setPosList([]);
         setPosId('');
@@ -402,7 +405,7 @@ export default function NewCollectionWizard() {
       const collectionPayload: CollectionInsert = {
         pos_id: posId,
         collecteur_id: user?.id || '00000000-0000-0000-0000-000000000000',
-        space_id: currentSpaceId || null,
+        space_id: currentSpaceId || selectedPos?.space_id || null,
         organization_id: user?.organization_id || null,
         statut: 'validee',
         montant_attendu: montantAttendu,
@@ -437,7 +440,7 @@ export default function NewCollectionWizard() {
             stock_debut: available,
             quantite_vendue: sold,
             prix_unitaire: t.prix,
-            space_id: currentSpaceId || null,
+            space_id: currentSpaceId || selectedPos?.space_id || null,
             organization_id: user?.organization_id || null,
           };
         })
@@ -455,7 +458,7 @@ export default function NewCollectionWizard() {
       setSubmitted(true);
 
       setTimeout(() => {
-        router.push('/collections');
+        router.push(isCollector ? '/dashboard' : '/collections');
       }, 1500);
     } catch (err: unknown) {
       console.error('Erreur enregistrement collecte:', err);
@@ -563,13 +566,17 @@ export default function NewCollectionWizard() {
                   <AlertTriangle className="w-8 h-8 text-amber-600 mx-auto" />
                   <p className="text-sm font-bold text-slate-900 dark:text-white">Aucun point de vente disponible</p>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    Aucun point de vente n&apos;a été trouvé pour cet espace Wi-Fi. Veuillez d&apos;abord en créer un.
+                    {isCollector
+                      ? 'Aucun point de vente ne vous est attribué pour cet espace Wi-Fi. Demandez à votre administrateur de vous en confier.'
+                      : 'Aucun point de vente n’a été trouvé pour cet espace Wi-Fi. Veuillez d’abord en créer un.'}
                   </p>
-                  <Link href="/pos">
-                    <Button size="sm" variant="secondary" className="font-bold">
-                      Gérer les Points de Vente
-                    </Button>
-                  </Link>
+                  {!isCollector && (
+                    <Link href="/pos">
+                      <Button size="sm" variant="secondary" className="font-bold">
+                        Gérer les Points de Vente
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">

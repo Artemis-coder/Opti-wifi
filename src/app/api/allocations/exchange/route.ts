@@ -3,6 +3,9 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getSessionContext } from '@/lib/tenant';
 import { query } from '@/lib/neon/db';
+import { getAssignedPosIds } from '@/lib/collector-scope';
+import { trackServer } from '@/lib/analytics/server';
+import { EVENTS } from '@/lib/analytics/events';
 
 interface ExchangeItem {
   ticket_type_id: string;
@@ -124,6 +127,13 @@ export async function POST(request: NextRequest) {
       if (Number(row?.pos_ok) !== 1 || Number(row?.types_ok) !== ticketTypeIds.length) {
         return NextResponse.json({ error: 'Point de vente ou type de ticket introuvable.' }, { status: 404 });
       }
+      // Un collecteur n'échange des tickets que sur ses propres points de vente
+      if (ctx.role !== 'administrateur') {
+        const assigned = ctx.organizationId ? await getAssignedPosIds(ctx.userId, ctx.organizationId) : [];
+        if (!assigned.includes(body.pos_id)) {
+          return NextResponse.json({ error: 'Ce point de vente ne vous est pas attribué.' }, { status: 403 });
+        }
+      }
     }
 
     const { data, error } = await supabase.rpc('perform_ticket_exchange', {
@@ -144,6 +154,14 @@ export async function POST(request: NextRequest) {
     if (!result?.success) {
       return NextResponse.json({ error: result?.message || 'Échec de l\'échange.' }, { status: 400 });
     }
+
+    const sum = (items: { quantite: number }[]) => items.reduce((n, r) => n + r.quantite, 0);
+    trackServer(user.id, EVENTS.ticketsExchanged, {
+      organization_id: ctx.organizationId ?? null,
+      pos_id: body.pos_id,
+      tickets_returned: sum(returnsPayload),
+      tickets_received: sum(receivesPayload),
+    });
 
     return NextResponse.json({
       success: true,

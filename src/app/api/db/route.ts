@@ -3,6 +3,7 @@ import { TableBuilder, makeError, type QuerySpec } from '@/lib/neon/query-builde
 import { AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import { getSessionContext, type SessionContext } from '@/lib/tenant';
 import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
+import { getAssignedPosIds, getVisibleCollectionIds, getVisiblePosIds, ownsCollections } from '@/lib/collector-scope';
 
 // Passerelle générique utilisée par le client navigateur (lib/supabase/client).
 // Règles imposées côté serveur :
@@ -34,6 +35,28 @@ const CLIENT_POLICIES: Record<string, TablePolicy> = {
   platform_users: { actions: ['select'], scope: 'own_platform_user' },
 };
 
+// Un collecteur ne fait que consulter, sauf pour enregistrer ses collectes, attribuer des tickets
+// à ses points de vente et modifier son profil.
+// Son périmètre (ses points de vente et leurs collectes) est imposé dans restrictToCollector.
+const COLLECTOR_ACTIONS: Record<string, Action[]> = {
+  collections: ['select', 'insert'],
+  collection_items: ['select', 'insert'],
+  ticket_allocations: ['select', 'insert'],
+  profiles: ['select', 'update'],
+};
+
+// Jointures qu'un collecteur peut demander depuis chaque table : pas de jointure inverse
+// (ex. wifi_spaces -> collections) qui contournerait son périmètre.
+const COLLECTOR_JOINS: Record<string, string[]> = {
+  collections: ['points_of_sale', 'profiles', 'collection_items', 'wifi_spaces'],
+  collection_items: ['ticket_types', 'collections'],
+  ticket_allocations: ['ticket_types', 'points_of_sale', 'wifi_spaces'],
+  points_of_sale: ['profiles', 'wifi_spaces'],
+  profiles: ['organizations'],
+  subscriptions: ['subscription_plans'],
+  license_requests: ['subscription_plans'],
+};
+
 // Le super admin lit et modifie toutes les organisations, mais jamais la table des comptes (hash de mots de passe).
 const PLATFORM_ADMIN_TABLES = new Set([...Object.keys(CLIENT_POLICIES)]);
 
@@ -51,6 +74,70 @@ const IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 const NESTED_RE = /(\w+):(\w+)(!inner|!left)?\(([^)]*)\)/g;
 
 class ForbiddenError extends Error {}
+
+function isCollector(ctx: SessionContext): boolean {
+  return !ctx.isPlatformAdmin && ctx.role !== 'administrateur';
+}
+
+/**
+ * Périmètre d'un collecteur : ses points de vente, leurs allocations et collectes, son profil.
+ * Il n'enregistre de collecte qu'à son nom et sur un point de vente qui lui est attribué.
+ */
+async function restrictToCollector(spec: QuerySpec, ctx: SessionContext): Promise<void> {
+  const org = ctx.organizationId;
+  if (!org) throw new ForbiddenError('Aucune organisation associée');
+  const and = (column: string, operator: '=' | 'IN', value: unknown) =>
+    spec.filters.push({ column, operator, value, logic: 'and' } as QuerySpec['filters'][number]);
+  const rows = () => (Array.isArray(spec.insertData) ? spec.insertData : [spec.insertData]) as Record<string, unknown>[];
+
+  switch (spec.tableName) {
+    case 'points_of_sale':
+      and('collecteur_id', '=', ctx.userId);
+      break;
+    case 'ticket_allocations':
+      if (spec.action === 'insert') {
+        // Allocation simple sur un de ses points de vente (l'échange entre POS reste à l'administrateur)
+        const assigned = await getAssignedPosIds(ctx.userId, org);
+        for (const row of rows()) {
+          if (typeof row.pos_id !== 'string' || !assigned.includes(row.pos_id)) {
+            throw new ForbiddenError('Ce point de vente ne vous est pas attribué');
+          }
+          if (row.type !== undefined && row.type !== 'allocation') throw new ForbiddenError('Action réservée à l’administrateur');
+          delete row.exchange_group_id;
+          row.alloue_par = ctx.userId;
+        }
+      } else {
+        and('pos_id', 'IN', await getVisiblePosIds(ctx.userId, org));
+      }
+      break;
+    case 'collections':
+      if (spec.action === 'insert') {
+        const assigned = await getAssignedPosIds(ctx.userId, org);
+        for (const row of rows()) {
+          if (typeof row.pos_id !== 'string' || !assigned.includes(row.pos_id)) {
+            throw new ForbiddenError('Ce point de vente ne vous est pas attribué');
+          }
+          row.collecteur_id = ctx.userId;
+        }
+      } else {
+        and('pos_id', 'IN', await getVisiblePosIds(ctx.userId, org));
+      }
+      break;
+    case 'collection_items':
+      if (spec.action === 'insert') {
+        const ids = rows().map((row) => row.collection_id);
+        if (!ids.every((id): id is string => typeof id === 'string') || !(await ownsCollections(ctx.userId, org, ids))) {
+          throw new ForbiddenError('Collecte introuvable');
+        }
+      } else {
+        and('collection_id', 'IN', await getVisibleCollectionIds(ctx.userId, org));
+      }
+      break;
+    case 'profiles':
+      if (spec.action === 'select') and('id', '=', ctx.userId);
+      break;
+  }
+}
 
 function assertIdent(value: unknown, label: string): asserts value is string {
   if (typeof value !== 'string' || !IDENT_RE.test(value)) {
@@ -97,6 +184,8 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
     if (!PLATFORM_ADMIN_TABLES.has(tableName) || action === 'rpc') throw new ForbiddenError('Action non autorisée');
   } else if (!policy.actions.includes(action)) {
     throw new ForbiddenError('Action non autorisée');
+  } else if (isCollector(ctx) && !(COLLECTOR_ACTIONS[tableName] || ['select']).includes(action)) {
+    throw new ForbiddenError('Action réservée à l’administrateur');
   } else if (ctx.organizationBlocked && (action !== 'select' || !BLOCKED_ORG_READABLE_TABLES.has(tableName))) {
     throw new ForbiddenError(
       ctx.blockReason === 'licence_expired'
@@ -116,6 +205,12 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
   const order = Array.isArray(body.order) ? body.order : [];
   for (const o of order) assertIdent(o?.column, 'Colonne de tri');
   validateSelect(body.selectColumns ?? null);
+  if (isCollector(ctx) && body.selectColumns) {
+    const allowedJoins = COLLECTOR_JOINS[tableName] || [];
+    for (const m of body.selectColumns.matchAll(NESTED_RE)) {
+      if (!allowedJoins.includes(m[2])) throw new ForbiddenError('Jointure non autorisée');
+    }
+  }
 
   let insertData = body.insertData ?? null;
   let updateData = body.updateData ?? null;
@@ -194,6 +289,7 @@ export async function POST(request: NextRequest) {
   let spec: QuerySpec;
   try {
     spec = buildSpec(await request.json(), ctx);
+    if (isCollector(ctx)) await restrictToCollector(spec, ctx);
   } catch (err) {
     const message = err instanceof ForbiddenError ? err.message : 'Requête invalide';
     return NextResponse.json({ data: null, error: makeError(message) }, { status: 403 });

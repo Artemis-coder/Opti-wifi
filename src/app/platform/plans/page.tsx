@@ -23,6 +23,7 @@ import { SubscriptionPlan, BillingPeriod, PlanStatus } from '@/types/platform';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
 import { AddButton } from '@/components/ui/AddButton';
+import { MAX_PLAN_FEATURES, normalizePlanFeatures, planFeatureList } from '@/lib/plan-features';
 
 const BILLING_PERIODS: { value: BillingPeriod; label: string }[] = [
   { value: 'monthly', label: 'Mensuelle' },
@@ -60,28 +61,27 @@ export default function PlatformPlansPage() {
   const [formMaxPos, setFormMaxPos] = useState('');
   const [formMaxCollectors, setFormMaxCollectors] = useState('');
   const [formMaxTickets, setFormMaxTickets] = useState('');
+  const [formFeatures, setFormFeatures] = useState('');
   const [formStatus, setFormStatus] = useState<PlanStatus>('active');
 
+  // Chargement initial (`loading` vaut déjà true)
   useEffect(() => {
-    loadPlans();
-  }, []);
-
-  async function loadPlans() {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/platform/plans');
-      const result = await res.json();
-      if (res.ok) {
-        setPlans(result.data);
-      } else {
-        toast.error(result.error || 'Erreur de chargement');
+    (async () => {
+      try {
+        const res = await fetch('/api/platform/plans');
+        const result = await res.json();
+        if (res.ok) {
+          setPlans(result.data);
+        } else {
+          toast.error(result.error || 'Erreur de chargement');
+        }
+      } catch {
+        toast.error('Erreur de chargement des plans');
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      toast.error('Erreur de chargement des plans');
-    } finally {
-      setLoading(false);
-    }
-  }
+    })();
+  }, []);
 
   const resetForm = () => {
     setFormName('');
@@ -94,6 +94,7 @@ export default function PlatformPlansPage() {
     setFormMaxPos('');
     setFormMaxCollectors('');
     setFormMaxTickets('');
+    setFormFeatures('');
     setFormStatus('active');
     setEditingPlan(null);
   };
@@ -111,6 +112,7 @@ export default function PlatformPlansPage() {
       setFormMaxPos(plan.max_points_of_sale?.toString() || '');
       setFormMaxCollectors(plan.max_collectors?.toString() || '');
       setFormMaxTickets(plan.max_tickets_per_month?.toString() || '');
+      setFormFeatures(planFeatureList(plan.features).join('\n'));
       setFormStatus(plan.status);
     } else {
       resetForm();
@@ -143,7 +145,7 @@ export default function PlatformPlansPage() {
       max_points_of_sale: formMaxPos ? parseInt(formMaxPos) : null,
       max_collectors: formMaxCollectors ? parseInt(formMaxCollectors) : null,
       max_tickets_per_month: formMaxTickets ? parseInt(formMaxTickets) : null,
-      features: null,
+      features: normalizePlanFeatures(formFeatures.split('\n')),
       status: formStatus,
     };
 
@@ -290,6 +292,16 @@ export default function PlatformPlansPage() {
                 )}
               </div>
 
+              {planFeatureList(plan.features).length > 0 && (
+                <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                  {planFeatureList(plan.features).map((f) => (
+                    <li key={f} className="flex items-start gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-brand-500" /> {f}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <Button variant="ghost" size="sm" className="flex-1 gap-1" onClick={() => handleToggleStatus(plan)}>
                   {plan.status === 'active' ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
@@ -398,6 +410,23 @@ export default function PlatformPlansPage() {
             value={formMaxTickets}
             onChange={(e) => setFormMaxTickets(e.target.value)}
           />
+
+          <div className="space-y-1.5">
+            <label htmlFor="plan-features" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Fonctionnalités incluses (une par ligne)
+            </label>
+            <textarea
+              id="plan-features"
+              rows={5}
+              value={formFeatures}
+              onChange={(e) => setFormFeatures(e.target.value)}
+              placeholder={'Rapports & exports CSV\nCommissions des collecteurs\nSupport prioritaire'}
+              className="w-full px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-y"
+            />
+            <p className="text-xs text-slate-500">
+              Affichées sur le site vitrine sous les limites du forfait ({MAX_PLAN_FEATURES} maximum).
+            </p>
+          </div>
 
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">

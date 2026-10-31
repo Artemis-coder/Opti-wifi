@@ -1,4 +1,5 @@
 import { query } from '@/lib/neon/db';
+import { planFeatureList } from '@/lib/plan-features';
 import { SITE_DEFAULTS, isSiteContentKey, parseSiteContent, type SiteContent, type SiteContentKey } from '@/lib/site-content-schema';
 
 export * from '@/lib/site-content-schema';
@@ -30,17 +31,24 @@ export type PublicPlan = {
   trial_days: number | null;
   max_users: number | null;
   max_points_of_sale: number | null;
+  max_collectors: number | null;
   max_tickets_per_month: number | null;
+  /** Fonctionnalités saisies dans Forfaits (une par ligne) */
+  features: string[];
 };
 
 /** Forfaits actifs, tels que gérés dans Forfaits (aucune donnée client). */
 export async function loadPublicPlans(): Promise<PublicPlan[]> {
   const { rows } = await query(
     `SELECT id, name, description, price, currency, billing_period, trial_days,
-            max_users, max_points_of_sale, max_tickets_per_month
+            max_users, max_points_of_sale, max_collectors, max_tickets_per_month, features
        FROM subscription_plans
       WHERE status = 'active'
       ORDER BY price ASC, name ASC`
   );
-  return (rows as (Omit<PublicPlan, 'price'> & { price: string | number })[]).map((p) => ({ ...p, price: Number(p.price) }));
+  return (rows as (Omit<PublicPlan, 'price' | 'features'> & { price: string | number; features: unknown })[]).map((p) => ({
+    ...p,
+    price: Number(p.price),
+    features: planFeatureList(p.features),
+  }));
 }

@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/Input';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
+import { useAuthStore } from '@/lib/stores/authStore';
 import { Collection } from '@/types/database';
 import { AddButton } from '@/components/ui/AddButton';
 
@@ -31,6 +32,8 @@ export default function CollectionsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const supabase = createClient();
   const { currentSpaceId } = useSpaceStore();
+  const user = useAuthStore((s) => s.user);
+  const isCollector = user?.role === 'collecteur';
 
   useEffect(() => {
     async function loadCollections() {
@@ -43,17 +46,22 @@ export default function CollectionsPage() {
       if (currentSpaceId) {
         query = query.eq('space_id', currentSpaceId);
       }
+      // Le collecteur ne voit ici que les collectes qu'il a faites (mêmes chiffres que « Ma tournée »)
+      if (isCollector && user?.id) {
+        query = query.eq('collecteur_id', user.id);
+      }
 
       const { data } = await query;
       setCollections(data || []);
       setLoading(false);
     }
     loadCollections();
-  }, [currentSpaceId, supabase]);
+  }, [currentSpaceId, supabase, isCollector, user?.id]);
 
   // Financial KPIs
   const { totalEncaissé, totalAttendu, totalDifference, totalCommissions } = useMemo(() => {
-    return collections.reduce(
+    // Les collectes annulées ne comptent pas dans les totaux (comme sur les tableaux de bord)
+    return collections.filter((c) => c.statut !== 'annulee').reduce(
       (acc, c) => ({
         totalEncaissé: acc.totalEncaissé + Number(c.montant_collecte || 0),
         totalAttendu: acc.totalAttendu + Number(c.montant_attendu || 0),
@@ -83,10 +91,12 @@ export default function CollectionsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Receipt className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
-            <span>Encaissements &amp; Collectes</span>
+            <span>{isCollector ? 'Mes collectes' : 'Encaissements & Collectes'}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Historique et suivi des levées de fonds et encaissements de caisse.
+            {isCollector
+              ? 'Les encaissements faits sur vos points de vente.'
+              : 'Historique et suivi des levées de fonds et encaissements de caisse.'}
           </p>
         </div>
         <AddButton what="une collecte de caisse" href="/collections/new" />

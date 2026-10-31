@@ -3,7 +3,7 @@ import { getSessionContext } from '@/lib/tenant';
 import { query } from '@/lib/neon/db';
 import { createTicket, listTickets, parseNewTicket } from '@/lib/support';
 
-// Tickets de support du client : ceux de son organisation, création d'un ticket.
+// Tickets de support du client : ceux de son organisation (le collecteur : les siens), création d'un ticket.
 // Ouvert même licence expirée ou client suspendu : c'est justement là qu'il a besoin d'aide.
 
 async function authorName(userId: string): Promise<string> {
@@ -16,7 +16,9 @@ export async function GET() {
   if (!ctx) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   if (!ctx.organizationId) return NextResponse.json({ error: 'Aucune organisation associée' }, { status: 403 });
   try {
-    return NextResponse.json({ data: await listTickets(ctx.organizationId) });
+    // L'administrateur voit les tickets de son organisation, le collecteur uniquement les siens
+    const createdBy = ctx.role === 'administrateur' ? null : ctx.userId;
+    return NextResponse.json({ data: await listTickets(ctx.organizationId, null, createdBy) });
   } catch (err) {
     console.error('Support GET error:', err);
     return NextResponse.json({ error: 'Erreur lors du chargement des tickets' }, { status: 500 });

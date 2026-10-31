@@ -11,6 +11,8 @@ import { Collection, CollectionItem, PointOfSale } from '@/types/database';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { DateField } from '@/components/ui/DateField';
 import { StatTile } from '@/components/ui/StatTile';
+import { trackClient } from '@/lib/analytics/client';
+import { EVENTS } from '@/lib/analytics/events';
 
 export default function ReportsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -47,7 +49,8 @@ export default function ReportsPage() {
       const { count: collectors } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('role', 'collecteur');
+        .eq('role', 'collecteur')
+        .eq('is_active', true);
       setCollectorsCount(collectors || 0);
 
       const { data: itemsData } = await itemsQuery;
@@ -96,6 +99,7 @@ export default function ReportsPage() {
     }).join('\n');
 
     downloadCSV(`encaissements_${getTimestamp()}.csv`, header + rows);
+    trackClient(EVENTS.reportExported, { report: 'collections', format: 'csv' });
   }, [collections, getTimestamp]);
 
   const exportPosCSV = useCallback(() => {
@@ -111,6 +115,7 @@ export default function ReportsPage() {
     }).join('\n');
 
     downloadCSV(`points_de_vente_${getTimestamp()}.csv`, header + rows);
+    trackClient(EVENTS.reportExported, { report: 'points_of_sale', format: 'csv' });
   }, [posList, getTimestamp]);
 
   return (

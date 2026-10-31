@@ -29,7 +29,17 @@ const TITLES: Record<string, string> = {
   '/support': 'Support',
 };
 
-function resolveTitle(pathname: string): string {
+// Le collecteur ne voit que ses points de vente et ses collectes
+const COLLECTOR_TITLES: Record<string, string> = {
+  '/dashboard': 'Ma tournée',
+  '/pos': 'Mes points de vente',
+  '/collections': 'Mes collectes',
+  '/allocations': 'Mes allocations',
+  '/allocations/new': 'Attribuer des tickets',
+};
+
+function resolveTitle(pathname: string, isCollector: boolean): string {
+  if (isCollector && COLLECTOR_TITLES[pathname]) return COLLECTOR_TITLES[pathname];
   if (TITLES[pathname]) return TITLES[pathname];
   const match = Object.keys(TITLES)
     .filter((path) => path.includes('[') === false && pathname.startsWith(path))
@@ -42,8 +52,8 @@ function resolveTitle(pathname: string): string {
 
 export function Header({ onOpenMobileMenu, title }: HeaderProps) {
   const pathname = usePathname();
-  const heading = title ?? resolveTitle(pathname ?? '/');
   const { user } = useAuthStore();
+  const heading = title ?? resolveTitle(pathname ?? '/', user?.role === 'collecteur');
   const { isOnline, isOffline, isUnstable } = useOnlineStatus();
 
   const isAdmin = user?.role === 'administrateur';

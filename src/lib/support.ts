@@ -43,6 +43,8 @@ export interface SupportTicketRow {
   status: SupportStatus;
   opened_by_support: boolean;
   client_name: string;
+  /** Compte qui a ouvert le ticket (un collecteur ne voit que les siens). */
+  created_by: string | null;
   created_at: string;
   last_message_at: string;
   resolved_at: string | null;
@@ -77,21 +79,29 @@ export function parseNewTicket(body: Record<string, unknown>):
 }
 
 const TICKET_COLUMNS = `t.id, t.ticket_number, t.organization_id, o.name AS organization_name, t.subject, t.category, t.priority,
-  t.status, t.opened_by_support, t.client_name, t.created_at, t.last_message_at, t.resolved_at,
+  t.status, t.opened_by_support, t.client_name, t.created_by, t.created_at, t.last_message_at, t.resolved_at,
   (SELECT COUNT(*)::int FROM support_messages m WHERE m.ticket_id = t.id) AS messages_count,
   (SELECT m.from_support FROM support_messages m WHERE m.ticket_id = t.id ORDER BY m.created_at DESC LIMIT 1) AS last_from_support`;
 
-/** Tickets d'une organisation (client), ou de toutes (super admin : organizationId null). */
-export async function listTickets(organizationId: string | null, status?: string | null): Promise<SupportTicketRow[]> {
+/**
+ * Tickets d'une organisation (client), ou de toutes (super admin : organizationId null).
+ * createdBy : limite aux tickets ouverts par ce compte (collecteur).
+ */
+export async function listTickets(
+  organizationId: string | null,
+  status?: string | null,
+  createdBy: string | null = null,
+): Promise<SupportTicketRow[]> {
   const statusFilter = status && (SUPPORT_STATUSES as readonly string[]).includes(status) ? status : null;
   const { rows } = await query(
     `SELECT ${TICKET_COLUMNS}
        FROM support_tickets t LEFT JOIN organizations o ON o.id = t.organization_id
       WHERE ($1::uuid IS NULL OR t.organization_id = $1::uuid)
         AND ($2::text IS NULL OR t.status = $2::text)
+        AND ($3::uuid IS NULL OR t.created_by = $3::uuid)
       ORDER BY (t.status IN ('new', 'in_progress')) DESC, t.last_message_at DESC
       LIMIT 300`,
-    [organizationId, statusFilter]
+    [organizationId, statusFilter, createdBy]
   );
   return rows as SupportTicketRow[];
 }
