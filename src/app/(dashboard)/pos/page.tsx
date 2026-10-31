@@ -165,46 +165,9 @@ async function loadData() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={pos.statut === 'actif' ? 'success' : 'neutral'}>
-                      {pos.statut}
-                    </Badge>
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleToggleStatus(pos);
-                        }}
-                        disabled={togglingId === pos.id}
-                        title={pos.statut === 'actif' ? 'Désactiver le POS' : 'Activer le POS'}
-                      >
-                        {togglingId === pos.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : pos.statut === 'actif' ? (
-                          <PowerOff className="w-3.5 h-3.5" />
-                        ) : (
-                          <Power className="w-3.5 h-3.5" />
-                        )}
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setEditingPos(pos);
-                      }}
-                      title="Modifier le POS"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                  <Badge variant={pos.statut === 'actif' ? 'success' : 'neutral'}>
+                    {pos.statut === 'actif' ? 'Actif' : pos.statut === 'inactif' ? 'Inactif' : pos.statut}
+                  </Badge>
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
@@ -214,6 +177,49 @@ async function loadData() {
                   </div>
                   <span className="text-[11px] text-slate-400">ID #{pos.id.slice(0, 4)}</span>
                 </div>
+
+                {/* Actions de l'administrateur : toujours visibles (y compris sur téléphone), avec libellé */}
+                {isAdmin && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-10 font-semibold"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingPos(pos);
+                      }}
+                    >
+                      <Edit className="w-4 h-4 mr-1.5" />
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={togglingId === pos.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleToggleStatus(pos);
+                      }}
+                      className={
+                        pos.statut === 'actif'
+                          ? 'h-10 font-semibold text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-950/30'
+                          : 'h-10 font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950/30'
+                      }
+                    >
+                      {togglingId === pos.id ? (
+                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                      ) : pos.statut === 'actif' ? (
+                        <PowerOff className="w-4 h-4 mr-1.5" />
+                      ) : (
+                        <Power className="w-4 h-4 mr-1.5" />
+                      )}
+                      {pos.statut === 'actif' ? 'Désactiver' : 'Activer'}
+                    </Button>
+                  </div>
+                )}
               </Card>
             </Link>
           ))}
