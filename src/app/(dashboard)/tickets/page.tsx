@@ -13,6 +13,8 @@ import { formatCurrencyFCFA } from '@/lib/utils/format';
 import { TicketType } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { AddButton } from '@/components/ui/AddButton';
+import { DurationField } from '@/components/tickets/DurationField';
+import { durationToHours, formatTicketDuration, type DurationUnit } from '@/lib/ticket-duration';
 
 export default function TicketTypesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,7 +23,9 @@ export default function TicketTypesPage() {
   const [tickets, setTickets] = useState<TicketType[]>([]);
 
   const [nom, setNom] = useState('');
-  const [duree, setDuree] = useState('24');
+  // Durée saisie en jours par défaut (enregistrée en heures)
+  const [duree, setDuree] = useState('1');
+  const [dureeUnit, setDureeUnit] = useState<DurationUnit>('jours');
   const [prix, setPrix] = useState('1000');
 
   const supabase = createClient();
@@ -41,12 +45,17 @@ export default function TicketTypesPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nom || !prix) return;
+    const hours = durationToHours(duree, dureeUnit);
+    if (!hours) {
+      toast.error('Durée invalide.');
+      return;
+    }
 
     setCreating(true);
 
     const newTicketData = {
       nom,
-      duree_heures: parseInt(duree) || 24,
+      duree_heures: hours,
       prix: parseFloat(prix) || 500,
       actif: true,
     };
@@ -127,7 +136,7 @@ export default function TicketTypesPage() {
                     <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.nom}</h3>
                     <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                       <Clock className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Durée : {t.duree_heures} heure(s)</span>
+                      <span>Durée : {formatTicketDuration(t.duree_heures)}</span>
                     </div>
                   </div>
                 </div>
@@ -173,8 +182,15 @@ export default function TicketTypesPage() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Type de Ticket">
         <form onSubmit={handleCreate} className="space-y-4">
-          <Input label="Nom du Pass" placeholder="ex: Pass 12h Découverte" value={nom} onChange={(e) => setNom(e.target.value)} required />
-          <Input label="Durée (en heures)" type="number" placeholder="12" value={duree} onChange={(e) => setDuree(e.target.value)} required />
+          <Input label="Nom du Pass" placeholder="ex : Pass 7 jours" value={nom} onChange={(e) => setNom(e.target.value)} required />
+          <DurationField
+            value={duree}
+            unit={dureeUnit}
+            onChange={(v, u) => {
+              setDuree(v);
+              setDureeUnit(u);
+            }}
+          />
           <Input label="Prix Vente (FCFA)" type="number" placeholder="500" value={prix} onChange={(e) => setPrix(e.target.value)} required />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Annuler</Button>

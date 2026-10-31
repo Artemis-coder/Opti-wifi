@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { DurationField } from '@/components/tickets/DurationField';
+import { durationToForm, durationToHours, type DurationUnit } from '@/lib/ticket-duration';
 import { TicketType } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 
@@ -18,7 +20,9 @@ interface EditTicketModalProps {
 export function EditTicketModal({ isOpen, onClose, ticket, onSuccess }: EditTicketModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nom, setNom] = useState(ticket?.nom || '');
-  const [duree, setDuree] = useState(ticket ? String(ticket.duree_heures) : '24');
+  // Durée affichée en jours si c'est un nombre entier de jours, sinon en heures
+  const [duree, setDuree] = useState(durationToForm(ticket?.duree_heures ?? 24).value);
+  const [dureeUnit, setDureeUnit] = useState<DurationUnit>(durationToForm(ticket?.duree_heures ?? 24).unit);
   const [prix, setPrix] = useState(ticket ? String(ticket.prix) : '1000');
   const [actif, setActif] = useState(ticket?.actif ?? true);
 
@@ -32,12 +36,17 @@ export function EditTicketModal({ isOpen, onClose, ticket, onSuccess }: EditTick
     }
 
     if (!ticket) return;
+    const hours = durationToHours(duree, dureeUnit);
+    if (!hours) {
+      toast.error('Durée invalide.');
+      return;
+    }
 
     setIsSubmitting(true);
 
     const payload = {
       nom: nom.trim(),
-      duree_heures: parseInt(duree) || 24,
+      duree_heures: hours,
       prix: parseFloat(prix) || 500,
       actif,
       updated_at: new Date().toISOString(),
@@ -70,19 +79,18 @@ export function EditTicketModal({ isOpen, onClose, ticket, onSuccess }: EditTick
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Nom du Pass"
-          placeholder="ex: Pass 12h Découverte"
+          placeholder="ex : Pass 7 jours"
           value={nom}
           onChange={(e) => setNom(e.target.value)}
           required
         />
-        <Input
-          label="Durée (en heures)"
-          type="number"
-          placeholder="12"
+        <DurationField
           value={duree}
-          onChange={(e) => setDuree(e.target.value)}
-          required
-          min="1"
+          unit={dureeUnit}
+          onChange={(v, u) => {
+            setDuree(v);
+            setDureeUnit(u);
+          }}
         />
         <Input
           label="Prix Vente (FCFA)"

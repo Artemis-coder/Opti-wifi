@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client';
 import { PointOfSale, TicketType } from '@/types/database';
 import { DateField } from '@/components/ui/DateField';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { formatTicketDuration } from '@/lib/ticket-duration';
 
 interface AllocationLine {
   ticketTypeId: string;
@@ -227,7 +228,7 @@ const addLine = () => {
                         options={ticketTypes.map((t: TicketType) => ({
                           value: t.id,
                           label: t.nom,
-                          sublabel: `${formatCurrencyFCFA(t.prix)} • ${t.duree_heures}h`,
+                          sublabel: `${formatCurrencyFCFA(t.prix)} • ${formatTicketDuration(t.duree_heures)}`,
                         }))}
                         placeholder="Sélectionner un type..."
                         title="Type de Ticket"
