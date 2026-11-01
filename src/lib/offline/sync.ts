@@ -1,64 +1,55 @@
 'use client';
 
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
-import { QueuedAction, getOfflineQueue, removeFromQueue, clearQueue } from './queue';
+import { cachedSessionUser, isNetworkError, OFFLINE_EVENTS, queueAll, queueRemove } from './store';
 
+let running = false;
+
+/**
+ * Envoie, dans l'ordre, les actions enregistrées hors ligne (collectes) de l'utilisateur
+ * connecté. S'arrête à la première coupure réseau ; une action refusée par le serveur est
+ * retirée (avec un message) pour ne pas bloquer les suivantes.
+ */
 export async function processOfflineQueue(): Promise<{ success: number; failed: number }> {
-  const queue = getOfflineQueue();
-  if (queue.length === 0) {
-    return { success: 0, failed: 0 };
-  }
-
-  const supabase = createClient();
-  let successCount = 0;
-  let failedCount = 0;
-
-  for (const action of queue) {
-    try {
-      let error: Error | null = null;
-
-      switch (action.type) {
-        case 'create':
-          const { error: createError } = await supabase
-            .from(action.table as never)
-            .insert(action.payload as never);
-          error = createError;
-          break;
-        case 'update':
-          const { error: updateError } = await supabase
-            .from(action.table as never)
-            .update(action.payload as never)
-            .eq('id', (action.payload.id as string) || '');
-          error = updateError;
-          break;
-        case 'delete':
-          const { error: deleteError } = await supabase
-            .from(action.table as never)
-            .delete()
-            .eq('id', (action.payload.id as string) || '');
-          error = deleteError;
-          break;
+  if (running) return { success: 0, failed: 0 };
+  running = true;
+  let success = 0;
+  let failed = 0;
+  let collections = 0;
+  try {
+    const userId = cachedSessionUser<{ id?: string }>()?.id ?? null;
+    const queue = (await queueAll()).filter((q) => !q.userId || q.userId === userId);
+    for (const item of queue) {
+      let res: Response;
+      try {
+        res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(item.spec),
+        });
+      } catch (err) {
+        if (isNetworkError(err)) break; // toujours hors ligne : on réessaiera
+        throw err;
       }
-
-      if (error) {
-        throw error;
+      const body = await res.json().catch(() => ({}));
+      // Déjà enregistrée (envoi précédent interrompu après l'écriture) : rien à refaire
+      const duplicate = typeof body.error === 'string' && /duplicate key|déjà/i.test(body.error);
+      if (res.ok || duplicate) {
+        success++;
+        if (item.label === 'collections') collections++;
+      } else {
+        failed++;
+        console.error('Action hors ligne refusée :', body.error, item);
       }
-
-      removeFromQueue(action.id);
-      successCount++;
-    } catch {
-      failedCount++;
-      console.error(`Failed to sync action ${action.id}:`, action);
+      await queueRemove(item.id);
     }
+  } finally {
+    running = false;
   }
-
-  if (successCount > 0) {
-    toast.success(`${successCount} modification(s) synchronisée(s)`);
-  }
-  if (failedCount > 0) {
-    toast.error(`${failedCount} modification(s) échouée(s) lors de la synchronisation`);
-  }
-
-  return { success: successCount, failed: failedCount };
+  if (collections > 0) toast.success(`${collections} collecte(s) enregistrée(s) hors ligne synchronisée(s).`);
+  else if (success > 0) toast.success(`${success} action(s) synchronisée(s).`);
+  if (failed > 0) toast.error(`${failed} action(s) hors ligne refusée(s) par le serveur.`);
+  if (success > 0) window.dispatchEvent(new Event(OFFLINE_EVENTS.synced));
+  return { success, failed };
 }

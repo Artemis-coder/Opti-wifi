@@ -4,21 +4,40 @@ import React from 'react';
 import { WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { processOfflineQueue } from '@/lib/offline/sync';
-import { getQueueLength } from '@/lib/offline/queue';
+import { lastSyncAt, OFFLINE_EVENTS, queueCount } from '@/lib/offline/store';
 
+const time = (ms: number) =>
+  new Date(ms).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+/**
+ * Pastille d'état de connexion : hors ligne (avec la date des données affichées et les
+ * collectes en attente), connexion instable, ou synchronisation des actions hors ligne.
+ * Au retour du réseau, les actions en attente sont envoyées automatiquement.
+ */
 export function ConnectionStatus() {
   const { isOnline, isOffline, isUnstable, isChecking, setPendingActions } = useOnlineStatus();
   const [syncing, setSyncing] = React.useState(false);
-  const [pendingCount, setPendingCount] = React.useState(getQueueLength());
+  const [pendingCount, setPendingCount] = React.useState(0);
+  const [dataAt, setDataAt] = React.useState<number | null>(null);
   const syncingRef = React.useRef(false);
 
+  // Nombre d'actions en attente (mis à jour à chaque ajout / envoi)
   React.useEffect(() => {
-    const interval = setInterval(() => {
-      setPendingCount(getQueueLength());
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
+    const refresh = () => {
+      void queueCount().then((n) => {
+        setPendingCount(n);
+        setPendingActions(n);
+      });
+    };
+    const onCache = (e: Event) => setDataAt((e as CustomEvent<number>).detail ?? lastSyncAt());
+    refresh();
+    window.addEventListener(OFFLINE_EVENTS.queueChanged, refresh);
+    window.addEventListener(OFFLINE_EVENTS.servedFromCache, onCache);
+    return () => {
+      window.removeEventListener(OFFLINE_EVENTS.queueChanged, refresh);
+      window.removeEventListener(OFFLINE_EVENTS.servedFromCache, onCache);
+    };
+  }, [setPendingActions]);
 
   const handleSync = React.useCallback(async () => {
     if (syncingRef.current) return;
@@ -26,33 +45,33 @@ export function ConnectionStatus() {
     setSyncing(true);
     try {
       await processOfflineQueue();
-      const remaining = getQueueLength();
-      setPendingCount(remaining);
-      setPendingActions(remaining);
     } finally {
       syncingRef.current = false;
       setSyncing(false);
     }
-  }, [setPendingActions]);
+  }, []);
 
   // Retour en ligne avec des actions en attente : synchronisation automatique
   React.useEffect(() => {
     if (isOnline && pendingCount > 0) void handleSync();
   }, [isOnline, pendingCount, handleSync]);
 
-  // Connexion normale : rien à afficher (l'en-tête indique déjà « En ligne »). Avant, une icône
-  // fixe en haut à droite se superposait aux boutons de l'en-tête sur toutes les pages.
+  // Connexion normale : rien à afficher (l'en-tête indique déjà « En ligne »).
   if (isChecking || (isOnline && pendingCount === 0)) return null;
 
   // Problème de connexion : pastille avec texte, centrée sous la barre d'en-tête
   const chip =
-    'fixed app-status-anchor left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full shadow-lg text-xs font-semibold whitespace-nowrap';
+    'fixed app-status-anchor left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full shadow-lg text-xs font-semibold max-w-[calc(100vw-1.5rem)]';
 
   if (isOffline) {
+    const at = dataAt ?? lastSyncAt();
     return (
       <div role="status" className={`${chip} bg-red-600 text-white`}>
-        <WifiOff className="w-4 h-4" /> Hors ligne
-        {pendingCount > 0 && <span className="font-normal opacity-90">· {pendingCount} action(s) en attente</span>}
+        <WifiOff className="w-4 h-4 shrink-0" />
+        <span className="truncate">
+          Hors ligne{at ? ` · données du ${time(at)}` : ''}
+          {pendingCount > 0 && ` · ${pendingCount} à synchroniser`}
+        </span>
       </div>
     );
   }
