@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 export type ConnectionStatus = 'online' | 'offline' | 'checking' | 'unstable';
 
@@ -13,13 +12,14 @@ export function useOnlineStatus() {
   const checkConnection = useCallback(async () => {
     try {
       const start = Date.now();
-      const supabase = createClient();
 
+      // Vrai test réseau : /api/ping n'est jamais servi depuis un cache (contrairement aux
+      // lectures de données, qui ont une copie locale pour le mode hors ligne)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      await supabase.from('points_of_sale').select('id', { count: 'exact', head: true });
+      const res = await fetch('/api/ping', { cache: 'no-store', signal: controller.signal });
       clearTimeout(timeoutId);
+      if (!res.ok) throw new Error('ping');
 
       const latency = Date.now() - start;
 

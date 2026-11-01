@@ -15,15 +15,23 @@ let _singletonClient: any = null;
 function initBrowserClient() {
   const auth = {
     getUser: async (): Promise<{ data: { user: AuthUser | null }; error: null }> => {
+      const offline = await import('@/lib/offline/store');
       try {
         const res = await fetch('/api/auth/session', {
           credentials: 'include',
         });
-        if (!res.ok) return { data: { user: null }, error: null };
+        if (!res.ok) {
+          offline.rememberSessionUser(null);
+          return { data: { user: null }, error: null };
+        }
         const json = await res.json();
+        // Session vérifiée en ligne : mémorisée pour rester connecté hors ligne
+        offline.rememberSessionUser(json.user || null);
         if (json.user) return { data: { user: json.user }, error: null };
         return { data: { user: null }, error: null };
-      } catch {
+      } catch (err) {
+        // Hors ligne : dernière session vérifiée sur cet appareil
+        if (offline.isNetworkError(err)) return { data: { user: offline.cachedSessionUser<AuthUser>() }, error: null };
         return { data: { user: null }, error: null };
       }
     },
@@ -43,6 +51,10 @@ function initBrowserClient() {
         if (!res.ok) {
           return { data: { user: null, session: null }, error: { message: json.error || 'Login failed' } as NeonError };
         }
+        // Nouvelle connexion : rien d'un compte précédent ne reste sur l'appareil
+        const offline = await import('@/lib/offline/store');
+        await offline.clearOfflineData();
+        offline.rememberSessionUser(json.user || null);
 
         return {
           data: {
@@ -57,6 +69,11 @@ function initBrowserClient() {
     },
 
     signOut: async (): Promise<{ error: NeonError | null }> => {
+      // Déconnexion : données hors ligne effacées (cache, session, pages enregistrées)
+      try {
+        const offline = await import('@/lib/offline/store');
+        await offline.clearOfflineData();
+      } catch {}
       try {
         await fetch('/api/auth/logout', {
           method: 'POST',
