@@ -5,9 +5,11 @@
 // ============================================================
 
 const DB_NAME = 'optispace-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const CACHE = 'cache';
 const QUEUE = 'queue';
+/** Copie locale des tables de l'espace (une entrée par table) */
+const TABLES = 'tables';
 
 export const OFFLINE_EVENTS = {
   /** File d'attente modifiée (ajout, envoi) */
@@ -16,6 +18,8 @@ export const OFFLINE_EVENTS = {
   servedFromCache: 'optispace:offline-cache',
   /** Synchronisation terminée (actions envoyées) */
   synced: 'optispace:offline-synced',
+  /** Copie locale des données mise à jour */
+  replicaUpdated: 'optispace:offline-replica',
 } as const;
 
 export interface CachedEntry {
@@ -45,8 +49,17 @@ function openDb(): Promise<IDBDatabase> {
         const db = req.result;
         if (!db.objectStoreNames.contains(CACHE)) db.createObjectStore(CACHE, { keyPath: 'key' });
         if (!db.objectStoreNames.contains(QUEUE)) db.createObjectStore(QUEUE, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(TABLES)) db.createObjectStore(TABLES, { keyPath: 'table' });
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        // Nouvelle version ouverte dans un autre onglet : on libère la base
+        db.onversionchange = () => {
+          db.close();
+          dbPromise = null;
+        };
+        resolve(db);
+      };
       req.onerror = () => {
         dbPromise = null;
         reject(req.error);
@@ -83,6 +96,26 @@ export async function cacheSet(key: string, data: unknown): Promise<void> {
   } catch {
     // Stockage plein ou indisponible : l'application continue en ligne
   }
+}
+
+// ── Copie locale des tables ────────────────────────────────────────────────
+
+export interface TableEntry {
+  table: string;
+  rows: Record<string, unknown>[];
+  at: number;
+}
+
+export async function tableGet(table: string): Promise<TableEntry | null> {
+  try {
+    return ((await run(TABLES, 'readonly', (s) => s.get(table))) as TableEntry | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function tablePut(table: string, rows: Record<string, unknown>[], at = Date.now()): Promise<void> {
+  await run(TABLES, 'readwrite', (s) => s.put({ table, rows, at } satisfies TableEntry));
 }
 
 // ── File d'attente des actions hors ligne ──────────────────────────────────
@@ -155,11 +188,13 @@ export async function clearOfflineData({ keepQueue = true }: { keepQueue?: boole
     localStorage.removeItem(LAST_SYNC_KEY);
     localStorage.removeItem('optiwifi_offline_queue');
     sessionStorage.removeItem('optispace:offline-warmup');
+    localStorage.removeItem('optispace:offline-replica-at');
   } catch {
     // ignoré
   }
   try {
     await run(CACHE, 'readwrite', (s) => s.clear());
+    await run(TABLES, 'readwrite', (s) => s.clear());
     if (!keepQueue) await run(QUEUE, 'readwrite', (s) => s.clear());
   } catch {
     // ignoré

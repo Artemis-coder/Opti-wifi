@@ -54,7 +54,8 @@ function initBrowserClient() {
         // Nouvelle connexion : rien d'un compte précédent ne reste sur l'appareil
         const offline = await import('@/lib/offline/store');
         await offline.clearOfflineData();
-        offline.rememberSessionUser(json.user || null);
+        // Session et copie locale des données de l'espace, pour pouvoir travailler hors ligne
+        if (json.user) void import('@/lib/offline/replica').then((r) => r.startOfflineSession(json.user));
 
         return {
           data: {

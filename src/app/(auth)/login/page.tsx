@@ -102,6 +102,8 @@ export default function LoginPage() {
       // data contains { user, session }
       const { user } = data;
       setUser(user);
+      // Mode hors ligne : session et copie locale des données de l'espace sur cet appareil
+      void import('@/lib/offline/replica').then((r) => r.startOfflineSession(user));
 
       // Mot de passe temporaire : choisir son propre mot de passe avant tout accès.
       // Sinon la page racine redirige selon le rôle (super admin → /platform, client → /dashboard).
