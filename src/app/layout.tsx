@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { ConnectionStatus } from "@/components/offline/ConnectionStatus";
+import { OfflineSupport } from "@/components/offline/OfflineSupport";
 import { ConfirmHost } from "@/components/ui/ConfirmDialog";
 import { ErrorReporter } from "@/components/ErrorReporter";
 import { AnalyticsIdentity } from "@/components/AnalyticsIdentity";
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </ErrorReporter>
         <ConnectionStatus />
+        <OfflineSupport />
         <AnalyticsIdentity />
         <ConfirmHost />
         <Toaster closeButton position="top-center" offset={72} />

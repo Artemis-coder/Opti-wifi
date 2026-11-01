@@ -415,11 +415,14 @@ export default function NewCollectionWizard() {
         notes: notes.trim() || null,
       };
 
-      const { data: collection, error: colError } = await supabase
+      const inserted = await supabase
         .from('collections')
         .insert(collectionPayload)
         .select('id')
         .single();
+      const { data: collection, error: colError } = inserted;
+      // Hors ligne : gardée sur l'appareil, envoyée automatiquement au retour du réseau
+      const savedOffline = inserted.queued === true;
 
       if (colError || !collection) {
         throw new Error(colError?.message || "Erreur lors de la création de l'enregistrement de collecte.");
@@ -453,7 +456,13 @@ export default function NewCollectionWizard() {
         }
       }
 
-      toast.success(`Collecte de ${formatCurrencyFCFA(collecteNum)} enregistrée avec succès.`);
+      if (savedOffline) {
+        toast.success(`Collecte de ${formatCurrencyFCFA(collecteNum)} enregistrée sur l'appareil.`, {
+          description: 'Elle sera envoyée automatiquement dès le retour du réseau.',
+        });
+      } else {
+        toast.success(`Collecte de ${formatCurrencyFCFA(collecteNum)} enregistrée avec succès.`);
+      }
       setSubmitting(false);
       setSubmitted(true);
 

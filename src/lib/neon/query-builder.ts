@@ -55,8 +55,9 @@ async function resolveFk(parentTable: string, childTable: string, childAlias: st
 }
 
 export type SupabaseError = { message: string; code?: string; details?: string; hint?: string };
-export type SupabaseResult<T> = { data: T | null; error: SupabaseError | null };
-export type SupabaseListResult<T> = { data: T[] | null; error: SupabaseError | null; count?: number | null };
+/** queued : écriture gardée sur l'appareil (hors ligne), envoyée au retour du réseau */
+export type SupabaseResult<T> = { data: T | null; error: SupabaseError | null; queued?: boolean };
+export type SupabaseListResult<T> = { data: T[] | null; error: SupabaseError | null; count?: number | null; queued?: boolean };
 
 export function makeError(message: string, code?: string): SupabaseError {
   return { message, code, details: '', hint: '' };
@@ -121,6 +122,9 @@ function parseNestedSelects(selectStr: string): { mainColumns: string; nested: N
   const main = selectStr.replace(regex, '').split(',').map(s => s.trim()).filter(Boolean).join(',') || '*';
   return { mainColumns: main, nested };
 }
+
+/** Tables dont les insertions peuvent être faites hors ligne (collectes sur le terrain) */
+const OFFLINE_WRITABLE_TABLES = new Set(['collections', 'collection_items']);
 
 export class TableBuilder {
   private tableName: string;
@@ -343,17 +347,56 @@ export class TableBuilder {
   }
 
   private async executeBrowser(): Promise<SupabaseResult<any> | SupabaseListResult<any>> {
-    const res = await fetch('/api/db', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(this.toSpec()),
-    });
+    // Mode hors ligne : lectures servies depuis le cache local, collectes mises en file
+    // d'attente (module chargé seulement dans le navigateur)
+    const offline = await import('@/lib/offline/store');
+    const isRead = this._action === 'select' || this._action === 'rpc';
+    const writableOffline = OFFLINE_WRITABLE_TABLES.has(this.tableName) && this._action === 'insert';
+
+    // Insertion hors ligne : identifiants générés sur l'appareil, pour que les lignes liées
+    // (ex. articles d'une collecte) gardent la bonne référence une fois envoyées
+    if (writableOffline) {
+      const rows = (Array.isArray(this._insertData) ? this._insertData : [this._insertData]) as Record<string, any>[];
+      for (const row of rows) if (row && !row.id) row.id = crypto.randomUUID();
+    }
+
+    const spec = this.toSpec();
+    const cacheKey = isRead ? `db:${JSON.stringify(spec)}` : null;
+
+    let res: Response;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new TypeError('offline');
+      res = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(spec),
+      });
+    } catch (err) {
+      if (!offline.isNetworkError(err)) throw err;
+      if (cacheKey) {
+        const cached = await offline.cacheGet(cacheKey);
+        if (cached) {
+          window.dispatchEvent(new CustomEvent(offline.OFFLINE_EVENTS.servedFromCache, { detail: cached.at }));
+          return cached.data as SupabaseResult<any>;
+        }
+        return { data: this._single || this._maybeSingle ? null : [], error: makeError('Hors ligne : ces données ne sont pas encore disponibles sur cet appareil.') };
+      }
+      if (writableOffline) {
+        const user = offline.cachedSessionUser<{ id?: string }>();
+        await offline.queueAdd({ userId: user?.id ?? null, spec: spec as unknown as Record<string, unknown>, label: this.tableName });
+        const rows = (Array.isArray(this._insertData) ? this._insertData : [this._insertData]) as Record<string, any>[];
+        // queued : enregistré sur l'appareil, envoyé au retour du réseau
+        return { data: this._single || this._maybeSingle ? rows[0] : rows, error: null, queued: true };
+      }
+      return { data: null, error: makeError('Cette action nécessite une connexion internet.') };
+    }
 
     const result = await res.json();
     if (!res.ok) {
       return { data: null, error: makeError(result.error || 'Request failed') };
     }
+    if (cacheKey) void offline.cacheSet(cacheKey, result);
     return result;
   }
 
@@ -861,15 +904,23 @@ export class NeonClient {
 
   async authGetUser(): Promise<{ data: { user: AuthUser | null }; error: null }> {
     if (this.isBrowser) {
+      const offline = await import('@/lib/offline/store');
       try {
         const res = await fetch('/api/auth/session', {
           credentials: 'include',
         });
-        if (!res.ok) return { data: { user: null }, error: null };
+        if (!res.ok) {
+          offline.rememberSessionUser(null);
+          return { data: { user: null }, error: null };
+        }
         const json = await res.json();
+        // Session vérifiée en ligne : mémorisée pour rester connecté hors ligne
+        offline.rememberSessionUser(json.user || null);
         if (json.user) return { data: { user: json.user }, error: null };
         return { data: { user: null }, error: null };
-      } catch {
+      } catch (err) {
+        // Hors ligne : dernière session vérifiée sur cet appareil
+        if (offline.isNetworkError(err)) return { data: { user: offline.cachedSessionUser<AuthUser>() }, error: null };
         return { data: { user: null }, error: null };
       }
     }
