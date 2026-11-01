@@ -123,9 +123,6 @@ function parseNestedSelects(selectStr: string): { mainColumns: string; nested: N
   return { mainColumns: main, nested };
 }
 
-/** Tables dont les insertions peuvent être faites hors ligne (collectes sur le terrain) */
-const OFFLINE_WRITABLE_TABLES = new Set(['collections', 'collection_items']);
-
 export class TableBuilder {
   private tableName: string;
   private _selectColumns: string | null = null;
@@ -347,17 +344,22 @@ export class TableBuilder {
   }
 
   private async executeBrowser(): Promise<SupabaseResult<any> | SupabaseListResult<any>> {
-    // Mode hors ligne : lectures servies depuis le cache local, collectes mises en file
-    // d'attente (module chargé seulement dans le navigateur)
-    const offline = await import('@/lib/offline/store');
+    // Mode hors ligne (modules chargés seulement dans le navigateur) : lectures calculées sur
+    // la copie locale de l'espace, modifications appliquées à cette copie puis mises en
+    // attente d'envoi
+    const [offline, replica] = await Promise.all([import('@/lib/offline/store'), import('@/lib/offline/replica')]);
     const isRead = this._action === 'select' || this._action === 'rpc';
-    const writableOffline = OFFLINE_WRITABLE_TABLES.has(this.tableName) && this._action === 'insert';
+    const isWrite = ['insert', 'update', 'delete', 'upsert'].includes(this._action);
+    const writableOffline = isWrite && replica.OFFLINE_WRITABLE.has(this.tableName);
 
-    // Insertion hors ligne : identifiants générés sur l'appareil, pour que les lignes liées
-    // (ex. articles d'une collecte) gardent la bonne référence une fois envoyées
-    if (writableOffline) {
-      const rows = (Array.isArray(this._insertData) ? this._insertData : [this._insertData]) as Record<string, any>[];
-      for (const row of rows) if (row && !row.id) row.id = crypto.randomUUID();
+    // Identifiants créés sur l'appareil : les lignes liées (ex. articles d'une collecte)
+    // gardent la bonne référence, qu'elles partent tout de suite ou plus tard
+    if (writableOffline && (this._action === 'insert' || this._action === 'upsert')) {
+      const data = this._action === 'insert' ? this._insertData : this._upsertData;
+      const rows = (Array.isArray(data) ? data : [data]) as Record<string, any>[];
+      const keys = (this._upsertOpts.onConflict || 'id').split(',').map((k) => k.trim());
+      const byId = this._action === 'insert' || (keys.length === 1 && keys[0] === 'id');
+      if (byId) for (const row of rows) if (row && !row.id) row.id = crypto.randomUUID();
     }
 
     const spec = this.toSpec();
@@ -374,8 +376,13 @@ export class TableBuilder {
       });
     } catch (err) {
       if (!offline.isNetworkError(err)) throw err;
-      if (cacheKey) {
-        const cached = await offline.cacheGet(cacheKey);
+      if (isRead) {
+        const local = await replica.runLocal(spec);
+        if (local) {
+          window.dispatchEvent(new CustomEvent(offline.OFFLINE_EVENTS.servedFromCache, { detail: replica.replicaAt() }));
+          return local;
+        }
+        const cached = cacheKey ? await offline.cacheGet(cacheKey) : null;
         if (cached) {
           window.dispatchEvent(new CustomEvent(offline.OFFLINE_EVENTS.servedFromCache, { detail: cached.at }));
           return cached.data as SupabaseResult<any>;
@@ -384,10 +391,11 @@ export class TableBuilder {
       }
       if (writableOffline) {
         const user = offline.cachedSessionUser<{ id?: string }>();
+        const touched = await replica.applyLocal(spec);
         await offline.queueAdd({ userId: user?.id ?? null, spec: spec as unknown as Record<string, unknown>, label: this.tableName });
-        const rows = (Array.isArray(this._insertData) ? this._insertData : [this._insertData]) as Record<string, any>[];
         // queued : enregistré sur l'appareil, envoyé au retour du réseau
-        return { data: this._single || this._maybeSingle ? rows[0] : rows, error: null, queued: true };
+        const projected = this._selectColumns ? touched : null;
+        return { data: this._single || this._maybeSingle ? (projected?.[0] ?? null) : projected, error: null, queued: true };
       }
       return { data: null, error: makeError('Cette action nécessite une connexion internet.') };
     }
@@ -397,6 +405,8 @@ export class TableBuilder {
       return { data: null, error: makeError(result.error || 'Request failed') };
     }
     if (cacheKey) void offline.cacheSet(cacheKey, result);
+    // Modification faite en ligne : la copie locale est rafraîchie peu après
+    if (isWrite) replica.scheduleReplicaRefresh();
     return result;
   }
 
