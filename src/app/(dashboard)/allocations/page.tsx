@@ -183,7 +183,7 @@ export default function AllocationsPage() {
               <span>Échange de Tickets</span>
             </Button>
           </Link>
-          <AddButton what="une allocation" href="/allocations/new" className="flex-1 sm:flex-initial" />
+          <AddButton what="une allocation" tour="add:allocation" href="/allocations/new" className="flex-1 sm:flex-initial" />
         </div>
       </div>
 
@@ -283,7 +283,7 @@ export default function AllocationsPage() {
               : 'Aucun enregistrement ne correspond à vos critères de recherche.'}
           </p>
           <div className="pt-2">
-            <AddButton what="une allocation" href="/allocations/new" />
+            <AddButton what="une allocation" tour="add:allocation" href="/allocations/new" />
           </div>
         </Card>
       ) : (
