@@ -186,7 +186,7 @@ const addLine = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2" data-tour="form:allocation">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <CustomSelect

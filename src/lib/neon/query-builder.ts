@@ -405,8 +405,12 @@ export class TableBuilder {
       return { data: null, error: makeError(result.error || 'Request failed') };
     }
     if (cacheKey) void offline.cacheSet(cacheKey, result);
-    // Modification faite en ligne : la copie locale est rafraîchie peu après
-    if (isWrite) replica.scheduleReplicaRefresh();
+    // Modification faite en ligne : la copie locale est rafraîchie peu après ; les écrans qui
+    // en dépendent (guide de démarrage) sont prévenus tout de suite
+    if (isWrite) {
+      replica.scheduleReplicaRefresh();
+      window.dispatchEvent(new Event(offline.OFFLINE_EVENTS.dataChanged));
+    }
     return result;
   }
 

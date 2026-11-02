@@ -17,6 +17,7 @@ import { AddButton } from '@/components/ui/AddButton';
 import { PlanLimitDialog, type LimitKind, type PlanLimits } from '@/components/team/PlanLimitDialog';
 import { AccessCard, MemberAccessDialog, type MemberAccessInfo } from '@/components/team/MemberAccess';
 import { cn } from '@/lib/utils/cn';
+import { useGuideOpenForm } from '@/lib/onboarding';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,6 +78,8 @@ export default function UsersPage() {
     if (collectorsFull) setRole('administrateur');
     setIsModalOpen(true);
   };
+  // Guide de démarrage (« Ajouter un collecteur ») : ouvre le formulaire
+  useGuideOpenForm(openAdd);
 
   const supabase = createClient();
 

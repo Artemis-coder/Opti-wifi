@@ -15,9 +15,12 @@ import { createClient } from '@/lib/supabase/client';
 import { AddButton } from '@/components/ui/AddButton';
 import { DurationField } from '@/components/tickets/DurationField';
 import { durationToHours, formatTicketDuration, type DurationUnit } from '@/lib/ticket-duration';
+import { useGuideOpenForm } from '@/lib/onboarding';
 
 export default function TicketTypesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Guide de démarrage : « Créer un type de ticket » ouvre le formulaire
+  useGuideOpenForm(() => setIsModalOpen(true));
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [tickets, setTickets] = useState<TicketType[]>([]);
@@ -104,7 +107,7 @@ export default function TicketTypesPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Types de Tickets Wi-Fi</h1>
           <p className="text-xs text-slate-500">Configurez les forfaits et la grille tarifaire de vos tickets.</p>
         </div>
-        <AddButton what="un type de ticket" onClick={() => setIsModalOpen(true)} />
+        <AddButton what="un type de ticket" tour="add:tickets" onClick={() => setIsModalOpen(true)} />
       </div>
 
       {loading ? (
@@ -121,7 +124,7 @@ export default function TicketTypesPage() {
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             Créez votre premier forfait (ex: Pass 1h, Pass 24h) pour commencer la distribution.
           </p>
-          <AddButton what="un type de ticket" onClick={() => setIsModalOpen(true)} />
+          <AddButton what="un type de ticket" tour="add:tickets" onClick={() => setIsModalOpen(true)} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

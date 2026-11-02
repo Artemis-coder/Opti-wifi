@@ -20,6 +20,8 @@ export const OFFLINE_EVENTS = {
   synced: 'optispace:offline-synced',
   /** Copie locale des données mise à jour */
   replicaUpdated: 'optispace:offline-replica',
+  /** Modification enregistrée (en ligne ou sur l'appareil) */
+  dataChanged: 'optispace:data-changed',
 } as const;
 
 export interface CachedEntry {
