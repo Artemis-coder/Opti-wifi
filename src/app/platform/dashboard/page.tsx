@@ -13,6 +13,7 @@ import { StatTile, type StatAccent } from '@/components/ui/StatTile';
 import type { PlatformStats } from '@/lib/platform-stats';
 import { PlatformStatsSection, type StatsRange } from '@/components/platform/PlatformStats';
 import type { CountryStat } from '@/lib/geo';
+import { SystemStatusCard } from '@/components/platform/SystemStatusCard';
 
 interface TodoData {
   pending_registrations: { id: string; name: string; contact_name: string | null; phone: string | null; created_at: string }[];
@@ -205,6 +206,9 @@ export default function PlatformDashboardPage() {
           </Badge>
         </div>
       </div>
+
+      {/* État du système */}
+      <SystemStatusCard />
 
       {/* À traiter */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">

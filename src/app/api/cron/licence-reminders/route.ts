@@ -11,6 +11,7 @@ import {
   trialReminderStage,
   type OfferedPlan,
 } from '@/lib/licence-reminders';
+import { recordCronRun } from '@/lib/system-errors';
 
 // Rappels de licence (cron quotidien, voir vercel.json) :
 // - licence qui expire : rappels à J-10, J-5 et J-2 → « renouvelez »
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 
+  const startedAt = Date.now();
   try {
     // Licence en cours qui se termine dans les 10 jours, sans autre licence prenant le relais
     const expiring = await query(
@@ -113,9 +115,11 @@ export async function GET(request: Request) {
       });
     }
 
+    await recordCronRun('licence-reminders', true, `${expiring.rows.length} licence(s) bientôt expirée(s), ${expired.rows.length} expirée(s)`, startedAt);
     return NextResponse.json({ ok: true, expiring: expiring.rows.length, stages: sent, expired: expired.rows.length });
   } catch (err) {
     console.error('Licence reminders cron error:', err);
+    await recordCronRun('licence-reminders', false, err instanceof Error ? err.message : 'Erreur', startedAt);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
