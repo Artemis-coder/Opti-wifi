@@ -111,7 +111,13 @@ export function Footer() {
               rel="noopener noreferrer" className="hover:text-white">Connexion</a>
         </nav>
       </div>
-      <p className="pb-8 text-center text-xs text-white/35">© {new Date().getFullYear()} OptiSpace. Tous droits réservés.</p>
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 border-t border-white/10 px-5 py-6 text-xs text-white/40 sm:flex-row sm:px-6">
+        <p>© {new Date().getFullYear()} OptiSpace. Tous droits réservés.</p>
+        <nav aria-label="Informations légales" className="flex items-center gap-5">
+          <a href="/cgu" className="hover:text-white">Conditions générales d&apos;utilisation (CGU)</a>
+          <a href="/cgv" className="hover:text-white">Conditions générales de vente (CGV)</a>
+        </nav>
+      </div>
     </footer>
   );
 }

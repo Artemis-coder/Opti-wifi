@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint",
-    "capture": "node scripts/capture-screens.mjs ../.env.local"
+    "capture": "node scripts/capture-screens.mjs ../.env.local",
+    "legal:pdf": "node scripts/legal-pdf.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
