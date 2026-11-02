@@ -266,6 +266,7 @@ export default function PlatformClientsPage() {
               <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
                   <th className="px-4 py-3">Client</th>
+                  <th className="px-4 py-3">Téléphone</th>
                   <th className="px-4 py-3">Responsable</th>
                   <th className="px-4 py-3">Offre</th>
                   <th className="px-4 py-3">Statut</th>
@@ -287,12 +288,22 @@ export default function PlatformClientsPage() {
                           </div>
                           <div>
                             <p className="font-semibold text-slate-900 dark:text-white">{client.name}</p>
-                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                              {client.email && <span>{client.email}</span>}
-                              {client.phone && <span>• {client.phone}</span>}
-                            </div>
+                            {client.email && <p className="text-xs text-slate-500">{client.email}</p>}
                           </div>
                         </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {client.phone ? (
+                          <a
+                            href={`tel:${client.phone.replace(/\s/g, '')}`}
+                            className="font-semibold text-slate-700 dark:text-slate-200 hover:text-brand-600 tabular-nums"
+                            title="Appeler"
+                          >
+                            {client.phone}
+                          </a>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                         {client.contact_name || '—'}
