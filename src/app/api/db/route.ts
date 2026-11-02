@@ -4,6 +4,7 @@ import { AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import { getSessionContext, type SessionContext } from '@/lib/tenant';
 import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
 import { getAssignedPosIds, getVisibleCollectionIds, getVisiblePosIds, ownsCollections } from '@/lib/collector-scope';
+import { recordSystemError } from '@/lib/system-errors';
 
 // Passerelle générique utilisée par le client navigateur (lib/supabase/client).
 // Règles imposées côté serveur :
@@ -302,6 +303,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await TableBuilder.fromSpec(spec).execute();
+    // Erreur SQL (hors doublon, normal lors d'un renvoi hors ligne) : journalisée pour l'État du système
+    if (result.error && !/duplicate key|déjà/i.test(result.error.message)) {
+      await recordSystemError('api', `${spec.action} ${spec.tableName} : ${result.error.message}`, { route: '/api/db' });
+    }
 
     // Nouvel encaissement saisi par un membre : prévenir les administrateurs de l'organisation
     if (spec.tableName === 'collections' && spec.action === 'insert' && !result.error && ctx.organizationId) {
@@ -315,6 +320,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     console.error('API db error:', err);
+    await recordSystemError('api', `${spec.action} ${spec.tableName} : ${err instanceof Error ? err.message : String(err)}`, {
+      route: '/api/db',
+      status: 400,
+    });
     return NextResponse.json({ data: null, error: makeError('Erreur base de données') }, { status: 400 });
   }
 }

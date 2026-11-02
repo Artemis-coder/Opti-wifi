@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import {
+  Activity,
   LayoutDashboard,
   Building2,
   Receipt,
@@ -71,6 +72,7 @@ const sidebarItems = [
       { label: 'Notifications', href: '/platform/notifications', icon: Bell },
       { label: 'Support', href: '/platform/support', icon: LifeBuoy },
       { label: 'Site vitrine', href: '/platform/site', icon: Globe },
+      { label: 'État du système', href: '/platform/system', icon: Activity },
       { label: 'Journal d\'audit', href: '/platform/audit-logs', icon: History },
       { label: 'Paramètres', href: '/platform/settings', icon: Settings },
     ],

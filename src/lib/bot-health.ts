@@ -30,7 +30,7 @@ function networkError(label: string, id: string, err: unknown): HealthCheck {
   return { id, label, status: 'error', message: timeout ? 'Pas de réponse (délai dépassé)' : 'Service injoignable' };
 }
 
-async function checkTelegram(expectedWebhookUrl: string): Promise<HealthCheck[]> {
+export async function checkTelegram(expectedWebhookUrl: string): Promise<HealthCheck[]> {
   const token = env('TELEGRAM_BOT_TOKEN');
   const checks: HealthCheck[] = [];
   if (!token) {

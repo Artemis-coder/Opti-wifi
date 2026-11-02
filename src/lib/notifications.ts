@@ -9,6 +9,7 @@ import { after } from 'next/server';
 import webpush from 'web-push';
 import { query } from '@/lib/neon/db';
 import { escapeTelegramHtml, sendTelegramMessageDetailed, type TelegramSendResult } from '@/lib/telegram';
+import { recordSystemError } from '@/lib/system-errors';
 
 export type NotificationType =
   | 'registration.new'
@@ -28,7 +29,9 @@ export type NotificationType =
   | 'support.new'
   | 'support.reply'
   | 'support.status'
-  | 'system.test';
+  | 'system.test'
+  | 'system.alert'
+  | 'system.recovered';
 
 export interface NotificationInput {
   type: NotificationType;
@@ -90,6 +93,7 @@ async function sendPush(userIds: string[], n: NotificationInput): Promise<PushRe
           await query('DELETE FROM push_subscriptions WHERE id = $1', [sub.id]);
         } else {
           console.error('Push notification error:', status || err);
+          await recordSystemError('push', `Envoi push refusé${status ? ` (${status})` : ''}`, { status: status ?? null });
         }
       }
     })
@@ -145,6 +149,8 @@ const TELEGRAM_EMOJI: Partial<Record<NotificationType, string>> = {
   'support.new': '🛟',
   'support.reply': '💬',
   'system.test': '✅',
+  'system.alert': '🚨',
+  'system.recovered': '✅',
 };
 
 /** Telegram : en production, ou ailleurs si TELEGRAM_NOTIFY_ENABLED=true. */
@@ -164,11 +170,13 @@ export async function sendSuperAdminTelegram(n: NotificationInput): Promise<Tele
   // Telegram n'accepte les boutons-liens qu'en https : sinon le lien est ajouté au texte
   const button = url?.startsWith('https://');
   if (url && !button) lines.push(url);
-  return sendTelegramMessageDetailed({
+  const result = await sendTelegramMessageDetailed({
     text: lines.join('\n'),
     parse_mode: 'HTML',
     ...(button ? { reply_markup: { inline_keyboard: [[{ text: 'Ouvrir dans OptiSpace', url }]] } } : {}),
   });
+  if (!result.ok) await recordSystemError('telegram', `Message Telegram non envoyé : ${result.error || 'échec'}`);
+  return result;
 }
 
 /** Super admins : in-app + push, et Telegram (production uniquement par défaut). */

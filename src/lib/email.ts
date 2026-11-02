@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import { recordSystemError } from '@/lib/system-errors';
 
 interface EmailOptions {
   to: string;
@@ -41,6 +42,19 @@ function getTransporter(): Transporter {
   return transporter;
 }
 
+/** Vérifie que le serveur d'envoi répond et accepte les identifiants (État du système) */
+export async function verifyEmailTransport(): Promise<{ ok: boolean }> {
+  try {
+    await Promise.race([
+      getTransporter().verify(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+    ]);
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
 export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const transporter = getTransporter();
@@ -60,6 +74,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Email sending failed:', error);
+    await recordSystemError('email', message);
     return { success: false, error: message };
   }
 }
