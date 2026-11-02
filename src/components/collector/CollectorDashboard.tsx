@@ -18,7 +18,7 @@ import { Card } from '@/components/ui/Card';
 import { StatTile } from '@/components/ui/StatTile';
 import { buttonClassName } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
-import { formatCurrencyFCFA, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { CollectorDashboard as Data } from '@/lib/collector-dashboard';
@@ -34,7 +34,7 @@ const PERIODS: { value: DashboardPeriod; label: string }[] = [
 /** Au-delà, un point de vente est signalé « à visiter ». */
 const OVERDUE_DAYS = 7;
 
-const money = (n: number) => `${formatNumber(Math.round(n))} F`;
+const money = formatAmountShort;
 
 function lastVisit(days: number | null): { text: string; tone: string } {
   if (days === null) return { text: 'Jamais collecté', tone: 'text-amber-700 dark:text-amber-400' };

@@ -309,7 +309,7 @@ export default function CollectionDetailPage() {
               }`}
             >
               {diffIsZero
-                ? '0 FCFA'
+                ? formatCurrencyFCFA(0)
                 : `${diffIsNeg ? '' : '+'}${formatCurrencyFCFA(Number(collection.difference))}`}
             </p>
           </div>

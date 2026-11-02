@@ -21,7 +21,7 @@ import { Card } from '@/components/ui/Card';
 import { AddButton } from '@/components/ui/AddButton';
 import { StatTile } from '@/components/ui/StatTile';
 import { cn } from '@/lib/utils/cn';
-import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { ClientDashboard, DashboardPeriod } from '@/lib/client-dashboard';
@@ -64,7 +64,7 @@ const SHORTCUTS: { href: string; label: string; hint: string; icon: React.Elemen
 const PREVIOUS_LABEL: Record<DashboardPeriod, string> = { today: 'hier', week: '7 jours précédents', month: 'mois dernier', all: '' };
 
 /** Montant compact sur l'axe et dans les infobulles : 962 400 F */
-const money = (n: number) => `${formatNumber(Math.round(n))} F`;
+const money = formatAmountShort;
 
 function Evolution({ current, previous, period }: { current: number; previous: number | undefined; period: DashboardPeriod }) {
   if (previous === undefined || period === 'all') return null;

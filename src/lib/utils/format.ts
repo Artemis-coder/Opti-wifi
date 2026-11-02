@@ -1,4 +1,11 @@
-export function formatCurrencyFCFA(amount: number): string {
+import { amountsHidden, MASKED_AMOUNT } from '@/lib/privacy';
+
+/**
+ * Montant en FCFA. Masqué (« •••••• FCFA ») quand l'utilisateur a caché les montants, sauf
+ * exact: true (documents imprimés ou exportés).
+ */
+export function formatCurrencyFCFA(amount: number, { exact = false }: { exact?: boolean } = {}): string {
+  if (!exact && amountsHidden()) return `${MASKED_AMOUNT} FCFA`;
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'XOF',
@@ -71,4 +78,10 @@ export function toDateInputValue(date: Date = new Date()): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/** Montant compact (axes, infobulles, cartes) : « 962 400 F ». Masqué comme formatCurrencyFCFA. */
+export function formatAmountShort(amount: number): string {
+  if (amountsHidden()) return `${MASKED_AMOUNT} F`;
+  return `${formatNumber(Math.round(amount))} F`;
 }
