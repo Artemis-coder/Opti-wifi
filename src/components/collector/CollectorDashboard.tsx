@@ -23,7 +23,6 @@ import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { CollectorDashboard as Data } from '@/lib/collector-dashboard';
 import type { DashboardPeriod } from '@/lib/client-dashboard';
-import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 const PERIODS: { value: DashboardPeriod; label: string }[] = [
   { value: 'all', label: 'Tout' },
@@ -101,7 +100,6 @@ export function CollectorDashboard() {
 
       {/* Période des chiffres : mêmes collectes que « Mes collectes » (les siennes) */}
       <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
-        <AmountsToggle className="shrink-0 w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700" />
         {PERIODS.map((p) => (
           <button
             key={p.value}

@@ -1,6 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
+import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
+
+/** Valeur qui est un montant (« 1 418 000 F », « 25 000 FCFA » ou déjà masquée) */
+function looksLikeAmount(value: React.ReactNode): boolean {
+  return typeof value === 'string' && /(F\s?CFA|\sF)$|•{3,}/.test(value.trim());
+}
 
 export type StatAccent = 'amber' | 'indigo' | 'emerald' | 'red' | 'purple' | 'blue' | 'slate';
 
@@ -28,6 +34,8 @@ export interface StatTileProps {
   footer?: React.ReactNode;
   /** Carte cliquable vers une page de détail */
   href?: string;
+  /** Montant : œil pour masquer tous les montants (détecté automatiquement pour un texte en F / FCFA) */
+  sensitive?: boolean;
   className?: string;
 }
 
@@ -36,12 +44,16 @@ export interface StatTileProps {
  * libellé, icône dans un carré teinté, grand chiffre et ligne d'information.
  * À utiliser pour tous les KPI de l'application.
  */
-export function StatTile({ label, value, icon: Icon, accent = 'slate', alert, hint, footer, href, className }: StatTileProps) {
+export function StatTile({ label, value, icon: Icon, accent = 'slate', alert, hint, footer, href, className, sensitive }: StatTileProps) {
   const a = ACCENTS[accent];
+  const isAmount = sensitive ?? looksLikeAmount(value);
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
+        <div className="flex items-center gap-1 min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
+          {isAmount && <AmountsToggle size="sm" className="-my-1" />}
+        </div>
         {Icon && (
           <span className={cn('w-8 h-8 shrink-0 rounded-lg flex items-center justify-center', alert ? ACCENTS.red.icon : a.icon)}>
             <Icon className="w-4 h-4" />

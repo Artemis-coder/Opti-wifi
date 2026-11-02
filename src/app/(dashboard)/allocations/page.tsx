@@ -27,6 +27,7 @@ import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/data
 import { createClient } from '@/lib/supabase/client';
 import { AddButton } from '@/components/ui/AddButton';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 export default function AllocationsPage() {
   const router = useRouter();
@@ -202,7 +203,7 @@ export default function AllocationsPage() {
           <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
               <DollarSign className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>Valeur Stock</span>
+              <span>Valeur Stock</span> <AmountsToggle size="sm" className="-my-1 ml-auto" />
             </div>
             <p className="text-base sm:text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1 truncate">
               {formatCurrencyFCFA(totalNetValeur)}

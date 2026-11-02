@@ -32,7 +32,6 @@ import { cn } from '@/lib/utils/cn';
 import { trackClient } from '@/lib/analytics/client';
 import { EVENTS } from '@/lib/analytics/events';
 import type { Collection, CollectionItem, PointOfSale } from '@/types/database';
-import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 // ── Périodes ────────────────────────────────────────────────────────────────
 
@@ -377,7 +376,6 @@ export default function ReportsPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <AmountsToggle withLabel className="border border-slate-200 dark:border-slate-700" />
           <Button size="sm" icon={FileText} onClick={exportPdf} disabled={loading || filtered.length === 0}>
             Exporter en PDF
           </Button>
@@ -434,17 +432,17 @@ export default function ReportsPage() {
       {/* Chiffres clés de la période */}
       <div className={cn('grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-50')}>
         <StatTile label="Encaissements" value={totals.count} icon={ClipboardList} accent="indigo" hint={periodLabel} />
-        <StatTile label="Chiffre d'affaires" value={tileMoney(totals.expected)} icon={TrendingUp} accent="amber" hint="Montant attendu" />
-        <StatTile label="Encaissé" value={tileMoney(totals.collected)} icon={Banknote} accent="emerald" />
+        <StatTile label="Chiffre d'affaires" sensitive value={tileMoney(totals.expected)} icon={TrendingUp} accent="amber" hint="Montant attendu" />
+        <StatTile label="Encaissé" sensitive value={tileMoney(totals.collected)} icon={Banknote} accent="emerald" />
         <StatTile
           label="Écart"
-          value={tileMoney(totals.gap)}
+          sensitive value={tileMoney(totals.gap)}
           icon={AlertTriangle}
           accent="slate"
           alert={totals.gap < 0}
           hint={totals.gap < 0 ? 'Manque à encaisser' : 'Aucun manque'}
         />
-        <StatTile label="Commission" value={tileMoney(totals.commission)} icon={Percent} accent="purple" />
+        <StatTile label="Commission" sensitive value={tileMoney(totals.commission)} icon={Percent} accent="purple" />
         <StatTile label="Tickets vendus" value={ticketsSold.toLocaleString('fr-FR')} icon={Ticket} accent="blue" />
       </div>
 
