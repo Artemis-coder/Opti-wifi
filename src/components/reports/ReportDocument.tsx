@@ -39,7 +39,8 @@ export interface ReportDocumentProps {
   collections: ReportCollectionRow[];
 }
 
-const money = (v: number) => formatCurrencyFCFA(v);
+// Document imprimé (invisible à l'écran) : toujours les vrais montants, même s'ils sont masqués
+const money = (v: number) => formatCurrencyFCFA(v, { exact: true });
 const longDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 /**

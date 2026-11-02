@@ -4,6 +4,7 @@ import React from 'react';
 import { Menu, Search, LogOut } from 'lucide-react';
 import { getPlatformPageTitle } from '@/components/platform/PlatformSidebar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 import { usePathname, useRouter } from 'next/navigation';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
@@ -49,7 +50,8 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
         <h1 className="sm:hidden text-base font-bold text-slate-900 dark:text-white truncate">{getPlatformPageTitle(pathname)}</h1>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-4">
+        <AmountsToggle />
         <NotificationBell />
 
         <div className="flex items-center gap-2 sm:gap-3">
