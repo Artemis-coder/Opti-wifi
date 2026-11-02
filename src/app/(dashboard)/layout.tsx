@@ -12,6 +12,7 @@ import { LicenseRequestDialog } from '@/components/payments/LicenseRequestDialog
 import { Button } from '@/components/ui/Button';
 import { AccountNotices } from '@/components/layout/AccountNotices';
 import { PushPrompt } from '@/components/notifications/PushPrompt';
+import { AmountsPrivacyBoundary } from '@/components/privacy/AmountsPrivacy';
 import { PendingWhatsappButton } from '@/components/layout/PendingWhatsappButton';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -286,7 +287,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <main className="flex-1 p-4 sm:p-6 md:p-8 pb-28 sm:pb-32 lg:pb-8 overflow-y-auto">
           <AccountNotices />
-          {children}
+          <AmountsPrivacyBoundary>{children}</AmountsPrivacyBoundary>
         </main>
 
         <BottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />

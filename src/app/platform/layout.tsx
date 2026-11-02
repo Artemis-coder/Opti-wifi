@@ -11,6 +11,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { PLATFORM_BOTTOM_NAV } from '@/components/platform/PlatformSidebar';
 import { Loader2 } from 'lucide-react';
 import { PushPrompt } from '@/components/notifications/PushPrompt';
+import { AmountsPrivacyBoundary } from '@/components/privacy/AmountsPrivacy';
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -68,7 +69,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
         <PlatformHeader onOpenMobileMenu={() => setIsMobileOpen(true)} />
 
         <main className="flex-1 p-4 sm:p-6 md:p-8 pb-24 lg:pb-8 overflow-y-auto">
-          {children}
+          <AmountsPrivacyBoundary>{children}</AmountsPrivacyBoundary>
         </main>
       </div>
 

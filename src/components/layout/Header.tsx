@@ -6,6 +6,7 @@ import { Menu, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 interface HeaderProps {
   onOpenMobileMenu?: () => void;
@@ -80,7 +81,8 @@ export function Header({ onOpenMobileMenu, title }: HeaderProps) {
         </div>
 
         {/* Right: Quick mobile indicators & avatar button */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <AmountsToggle />
           <NotificationBell />
           {/* Network status pill on mobile */}
           <div

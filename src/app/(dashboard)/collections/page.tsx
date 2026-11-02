@@ -246,7 +246,7 @@ export default function CollectionsPage() {
                     <td className="px-4 py-3 text-center">
                       {Number(c.difference) === 0 ? (
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold inline-flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> 0 FCFA
+                          <CheckCircle2 className="w-3.5 h-3.5" /> {formatCurrencyFCFA(0)}
                         </span>
                       ) : Number(c.difference) < 0 ? (
                         <span className="text-red-600 dark:text-red-400 font-bold inline-flex items-center gap-1">

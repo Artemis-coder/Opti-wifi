@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils/cn';
 import { trackClient } from '@/lib/analytics/client';
 import { EVENTS } from '@/lib/analytics/events';
 import type { Collection, CollectionItem, PointOfSale } from '@/types/database';
+import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 // ── Périodes ────────────────────────────────────────────────────────────────
 
@@ -376,6 +377,7 @@ export default function ReportsPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
+          <AmountsToggle withLabel className="border border-slate-200 dark:border-slate-700" />
           <Button size="sm" icon={FileText} onClick={exportPdf} disabled={loading || filtered.length === 0}>
             Exporter en PDF
           </Button>

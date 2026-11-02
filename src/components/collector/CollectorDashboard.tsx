@@ -18,11 +18,12 @@ import { Card } from '@/components/ui/Card';
 import { StatTile } from '@/components/ui/StatTile';
 import { buttonClassName } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
-import { formatCurrencyFCFA, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { CollectorDashboard as Data } from '@/lib/collector-dashboard';
 import type { DashboardPeriod } from '@/lib/client-dashboard';
+import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 const PERIODS: { value: DashboardPeriod; label: string }[] = [
   { value: 'all', label: 'Tout' },
@@ -34,7 +35,7 @@ const PERIODS: { value: DashboardPeriod; label: string }[] = [
 /** Au-delà, un point de vente est signalé « à visiter ». */
 const OVERDUE_DAYS = 7;
 
-const money = (n: number) => `${formatNumber(Math.round(n))} F`;
+const money = formatAmountShort;
 
 function lastVisit(days: number | null): { text: string; tone: string } {
   if (days === null) return { text: 'Jamais collecté', tone: 'text-amber-700 dark:text-amber-400' };
@@ -100,6 +101,7 @@ export function CollectorDashboard() {
 
       {/* Période des chiffres : mêmes collectes que « Mes collectes » (les siennes) */}
       <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+        <AmountsToggle className="shrink-0 w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700" />
         {PERIODS.map((p) => (
           <button
             key={p.value}
