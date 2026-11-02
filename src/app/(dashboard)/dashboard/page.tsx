@@ -26,7 +26,6 @@ import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { ClientDashboard, DashboardPeriod } from '@/lib/client-dashboard';
 import { CollectorDashboard } from '@/components/collector/CollectorDashboard';
-import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 const PERIODS: { value: DashboardPeriod; label: string; eyebrow: string }[] = [
   { value: 'all', label: 'Tout', eyebrow: 'Depuis le début' },
@@ -148,7 +147,6 @@ function AdminDashboard() {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Tableau de bord</h1>
         </div>
         <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
-          <AmountsToggle className="shrink-0 w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700" />
           {PERIODS.map((p) => (
             <button
               key={p.value}

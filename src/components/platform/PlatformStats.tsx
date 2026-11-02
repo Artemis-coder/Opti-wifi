@@ -8,7 +8,6 @@ import { StatTile, type StatAccent } from '@/components/ui/StatTile';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import type { PlatformStats, StatsBucket } from '@/lib/platform-stats';
-import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 import { amountsHidden } from '@/lib/privacy';
 
 export type StatsRange = PlatformStats['range'];
@@ -287,7 +286,6 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
         </div>
         {/* Filtre de période : une seule rangée, défilable sur mobile */}
         <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 md-scroll">
-          <AmountsToggle className="shrink-0 w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700" />
           {STATS_RANGES.map((r) => (
             <button
               key={r.value}

@@ -22,8 +22,17 @@ export function AmountsPrivacyBoundary({ children }: { children: React.ReactNode
   return <React.Fragment key={active ? 'amounts-hidden' : 'amounts-shown'}>{children}</React.Fragment>;
 }
 
-/** Bouton œil : masquer / afficher tous les montants */
-export function AmountsToggle({ className, withLabel = false }: { className?: string; withLabel?: boolean }) {
+/** Bouton œil : masquer / afficher tous les montants de l'application */
+export function AmountsToggle({
+  className,
+  withLabel = false,
+  size = 'md',
+}: {
+  className?: string;
+  withLabel?: boolean;
+  /** sm : dans une carte de chiffre clé */
+  size?: 'sm' | 'md';
+}) {
   const hideAmounts = usePrivacyStore((s) => s.hideAmounts);
   const toggle = usePrivacyStore((s) => s.toggleAmounts);
   const hidden = useIsClient() && hideAmounts;
@@ -32,20 +41,25 @@ export function AmountsToggle({ className, withLabel = false }: { className?: st
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={(e) => {
+        // Dans une carte cliquable : ne pas ouvrir le lien
+        e.preventDefault();
+        e.stopPropagation();
+        toggle();
+      }}
       aria-pressed={hidden}
       aria-label={label}
       title={label}
       className={cn(
         'inline-flex items-center justify-center gap-1.5 rounded-xl transition-colors',
-        withLabel ? 'h-9 px-3 text-xs font-semibold' : 'w-10 h-10',
+        withLabel ? 'h-9 px-3 text-xs font-semibold' : size === 'sm' ? 'w-7 h-7 rounded-lg' : 'w-10 h-10',
         hidden
           ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'
           : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800',
         className
       )}
     >
-      <Icon className="w-5 h-5 shrink-0" />
+      <Icon className={cn('shrink-0', size === 'sm' ? 'w-4 h-4' : 'w-5 h-5')} />
       {withLabel && <span className="whitespace-nowrap">{hidden ? 'Montants masqués' : 'Masquer les montants'}</span>}
     </button>
   );

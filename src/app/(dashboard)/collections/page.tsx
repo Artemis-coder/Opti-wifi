@@ -24,6 +24,7 @@ import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { Collection } from '@/types/database';
 import { AddButton } from '@/components/ui/AddButton';
+import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 export default function CollectionsPage() {
   const router = useRouter();
@@ -108,7 +109,7 @@ export default function CollectionsPage() {
           <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
               <Receipt className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Total Encaissé</span>
+              <span>Total Encaissé</span> <AmountsToggle size="sm" className="-my-1 ml-auto" />
             </div>
             <p className="text-base sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1 truncate">
               {formatCurrencyFCFA(totalEncaissé)}
@@ -118,7 +119,7 @@ export default function CollectionsPage() {
           <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
               <DollarSign className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span>Total Attendu</span>
+              <span>Total Attendu</span> <AmountsToggle size="sm" className="-my-1 ml-auto" />
             </div>
             <p className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1 truncate">
               {formatCurrencyFCFA(totalAttendu)}
@@ -128,7 +129,7 @@ export default function CollectionsPage() {
           <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>Écart Global</span>
+              <span>Écart Global</span> <AmountsToggle size="sm" className="-my-1 ml-auto" />
             </div>
             <p
               className={`text-base sm:text-xl font-extrabold mt-1 truncate ${
@@ -139,7 +140,7 @@ export default function CollectionsPage() {
                   : 'text-emerald-600 dark:text-emerald-400'
               }`}
             >
-              {totalDifference === 0 ? '0 FCFA' : formatCurrencyFCFA(totalDifference)}
+              {formatCurrencyFCFA(totalDifference)}
             </p>
           </Card>
 
