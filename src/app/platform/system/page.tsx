@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Bell,
   CheckCircle2,
+  Cloud,
   Clock,
   Database,
   Info,
@@ -28,6 +29,7 @@ const ICONS: Record<SystemComponent['id'], LucideIcon> = {
   api: Zap,
   notifications: Bell,
   server: Server,
+  vercel: Cloud,
   crons: Clock,
 };
 
@@ -230,7 +232,7 @@ export default function SystemStatusPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">État du système</h1>
           <p className="text-xs text-slate-500">
-            Base de données, API, notifications, serveur et tâches planifiées. Actualisation automatique toutes les 30 secondes.
+            Base de données, API, notifications, serveur, hébergement Vercel et tâches planifiées. Actualisation automatique toutes les 30 secondes.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">

@@ -11,6 +11,7 @@ import { Profile } from '@/types/database';
 import { LicenseRequestDialog } from '@/components/payments/LicenseRequestDialog';
 import { Button } from '@/components/ui/Button';
 import { AccountNotices } from '@/components/layout/AccountNotices';
+import { PushPrompt } from '@/components/notifications/PushPrompt';
 import { PendingWhatsappButton } from '@/components/layout/PendingWhatsappButton';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -290,6 +291,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <BottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />
       </div>
+      <PushPrompt userId={user?.id} audience="client" />
     </div>
   );
 }
