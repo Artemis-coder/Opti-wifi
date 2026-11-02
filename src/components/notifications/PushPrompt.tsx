@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Bell, BellRing, PlusSquare, Share, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { isMobileDevice, isPushSupported, isStandalone, needsInstallForPush, subscribeToPush } from '@/lib/push-client';
+import { isPushSupported, needsInstallForPush, subscribeToPush } from '@/lib/push-client';
 
 const LATER_DAYS = 7;
 const storageKey = (userId: string) => `optispace:push-prompt:${userId}`;
@@ -12,32 +12,35 @@ const storageKey = (userId: string) => `optispace:push-prompt:${userId}`;
 const TEXT = {
   client: {
     title: 'Activer les notifications ?',
-    body: 'Soyez prévenu sur ce téléphone, même application fermée : nouvelles collectes de votre équipe, fin de licence, réponses du support.',
+    body: 'Soyez prévenu sur cet appareil, même application fermée : nouvelles collectes de votre équipe, fin de licence, réponses du support.',
+  },
+  collector: {
+    title: 'Activer les notifications ?',
+    body: 'Soyez prévenu sur cet appareil, même application fermée : messages de votre administrateur, réponses du support et informations sur votre espace.',
   },
   platform: {
     title: 'Activer les notifications ?',
-    body: 'Soyez prévenu sur ce téléphone, même application fermée : nouvelles inscriptions, demandes de licence, messages au support et alertes de l’état du système.',
+    body: 'Soyez prévenu sur cet appareil, même application fermée : nouvelles inscriptions, demandes de licence, messages au support et alertes de l’état du système.',
   },
 };
 
 type Mode = 'enable' | 'install';
 
 /**
- * Sur téléphone (navigateur ou application installée), à la première ouverture après
- * connexion : propose d'activer les notifications push. La demande du système s'affiche au
+ * Pour tous (administrateur, collecteur, super admin), sur téléphone comme sur ordinateur,
+ * dans le navigateur ou l'application installée : à la première ouverture après connexion,
+ * propose d'activer les notifications push. La demande du système s'affiche au
  * clic sur « Activer » (obligatoire sur iPhone). Sur iPhone dans Safari, où les notifications
  * n'existent pas, explique comment installer l'application.
  * « Plus tard » : reproposé dans 7 jours ; jamais si déjà autorisées ou refusées.
  */
-export function PushPrompt({ userId, audience }: { userId: string | null | undefined; audience: 'client' | 'platform' }) {
+export function PushPrompt({ userId, audience }: { userId: string | null | undefined; audience: 'client' | 'collector' | 'platform' }) {
   const [mode, setMode] = useState<Mode | null>(null);
   const [busy, setBusy] = useState(false);
   const open = mode !== null;
 
   useEffect(() => {
     if (!userId || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return;
-    // Ordinateur : l'activation reste proposée dans la cloche
-    if (!isMobileDevice() && !isStandalone()) return;
     const later = Number(localStorage.getItem(storageKey(userId)) || 0);
     if (later && Date.now() - later < LATER_DAYS * 24 * 3600 * 1000) return;
 
@@ -129,7 +132,7 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
           </>
         ) : (
           <>
-            <p className="mt-2 text-xs text-slate-500">Votre téléphone va vous demander l’autorisation : choisissez « Autoriser ».</p>
+            <p className="mt-2 text-xs text-slate-500">Votre appareil va vous demander l’autorisation : choisissez « Autoriser ».</p>
             <div className="mt-5 grid grid-cols-1 gap-2">
               <Button className="h-12 font-semibold" icon={Bell} isLoading={busy} onClick={activate}>
                 Activer les notifications
