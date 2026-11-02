@@ -10,6 +10,7 @@ import { PlatformHeader } from '@/components/platform/PlatformHeader';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { PLATFORM_BOTTOM_NAV } from '@/components/platform/PlatformSidebar';
 import { Loader2 } from 'lucide-react';
+import { PushPrompt } from '@/components/notifications/PushPrompt';
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -72,6 +73,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       </div>
 
       <BottomNav items={PLATFORM_BOTTOM_NAV} onOpenMobileMenu={() => setIsMobileOpen(true)} />
+      <PushPrompt userId={platformUser.auth_user_id} audience="platform" />
     </div>
   );
 }

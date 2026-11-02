@@ -22,7 +22,7 @@ export interface SystemCheck {
 }
 
 export interface SystemComponent {
-  id: 'database' | 'api' | 'notifications' | 'server' | 'crons';
+  id: 'database' | 'api' | 'notifications' | 'server' | 'vercel' | 'crons';
   label: string;
   status: SystemStatus;
   summary: string;
@@ -278,6 +278,152 @@ function checkServer(): SystemComponent {
   };
 }
 
+// Projet Vercel d'OptiSpace (identifiants publics, comme dans lib/bot/admin-data.ts)
+const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID || 'prj_sYLBGlV8d7PBEEiDbwJbq9qm9fdy';
+const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID || 'team_qOt460YjW0wgC8CZKSpSFzE5';
+
+interface VercelDeployment {
+  readyState?: string;
+  state?: string;
+  createdAt?: number;
+  created?: number;
+  meta?: Record<string, string>;
+}
+
+const DEPLOY_STATE: Record<string, { status: SystemStatus; label: string }> = {
+  READY: { status: 'ok', label: 'En ligne' },
+  ERROR: { status: 'error', label: 'En échec' },
+  BUILDING: { status: 'warning', label: 'Déploiement en cours' },
+  INITIALIZING: { status: 'warning', label: 'Déploiement en cours' },
+  QUEUED: { status: 'warning', label: 'En file d’attente' },
+  CANCELED: { status: 'warning', label: 'Annulé' },
+};
+
+async function vercelGet<T>(path: string, token: string): Promise<T> {
+  const sep = path.includes('?') ? '&' : '?';
+  const res = await fetch(`https://api.vercel.com${path}${sep}teamId=${VERCEL_TEAM_ID}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(8000),
+    cache: 'no-store',
+  });
+  if (res.status === 401 || res.status === 403) throw new Error('auth');
+  if (!res.ok) throw new Error(`http ${res.status}`);
+  return (await res.json()) as T;
+}
+
+/** Hébergement Vercel : dernier déploiement de production, préversion, échecs récents, domaines */
+async function checkVercel(): Promise<SystemComponent> {
+  const base = { id: 'vercel' as const, label: 'Vercel (hébergement)' };
+  const token = process.env.VERCEL_TOKEN?.trim();
+  if (!token) {
+    return {
+      ...base,
+      status: 'warning',
+      summary: 'Suivi des déploiements non configuré',
+      metrics: [],
+      checks: [{ label: 'Accès à Vercel', status: 'warning', message: 'VERCEL_TOKEN absent sur ce déploiement : état des déploiements inconnu' }],
+    };
+  }
+
+  let production: VercelDeployment[];
+  let preview: VercelDeployment[];
+  let domains: { name: string; verified?: boolean }[];
+  try {
+    const since = Date.now() - 24 * 3600 * 1000;
+    [production, preview, domains] = await Promise.all([
+      vercelGet<{ deployments: VercelDeployment[] }>(`/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=production&limit=20&since=${since}`, token)
+        .then(async (r) =>
+          r.deployments.length > 0
+            ? r.deployments
+            : (await vercelGet<{ deployments: VercelDeployment[] }>(`/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=production&limit=1`, token)).deployments
+        ),
+      vercelGet<{ deployments: VercelDeployment[] }>(`/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&limit=1`, token).then((r) => r.deployments),
+      vercelGet<{ domains: { name: string; verified?: boolean }[] }>(`/v9/projects/${VERCEL_PROJECT_ID}/domains`, token).then((r) => r.domains || []),
+    ]);
+  } catch (err) {
+    const auth = err instanceof Error && err.message === 'auth';
+    const timeout = err instanceof Error && err.name === 'TimeoutError';
+    return {
+      ...base,
+      status: 'error',
+      summary: auth ? 'Jeton Vercel refusé' : 'Vercel injoignable',
+      metrics: [],
+      checks: [
+        {
+          label: 'Accès à Vercel',
+          status: 'error',
+          message: auth
+            ? 'VERCEL_TOKEN expiré ou sans accès à l’équipe : à régénérer sur vercel.com/account/tokens'
+            : timeout
+              ? 'Pas de réponse de Vercel (délai dépassé)'
+              : 'Vercel ne répond pas',
+        },
+      ],
+    };
+  }
+
+  const checks: SystemCheck[] = [];
+  const metrics: SystemComponent['metrics'] = [];
+  const describe = (d: VercelDeployment) => {
+    const at = new Date(d.createdAt || d.created || 0);
+    const sha = d.meta?.githubCommitSha?.slice(0, 7);
+    return { at, text: `${ago(at)}${sha ? ` · ${sha}` : ''}${d.meta?.githubCommitMessage ? ` · ${d.meta.githubCommitMessage.split('\n')[0].slice(0, 50)}` : ''}` };
+  };
+
+  // Production : le dernier déploiement doit être en ligne
+  const lastProd = production[0];
+  if (!lastProd) {
+    checks.push({ label: 'Production', status: 'warning', message: 'Aucun déploiement de production trouvé' });
+  } else {
+    const state = DEPLOY_STATE[lastProd.readyState || lastProd.state || ''] ?? { status: 'warning' as SystemStatus, label: lastProd.readyState || 'Inconnu' };
+    const d = describe(lastProd);
+    checks.push({ label: 'Production', status: state.status, message: `${state.label} · ${d.text}` });
+    metrics.push({ label: 'Dernier déploiement', value: ago(d.at) });
+  }
+
+  // Déploiements de production en échec sur 24 h (le site reste sur la version précédente)
+  const failed = production.filter((d) => (d.readyState || d.state) === 'ERROR' && (d.createdAt || d.created || 0) > Date.now() - 24 * 3600 * 1000);
+  metrics.push({ label: 'Échecs (24 h)', value: String(failed.length) });
+  if (failed.length > 0 && lastProd && (lastProd.readyState || lastProd.state) !== 'ERROR') {
+    checks.push({
+      label: 'Déploiements en échec',
+      status: 'warning',
+      message: `${failed.length} échec(s) sur 24 h : le site est resté sur la version précédente`,
+    });
+  }
+
+  // Préversion (develop) : informatif, un échec ne touche pas le site en ligne
+  const lastPreview = preview[0];
+  if (lastPreview) {
+    const state = DEPLOY_STATE[lastPreview.readyState || lastPreview.state || ''] ?? { status: 'warning' as SystemStatus, label: 'Inconnu' };
+    const d = describe(lastPreview);
+    const branch = lastPreview.meta?.githubCommitRef;
+    checks.push({
+      label: `Préversion${branch ? ` (${branch})` : ''}`,
+      status: state.status === 'error' ? 'warning' : 'ok',
+      message: `${state.label} · ${d.text}`,
+    });
+  }
+
+  // Domaines du projet
+  const unverified = domains.filter((d) => d.verified === false);
+  metrics.push({ label: 'Domaines', value: `${domains.length - unverified.length} / ${domains.length} vérifiés` });
+  checks.push({
+    label: 'Domaines',
+    status: unverified.length > 0 ? 'error' : 'ok',
+    message: unverified.length > 0 ? `Non vérifié : ${unverified.map((d) => d.name).join(', ')}` : domains.map((d) => d.name).join(', ') || 'Aucun domaine',
+  });
+
+  const status = worst(checks.map((c) => c.status));
+  return {
+    ...base,
+    status,
+    summary: status === 'ok' ? `Production en ligne${lastProd ? ` · déployée ${describe(lastProd).text.split(' · ')[0]}` : ''}` : checks.find((c) => c.status === status)!.message,
+    metrics,
+    checks,
+  };
+}
+
 async function checkCrons(): Promise<SystemComponent> {
   const { rows } = await query('SELECT name, last_run_at, ok, message FROM system_cron_runs');
   const byName = new Map(rows.map((r) => [r.name as string, r]));
@@ -316,6 +462,7 @@ export async function runSystemHealth(siteOrigin: string): Promise<SystemHealth>
     safe('api', 'API', checkApi),
     safe('notifications', 'Notifications', () => checkNotifications(siteOrigin)),
     safe('server', 'Serveur', checkServer),
+    safe('vercel', 'Vercel (hébergement)', checkVercel),
     safe('crons', 'Tâches planifiées', checkCrons),
   ]);
 
