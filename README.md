@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.6.1</strong> — <a href="./RELEASE_NOTES_v1.6.1.md">notes de version</a>
+  <strong>Version actuelle : v1.7.0</strong> — <a href="./RELEASE_NOTES_v1.7.0.md">notes de version</a>
 </p>
 
 ---
@@ -548,6 +548,7 @@ Consulter [`AGENTS.md`](./AGENTS.md) pour les règles de sécurité complètes :
 
 ## Release Notes
 
+- [**v1.7.0**](./RELEASE_NOTES_v1.7.0.md) — État du système dans le back-office (base, API, notifications, serveur, hébergement Vercel, tâches planifiées) avec historique et alertes au changement d'état, invitation à activer les notifications pour tous sur téléphone et ordinateur (guide d'installation sur iPhone), masquage de tous les montants depuis l'œil des cartes de chiffres clés
 - [**v1.6.1**](./RELEASE_NOTES_v1.6.1.md) — Mode hors ligne complet : copie locale de toutes les données de l'espace, tous les écrans consultables sans réseau, ajouts et modifications hors ligne (espaces, points de vente, types de tickets, allocations, collectes) synchronisés au retour du réseau avec les nouveautés de la base
 - [**v1.6.0**](./RELEASE_NOTES_v1.6.0.md) — Mode hors ligne (consultation sans réseau, collectes synchronisées au retour du réseau), rapports retravaillés avec export PDF, accès de l'équipe par copie / WhatsApp / e-mail, réinitialisation du mot de passe sécurisée, limite du forfait signalée, types de tickets en jours, badge du forfait, revenus sur les factures payées
 - [**v1.5.0**](./RELEASE_NOTES_v1.5.0.md) — Essai gratuit automatique à la première souscription seulement, réabonnement par moyen de paiement filtrable par pays, téléphone avec pays à l'inscription, bandeau du compte, espace collecteur cloisonné, nombre de collecteurs par forfait, Top 3 des pays, abonnements retravaillés, site vitrine, bot Telegram configurable, mesure d'audience PostHog
