@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, BellRing, X } from 'lucide-react';
+import { Bell, BellRing, PlusSquare, Share, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { getPushState, isPushSupported, isStandalone, subscribeToPush } from '@/lib/push-client';
+import { isPushSupported, needsInstallForPush, subscribeToPush } from '@/lib/push-client';
 
 const LATER_DAYS = 7;
 const storageKey = (userId: string) => `optispace:push-prompt:${userId}`;
@@ -12,46 +12,56 @@ const storageKey = (userId: string) => `optispace:push-prompt:${userId}`;
 const TEXT = {
   client: {
     title: 'Activer les notifications ?',
-    body: 'Soyez prévenu sur ce téléphone, même application fermée : nouvelles collectes de votre équipe, fin de licence, réponses du support.',
+    body: 'Soyez prévenu sur cet appareil, même application fermée : nouvelles collectes de votre équipe, fin de licence, réponses du support.',
+  },
+  collector: {
+    title: 'Activer les notifications ?',
+    body: 'Soyez prévenu sur cet appareil, même application fermée : messages de votre administrateur, réponses du support et informations sur votre espace.',
   },
   platform: {
     title: 'Activer les notifications ?',
-    body: 'Soyez prévenu sur ce téléphone, même application fermée : nouvelles inscriptions, demandes de licence, messages au support et alertes de l’état du système.',
+    body: 'Soyez prévenu sur cet appareil, même application fermée : nouvelles inscriptions, demandes de licence, messages au support et alertes de l’état du système.',
   },
 };
 
+type Mode = 'enable' | 'install';
+
 /**
- * Application installée (écran d'accueil) : à la première ouverture après connexion, propose
- * d'activer les notifications push. La demande du système s'affiche au clic sur « Activer »
- * (obligatoire sur iPhone). « Plus tard » : reproposé dans 7 jours.
+ * Pour tous (administrateur, collecteur, super admin), sur téléphone comme sur ordinateur,
+ * dans le navigateur ou l'application installée : à la première ouverture après connexion,
+ * propose d'activer les notifications push. La demande du système s'affiche au
+ * clic sur « Activer » (obligatoire sur iPhone). Sur iPhone dans Safari, où les notifications
+ * n'existent pas, explique comment installer l'application.
+ * « Plus tard » : reproposé dans 7 jours ; jamais si déjà autorisées ou refusées.
  */
-export function PushPrompt({ userId, audience }: { userId: string | null | undefined; audience: 'client' | 'platform' }) {
-  const [open, setOpen] = useState(false);
+export function PushPrompt({ userId, audience }: { userId: string | null | undefined; audience: 'client' | 'collector' | 'platform' }) {
+  const [mode, setMode] = useState<Mode | null>(null);
   const [busy, setBusy] = useState(false);
+  const open = mode !== null;
 
   useEffect(() => {
     if (!userId || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return;
-    if (!isStandalone() || !isPushSupported()) return;
     const later = Number(localStorage.getItem(storageKey(userId)) || 0);
     if (later && Date.now() - later < LATER_DAYS * 24 * 3600 * 1000) return;
-    let cancelled = false;
+
+    // Décision sans attendre le service worker : seule l'autorisation compte
+    let next: Mode | null = null;
+    if (isPushSupported()) {
+      if (Notification.permission === 'default') next = 'enable';
+    } else if (needsInstallForPush()) {
+      next = 'install';
+    }
+    if (!next) return;
     // Laisse l'espace s'afficher avant de proposer
-    const timer = setTimeout(() => {
-      getPushState()
-        .then((state) => !cancelled && state === 'default' && setOpen(true))
-        .catch(() => {});
-    }, 1500);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(() => setMode(next), 1500);
+    return () => clearTimeout(timer);
   }, [userId]);
 
   if (!open || !userId) return null;
 
   const later = () => {
     localStorage.setItem(storageKey(userId), String(Date.now()));
-    setOpen(false);
+    setMode(null);
   };
 
   const activate = async () => {
@@ -72,7 +82,7 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
       toast.error('Activation impossible pour le moment. Réessayez depuis la cloche.');
     } finally {
       setBusy(false);
-      setOpen(false);
+      setMode(null);
     }
   };
 
@@ -92,18 +102,47 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
           <BellRing className="w-7 h-7" />
         </div>
         <h2 id="push-prompt-title" className="text-lg font-bold text-slate-900 dark:text-white">
-          {t.title}
+          {mode === 'install' ? 'Recevoir les notifications sur iPhone' : t.title}
         </h2>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t.body}</p>
-        <p className="mt-2 text-xs text-slate-500">Votre téléphone va vous demander l’autorisation : choisissez « Autoriser ».</p>
-        <div className="mt-5 grid grid-cols-1 gap-2">
-          <Button className="h-12 font-semibold" icon={Bell} isLoading={busy} onClick={activate}>
-            Activer les notifications
-          </Button>
-          <Button variant="ghost" className="h-11" onClick={later} disabled={busy}>
-            Plus tard
-          </Button>
-        </div>
+        {mode === 'install' ? (
+          <>
+            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+              Sur iPhone, les notifications ne fonctionnent que depuis l’application installée :
+            </p>
+            <ol className="mt-2 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+              <li className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold flex items-center justify-center shrink-0">1</span>
+                Touchez <Share className="w-4 h-4 text-brand-600 shrink-0" aria-label="Partager" /> <strong>Partager</strong> dans Safari
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold flex items-center justify-center shrink-0">2</span>
+                Choisissez <PlusSquare className="w-4 h-4 text-brand-600 shrink-0" aria-hidden /> <strong>Sur l’écran d’accueil</strong>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold flex items-center justify-center shrink-0">3</span>
+                Ouvrez OptiSpace depuis l’icône : l’activation vous sera proposée
+              </li>
+            </ol>
+            <div className="mt-5">
+              <Button className="w-full h-12 font-semibold" onClick={later}>
+                J’ai compris
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="mt-2 text-xs text-slate-500">Votre appareil va vous demander l’autorisation : choisissez « Autoriser ».</p>
+            <div className="mt-5 grid grid-cols-1 gap-2">
+              <Button className="h-12 font-semibold" icon={Bell} isLoading={busy} onClick={activate}>
+                Activer les notifications
+              </Button>
+              <Button variant="ghost" className="h-11" onClick={later} disabled={busy}>
+                Plus tard
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

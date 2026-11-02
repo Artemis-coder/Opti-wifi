@@ -291,7 +291,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <BottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />
       </div>
-      <PushPrompt userId={user?.id} audience="client" />
+      <PushPrompt userId={user?.id} audience={user?.role === 'collecteur' ? 'collector' : 'client'} />
     </div>
   );
 }
