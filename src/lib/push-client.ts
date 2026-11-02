@@ -11,7 +11,8 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 }
 
 function isIos(): boolean {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  // iPad récent : se présente comme un Mac, mais avec un écran tactile
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 }
 
 export function isStandalone(): boolean {
@@ -22,8 +23,21 @@ export function isPushSupported(): boolean {
   return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
 
+/** Service worker enregistré ET actif (sinon l'abonnement push échoue à la première ouverture) */
 async function getRegistration(): Promise<ServiceWorkerRegistration> {
-  return (await navigator.serviceWorker.getRegistration('/')) || navigator.serviceWorker.register('/sw.js', { scope: '/' });
+  if (!(await navigator.serviceWorker.getRegistration('/'))) await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+  return navigator.serviceWorker.ready;
+}
+
+/** Téléphone ou tablette (écran tactile, ou navigateur mobile) */
+export function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || window.matchMedia('(pointer: coarse)').matches;
+}
+
+/** iPhone / iPad ouvert dans Safari : les notifications n'existent que dans l'application installée */
+export function needsInstallForPush(): boolean {
+  return typeof window !== 'undefined' && isIos() && !isStandalone();
 }
 
 export async function getPushState(): Promise<PushState> {
