@@ -554,7 +554,7 @@ export default function NewCollectionWizard() {
           </p>
         </Card>
       ) : (
-        <Card className="p-4 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-800">
+        <Card className="p-4 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-800" data-tour="form:collection">
           {/* ========================================================
               LEVEL 1 : Point of Sale Selection
              ======================================================== */}

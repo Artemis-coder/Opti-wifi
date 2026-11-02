@@ -100,7 +100,7 @@ export default function CollectionsPage() {
               : 'Historique et suivi des levées de fonds et encaissements de caisse.'}
           </p>
         </div>
-        <AddButton what="une collecte de caisse" href="/collections/new" />
+        <AddButton what="une collecte de caisse" tour="add:collection" href="/collections/new" />
       </div>
 
       {/* KPI Highlights Cards */}
@@ -187,7 +187,7 @@ export default function CollectionsPage() {
             Vous n&apos;avez enregistré aucune collecte de caisse. Lancez votre première levée de fonds.
           </p>
           <div className="pt-2">
-            <AddButton what="une collecte de caisse" href="/collections/new" />
+            <AddButton what="une collecte de caisse" tour="add:collection" href="/collections/new" />
           </div>
         </Card>
       ) : filteredCollections.length === 0 ? (

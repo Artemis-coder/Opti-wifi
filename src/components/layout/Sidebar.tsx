@@ -256,6 +256,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    data-tour={`nav:${item.href}`}
                     onClick={onCloseMobile}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(

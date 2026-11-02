@@ -14,6 +14,7 @@ import { AccountNotices } from '@/components/layout/AccountNotices';
 import { PushPrompt } from '@/components/notifications/PushPrompt';
 import { AmountsPrivacyBoundary } from '@/components/privacy/AmountsPrivacy';
 import { PendingWhatsappButton } from '@/components/layout/PendingWhatsappButton';
+import { OnboardingBanner, OnboardingLayer } from '@/components/onboarding/OnboardingGuide';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -287,11 +288,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <main className="flex-1 p-4 sm:p-6 md:p-8 pb-28 sm:pb-32 lg:pb-8 overflow-y-auto">
           <AccountNotices />
+          <OnboardingBanner />
           <AmountsPrivacyBoundary>{children}</AmountsPrivacyBoundary>
         </main>
 
         <BottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />
       </div>
+      <OnboardingLayer />
       <PushPrompt userId={user?.id} audience={user?.role === 'collecteur' ? 'collector' : 'client'} />
     </div>
   );

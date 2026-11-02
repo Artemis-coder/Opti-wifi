@@ -52,8 +52,13 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
       next = 'install';
     }
     if (!next) return;
-    // Laisse l'espace s'afficher avant de proposer
-    const timer = setTimeout(() => setMode(next), 1500);
+    // Laisse l'espace s'afficher avant de proposer ; attend la fin de la bienvenue d'un nouvel espace
+    let timer: ReturnType<typeof setTimeout>;
+    const show = () => {
+      if (window.__optispaceWelcomeOpen) timer = setTimeout(show, 2000);
+      else setMode(next);
+    };
+    timer = setTimeout(show, 1500);
     return () => clearTimeout(timer);
   }, [userId]);
 

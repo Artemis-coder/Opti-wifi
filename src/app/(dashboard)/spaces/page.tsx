@@ -15,6 +15,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
 import { AddButton } from '@/components/ui/AddButton';
 import { StatTile } from '@/components/ui/StatTile';
+import { useGuideOpenForm } from '@/lib/onboarding';
 
 export default function WifiSpacesPage() {
   const { user } = useAuthStore();
@@ -83,6 +84,9 @@ export default function WifiSpacesPage() {
     }
     setIsModalOpen(true);
   };
+
+  // Guide de démarrage : « Créer ma zone » ouvre le formulaire
+  useGuideOpenForm(() => handleOpenModal());
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -202,7 +206,7 @@ export default function WifiSpacesPage() {
           <p className="text-xs text-slate-500">Gérez vos zones géographiques et regroupez vos points de vente.</p>
         </div>
         {isAdmin && (
-          <AddButton what="un espace Wi-Fi" onClick={() => handleOpenModal()} />
+          <AddButton what="un espace Wi-Fi" tour="add:space" onClick={() => handleOpenModal()} />
         )}
       </div>
 
@@ -258,7 +262,7 @@ export default function WifiSpacesPage() {
               : 'Aucun espace ne correspond à votre recherche.'}
           </p>
           {isAdmin && spaces.length === 0 && (
-            <AddButton what="un espace Wi-Fi" onClick={() => handleOpenModal()} />
+            <AddButton what="un espace Wi-Fi" tour="add:space" onClick={() => handleOpenModal()} />
           )}
         </Card>
       ) : (

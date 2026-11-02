@@ -11,25 +11,27 @@ interface AddButtonProps {
   href?: string;
   onClick?: () => void;
   className?: string;
+  /** Cible du guide de démarrage (data-tour) */
+  tour?: string;
 }
 
 /**
  * Bouton « Ajouter » du design system : même libellé, même icône, même style partout
  * (en-têtes de page et états vides). Pleine largeur sur mobile, largeur auto au-delà.
  */
-export function AddButton({ what, href, onClick, className }: AddButtonProps) {
+export function AddButton({ what, href, onClick, className, tour }: AddButtonProps) {
   const classes = cn('w-full sm:w-auto font-semibold', className);
   const label = `Ajouter ${what}`;
   if (href) {
     return (
-      <Link href={href} aria-label={label} className={buttonClassName({ className: classes })}>
+      <Link href={href} aria-label={label} data-tour={tour} className={buttonClassName({ className: classes })}>
         <Plus className="w-4 h-4 shrink-0" aria-hidden />
         Ajouter
       </Link>
     );
   }
   return (
-    <Button type="button" icon={Plus} onClick={onClick} aria-label={label} className={classes}>
+    <Button type="button" icon={Plus} onClick={onClick} aria-label={label} data-tour={tour} className={classes}>
       Ajouter
     </Button>
   );

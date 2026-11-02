@@ -26,6 +26,7 @@ import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { ClientDashboard, DashboardPeriod } from '@/lib/client-dashboard';
 import { CollectorDashboard } from '@/components/collector/CollectorDashboard';
+import { OnboardingCard } from '@/components/onboarding/OnboardingGuide';
 
 const PERIODS: { value: DashboardPeriod; label: string; eyebrow: string }[] = [
   { value: 'all', label: 'Tout', eyebrow: 'Depuis le début' },
@@ -140,6 +141,9 @@ function AdminDashboard() {
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-6">
+      {/* Guide de démarrage d'un nouvel espace */}
+      <OnboardingCard />
+
       {/* En-tête : période en surtitre, filtres de période */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>

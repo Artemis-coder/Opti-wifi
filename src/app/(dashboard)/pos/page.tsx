@@ -13,10 +13,13 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { AddButton } from '@/components/ui/AddButton';
 import { StatTile } from '@/components/ui/StatTile';
+import { useGuideOpenForm } from '@/lib/onboarding';
 
 export default function PosPage() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Guide de démarrage : « Ajouter un point de vente » ouvre le formulaire
+  useGuideOpenForm(() => setIsModalOpen(true));
   const [loading, setLoading] = useState(true);
 
   const [posList, setPosList] = useState<PointOfSale[]>([]);
@@ -86,7 +89,7 @@ async function loadData() {
               : 'Les points de vente que votre administrateur vous a confiés.'}
           </p>
         </div>
-        {isAdmin && <AddButton what="un point de vente" onClick={() => setIsModalOpen(true)} />}
+        {isAdmin && <AddButton what="un point de vente" tour="add:pos" onClick={() => setIsModalOpen(true)} />}
       </div>
 
       {/* KPI Cards */}
@@ -145,7 +148,7 @@ async function loadData() {
               ? 'Vous n’avez pas encore configuré de point de vente. Ajoutez votre premier emplacement pour démarrer les encaissements.'
               : 'Aucun point de vente ne vous est attribué pour le moment. Demandez à votre administrateur de vous en confier.'}
           </p>
-          {isAdmin && <AddButton what="un point de vente" onClick={() => setIsModalOpen(true)} />}
+          {isAdmin && <AddButton what="un point de vente" tour="add:pos" onClick={() => setIsModalOpen(true)} />}
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
