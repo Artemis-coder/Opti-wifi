@@ -29,12 +29,6 @@ async function getRegistration(): Promise<ServiceWorkerRegistration> {
   return navigator.serviceWorker.ready;
 }
 
-/** Téléphone ou tablette (écran tactile, ou navigateur mobile) */
-export function isMobileDevice(): boolean {
-  if (typeof window === 'undefined') return false;
-  return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || window.matchMedia('(pointer: coarse)').matches;
-}
-
 /** iPhone / iPad ouvert dans Safari : les notifications n'existent que dans l'application installée */
 export function needsInstallForPush(): boolean {
   return typeof window !== 'undefined' && isIos() && !isStandalone();
