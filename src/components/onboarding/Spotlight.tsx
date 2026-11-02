@@ -41,19 +41,28 @@ export function Spotlight({
   onClose: () => void;
 }) {
   const [rect, setRect] = useState<Rect | null>(null);
+  // Affiché une fois l'élément immobile (fin du défilement automatique vers lui)
+  const [ready, setReady] = useState(false);
 
   // Attend que l'élément apparaisse (données chargées), l'amène à l'écran puis suit sa position
   useEffect(() => {
     let el: HTMLElement | null = null;
     let frame = 0;
     let tries = 0;
+    let still = 0;
+    let last = '';
     const onClick = () => onClose();
 
     const follow = () => {
       if (!el || !el.isConnected) {
         el = findTarget(target);
         if (el) {
-          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          // Élément plus grand que l'écran (formulaire) : amené par son début
+          const tall = el.getBoundingClientRect().height > window.innerHeight * 0.6;
+          // Sous l'en-tête fixe, pas derrière
+          const header = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+          el.style.scrollMarginTop = `${Math.round(header + 12)}px`;
+          el.scrollIntoView({ block: tall ? 'start' : 'center', behavior: 'smooth' });
           el.addEventListener('click', onClick, { capture: true });
         } else if (++tries > 600) {
           return onClose(); // élément absent (~10 s) : on n'insiste pas
@@ -61,6 +70,10 @@ export function Spotlight({
       }
       if (el) {
         const r = el.getBoundingClientRect();
+        const sig = `${Math.round(r.top)}:${Math.round(r.left)}:${Math.round(r.width)}:${Math.round(r.height)}`;
+        still = sig === last ? still + 1 : 0;
+        last = sig;
+        if (still === 8) setReady(true);
         setRect((prev) =>
           prev && prev.top === r.top && prev.left === r.left && prev.width === r.width && prev.height === r.height
             ? prev
@@ -86,14 +99,18 @@ export function Spotlight({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  if (!rect || typeof document === 'undefined') return null;
+  if (!rect || !ready || typeof document === 'undefined') return null;
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   // Zone éclairée gardée dans l'écran (bouton pleine largeur sur mobile)
   const left = Math.max(4, rect.left - PAD);
   const right = Math.min(vw - 4, rect.left + rect.width + PAD);
-  const hole = { top: rect.top - PAD, left, width: Math.max(0, right - left), height: rect.height + PAD * 2 };
+  // Le haut de l'écran est occupé par l'en-tête fixe : le cadre commence en dessous
+  const headerBottom = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0;
+  const top = Math.max(headerBottom + 4, rect.top - PAD);
+  const bottom = Math.min(vh - 4, rect.top + rect.height + PAD);
+  const hole = { top, left, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
   // Bulle sous l'élément, sinon au-dessus ; élément trop grand (formulaire) : en bas de l'écran
   const below = hole.top + hole.height + 200 < vh;
   const above = !below && hole.top > 220;
@@ -105,7 +122,7 @@ export function Spotlight({
     <div className="fixed inset-0 z-[65] pointer-events-none" aria-live="polite">
       {/* Zone éclairée : l'ombre géante assombrit le reste de l'écran */}
       <div
-        className="absolute rounded-xl ring-4 ring-amber-400 transition-all duration-200"
+        className="absolute rounded-xl ring-4 ring-amber-400"
         style={{ ...hole, boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)' }}
       />
       <div className="absolute rounded-xl ring-[6px] ring-amber-300/70 animate-pulse" style={hole} />
