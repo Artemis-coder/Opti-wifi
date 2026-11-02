@@ -90,7 +90,10 @@ export function Spotlight({
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const hole = { top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 };
+  // Zone éclairée gardée dans l'écran (bouton pleine largeur sur mobile)
+  const left = Math.max(4, rect.left - PAD);
+  const right = Math.min(vw - 4, rect.left + rect.width + PAD);
+  const hole = { top: rect.top - PAD, left, width: Math.max(0, right - left), height: rect.height + PAD * 2 };
   // Bulle sous l'élément, sinon au-dessus ; élément trop grand (formulaire) : en bas de l'écran
   const below = hole.top + hole.height + 200 < vh;
   const above = !below && hole.top > 220;
@@ -105,7 +108,7 @@ export function Spotlight({
         className="absolute rounded-xl ring-4 ring-amber-400 transition-all duration-200"
         style={{ ...hole, boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)' }}
       />
-      <div className="absolute rounded-xl ring-4 ring-amber-300 animate-ping opacity-60" style={hole} />
+      <div className="absolute rounded-xl ring-[6px] ring-amber-300/70 animate-pulse" style={hole} />
 
       {/* Bulle d'explication */}
       <div
