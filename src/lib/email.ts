@@ -188,3 +188,46 @@ export async function sendPasswordChangedEmail(email: string) {
   const text = `Le mot de passe de votre compte OptiSpace (${email}) a été modifié le ${when}. Ce n'est pas vous ? Utilisez « Mot de passe oublié » sur la page de connexion.`;
   return sendEmail({ to: email, subject: 'Mot de passe modifié - OptiSpace', html, text });
 }
+
+// ── Suppression de compte (RGPD) ───────────────────────────────────────────
+
+/** Accusé de réception d'une demande de suppression de compte */
+export async function sendDeletionRequestedEmail(email: string, organizationName: string) {
+  const html = layout({
+    title: 'Demande de suppression reçue',
+    body: `<p>Bonjour,</p>
+      <p>Nous avons bien reçu la demande de suppression de l'espace OptiSpace <strong>${esc(organizationName)}</strong> et de toutes ses données.</p>
+      <p>Elle sera examinée par notre équipe. D'ici là, votre espace reste accessible : vous pouvez encore télécharger vos données ou annuler la demande depuis <strong>Paramètres &gt; Zone de danger</strong>.</p>
+      <p>Une fois la suppression effectuée, elle est définitive : nous ne pourrons pas récupérer vos données.</p>`,
+    footer: "Vous n'êtes pas à l'origine de cette demande ? Connectez-vous et annulez-la, puis changez votre mot de passe.",
+  });
+  const text = `Nous avons bien reçu la demande de suppression de l'espace OptiSpace « ${organizationName} » et de toutes ses données. Elle sera examinée par notre équipe ; d'ici là, vous pouvez télécharger vos données ou annuler la demande depuis Paramètres > Zone de danger. Une fois effectuée, la suppression est définitive.`;
+  return sendEmail({ to: email, subject: 'Demande de suppression reçue - OptiSpace', html, text });
+}
+
+/** Suppression effectuée (envoyé après l'effacement, à l'adresse conservée dans la demande) */
+export async function sendDeletionCompletedEmail(email: string, organizationName: string) {
+  const html = layout({
+    title: 'Votre compte a été supprimé',
+    body: `<p>Bonjour,</p>
+      <p>Comme vous l'avez demandé, l'espace OptiSpace <strong>${esc(organizationName)}</strong>, ses comptes et toutes ses données ont été définitivement supprimés.</p>
+      <p>Merci d'avoir utilisé OptiSpace. Vous pourrez toujours créer un nouvel espace si vous le souhaitez.</p>`,
+    footer: 'Ce message confirme la suppression de vos données : vous ne recevrez plus d’e-mail de notre part.',
+  });
+  const text = `L'espace OptiSpace « ${organizationName} », ses comptes et toutes ses données ont été définitivement supprimés, comme vous l'avez demandé.`;
+  return sendEmail({ to: email, subject: 'Votre compte a été supprimé - OptiSpace', html, text });
+}
+
+/** Demande refusée par l'équipe (avec le motif) */
+export async function sendDeletionRejectedEmail(email: string, organizationName: string, note?: string | null) {
+  const html = layout({
+    title: 'Demande de suppression non traitée',
+    body: `<p>Bonjour,</p>
+      <p>Votre demande de suppression de l'espace OptiSpace <strong>${esc(organizationName)}</strong> n'a pas été effectuée.</p>
+      ${note ? `<p><strong>Motif :</strong> ${esc(note)}</p>` : ''}
+      <p>Votre espace et vos données sont conservés. Vous pouvez faire une nouvelle demande depuis Paramètres &gt; Zone de danger, ou contacter le support.</p>`,
+    footer: 'Une question ? Répondez au support depuis votre espace.',
+  });
+  const text = `Votre demande de suppression de l'espace OptiSpace « ${organizationName} » n'a pas été effectuée.${note ? ` Motif : ${note}.` : ''} Votre espace et vos données sont conservés.`;
+  return sendEmail({ to: email, subject: 'Demande de suppression non traitée - OptiSpace', html, text });
+}

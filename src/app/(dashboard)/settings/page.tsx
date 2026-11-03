@@ -7,6 +7,7 @@ import {
   Bell,
   BellRing,
   Building2,
+  Database,
   Eye,
   EyeOff,
   Globe,
@@ -32,6 +33,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { getPushState, subscribeToPush, type PushState } from '@/lib/push-client';
 import { cn } from '@/lib/utils/cn';
 import { Profile } from '@/types/database';
+import { AccountDataSection } from '@/components/settings/AccountDataSection';
 
 const CURRENCY_LABELS: Record<string, string> = {
   XOF: 'Franc CFA (XOF)',
@@ -60,6 +62,7 @@ const TABS = [
   { value: 'organization', label: 'Organisation', icon: Building2 },
   { value: 'security', label: 'Sécurité', icon: Lock },
   { value: 'notifications', label: 'Notifications', icon: Bell },
+  { value: 'account', label: 'Données & compte', icon: Database },
 ] as const;
 type Tab = (typeof TABS)[number]['value'];
 
@@ -479,6 +482,10 @@ function SettingsContent() {
             </div>
           </Card>
         </>
+      )}
+
+      {tab === 'account' && (
+        <AccountDataSection organizationName={organization?.name ?? ''} isAdmin={user?.role === 'administrateur'} />
       )}
 
       {tab === 'notifications' && (

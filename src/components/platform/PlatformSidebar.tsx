@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import {
   Activity,
+  UserX,
   LayoutDashboard,
   Building2,
   Receipt,
@@ -46,6 +47,7 @@ const sidebarItems = [
     items: [
       { label: 'Inscriptions', href: '/platform/registrations', icon: UserPlus },
       { label: 'Tous les clients', href: '/platform/clients', icon: Building2 },
+      { label: 'Suppressions de compte', href: '/platform/deletion-requests', icon: UserX },
     ],
   },
   {
