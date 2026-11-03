@@ -31,6 +31,8 @@ export type NotificationType =
   | 'support.status'
   | 'system.test'
   | 'system.alert'
+  | 'account.deletion_requested'
+  | 'account.deletion_rejected'
   | 'system.recovered';
 
 export interface NotificationInput {
@@ -150,6 +152,7 @@ const TELEGRAM_EMOJI: Partial<Record<NotificationType, string>> = {
   'support.reply': '💬',
   'system.test': '✅',
   'system.alert': '🚨',
+  'account.deletion_requested': '🗑️',
   'system.recovered': '✅',
 };
 
