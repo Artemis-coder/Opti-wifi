@@ -24,7 +24,8 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
+import { StatTile } from '@/components/ui/StatTile';
 import { Collection, CollectionItem } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { RecordChangeActions } from '@/components/records/RecordChangeActions';
@@ -248,89 +249,21 @@ export default function CollectionDetailPage() {
         {/* Separator */}
         <div className="border-t border-slate-200 dark:border-slate-800" />
 
-        {/* Financial KPIs row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {/* Montant Attendu */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-              <DollarSign className="w-3 h-3 text-blue-500 shrink-0" />
-              Attendu
-            </div>
-            <p className="text-sm sm:text-base font-extrabold text-slate-700 dark:text-slate-200 truncate">
-              {formatCurrencyFCFA(montantAttendu)}
-            </p>
-          </div>
-
-          {/* Montant Encaissé Brut */}
-          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-500 mb-1">
-              <Receipt className="w-3 h-3 shrink-0" />
-              Total Encaissé
-            </div>
-            <p className="text-sm sm:text-base font-extrabold text-emerald-700 dark:text-emerald-300 truncate">
-              {formatCurrencyFCFA(montantCollecte)}
-            </p>
-          </div>
-
-          {/* Commission POS */}
-          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-500 mb-1">
-              <ShoppingBag className="w-3 h-3 shrink-0" />
-              Commission POS
-            </div>
-            <p className="text-sm sm:text-base font-extrabold text-amber-700 dark:text-amber-300 truncate">
-              {formatCurrencyFCFA(commission)}
-            </p>
-          </div>
-
-          {/* Montant Restant (Net après commission) */}
-          <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-800/40">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-blue-500 mb-1">
-              <Wallet className="w-3 h-3 shrink-0" />
-              Net Restant
-            </div>
-            <p className="text-sm sm:text-base font-extrabold text-blue-700 dark:text-blue-300 truncate">
-              {formatCurrencyFCFA(montantRestant)}
-            </p>
-            <p className="text-[9px] text-blue-500/80 mt-0.5">après commission</p>
-          </div>
-
-          {/* Écart */}
-          <div
-            className={`p-3 rounded-xl border ${
-              diffIsZero
-                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/40'
-                : diffIsNeg
-                ? 'bg-red-50 dark:bg-red-950/30 border-red-200/60 dark:border-red-800/40'
-                : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/40'
-            }`}
-          >
-            <div
-              className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider mb-1 ${
-                diffIsNeg ? 'text-red-500' : 'text-emerald-500'
-              }`}
-            >
-              {diffIsNeg ? (
-                <AlertTriangle className="w-3 h-3 shrink-0" />
-              ) : (
-                <CheckCircle2 className="w-3 h-3 shrink-0" />
-              )}
-              Écart
-            </div>
-            <p
-              className={`text-sm sm:text-base font-extrabold truncate ${
-                diffIsZero
-                  ? 'text-emerald-700 dark:text-emerald-300'
-                  : diffIsNeg
-                  ? 'text-red-700 dark:text-red-300'
-                  : 'text-emerald-700 dark:text-emerald-300'
-              }`}
-            >
-              {diffIsZero
-                ? formatCurrencyFCFA(0)
-                : `${diffIsNeg ? '' : '+'}${formatCurrencyFCFA(Number(collection.difference))}`}
-            </p>
-          </div>
+        {/* Chiffres de l'encaissement : mêmes cadres que le reste de l'application */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <StatTile label="Attendu" value={formatAmountShort(montantAttendu)} icon={DollarSign} accent="indigo" hint="D’après les tickets vendus" />
+          <StatTile label="Total encaissé" value={formatAmountShort(montantCollecte)} icon={Receipt} accent="emerald" />
+          <StatTile label="Commission" value={formatAmountShort(commission)} icon={ShoppingBag} accent="amber" hint="Versée au point de vente" />
+          <StatTile label="Net restant" value={formatAmountShort(montantRestant)} icon={Wallet} accent="blue" hint="Après commission" />
+          <StatTile
+            label="Écart"
+            value={diffIsZero ? formatAmountShort(0) : `${diffIsNeg ? '' : '+'}${formatAmountShort(Number(collection.difference))}`}
+            icon={diffIsNeg ? AlertTriangle : CheckCircle2}
+            accent={diffIsNeg ? 'red' : 'emerald'}
+            alert={diffIsNeg}
+            hint={diffIsZero ? 'Aucun écart' : diffIsNeg ? 'Manque à encaisser' : 'Excédent de caisse'}
+            sensitive
+          />
         </div>
 
         {/* Notes */}

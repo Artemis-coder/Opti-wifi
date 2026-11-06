@@ -22,12 +22,12 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
+import { StatTile } from '@/components/ui/StatTile';
 import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { AddButton } from '@/components/ui/AddButton';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 export default function AllocationsPage() {
   const router = useRouter();
@@ -187,48 +187,19 @@ export default function AllocationsPage() {
         </div>
       </div>
 
-      {/* KPI Highlights Cards */}
+      {/* Chiffres clés : mêmes cadres que le tableau de bord et les rapports */}
       {allocations.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-          <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-              <Ticket className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
-              <span>Tickets Alloués</span>
-            </div>
-            <p className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {totalNetTickets} tickets
-            </p>
-          </Card>
-
-          <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-              <DollarSign className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>Valeur Stock</span> <AmountsToggle size="sm" className="-my-1 ml-auto" />
-            </div>
-            <p className="text-base sm:text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1 truncate">
-              {formatCurrencyFCFA(totalNetValeur)}
-            </p>
-          </Card>
-
-          <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-              <Store className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span>POS Desservis</span>
-            </div>
-            <p className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {uniquePosCount} points de vente
-            </p>
-          </Card>
-
-          <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Total Mouvements</span>
-            </div>
-            <p className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {allocations.length} opérations
-            </p>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <StatTile label="Tickets alloués" value={formatNumber(totalNetTickets)} icon={Ticket} accent="indigo" hint="Stock net confié aux points de vente" />
+          <StatTile label="Valeur du stock" value={formatAmountShort(totalNetValeur)} icon={DollarSign} accent="amber" hint="Au prix de vente des tickets" />
+          <StatTile
+            label="Points de vente servis"
+            value={formatNumber(uniquePosCount)}
+            icon={Store}
+            accent="blue"
+            hint={uniquePosCount > 1 ? 'points de vente' : 'point de vente'}
+          />
+          <StatTile label="Mouvements" value={formatNumber(allocations.length)} icon={TrendingUp} accent="emerald" hint="Allocations et échanges" />
         </div>
       )}
 

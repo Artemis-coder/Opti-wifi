@@ -62,7 +62,8 @@ export function StatTile({ label, value, icon: Icon, accent = 'slate', alert, hi
       </div>
       <div
         className={cn(
-          'text-xl sm:text-2xl font-extrabold tabular-nums break-words',
+          'text-xl sm:text-2xl font-extrabold tabular-nums',
+          isAmount ? 'whitespace-nowrap' : 'break-words',
           alert ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'
         )}
       >
