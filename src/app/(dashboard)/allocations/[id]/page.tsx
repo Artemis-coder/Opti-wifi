@@ -29,6 +29,8 @@ import { TicketAllocation, PointOfSale, TicketType, Profile } from '@/types/data
 import { createClient } from '@/lib/supabase/client';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { formatTicketDuration } from '@/lib/ticket-duration';
+import { RecordChangeActions } from '@/components/records/RecordChangeActions';
+import { RecordHistory } from '@/components/records/RecordHistory';
 
 interface ExtendedAllocation extends TicketAllocation {
   allocateur?: Profile | null;
@@ -41,6 +43,8 @@ export default function AllocationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [allocation, setAllocation] = useState<ExtendedAllocation | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // Rechargée après une correction appliquée
+  const [reloadKey, setReloadKey] = useState(0);
   const supabase = createClient();
 
   const allocationId = typeof params?.id === 'string'
@@ -113,7 +117,7 @@ export default function AllocationDetailPage() {
     }
 
     loadDetail();
-  }, [allocationId, supabase]);
+  }, [allocationId, supabase, reloadKey]);
 
   if (loading) {
     return (
@@ -181,6 +185,21 @@ export default function AllocationDetailPage() {
           {typeConfig.label}
         </Badge>
       </div>
+
+      {/* ── Corriger / supprimer une allocation (pas un échange) ── */}
+      {(!allocation.type || allocation.type === 'allocation') && (
+        <RecordChangeActions
+          type="allocation"
+          id={allocation.id}
+          values={{
+            quantite: Number(allocation.quantite) || 0,
+            date_allocation: String(allocation.date_allocation || allocation.created_at || '').slice(0, 10),
+            notes: allocation.notes || '',
+          }}
+          onUpdated={() => setReloadKey((k) => k + 1)}
+          onDeleted={() => router.push('/allocations')}
+        />
+      )}
 
       {/* ── Summary Card: Acteurs & Horodatages ── */}
       <Card className="p-4 sm:p-6 border-slate-200 dark:border-slate-800 space-y-4">
@@ -403,6 +422,9 @@ export default function AllocationDetailPage() {
           </Card>
         </div>
       )}
+
+      {/* ── Traçabilité : qui a fait quoi, quand ── */}
+      <RecordHistory type="allocation" id={allocation.id} refreshKey={reloadKey} />
     </div>
   );
 }

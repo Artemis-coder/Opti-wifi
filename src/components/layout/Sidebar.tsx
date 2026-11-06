@@ -26,6 +26,7 @@ import {
   LifeBuoy,
   PlusCircle,
   Repeat,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
@@ -64,6 +65,7 @@ const navSections: NavSection[] = [
       { label: 'Allocations Tickets', href: '/allocations', icon: ArrowLeftRight, roles: ['administrateur'] },
       { label: 'Collectes & Caisses', href: '/collections', icon: Receipt, roles: ['administrateur', 'collecteur'] },
       { label: 'Types de Tickets', href: '/tickets', icon: Ticket, roles: ['administrateur'] },
+      { label: 'Corrections à valider', href: '/change-requests', icon: ClipboardCheck, roles: ['administrateur'] },
     ],
   },
   {
@@ -100,6 +102,7 @@ const collectorSections: NavSection[] = [
     items: [
       { label: 'Nouvelle collecte', href: '/collections/new', icon: PlusCircle, roles: ['collecteur'] },
       { label: 'Mes collectes', href: '/collections', icon: Receipt, roles: ['collecteur'] },
+      { label: 'Mes corrections', href: '/change-requests', icon: ClipboardCheck, roles: ['collecteur'] },
     ],
   },
   {
