@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.8.0</strong> — <a href="./RELEASE_NOTES_v1.8.0.md">notes de version</a>
+  <strong>Version actuelle : v1.9.0</strong> — <a href="./RELEASE_NOTES_v1.9.0.md">notes de version</a>
 </p>
 
 ---
@@ -548,6 +548,7 @@ Consulter [`AGENTS.md`](./AGENTS.md) pour les règles de sécurité complètes :
 
 ## Release Notes
 
+- [**v1.9.0**](./RELEASE_NOTES_v1.9.0.md) — Corriger ou supprimer une collecte / allocation (direct pour l'administrateur, validation pour le collecteur) avec historique complet, téléchargement des données et suppression de compte validée par le super admin (RGPD), colonne Téléphone des clients, mode nuit lisible, chiffres clés uniformisés, build sans avertissements
 - [**v1.8.0**](./RELEASE_NOTES_v1.8.0.md) — Guide de démarrage interactif pour les nouveaux espaces : bienvenue, projecteurs « cliquez ici » sur le menu, les boutons et les formulaires, carte de progression et bandeaux d'étape (zone → point de vente → types de tickets → allocation → collecte), adapté au mobile
 - [**v1.7.0**](./RELEASE_NOTES_v1.7.0.md) — État du système dans le back-office (base, API, notifications, serveur, hébergement Vercel, tâches planifiées) avec historique et alertes au changement d'état, invitation à activer les notifications pour tous sur téléphone et ordinateur (guide d'installation sur iPhone), masquage de tous les montants depuis l'œil des cartes de chiffres clés
 - [**v1.6.1**](./RELEASE_NOTES_v1.6.1.md) — Mode hors ligne complet : copie locale de toutes les données de l'espace, tous les écrans consultables sans réseau, ajouts et modifications hors ligne (espaces, points de vente, types de tickets, allocations, collectes) synchronisés au retour du réseau avec les nouveautés de la base
