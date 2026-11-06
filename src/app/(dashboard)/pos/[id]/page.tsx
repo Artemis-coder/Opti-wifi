@@ -26,7 +26,7 @@ import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from '../edit-pos-modal';
 import { ResetPosModal } from './reset-pos-modal';
-import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { PointOfSale, Profile, TicketType, TicketAllocation, Collection, CollectionItem, WifiSpace } from '@/types/database';
 import { isActiveProfile } from '@/lib/utils/profiles';
 import { createClient } from '@/lib/supabase/client';
@@ -339,7 +339,7 @@ export default function PosDetailPage() {
       </Card>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         <StatTile
           label="Tickets Alloués"
           value={totalAlloue}
@@ -366,7 +366,7 @@ export default function PosDetailPage() {
 
         <StatTile
           label="Chiffre d'Affaires"
-          value={formatCurrencyFCFA(totalCA)}
+          value={formatAmountShort(totalCA)}
           icon={BarChart3}
           accent="amber"
           hint="CA total depuis les collectes"
@@ -374,7 +374,7 @@ export default function PosDetailPage() {
 
         <StatTile
           label="Commission Totale"
-          value={formatCurrencyFCFA(totalCommission)}
+          value={formatAmountShort(totalCommission)}
           icon={Receipt}
           accent="amber"
           hint="Total commissions versées"

@@ -29,7 +29,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
-import { formatCurrencyFCFA, formatNumber, formatDateFR } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
 import {
   PointOfSale,
   TicketType,
@@ -348,7 +348,7 @@ export default function SpaceDashboardPage() {
        </Card>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-3 sm:gap-4">
         {/* Tickets Alloués */}
         <StatTile
           label="Tickets Alloués"
@@ -370,7 +370,7 @@ export default function SpaceDashboardPage() {
         {/* Chiffre d'Affaires */}
         <StatTile
           label="Chiffre d'Affaires"
-          value={formatCurrencyFCFA(chiffreAffairesTotal)}
+          value={formatAmountShort(chiffreAffairesTotal)}
           icon={Banknote}
           accent="indigo"
           hint="Montant théorique attendu"
@@ -379,7 +379,7 @@ export default function SpaceDashboardPage() {
          {/* Montant Encaissé */}
           <StatTile
             label="Total Encaissé"
-            value={formatCurrencyFCFA(montantCollecteTotal)}
+            value={formatAmountShort(montantCollecteTotal)}
             icon={Receipt}
             accent="emerald"
             hint="Total espèces perçues"
@@ -388,7 +388,7 @@ export default function SpaceDashboardPage() {
           {/* Commission Versée */}
           <StatTile
             label="Commission Versée"
-            value={formatCurrencyFCFA(totalCommission)}
+            value={formatAmountShort(totalCommission)}
             icon={Receipt}
             accent="slate"
             hint="Total commissions aux POS de l&apos;espace"
@@ -397,7 +397,7 @@ export default function SpaceDashboardPage() {
           {/* Écart / Différence */}
           <StatTile
             label="Écart / Différence"
-            value={formatCurrencyFCFA(ecartTotal)}
+            value={formatAmountShort(ecartTotal)}
             icon={ArrowDownRight}
             accent="emerald"
             alert={ecartTotal < 0}
