@@ -24,7 +24,8 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
+import { StatTile } from '@/components/ui/StatTile';
 import { TicketAllocation, PointOfSale, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
@@ -266,75 +267,31 @@ export default function AllocationDetailPage() {
         {/* Separator */}
         <div className="border-t border-slate-200 dark:border-slate-800" />
 
-        {/* Financial & Quantité KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {/* Type de Ticket */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-              <Tag className="w-3 h-3 text-brand-500 shrink-0" />
-              Ticket
-            </div>
-            <p className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white truncate">
-              {allocation.ticket_type?.nom || `Type ${allocation.ticket_type_id.slice(0, 8)}`}
-            </p>
-            {allocation.ticket_type?.duree_heures && (
-              <p className="text-[11px] text-slate-500">{formatTicketDuration(allocation.ticket_type.duree_heures)}</p>
-            )}
-          </div>
-
-          {/* Quantité */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-              <Layers className="w-3 h-3 text-emerald-500 shrink-0" />
-              Quantité
-            </div>
-            <p
-              className={`text-base sm:text-lg font-extrabold truncate ${
-                isReturn ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
-              }`}
-            >
-              {isReturn ? `-${formatNumber(allocation.quantite)}` : `+${formatNumber(allocation.quantite)}`}
-            </p>
-            <p className="text-[11px] text-slate-500">tickets</p>
-          </div>
-
-          {/* Prix unitaire */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-              <DollarSign className="w-3 h-3 text-blue-500 shrink-0" />
-              Prix unitaire
-            </div>
-            <p className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-slate-200 truncate">
-              {formatCurrencyFCFA(unitPrice)}
-            </p>
-            <p className="text-[11px] text-slate-500">par ticket</p>
-          </div>
-
-          {/* Valeur totale */}
-          <div
-            className={`p-3 rounded-xl border ${
-              isReturn
-                ? 'bg-red-50 dark:bg-red-950/30 border-red-200/60 dark:border-red-800/40'
-                : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/40'
-            }`}
-          >
-            <div
-              className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider mb-1 ${
-                isReturn ? 'text-red-500' : 'text-emerald-500'
-              }`}
-            >
-              <CheckCircle2 className="w-3 h-3 shrink-0" />
-              Valeur Totale
-            </div>
-            <p
-              className={`text-base sm:text-lg font-extrabold truncate ${
-                isReturn ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'
-              }`}
-            >
-              {isReturn ? `-${formatCurrencyFCFA(totalValue)}` : `+${formatCurrencyFCFA(totalValue)}`}
-            </p>
-            <p className="text-[11px] text-slate-500">valeur marchande</p>
-          </div>
+        {/* Chiffres de l'allocation : mêmes cadres que le reste de l'application */}
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile
+            label="Ticket"
+            value={allocation.ticket_type?.nom || `Type ${allocation.ticket_type_id.slice(0, 8)}`}
+            icon={Tag}
+            accent="indigo"
+            hint={allocation.ticket_type?.duree_heures ? formatTicketDuration(allocation.ticket_type.duree_heures) : undefined}
+          />
+          <StatTile
+            label="Quantité"
+            value={isReturn ? `-${formatNumber(allocation.quantite)}` : `+${formatNumber(allocation.quantite)}`}
+            icon={Layers}
+            accent={isReturn ? 'red' : 'emerald'}
+            hint={isReturn ? 'tickets rendus' : 'tickets confiés'}
+          />
+          <StatTile label="Prix unitaire" value={formatAmountShort(unitPrice)} icon={DollarSign} accent="blue" hint="par ticket" />
+          <StatTile
+            label="Valeur totale"
+            value={`${isReturn ? '-' : '+'}${formatAmountShort(totalValue)}`}
+            icon={CheckCircle2}
+            accent={isReturn ? 'red' : 'emerald'}
+            hint="valeur marchande"
+            sensitive
+          />
         </div>
 
         {/* Notes */}

@@ -204,7 +204,7 @@ export default function PlatformPaymentsPage() {
                     className={`px-2 py-1 rounded-lg text-xs font-medium transition ${
                       statusFilter === f.value
                         ? 'bg-amber-500 text-slate-950 font-bold'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-amber-500/10'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500/10'
                     }`}
                   >
                     <Icon className="w-3 h-3 inline mr-1" />

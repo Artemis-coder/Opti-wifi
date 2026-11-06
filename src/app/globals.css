@@ -428,3 +428,32 @@
     display: table-header-group;
   }
 }
+
+/* ── Mode nuit : lisibilité des textes gris ─────────────────────────────────
+   Beaucoup de libellés utilisent text-slate-500 (gris moyen) sans variante
+   dark:. Sur les fonds sombres (slate-900 / slate-800) ce gris descend sous le
+   contraste minimal de lecture (≈ 3 à 4 : 1) : on ne lit plus l'information.
+   En mode nuit, ces textes passent en slate-400 (≈ 7 : 1). Les éléments qui
+   ont déjà leur couleur de nuit (dark:text-…) ou une couleur au survol ne
+   sont pas touchés. */
+@layer utilities {
+  @media (prefers-color-scheme: dark) {
+    .text-slate-500:not([class*='dark:text-']):not([class*='hover:text-']) {
+      color: var(--color-slate-400);
+    }
+    .text-slate-600:not([class*='dark:text-']):not([class*='hover:text-']) {
+      color: var(--color-slate-300);
+    }
+    /* Graphiques (recharts) : libellés des axes et de la légende, gris fixe en attribut */
+    .recharts-cartesian-axis-tick-value,
+    .recharts-label {
+      fill: var(--color-slate-400);
+    }
+    .recharts-legend-item-text {
+      color: var(--color-slate-300) !important;
+    }
+    .recharts-cartesian-grid line {
+      stroke: var(--color-slate-800);
+    }
+  }
+}
