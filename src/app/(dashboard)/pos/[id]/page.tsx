@@ -775,7 +775,7 @@ export default function PosDetailPage() {
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                         {formatDateFR(c.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{formatCurrencyFCFA(Number(c.montant_attendu))}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatCurrencyFCFA(Number(c.montant_attendu))}</td>
                       <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
                         {formatCurrencyFCFA(Number(c.montant_collecte))}
                       </td>

@@ -18,13 +18,13 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
-import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
+import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
+import { StatTile } from '@/components/ui/StatTile';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { Collection } from '@/types/database';
 import { AddButton } from '@/components/ui/AddButton';
-import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 
 export default function CollectionsPage() {
   const router = useRouter();
@@ -103,56 +103,20 @@ export default function CollectionsPage() {
         <AddButton what="une collecte de caisse" tour="add:collection" href="/collections/new" />
       </div>
 
-      {/* KPI Highlights Cards */}
+      {/* Chiffres clés : mêmes cadres que le tableau de bord et les rapports */}
       {!loading && collections.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-          <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-              <Receipt className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Total Encaissé</span> <AmountsToggle size="sm" className="-my-1 ml-auto" />
-            </div>
-            <p className="text-base sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1 truncate">
-              {formatCurrencyFCFA(totalEncaissé)}
-            </p>
-          </Card>
-
-          <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-              <DollarSign className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span>Total Attendu</span> <AmountsToggle size="sm" className="-my-1 ml-auto" />
-            </div>
-            <p className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1 truncate">
-              {formatCurrencyFCFA(totalAttendu)}
-            </p>
-          </Card>
-
-          <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>Écart Global</span> <AmountsToggle size="sm" className="-my-1 ml-auto" />
-            </div>
-            <p
-              className={`text-base sm:text-xl font-extrabold mt-1 truncate ${
-                totalDifference === 0
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : totalDifference < 0
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-emerald-600 dark:text-emerald-400'
-              }`}
-            >
-              {formatCurrencyFCFA(totalDifference)}
-            </p>
-          </Card>
-
-          <Card className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-              <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span>Total Collectes</span>
-            </div>
-            <p className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1">
-              {collections.length}
-            </p>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <StatTile label="Total encaissé" value={formatAmountShort(totalEncaissé)} icon={Receipt} accent="emerald" hint="Argent effectivement collecté" />
+          <StatTile label="Total attendu" value={formatAmountShort(totalAttendu)} icon={DollarSign} accent="indigo" hint="D’après les tickets vendus" />
+          <StatTile
+            label="Écart global"
+            value={formatAmountShort(totalDifference)}
+            icon={AlertTriangle}
+            accent={totalDifference < 0 ? 'red' : 'amber'}
+            alert={totalDifference < 0}
+            hint={totalDifference < 0 ? 'Manque à encaisser' : totalDifference > 0 ? 'Excédent de caisse' : 'Aucun écart'}
+          />
+          <StatTile label="Collectes" value={formatNumber(collections.length)} icon={CheckCircle2} accent="slate" hint="Encaissements enregistrés" />
         </div>
       )}
 

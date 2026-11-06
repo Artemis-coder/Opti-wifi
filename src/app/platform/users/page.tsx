@@ -381,7 +381,7 @@ interface CreateFormState {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="p-1 h-7 text-slate-600 hover:text-slate-900"
+                          className="p-1 h-7 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                           onClick={() => handleAction(u.id, 'reset_password', 'réinitialiser le mot de passe')}
                           disabled={actionLoading === u.id}
                           title="Réinitialiser le mot de passe"

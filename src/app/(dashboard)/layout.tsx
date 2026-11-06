@@ -253,7 +253,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button
                 key={plan.id}
                 onClick={() => setRequestPlan(plan)}
-                className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs transition"
+                className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl text-xs transition"
               >
                 {plan.current ? 'Me réabonner' : 'Choisir'} « {plan.name} » — {new Intl.NumberFormat('fr-FR').format(plan.price)} FCFA
               </Button>
