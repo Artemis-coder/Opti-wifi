@@ -358,8 +358,8 @@ export default function ReportsPage() {
   const visibleRows = showAll ? filtered : filtered.slice(0, 20);
 
   const money = (v: number) => formatCurrencyFCFA(v);
-  // Montant d'un cadre : sur une ligne, sans coupure au milieu de « FCFA »
-  const tileMoney = (v: number) => <span className="whitespace-nowrap text-lg sm:text-xl">{money(v)}</span>;
+  // Montant d'un cadre : la carte l'ajuste à sa largeur (jamais coupé ni débordant)
+  const tileMoney = (v: number) => money(v);
   const gapClass = (v: number) => (v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-600 dark:text-slate-400');
 
   return (

@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
 import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
+import { FitText } from '@/components/ui/FitText';
 
 /** Valeur qui est un montant (« 1 418 000 F », « 25 000 FCFA » ou déjà masquée) */
 function looksLikeAmount(value: React.ReactNode): boolean {
@@ -47,6 +48,8 @@ export interface StatTileProps {
 export function StatTile({ label, value, icon: Icon, accent = 'slate', alert, hint, footer, href, className, sensitive }: StatTileProps) {
   const a = ACCENTS[accent];
   const isAmount = sensitive ?? looksLikeAmount(value);
+  // Chiffre ou montant : toujours sur une ligne, réduit si la carte est étroite (jamais de débordement)
+  const fits = isAmount || typeof value === 'number' || (typeof value === 'string' && /^[\s\d+\-−.,%•/]+[A-Za-z%]{0,6}$/.test(value.trim()));
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
@@ -62,18 +65,19 @@ export function StatTile({ label, value, icon: Icon, accent = 'slate', alert, hi
       </div>
       <div
         className={cn(
-          'text-xl sm:text-2xl font-extrabold tabular-nums',
-          isAmount ? 'whitespace-nowrap' : 'break-words',
+          'text-xl sm:text-2xl font-extrabold tabular-nums min-w-0',
+          !fits && 'break-words',
           alert ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'
         )}
       >
-        {value}
+        {fits ? <FitText>{value}</FitText> : value}
       </div>
       {footer ?? (hint !== undefined && hint !== null && <p className={cn('text-[11px]', alert ? 'text-red-600/80 dark:text-red-400/80' : 'text-slate-400')}>{hint}</p>)}
     </>
   );
   const classes = cn(
-    'block rounded-2xl border border-l-4 p-4 sm:p-5 space-y-2 shadow-xs',
+    // min-w-0 : la carte rétrécit avec sa colonne de grille au lieu de s'élargir au texte
+    'block min-w-0 rounded-2xl border border-l-4 p-4 sm:p-5 space-y-2 shadow-xs',
     alert ? 'border-l-red-500' : a.border,
     alert ? 'bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-900/50' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
     href && 'transition hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700',
