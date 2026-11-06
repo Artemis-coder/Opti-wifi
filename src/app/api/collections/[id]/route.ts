@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
 import { getVisiblePosIds } from '@/lib/collector-scope';
+import { handleRecordChange } from '@/lib/record-changes';
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -70,4 +71,16 @@ export async function GET(
     console.error('Collection detail exception:', e);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
+}
+
+/** Correction : appliquée par l'administrateur, demande de validation pour un collecteur */
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return handleRecordChange(req, 'collection', id, 'update');
+}
+
+/** Suppression : directe pour l'administrateur, demande de validation pour un collecteur */
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return handleRecordChange(req, 'collection', id, 'delete');
 }

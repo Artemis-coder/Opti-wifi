@@ -27,6 +27,8 @@ import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import { Collection, CollectionItem } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { RecordChangeActions } from '@/components/records/RecordChangeActions';
+import { RecordHistory } from '@/components/records/RecordHistory';
 
 export default function CollectionDetailPage() {
   const params = useParams();
@@ -34,6 +36,8 @@ export default function CollectionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [collection, setCollection] = useState<Collection | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // Rechargée après une correction appliquée
+  const [reloadKey, setReloadKey] = useState(0);
   const supabase = createClient();
 
   const collectionId = typeof params?.id === 'string'
@@ -95,7 +99,7 @@ export default function CollectionDetailPage() {
     }
 
     loadDetail();
-  }, [collectionId, supabase]);
+  }, [collectionId, supabase, reloadKey]);
 
   /* ── helpers ── */
   const statusConfig = {
@@ -173,6 +177,20 @@ export default function CollectionDetailPage() {
           {status.label}
         </Badge>
       </div>
+
+      {/* ── Corriger / supprimer (administrateur : direct ; collecteur : demande à valider) ── */}
+      <RecordChangeActions
+        type="collection"
+        id={collection.id}
+        values={{
+          montant_collecte: Number(collection.montant_collecte) || 0,
+          commission: Number(collection.commission) || 0,
+          date_collecte: String(collection.date_collecte || collection.created_at || '').slice(0, 10),
+          notes: collection.notes || '',
+        }}
+        onUpdated={() => setReloadKey((k) => k + 1)}
+        onDeleted={() => router.push('/collections')}
+      />
 
       {/* ── Summary Card ── */}
       <Card className="p-4 sm:p-6 border-slate-200 dark:border-slate-800 space-y-4">
@@ -497,6 +515,9 @@ export default function CollectionDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* ── Traçabilité : qui a fait quoi, quand ── */}
+      <RecordHistory type="collection" id={collection.id} refreshKey={reloadKey} />
     </div>
   );
 }
