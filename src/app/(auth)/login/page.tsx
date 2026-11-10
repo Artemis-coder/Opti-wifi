@@ -304,6 +304,11 @@ export default function LoginPage() {
             <Button type="submit" className="w-full h-12 sm:h-11 text-sm font-bold" isLoading={loading}>
               Se connecter à mon espace
             </Button>
+            {/* Protection anti-copie : l'interface et les données sont confidentielles */}
+            <p className="text-[11px] leading-snug text-slate-500 text-center">
+              Interface et données confidentielles. En vous connectant, vous vous engagez à ne pas reproduire,
+              copier ni diffuser l’outil ou son contenu (captures d’écran comprises).
+            </p>
           </form>
         )}
 
