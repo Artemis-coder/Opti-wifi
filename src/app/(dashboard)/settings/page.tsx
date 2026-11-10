@@ -33,6 +33,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { getPushState, subscribeToPush, type PushState } from '@/lib/push-client';
 import { cn } from '@/lib/utils/cn';
 import { Profile } from '@/types/database';
+import { LoginHistorySection } from '@/components/settings/LoginHistorySection';
 import { AccountDataSection } from '@/components/settings/AccountDataSection';
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -481,6 +482,8 @@ function SettingsContent() {
               <Badge variant="success">Activée</Badge>
             </div>
           </Card>
+
+          <LoginHistorySection />
         </>
       )}
 

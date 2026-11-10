@@ -8,11 +8,13 @@ import { getSql, query } from '@/lib/neon/db';
 /** Données exportées, table par table (lecture seule) */
 export async function exportOrganizationData(organizationId: string) {
   const one = async (sql: string) => (await query(sql, [organizationId])).rows;
-  const [organization, members, spaces, pos, ticketTypes, allocations, collections, items, subscriptions, invoices, payments, licenseRequests, tickets, messages] =
+  const [organization, members, logins, spaces, pos, ticketTypes, allocations, collections, items, subscriptions, invoices, payments, licenseRequests, tickets, messages] =
     await Promise.all([
       one(`SELECT * FROM organizations WHERE id = $1`),
       // Comptes : jamais le mot de passe (il est dans la table users, non exportée)
       one(`SELECT id, nom, email, role, telephone, devise, is_active, created_at, updated_at FROM profiles WHERE organization_id = $1 ORDER BY created_at`),
+      // Historique des connexions des membres (appareil, adresse IP, lieu approximatif)
+      one(`SELECT user_id, created_at, ip, device_type, browser, os, city, region, country, latitude, longitude FROM login_history WHERE organization_id = $1 ORDER BY created_at DESC`),
       one(`SELECT * FROM wifi_spaces WHERE organization_id = $1 ORDER BY created_at`),
       one(`SELECT * FROM points_of_sale WHERE organization_id = $1 ORDER BY created_at`),
       one(`SELECT * FROM ticket_types WHERE organization_id = $1 ORDER BY created_at`),
@@ -44,10 +46,11 @@ export async function exportOrganizationData(organizationId: string) {
       generated_at: new Date().toISOString(),
       organization_id: organizationId,
       contenu:
-        'Espace, membres (sans mots de passe), zones, points de vente, types de tickets, allocations, collectes et leurs lignes, abonnements, factures, paiements, demandes de licence, tickets de support et messages.',
+        'Espace, membres (sans mots de passe), historique des connexions, zones, points de vente, types de tickets, allocations, collectes et leurs lignes, abonnements, factures, paiements, demandes de licence, tickets de support et messages.',
     },
     organization: organization[0] ?? null,
     members,
+    login_history: logins,
     wifi_spaces: spaces,
     points_of_sale: pos,
     ticket_types: ticketTypes,
@@ -95,6 +98,7 @@ const DELETION_STEPS: { key: string; sql: string }[] = [
   { key: 'license_requests', sql: `DELETE FROM license_requests WHERE organization_id = $1` },
   { key: 'support_tickets', sql: `DELETE FROM support_tickets WHERE organization_id = $1` },
   { key: 'subscriptions', sql: `DELETE FROM subscriptions WHERE organization_id = $1` },
+  { key: 'login_history', sql: `DELETE FROM login_history WHERE organization_id = $1 OR user_id IN (${MEMBERS})` },
   // Comptes : profils, notifications et abonnements push suivent (ON DELETE CASCADE)
   { key: 'users', sql: `DELETE FROM users WHERE id IN (${MEMBERS})` },
   { key: 'organizations', sql: `DELETE FROM organizations WHERE id = $1` },
