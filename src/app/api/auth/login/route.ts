@@ -4,6 +4,7 @@ import type { AuthUser } from "@/lib/neon/query-builder";
 import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { countryFromRequest, rememberOrganizationCountry } from '@/lib/geo';
+import { recordLogin } from '@/lib/login-history';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +41,8 @@ export async function POST(request: NextRequest) {
 
     // Pays de l'organisation (KPI du back-office), s'il n'est pas encore connu
     await rememberOrganizationCountry(user.organization_id, countryFromRequest(request));
+    // Historique des connexions : appareil, adresse IP, lieu approximatif (Paramètres > Sécurité)
+    await recordLogin(request, user.id, user.organization_id);
 
     const response = NextResponse.json({
       // Mot de passe temporaire : la page de connexion envoie vers /change-password

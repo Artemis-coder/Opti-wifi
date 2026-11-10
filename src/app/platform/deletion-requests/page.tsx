@@ -52,6 +52,7 @@ const SUMMARY_LABELS: Record<string, string> = {
   payments: 'paiements',
   license_requests: 'demandes de licence',
   support_tickets: 'tickets de support',
+  login_history: 'connexions enregistrées',
 };
 
 export default function DeletionRequestsPage() {

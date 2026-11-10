@@ -27,6 +27,7 @@ import {
   PlusCircle,
   Repeat,
   ClipboardCheck,
+  FileText,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
@@ -75,6 +76,7 @@ const navSections: NavSection[] = [
       { label: 'Utilisateurs & Équipe', href: '/users', icon: Users, roles: ['administrateur'] },
       { label: 'Abonnement', href: '/subscription', icon: CreditCard, roles: ['administrateur'] },
       { label: 'Support', href: '/support', icon: LifeBuoy, roles: ['administrateur', 'collecteur'] },
+      { label: "Conditions d'utilisation", href: '/conditions-utilisation', icon: FileText, roles: ['administrateur', 'collecteur'] },
       { label: 'Paramètres', href: '/settings', icon: Settings, roles: ['administrateur', 'collecteur'] },
     ],
   },
@@ -109,6 +111,7 @@ const collectorSections: NavSection[] = [
     title: 'Compte',
     items: [
       { label: 'Support', href: '/support', icon: LifeBuoy, roles: ['collecteur'] },
+      { label: "Conditions d'utilisation", href: '/conditions-utilisation', icon: FileText, roles: ['collecteur'] },
       { label: 'Paramètres', href: '/settings', icon: Settings, roles: ['collecteur'] },
     ],
   },

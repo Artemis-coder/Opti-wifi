@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Smartphone,
   User,
+  MonitorSmartphone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
@@ -33,6 +34,8 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { getPushState, subscribeToPush, type PushState } from '@/lib/push-client';
 import { cn } from '@/lib/utils/cn';
 import { Profile } from '@/types/database';
+import { LoginHistorySection } from '@/components/settings/LoginHistorySection';
+import { LastLoginField } from '@/components/settings/LastLoginField';
 import { AccountDataSection } from '@/components/settings/AccountDataSection';
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -61,6 +64,7 @@ const TABS = [
   { value: 'profile', label: 'Profil', icon: User },
   { value: 'organization', label: 'Organisation', icon: Building2 },
   { value: 'security', label: 'Sécurité', icon: Lock },
+  { value: 'devices', label: 'Connexions & appareils', icon: MonitorSmartphone },
   { value: 'notifications', label: 'Notifications', icon: Bell },
   { value: 'account', label: 'Données & compte', icon: Database },
 ] as const;
@@ -312,6 +316,8 @@ function SettingsContent() {
               type="button"
               role="tab"
               aria-selected={active}
+              // Mobile : l'onglet actif est ramené dans la zone visible de la barre défilante
+              ref={active ? (el) => el?.scrollIntoView({ block: 'nearest', inline: 'center' }) : undefined}
               onClick={() => selectTab(t.value)}
               className={cn(
                 'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition',
@@ -383,10 +389,7 @@ function SettingsContent() {
                   label="Créé le"
                   value={new Date(profile.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
                 />
-                <Field
-                  label="Dernière connexion"
-                  value={profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleDateString('fr-FR') : 'Jamais'}
-                />
+                <LastLoginField />
               </div>
             </Card>
           )}
@@ -483,6 +486,8 @@ function SettingsContent() {
           </Card>
         </>
       )}
+
+      {tab === 'devices' && <LoginHistorySection />}
 
       {tab === 'account' && (
         <AccountDataSection organizationName={organization?.name ?? ''} isAdmin={user?.role === 'administrateur'} />

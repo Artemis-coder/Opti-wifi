@@ -13,6 +13,7 @@ const PROTECTED_CLIENT_ROUTES = [
   '/settings',
   '/subscription',
   '/support',
+  '/conditions-utilisation',
 ];
 
 // Pages de gestion réservées à l'administrateur : le collecteur est renvoyé vers sa tournée.
