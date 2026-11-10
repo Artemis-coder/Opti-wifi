@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkQuota } from '@/lib/quotas';
-import { getSessionContext } from '@/lib/tenant';
+import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
 import { setMustChangePassword } from '@/lib/password-change';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 import { notifyInBackground, notifyOrganizationAdmins } from '@/lib/notifications';
@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
     if (ctx.role !== 'administrateur' || !ctx.organizationId || ctx.organizationBlocked) {
       return NextResponse.json({ error: 'Action réservée aux administrateurs.' }, { status: 403 });
     }
+    const readOnly = await rejectIfReadOnly(ctx);
+    if (readOnly) return readOnly;
     const orgId = ctx.organizationId;
 
     const body = await request.json();

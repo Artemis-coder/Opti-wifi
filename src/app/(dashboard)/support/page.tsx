@@ -35,7 +35,7 @@ export default function ClientSupportPage() {
           </h1>
           <p className="text-xs text-slate-500">Une question, un problème ? Ouvrez un ticket : l&apos;équipe OptiWifi vous répond ici.</p>
         </div>
-        <AddButton what="un ticket de support" onClick={() => setOpen(true)} />
+        <AddButton what="un ticket de support" allowReadOnly onClick={() => setOpen(true)} />
       </div>
 
       {tickets === null ? (

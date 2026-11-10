@@ -1,8 +1,12 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { Button, buttonClassName } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
+import { useReadOnly } from '@/lib/stores/accessStore';
+import { READ_ONLY_HINT } from '@/lib/read-only';
 
 interface AddButtonProps {
   /** Ce que l'on ajoute, pour les lecteurs d'écran (ex. « un point de vente ») */
@@ -13,15 +17,26 @@ interface AddButtonProps {
   className?: string;
   /** Cible du guide de démarrage (data-tour) */
   tour?: string;
+  /** Reste actif en consultation seule (ex. écrire au support) */
+  allowReadOnly?: boolean;
 }
 
 /**
  * Bouton « Ajouter » du design system : même libellé, même icône, même style partout
  * (en-têtes de page et états vides). Pleine largeur sur mobile, largeur auto au-delà.
  */
-export function AddButton({ what, href, onClick, className, tour }: AddButtonProps) {
+export function AddButton({ what, href, onClick, className, tour, allowReadOnly }: AddButtonProps) {
   const classes = cn('w-full sm:w-auto font-semibold', className);
   const label = `Ajouter ${what}`;
+  // Abonnement expiré : consultation seule, l'ajout est désactivé
+  const locked = useReadOnly() && !allowReadOnly;
+  if (locked) {
+    return (
+      <Button type="button" icon={Plus} disabled aria-label={label} title={READ_ONLY_HINT} data-tour={tour} className={classes}>
+        Ajouter
+      </Button>
+    );
+  }
   if (href) {
     return (
       <Link href={href} aria-label={label} data-tour={tour} className={buttonClassName({ className: classes })}>

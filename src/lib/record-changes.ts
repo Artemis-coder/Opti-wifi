@@ -7,7 +7,7 @@
 // ============================================================
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
-import { getSessionContext, type SessionContext } from '@/lib/tenant';
+import { getSessionContext, rejectIfReadOnly, type SessionContext } from '@/lib/tenant';
 import { getVisiblePosIds } from '@/lib/collector-scope';
 import { getOrganizationAdminIds, notifyInBackground, notifyUsers } from '@/lib/notifications';
 
@@ -168,7 +168,8 @@ async function collectorOwns(type: EntityType, row: Row, ctx: SessionContext): P
 export async function handleRecordChange(request: Request, type: EntityType, id: string, action: ChangeAction) {
   const ctx = await getSessionContext();
   if (!ctx || !ctx.organizationId) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  if (ctx.organizationBlocked) return NextResponse.json({ error: 'Votre espace est bloqué : modification impossible.' }, { status: 403 });
+  const readOnly = await rejectIfReadOnly(ctx);
+  if (readOnly) return readOnly;
   const organizationId = ctx.organizationId;
   const body = (await request.json().catch(() => ({}))) as { changes?: unknown; reason?: string };
   const reason = typeof body.reason === 'string' ? body.reason.trim().slice(0, 1000) || null : null;

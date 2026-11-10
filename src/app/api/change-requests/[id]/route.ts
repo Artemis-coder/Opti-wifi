@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
-import { getSessionContext } from '@/lib/tenant';
+import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
 import { ChangeError, decideChangeRequest } from '@/lib/record-changes';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +10,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const ctx = await getSessionContext();
   if (!ctx || !ctx.organizationId) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   if (ctx.role !== 'administrateur') return NextResponse.json({ error: "Seul l'administrateur valide les corrections." }, { status: 403 });
+  const readOnly = await rejectIfReadOnly(ctx);
+  if (readOnly) return readOnly;
   const { id } = await params;
   const body = (await request.json().catch(() => ({}))) as { action?: string; note?: string };
   if (body.action !== 'approve' && body.action !== 'reject') return NextResponse.json({ error: 'Action invalide' }, { status: 400 });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
 import { hashPassword } from '@/lib/neon/auth';
-import { getSessionContext } from '@/lib/tenant';
+import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
 import { setMustChangePassword } from '@/lib/password-change';
 import { appUrl, createPasswordToken, generateTemporaryPassword } from '@/lib/password-tokens';
 import { isEmailConfigured, sendInvitationEmail } from '@/lib/email';
@@ -28,6 +28,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (ctx.role !== 'administrateur' || !ctx.organizationId || ctx.organizationBlocked) {
     return NextResponse.json({ error: 'Action réservée aux administrateurs.' }, { status: 403 });
   }
+  const readOnly = await rejectIfReadOnly(ctx);
+  if (readOnly) return readOnly;
 
   const { id } = await context.params;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Membre introuvable.' }, { status: 404 });

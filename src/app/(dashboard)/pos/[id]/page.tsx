@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button, buttonClassName } from '@/components/ui/Button';
+import { WriteButton } from '@/components/ui/WriteButton';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from '../edit-pos-modal';
 import { ResetPosModal } from './reset-pos-modal';
@@ -249,7 +250,7 @@ export default function PosDetailPage() {
         </div>
         <div className="flex items-center gap-2 self-stretch sm:self-auto">
           {isAdmin && (
-            <Button
+            <WriteButton
               variant="outline"
               size="sm"
               onClick={() => setIsResetModalOpen(true)}
@@ -258,16 +259,16 @@ export default function PosDetailPage() {
             >
               <Trash2 className="w-4 h-4 shrink-0" />
               <span>Vider</span>
-            </Button>
+            </WriteButton>
           )}
           {isAdmin ? (
-            <Button
+            <WriteButton
               size="sm"
               onClick={() => setIsEditModalOpen(true)}
               className="flex-1 sm:flex-initial"
             >
               <Edit className="w-4 h-4 shrink-0" /> <span>Modifier</span>
-            </Button>
+            </WriteButton>
           ) : (
             pos.statut === 'actif' && (
               <Link

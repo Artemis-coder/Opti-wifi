@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
 import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
-import { getSessionContext } from '@/lib/tenant';
+import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
 import { getAssignedPosIds } from '@/lib/collector-scope';
 
 export async function POST(request: NextRequest) {
@@ -20,6 +20,9 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    const readOnly = await rejectIfReadOnly();
+    if (readOnly) return readOnly;
 
     const { data: { user: callerUser } } = await supabase.auth.getUser();
     const orgId = callerUser ? await getUserOrganizationId(supabase) : null;
