@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Store, Search, MapPin, UserCheck, Loader2, Edit, Power, PowerOff } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { WriteButton } from '@/components/ui/WriteButton';
 import { Badge } from '@/components/ui/Badge';
 import { EditPosModal } from './edit-pos-modal';
 import { PointOfSale, Profile, PosStatus, WifiSpace } from '@/types/database';
@@ -184,7 +185,7 @@ async function loadData() {
                 {/* Actions de l'administrateur : toujours visibles (y compris sur téléphone), avec libellé */}
                 {isAdmin && (
                   <div className="grid grid-cols-2 gap-2">
-                    <Button
+                    <WriteButton
                       variant="outline"
                       size="sm"
                       className="h-10 font-semibold"
@@ -196,8 +197,8 @@ async function loadData() {
                     >
                       <Edit className="w-4 h-4 mr-1.5" />
                       Modifier
-                    </Button>
-                    <Button
+                    </WriteButton>
+                    <WriteButton
                       variant="outline"
                       size="sm"
                       disabled={togglingId === pos.id}
@@ -220,7 +221,7 @@ async function loadData() {
                         <Power className="w-4 h-4 mr-1.5" />
                       )}
                       {pos.statut === 'actif' ? 'Désactiver' : 'Activer'}
-                    </Button>
+                    </WriteButton>
                   </div>
                 )}
               </Card>

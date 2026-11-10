@@ -1,24 +1,27 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
-import { LicenseRequestDialog } from '@/components/payments/LicenseRequestDialog';
-import { Button } from '@/components/ui/Button';
 import { AccountNotices } from '@/components/layout/AccountNotices';
 import { PushPrompt } from '@/components/notifications/PushPrompt';
 import { AmountsPrivacyBoundary } from '@/components/privacy/AmountsPrivacy';
 import { PendingWhatsappButton } from '@/components/layout/PendingWhatsappButton';
 import { OnboardingBanner, OnboardingLayer } from '@/components/onboarding/OnboardingGuide';
+import { ReadOnlyBanner, ReadOnlyPage } from '@/components/layout/ReadOnlyBanner';
+import { useAccessStore } from '@/lib/stores/accessStore';
+import { READ_ONLY_BLOCKED_PATHS } from '@/lib/read-only';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const setReadOnly = useAccessStore((s) => s.setReadOnly);
   const { user, isLoading, setUser } = useAuthStore();
   const supabase = createClient();
 
@@ -29,7 +32,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Licence expirée : calculée côté serveur (même règle que le blocage des données)
   const [licenceExpired, setLicenceExpired] = useState(false);
   const [renewState, setRenewState] = useState<'idle' | 'pending'>('idle');
-  const [renewPlans, setRenewPlans] = useState<{ id: string; name: string; price: number; billing_period: string; current: boolean }[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -83,7 +85,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   .then((res) => (res.ok ? res.json() : null))
                   .catch(() => null);
                 if (isMounted) {
-                  setLicenceExpired(session?.user?.licence_expired === true);
+                  const expired = session?.user?.licence_expired === true;
+                  setLicenceExpired(expired);
+                  // Hors ligne (session inconnue) : on garde le dernier état connu
+                  if (session?.user) setReadOnly(currentUser.id, expired);
                   setCheckingSub(false);
                 }
               }
@@ -104,29 +109,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       isMounted = false;
       clearTimeout(safetyTimer);
     };
-    }, [user?.id, isLoading, router, setUser]);
+    }, [user?.id, isLoading, router, setUser, setReadOnly]);
 
   const isSubscriptionExpired = licenceExpired;
 
-  // Abonnement expiré : forfaits que l'on peut demander (tous, au tarif normal)
+  // Abonnement expiré : demande de renouvellement déjà envoyée ?
   useEffect(() => {
-    if (!isSubscriptionExpired) return;
-    Promise.all([
-      fetch('/api/subscriptions/renew').then((res) => (res.ok ? res.json() : null)),
-      supabase.from('subscription_plans').select('id, name, price, billing_period, trial_days').eq('status', 'active').order('price', { ascending: true }),
-    ])
-      .then(([state, plansRes]) => {
+    if (!isSubscriptionExpired || user?.role !== 'administrateur') return;
+    fetch('/api/subscriptions/renew')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((state) => {
         if (state?.data?.pendingRequest) setRenewState('pending');
-        const currentPlanId = state?.data?.subscription?.plan_id;
-        const plans = ((plansRes?.data || []) as { id: string; name: string; price: number; billing_period: string; trial_days: number | null }[])
-          .map((p) => ({ id: p.id, name: p.name, price: Number(p.price), billing_period: p.billing_period, current: p.id === currentPlanId }));
-        setRenewPlans(plans);
       })
       .catch(() => {});
-  }, [isSubscriptionExpired, supabase]);
-
-  // Le choix d'un forfait ouvre la demande : montant, moyens de paiement, référence
-  const [requestPlan, setRequestPlan] = useState<(typeof renewPlans)[number] | null>(null);
+  }, [isSubscriptionExpired, user?.role]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -227,58 +223,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Expired subscription screen
-  if (isSubscriptionExpired) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-center">
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-red-200 dark:border-red-900/40 p-8 space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-red-600 dark:text-red-400">Abonnement expiré</h1>
-            <p className="text-xs text-slate-500 mt-2">
-              Votre abonnement a expiré. Vous n&apos;avez plus accès à votre espace.
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              {renewState === 'pending'
-                ? 'Votre demande de renouvellement est en attente de validation. Votre accès sera rétabli dès son activation.'
-                : 'Choisissez un forfait : votre accès sera rétabli dès validation par l\'équipe OptiWifi.'}
-            </p>
-          </div>
-          <div className="pt-2 flex flex-col gap-2">
-            {renewState !== 'pending' && renewPlans.map((plan) => (
-              <Button
-                key={plan.id}
-                onClick={() => setRequestPlan(plan)}
-                className="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl text-xs transition"
-              >
-                {plan.current ? 'Me réabonner' : 'Choisir'} « {plan.name} » — {new Intl.NumberFormat('fr-FR').format(plan.price)} FCFA
-              </Button>
-            ))}
-            <button
-              onClick={handleSignOut}
-              className="w-full py-2.5 px-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold text-xs transition"
-            >
-              Se déconnecter
-            </button>
-          </div>
-        </div>
-        <LicenseRequestDialog
-          plan={requestPlan}
-          renewal={requestPlan?.current}
-          onClose={() => setRequestPlan(null)}
-          onSent={() => {
-            setRequestPlan(null);
-            setRenewState('pending');
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
       <Sidebar isMobileOpen={isMobileOpen} onCloseMobile={() => setIsMobileOpen(false)} />
@@ -287,14 +231,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Header onOpenMobileMenu={() => setIsMobileOpen(true)} />
 
         <main className="flex-1 p-4 sm:p-6 md:p-8 pb-28 sm:pb-32 lg:pb-8 overflow-y-auto">
+          {isSubscriptionExpired && (
+            <ReadOnlyBanner
+              isAdmin={user.role === 'administrateur'}
+              renewPending={renewState === 'pending'}
+            />
+          )}
           <AccountNotices />
-          <OnboardingBanner />
-          <AmountsPrivacyBoundary>{children}</AmountsPrivacyBoundary>
+          {!isSubscriptionExpired && <OnboardingBanner />}
+          <AmountsPrivacyBoundary>
+            {/* Consultation seule : les pages de saisie sont remplacées par une explication */}
+            {isSubscriptionExpired && READ_ONLY_BLOCKED_PATHS.some((re) => re.test(pathname)) ? <ReadOnlyPage /> : children}
+          </AmountsPrivacyBoundary>
         </main>
 
         <BottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />
       </div>
-      <OnboardingLayer />
+      {!isSubscriptionExpired && <OnboardingLayer />}
       <PushPrompt userId={user?.id} audience={user?.role === 'collecteur' ? 'collector' : 'client'} />
     </div>
   );

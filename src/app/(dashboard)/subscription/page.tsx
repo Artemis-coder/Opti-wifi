@@ -270,7 +270,7 @@ export default function SubscriptionPage() {
                 <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
                   {onTrial
                     ? 'Choisissez un forfait pour retrouver l’accès à votre espace et à vos données.'
-                    : 'Vous n’avez plus accès à votre espace tant que vous n’aurez pas renouvelé votre abonnement.'}
+                    : 'Votre espace est en consultation seule : vos données restent visibles, mais vous ne pouvez plus rien ajouter ni modifier. Choisissez votre forfait ci-dessous pour renouveler.'}
                 </p>
               </div>
             </div>
@@ -296,7 +296,11 @@ export default function SubscriptionPage() {
                 {subscription.plan?.name || 'Forfait'}
               </p>
             </div>
-            {getStatusBadge(subscription.status)}
+            {isExpired ? (
+              <Badge variant="danger" className="gap-1"><AlertCircle className="w-3.5 h-3.5" /> Expiré</Badge>
+            ) : (
+              getStatusBadge(subscription.status)
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
@@ -457,7 +461,7 @@ export default function SubscriptionPage() {
       <InvoiceList />
 
       <div>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Tous les forfaits disponibles</h2>
+        <h2 id="forfaits" className="text-lg font-bold text-slate-900 dark:text-white mb-4 scroll-mt-24">Tous les forfaits disponibles</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {allPlans.map((plan) => (
             <Card 
@@ -520,7 +524,7 @@ export default function SubscriptionPage() {
                 {!trialUsed && Number(plan.trial_days ?? 0) > 0 && (
                   <p className="text-xs text-slate-500">Essai gratuit de {plan.trial_days} jours pour démarrer.</p>
                 )}
-                {subscription?.plan_id === plan.id && !onTrial ? (
+                {subscription?.plan_id === plan.id && !onTrial && !isExpired ? (
                   <div className="h-11 rounded-xl bg-brand-500/10 text-brand-700 dark:text-brand-300 text-sm font-bold flex items-center justify-center gap-2">
                     <CheckCircle2 className="w-4 h-4" /> Forfait actuel
                   </div>
@@ -529,8 +533,14 @@ export default function SubscriptionPage() {
                     <Hourglass className="w-4 h-4 shrink-0" /> Demande en cours de validation
                   </div>
                 ) : (
-                  <Button className="w-full h-11 font-bold whitespace-nowrap" onClick={() => handleRequest(plan)}>
-                    {subscription?.plan && Number(plan.price) > Number(subscription.plan.price)
+                  <Button
+                    className="w-full h-11 font-bold whitespace-nowrap"
+                    // Abonnement expiré : le forfait actuel se renouvelle
+                    onClick={() => (subscription?.plan_id === plan.id && !onTrial ? handleRequest() : handleRequest(plan))}
+                  >
+                    {subscription?.plan_id === plan.id && !onTrial
+                      ? 'Renouveler ce forfait'
+                      : subscription?.plan && Number(plan.price) > Number(subscription.plan.price)
                       ? 'Passer à ce forfait'
                       : 'Choisir ce forfait'}
                     <ArrowRight className="w-4 h-4 ml-2" />

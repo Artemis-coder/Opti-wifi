@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
+import { getSessionContext, canAccessOrganization, rejectIfReadOnly } from '@/lib/tenant';
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -70,6 +70,8 @@ export async function DELETE(
   if (posError || !posData || !ctx || !canAccessOrganization(ctx, posData.organization_id)) {
     return NextResponse.json({ error: 'Point de vente introuvable.' }, { status: 404 });
   }
+  const readOnly = await rejectIfReadOnly(ctx);
+  if (readOnly) return readOnly;
 
   // ── Step 1: Fetch collection IDs for this POS ────────────────────
   const { data: collectionsData, error: colFetchError } = await supabase

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { WriteButton } from '@/components/ui/WriteButton';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
@@ -209,7 +210,7 @@ export default function ChangeRequestsPage() {
 
                 {r.status === 'pending' && canReview && (
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
+                    <WriteButton
                       icon={Check}
                       isLoading={busy === r.id}
                       disabled={!!busy}
@@ -217,10 +218,10 @@ export default function ChangeRequestsPage() {
                       className={cn('font-semibold', r.action === 'delete' && 'bg-red-600 hover:bg-red-700')}
                     >
                       {r.action === 'delete' ? 'Valider la suppression' : 'Valider la correction'}
-                    </Button>
-                    <Button variant="outline" icon={X} disabled={!!busy} onClick={() => (setNote(''), setRejecting(r))}>
+                    </WriteButton>
+                    <WriteButton variant="outline" icon={X} disabled={!!busy} onClick={() => (setNote(''), setRejecting(r))}>
                       Refuser
-                    </Button>
+                    </WriteButton>
                   </div>
                 )}
                 {r.status === 'pending' && !canReview && (

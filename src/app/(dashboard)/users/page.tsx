@@ -6,6 +6,7 @@ import { Users, Mail, Loader2, Trash2, Info, KeyRound, UserCheck, Clock, CheckCi
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { WriteButton } from '@/components/ui/WriteButton';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -289,7 +290,7 @@ export default function UsersPage() {
                   </p>
                 )}
                 <div className="grid grid-cols-2 gap-2">
-                  <Button
+                  <WriteButton
                     variant="outline"
                     size="sm"
                     className="h-10 font-semibold"
@@ -298,8 +299,8 @@ export default function UsersPage() {
                   >
                     <KeyRound className="w-4 h-4 mr-1.5" />
                     Accès
-                  </Button>
-                  <Button
+                  </WriteButton>
+                  <WriteButton
                     variant="outline"
                     size="sm"
                     className="h-10 font-semibold text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/60 dark:hover:bg-red-900/30"
@@ -308,7 +309,7 @@ export default function UsersPage() {
                   >
                     <Trash2 className="w-4 h-4 mr-1.5" />
                     Retirer
-                  </Button>
+                  </WriteButton>
                 </div>
               </Card>
           ))}

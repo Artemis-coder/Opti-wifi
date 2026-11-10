@@ -10,6 +10,7 @@ import { DateField } from '@/components/ui/DateField';
 import { Modal } from '@/components/ui/Modal';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useReadOnly } from '@/lib/stores/accessStore';
 
 type EntityType = 'collection' | 'allocation';
 
@@ -57,6 +58,8 @@ export function RecordChangeActions({
 }) {
   const role = useAuthStore((s) => s.user?.role);
   const isAdmin = role === 'administrateur';
+  // Abonnement expiré : consultation seule, ni correction ni suppression
+  const readOnly = useReadOnly();
   const [pending, setPending] = useState<PendingRequest | null>(null);
   const [version, setVersion] = useState(0);
   const [mode, setMode] = useState<'edit' | 'delete' | null>(null);
@@ -167,7 +170,7 @@ export function RecordChangeActions({
         </div>
       )}
 
-      {!pending && (isAdmin || role === 'collecteur') && (
+      {!pending && !readOnly && (isAdmin || role === 'collecteur') && (
         <div className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" icon={Pencil} onClick={openEdit} className="font-semibold">
             {isAdmin ? 'Modifier' : 'Demander une correction'}

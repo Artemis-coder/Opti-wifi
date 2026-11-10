@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { WriteButton } from '@/components/ui/WriteButton';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
@@ -309,18 +310,18 @@ export default function SpaceDashboardPage() {
         <div className="flex gap-2 mt-4 md:mt-0">
           {user?.role === 'administrateur' && (
             <>
-              <Button
+              <WriteButton
                 onClick={() => setIsEditModalOpen(true)}
                 className="gap-2 font-semibold bg-brand-500 text-brand-on hover:bg-brand-600"
               >
                 <Edit className="w-4 h-4" /> Modifier
-              </Button>
-              <Button
+              </WriteButton>
+              <WriteButton
                 onClick={handleDeleteSpace}
                 className="gap-2 font-semibold bg-red-600 hover:bg-red-700 text-white"
               >
                 <Trash2 className="w-4 h-4" /> Supprimer
-              </Button>
+              </WriteButton>
             </>
           )}
         </div>
