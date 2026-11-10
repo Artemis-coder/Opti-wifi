@@ -34,6 +34,7 @@ import { getPushState, subscribeToPush, type PushState } from '@/lib/push-client
 import { cn } from '@/lib/utils/cn';
 import { Profile } from '@/types/database';
 import { LoginHistorySection } from '@/components/settings/LoginHistorySection';
+import { LastLoginField } from '@/components/settings/LastLoginField';
 import { AccountDataSection } from '@/components/settings/AccountDataSection';
 
 const CURRENCY_LABELS: Record<string, string> = {
@@ -384,10 +385,7 @@ function SettingsContent() {
                   label="Créé le"
                   value={new Date(profile.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
                 />
-                <Field
-                  label="Dernière connexion"
-                  value={profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleDateString('fr-FR') : 'Jamais'}
-                />
+                <LastLoginField />
               </div>
             </Card>
           )}
