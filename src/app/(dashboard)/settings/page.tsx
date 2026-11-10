@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Smartphone,
   User,
+  MonitorSmartphone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
@@ -63,6 +64,7 @@ const TABS = [
   { value: 'profile', label: 'Profil', icon: User },
   { value: 'organization', label: 'Organisation', icon: Building2 },
   { value: 'security', label: 'Sécurité', icon: Lock },
+  { value: 'devices', label: 'Connexions & appareils', icon: MonitorSmartphone },
   { value: 'notifications', label: 'Notifications', icon: Bell },
   { value: 'account', label: 'Données & compte', icon: Database },
 ] as const;
@@ -314,6 +316,8 @@ function SettingsContent() {
               type="button"
               role="tab"
               aria-selected={active}
+              // Mobile : l'onglet actif est ramené dans la zone visible de la barre défilante
+              ref={active ? (el) => el?.scrollIntoView({ block: 'nearest', inline: 'center' }) : undefined}
               onClick={() => selectTab(t.value)}
               className={cn(
                 'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition',
@@ -480,10 +484,10 @@ function SettingsContent() {
               <Badge variant="success">Activée</Badge>
             </div>
           </Card>
-
-          <LoginHistorySection />
         </>
       )}
+
+      {tab === 'devices' && <LoginHistorySection />}
 
       {tab === 'account' && (
         <AccountDataSection organizationName={organization?.name ?? ''} isAdmin={user?.role === 'administrateur'} />

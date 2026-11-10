@@ -99,7 +99,7 @@ export function LastLoginField() {
               </p>
             </>
           )}
-          <Link href="/settings?tab=security" className="inline-block text-xs font-semibold text-brand-600 hover:text-brand-700">
+          <Link href="/settings?tab=devices" className="inline-block text-xs font-semibold text-brand-600 hover:text-brand-700">
             Voir toutes mes connexions
           </Link>
         </div>

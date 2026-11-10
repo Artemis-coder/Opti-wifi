@@ -78,7 +78,7 @@ export function LoginHistorySection() {
           <p className="text-sm font-bold text-slate-900 dark:text-white">Connexions et appareils</p>
           <p className="text-xs text-slate-500">
             Chaque connexion à votre compte : appareil, adresse IP et lieu approximatif. Une connexion que vous ne reconnaissez pas ?
-            Changez votre mot de passe ci-dessus.
+            Changez votre mot de passe dans l’onglet Sécurité.
           </p>
         </div>
       </div>
