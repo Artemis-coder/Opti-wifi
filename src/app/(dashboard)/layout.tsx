@@ -249,7 +249,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <BottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />
       </div>
       {!isSubscriptionExpired && <OnboardingLayer />}
-      <ConfidentialityGuard organizationName={orgName} email={user.email ?? null} />
+      <ConfidentialityGuard />
       <PushPrompt userId={user?.id} audience={user?.role === 'collecteur' ? 'collector' : 'client'} />
     </div>
   );

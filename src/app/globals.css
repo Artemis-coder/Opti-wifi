@@ -459,7 +459,7 @@
 }
 
 /* Protection anti-copie de l'espace client (components/security/ConfidentialityGuard.tsx) :
-   pas de sélection de texte hors des champs, impression remplacée par une page « Contenu confidentiel ». */
+   pas de sélection de texte hors des champs, impression remplacée par une page noire « Contenu confidentiel ». */
 html.confidential body {
   -webkit-user-select: none;
   user-select: none;
@@ -470,6 +470,12 @@ html.confidential :is(input, textarea, select, [contenteditable='true']) {
   user-select: text;
 }
 @media print {
+  html.confidential,
+  html.confidential body {
+    background: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   html.confidential body * {
     visibility: hidden !important;
   }
@@ -480,6 +486,6 @@ html.confidential :is(input, textarea, select, [contenteditable='true']) {
     inset: 40% 10% auto;
     text-align: center;
     font: 600 16px system-ui, sans-serif;
-    color: #0f172a;
+    color: #94a3b8;
   }
 }
