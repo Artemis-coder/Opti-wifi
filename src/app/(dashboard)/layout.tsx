@@ -15,6 +15,7 @@ import { PendingWhatsappButton } from '@/components/layout/PendingWhatsappButton
 import { OnboardingBanner, OnboardingLayer } from '@/components/onboarding/OnboardingGuide';
 import { ReadOnlyBanner, ReadOnlyPage } from '@/components/layout/ReadOnlyBanner';
 import { useAccessStore } from '@/lib/stores/accessStore';
+import { ConfidentialityGuard } from '@/components/security/ConfidentialityGuard';
 import { READ_ONLY_BLOCKED_PATHS } from '@/lib/read-only';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -248,6 +249,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <BottomNav onOpenMobileMenu={() => setIsMobileOpen(true)} />
       </div>
       {!isSubscriptionExpired && <OnboardingLayer />}
+      <ConfidentialityGuard organizationName={orgName} email={user.email ?? null} />
       <PushPrompt userId={user?.id} audience={user?.role === 'collecteur' ? 'collector' : 'client'} />
     </div>
   );
