@@ -12,6 +12,7 @@ import { DEFAULT_COUNTRY, findCountry, isValidNationalNumber } from '@/lib/count
 import { useAuthStore } from '@/lib/stores/authStore';
 import { UserRole } from '@/types/database';
 import { Eye, EyeOff } from 'lucide-react';
+import { TERMS_PATH } from '@/lib/terms';
 
 type Mode = 'login' | 'register' | 'recovery';
 
@@ -71,6 +72,8 @@ export default function LoginPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
    const [showLoginPassword, setShowLoginPassword] = useState(false);
    const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  // Acceptation des conditions d'utilisation, obligatoire pour créer le compte
+  const [acceptTerms, setAcceptTerms] = useState(false);
    const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
    const [showRecoveryConfirmPassword, setShowRecoveryConfirmPassword] = useState(false);
 
@@ -165,6 +168,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (!acceptTerms) {
+      setError('Veuillez accepter les conditions d’utilisation pour créer votre compte.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccessMsg('');
@@ -173,7 +181,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, nom, orgName, country, phone }),
+        body: JSON.stringify({ email, password, nom, orgName, country, phone, acceptTerms }),
       });
 
       const data = await res.json();
@@ -429,7 +437,24 @@ export default function LoginPage() {
               }
             />
 
-            <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading}>
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                required
+                className="mt-0.5 w-5 h-5 shrink-0 rounded border-slate-300 accent-brand-600"
+              />
+              <span className="text-xs leading-snug text-slate-600 dark:text-slate-300">
+                J’ai lu et j’accepte les{' '}
+                <a href={TERMS_PATH} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-600 hover:text-brand-700 underline">
+                  conditions d’utilisation
+                </a>
+                , y compris la confidentialité de l’outil (reproduction interdite).
+              </span>
+            </label>
+
+            <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading} disabled={!acceptTerms}>
               Créer mon Compte
             </Button>
           </form>

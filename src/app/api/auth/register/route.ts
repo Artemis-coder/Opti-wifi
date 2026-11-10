@@ -6,12 +6,18 @@ import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { rememberOrganizationCountry } from '@/lib/geo';
 import { findCountry, formatInternationalPhone, isValidNationalNumber } from '@/lib/countries';
+import { TERMS_VERSION } from '@/lib/terms';
 
 // Route POST pour créer un compte et une organisation avec le statut "pending_approval"
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, nom, orgName, country: countryCode, phone: nationalPhone } = body;
+    const { email, password, nom, orgName, country: countryCode, phone: nationalPhone, acceptTerms } = body;
+
+    // Conditions d'utilisation : acceptation obligatoire (enregistrée avec sa version)
+    if (acceptTerms !== true) {
+      return NextResponse.json({ error: 'Veuillez accepter les conditions d’utilisation pour créer votre compte.' }, { status: 400 });
+    }
 
     if (!email || !password || !nom || !orgName) {
       return NextResponse.json(
@@ -94,7 +100,9 @@ export async function POST(request: Request) {
       email_confirm: true,
       user_metadata: {
         full_name: nom,
-        role: 'administrateur'
+        role: 'administrateur',
+        terms_version: TERMS_VERSION,
+        terms_accepted_at: new Date().toISOString(),
       }
     });
 
