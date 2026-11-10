@@ -469,6 +469,13 @@ html.confidential :is(input, textarea, select, [contenteditable='true']) {
   -webkit-user-select: text;
   user-select: text;
 }
+/* Écran noir anti-capture : affiché sans attendre React, dès que l'attribut est posé */
+[data-confidential-overlay] {
+  display: none;
+}
+html[data-confidential-mask] [data-confidential-overlay] {
+  display: flex;
+}
 @media print {
   html.confidential,
   html.confidential body {
