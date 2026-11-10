@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useReadOnly } from '@/lib/stores/accessStore';
 import { OFFLINE_EVENTS } from '@/lib/offline/store';
 
 export type OnboardingStepId = 'space' | 'pos' | 'tickets' | 'allocation' | 'collection' | 'team';
@@ -158,7 +159,9 @@ let cache: { userId: string; state: OnboardingState } | null = null;
 export function useOnboarding(): OnboardingState | null {
   const user = useAuthStore((s) => s.user);
   const pathname = usePathname();
-  const eligible = !!user && user.role === 'administrateur' && !!user.organization_id;
+  // Abonnement expiré : consultation seule, pas de guide (il invite à créer des données)
+  const readOnly = useReadOnly();
+  const eligible = !!user && user.role === 'administrateur' && !!user.organization_id && !readOnly;
   const [state, setState] = useState<OnboardingState | null>(eligible && cache?.userId === user?.id ? cache.state : null);
 
   useEffect(() => {

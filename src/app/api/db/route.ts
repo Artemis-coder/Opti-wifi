@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { TableBuilder, makeError, type QuerySpec } from '@/lib/neon/query-builder';
 import { AUTH_COOKIE_NAME } from '@/lib/neon/auth';
-import { getSessionContext, type SessionContext } from '@/lib/tenant';
+import { getSessionContext, READ_ONLY_MESSAGE, type SessionContext } from '@/lib/tenant';
 import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
 import { getAssignedPosIds, getVisibleCollectionIds, getVisiblePosIds, ownsCollections } from '@/lib/collector-scope';
 import { recordSystemError } from '@/lib/system-errors';
@@ -188,11 +188,10 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
   } else if (isCollector(ctx) && !(COLLECTOR_ACTIONS[tableName] || ['select']).includes(action)) {
     throw new ForbiddenError('Action réservée à l’administrateur');
   } else if (ctx.organizationBlocked && (action !== 'select' || !BLOCKED_ORG_READABLE_TABLES.has(tableName))) {
-    throw new ForbiddenError(
-      ctx.blockReason === 'licence_expired'
-        ? 'Abonnement expiré : choisissez un forfait pour retrouver l’accès'
-        : 'Accès suspendu pour cette organisation'
-    );
+    throw new ForbiddenError('Accès suspendu pour cette organisation');
+  } else if (ctx.readOnly && action !== 'select') {
+    // Abonnement expiré : consultation seule, aucune écriture
+    throw new ForbiddenError(READ_ONLY_MESSAGE);
   }
 
   const filters = Array.isArray(body.filters) ? [...body.filters] : [];

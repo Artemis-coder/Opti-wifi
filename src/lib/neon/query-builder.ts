@@ -352,6 +352,12 @@ export class TableBuilder {
     const isWrite = ['insert', 'update', 'delete', 'upsert'].includes(this._action);
     const writableOffline = isWrite && replica.OFFLINE_WRITABLE.has(this.tableName);
 
+    // Abonnement expiré : consultation seule, aucune écriture (ni envoyée, ni mise en attente)
+    if (isWrite) {
+      const [{ isReadOnly }, { READ_ONLY_MESSAGE }] = await Promise.all([import('@/lib/stores/accessStore'), import('@/lib/read-only')]);
+      if (isReadOnly()) return { data: null, error: makeError(READ_ONLY_MESSAGE) };
+    }
+
     // Identifiants créés sur l'appareil : les lignes liées (ex. articles d'une collecte)
     // gardent la bonne référence, qu'elles partent tout de suite ou plus tard
     if (writableOffline && (this._action === 'insert' || this._action === 'upsert')) {

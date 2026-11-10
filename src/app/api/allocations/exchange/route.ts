@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import { getSessionContext } from '@/lib/tenant';
+import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
 import { query } from '@/lib/neon/db';
 import { getAssignedPosIds } from '@/lib/collector-scope';
 import { trackServer } from '@/lib/analytics/server';
@@ -112,9 +112,8 @@ export async function POST(request: NextRequest) {
     if (!ctx) {
       return NextResponse.json({ error: 'Authentification requise.' }, { status: 401 });
     }
-    if (ctx.organizationBlocked && !ctx.isPlatformAdmin) {
-      return NextResponse.json({ error: 'Accès suspendu pour cette organisation.' }, { status: 403 });
-    }
+    const readOnly = await rejectIfReadOnly(ctx);
+    if (readOnly) return readOnly;
     if (!ctx.isPlatformAdmin) {
       const ticketTypeIds = [...new Set([...returnsPayload, ...receivesPayload].map((r) => r.ticket_type_id as string))];
       const owned = await query(

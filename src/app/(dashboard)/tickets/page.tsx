@@ -5,6 +5,7 @@ import { Ticket, Clock, Loader2, Edit, PauseCircle, PlayCircle } from 'lucide-re
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { WriteButton } from '@/components/ui/WriteButton';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
@@ -155,11 +156,11 @@ export default function TicketTypesPage() {
 
               {/* Actions bien visibles, avec libellé */}
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" className="h-10 font-semibold" onClick={() => setEditingTicket(t)}>
+                <WriteButton variant="outline" size="sm" className="h-10 font-semibold" onClick={() => setEditingTicket(t)}>
                   <Edit className="w-4 h-4 mr-1.5" />
                   Modifier
-                </Button>
-                <Button
+                </WriteButton>
+                <WriteButton
                   variant="outline"
                   size="sm"
                   onClick={() => handleToggleActif(t)}
@@ -171,7 +172,7 @@ export default function TicketTypesPage() {
                 >
                   {t.actif ? <PauseCircle className="w-4 h-4 mr-1.5" /> : <PlayCircle className="w-4 h-4 mr-1.5" />}
                   {t.actif ? 'Désactiver' : 'Activer'}
-                </Button>
+                </WriteButton>
               </div>
             </Card>
           ))}

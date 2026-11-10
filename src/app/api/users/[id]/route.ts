@@ -2,7 +2,7 @@ import { adminClient } from '@/lib/neon/admin';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
+import { getSessionContext, canAccessOrganization, rejectIfReadOnly } from '@/lib/tenant';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -88,6 +88,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     if (!callerProfile || callerProfile.role !== 'administrateur' || !callerCtx || callerCtx.organizationBlocked) {
       return NextResponse.json({ error: 'Action réservée aux administrateurs.' }, { status: 403 });
     }
+    const readOnly = await rejectIfReadOnly(callerCtx);
+    if (readOnly) return readOnly;
 
     if (callerUser.id === targetUserId) {
       return NextResponse.json({
