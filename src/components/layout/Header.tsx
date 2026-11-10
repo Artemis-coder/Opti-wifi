@@ -25,6 +25,7 @@ const TITLES: Record<string, string> = {
   '/users': 'Utilisateurs',
   '/reports': 'Rapports',
   '/settings': 'Paramètres',
+  '/conditions-utilisation': "Conditions d'utilisation",
   '/subscription': 'Abonnement',
   '/support': 'Support',
 };
