@@ -69,6 +69,8 @@ function UsersContent() {
   const isFull = (u?: { current: number; limit: number | null }) => !!u && u.limit !== null && u.current >= u.limit;
   const usersFull = isFull(limits?.users);
   const collectorsFull = isFull(limits?.collectors);
+  // Accès point de vente : non inclus (limite 0) ou limite atteinte ; hors nombre d'utilisateurs du forfait
+  const posAccountsFull = isFull(limits?.pos_accounts);
 
   const loadLimits = () =>
     fetch('/api/account/plan-limits')
@@ -81,17 +83,6 @@ function UsersContent() {
     loadStatus();
   }, []);
 
-  // « Ajouter » : note d'information si le forfait ne permet pas un membre de plus
-  const openAdd = () => {
-    if (usersFull) {
-      setLimitKind('users');
-      return;
-    }
-    if (collectorsFull) setRole('administrateur');
-    setIsModalOpen(true);
-  };
-  // Guide de démarrage (« Ajouter un collecteur ») : ouvre le formulaire
-  useGuideOpenForm(openAdd);
 
   const supabase = createClient();
 
@@ -102,20 +93,63 @@ function UsersContent() {
   const filter: 'equipe' | 'points-de-vente' = searchParams.get('filtre') === 'points-de-vente' ? 'points-de-vente' : 'equipe';
   const selectFilter = (value: 'equipe' | 'points-de-vente') =>
     router.replace(value === 'points-de-vente' ? `${pathname}?filtre=points-de-vente` : pathname, { scroll: false });
-  // Nom du point de vente de chaque accès point de vente
-  const [posNames, setPosNames] = useState<Record<string, string>>({});
+  // Points de vente de l'organisation (nom, téléphone) : nom de chaque accès, choix à la création
+  const [posList, setPosList] = useState<{ id: string; nom: string; telephone?: string | null }[]>([]);
+  const posNames: Record<string, string> = Object.fromEntries(posList.map((p) => [p.id, p.nom]));
+  // Point de vente choisi pour un nouvel accès point de vente
+  const [selectedPosId, setSelectedPosId] = useState('');
   const posAccounts = users.filter((u) => u.role === 'point_de_vente');
+  // Points de vente qui n'ont pas encore d'accès (un seul accès par point de vente)
+  const posWithoutAccess = posList.filter((p) => !posAccounts.some((a) => a.pos_id === p.id));
+  // Type de compte choisi ; pour un point de vente, nom et téléphone repris de sa fiche
+  const chooseRole = (value: UserRole) => {
+    setRole(value);
+    if (value !== 'point_de_vente') return;
+    const first = posWithoutAccess.find((p) => p.id === selectedPosId) ?? posWithoutAccess[0];
+    if (first) choosePos(first.id);
+  };
+  const choosePos = (id: string) => {
+    setSelectedPosId(id);
+    const pos = posList.find((p) => p.id === id);
+    if (!pos) return;
+    setNom(pos.nom);
+    setTelephone(pos.telephone || '');
+  };
   const teamMembers = users.filter((u) => u.role !== 'point_de_vente');
   const shownUsers = filter === 'points-de-vente' ? posAccounts : teamMembers;
+
+  // « Ajouter » : note d'information si le forfait ne permet pas un membre de plus
+  const openAdd = () => {
+    // Onglet « Accès points de vente » : le formulaire s'ouvre directement sur ce type de compte
+    if (filter === 'points-de-vente') {
+      chooseRole('point_de_vente');
+      setIsModalOpen(true);
+      return;
+    }
+    if (usersFull) {
+      // Plus de place pour un membre, mais un accès point de vente reste possible (hors nombre d'utilisateurs)
+      if (!posAccountsFull && posWithoutAccess.length > 0) {
+        chooseRole('point_de_vente');
+        setIsModalOpen(true);
+        return;
+      }
+      setLimitKind('users');
+      return;
+    }
+    if (collectorsFull) setRole('administrateur');
+    setIsModalOpen(true);
+  };
+  // Guide de démarrage (« Ajouter un collecteur ») : ouvre le formulaire
+  useGuideOpenForm(openAdd);
 
   useEffect(() => {
     async function loadUsers() {
       setLoading(true);
       const [{ data }, { data: posData }] = await Promise.all([
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-        supabase.from('points_of_sale').select('id, nom'),
+        supabase.from('points_of_sale').select('id, nom, telephone').order('nom'),
       ]);
-      setPosNames(Object.fromEntries(((posData || []) as { id: string; nom: string }[]).map((p) => [p.id, p.nom])));
+      setPosList((posData || []) as { id: string; nom: string; telephone?: string | null }[]);
       // Les comptes supprimés disparaissent de l'équipe (leurs collectes restent dans l'historique)
       setUsers((data || []).filter(isActiveProfile));
       setLoading(false);
@@ -125,7 +159,17 @@ function UsersContent() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nom || !email) {
+    const isPos = role === 'point_de_vente';
+    if (isPos) {
+      if (!selectedPosId) {
+        toast.error('Choisissez le point de vente.');
+        return;
+      }
+      if (!nom || telephone.replace(/\D/g, '').length < 8) {
+        toast.error('Le nom et le numéro de téléphone (identifiant de connexion) sont obligatoires.');
+        return;
+      }
+    } else if (!nom || !email) {
       toast.error('Veuillez remplir tous les champs obligatoires.');
       return;
     }
@@ -140,13 +184,26 @@ function UsersContent() {
     const res = await fetch('/api/users/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom, email, role, telephone, mot_de_passe: motDePasse, send_email: sendEmail }),
+      body: JSON.stringify({
+        nom,
+        email,
+        role,
+        telephone,
+        mot_de_passe: motDePasse,
+        send_email: sendEmail && email.trim() !== '',
+        ...(isPos ? { pos_id: selectedPosId } : {}),
+      }),
     });
 
     const result = await res.json();
     setIsSubmitting(false);
 
     // Limite atteinte entre-temps (contrôle serveur) : on montre les forfaits
+    if (res.status === 403 && result.planLimit === 'pos_accounts') {
+      toast.error(result.error);
+      loadLimits();
+      return;
+    }
     if (res.status === 403 && typeof result.error === 'string' && result.error.startsWith('Limite')) {
       setIsModalOpen(false);
       setLimitKind(result.error.includes('collecteurs') ? 'collectors' : 'users');
@@ -166,6 +223,13 @@ function UsersContent() {
       setTelephone('');
       setMotDePasse('');
       setIsModalOpen(false);
+      if (isPos) {
+        setSelectedPosId('');
+        setRole('collecteur');
+        selectFilter('points-de-vente');
+        // Le numéro de connexion devient aussi celui de la fiche du point de vente
+        setPosList((prev) => prev.map((p) => (p.id === result.profile?.pos_id ? { ...p, telephone: result.profile?.telephone } : p)));
+      }
     } else {
       toast.error(result.error || 'Erreur lors de la création de l\'utilisateur.');    }
   };
@@ -293,12 +357,12 @@ function UsersContent() {
         <p className="flex items-start gap-2 text-xs text-slate-500">
           <Eye className="w-4 h-4 shrink-0" />
           <span>
-            Accès en consultation seule : chaque point de vente voit ses allocations et ses collectes. Pour créer un accès,
-            ouvrez le point de vente dans{' '}
+            Accès en consultation seule : chaque point de vente voit ses allocations et ses collectes, et se connecte avec
+            son numéro de téléphone. Créez un accès avec « Ajouter », ou depuis la fiche du point de vente dans{' '}
             <Link href="/pos" className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
               Points de vente
             </Link>{' '}
-            puis l&apos;onglet « Accès point de vente ».
+            (onglet « Accès point de vente »).
           </span>
         </p>
       )}
@@ -313,8 +377,9 @@ function UsersContent() {
           <Store className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun accès point de vente</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Créez-les depuis la fiche de chaque point de vente, onglet « Accès point de vente ».
+            Créez-en un avec « Ajouter » (type « Point de vente »), ou depuis la fiche du point de vente.
           </p>
+          <AddButton what="un accès point de vente" onClick={openAdd} />
         </Card>
       ) : shownUsers.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
@@ -412,9 +477,94 @@ function UsersContent() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un Utilisateur">
         <form onSubmit={handleAddUser} className="space-y-4">
+          {/* Type de compte d'abord : les champs en dépendent */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Type d&apos;utilisateur</label>
+            <CustomSelect
+              value={role}
+              onChange={(v) => chooseRole(v as UserRole)}
+              options={[
+                {
+                  value: 'collecteur',
+                  label: 'Collecteur / Agent Terrain',
+                  sublabel: collectorsFull ? 'Non inclus dans votre forfait actuel' : undefined,
+                },
+                { value: 'administrateur', label: 'Administrateur Système' },
+                {
+                  value: 'point_de_vente',
+                  label: 'Point de vente (consultation seule)',
+                  sublabel: posAccountsFull
+                    ? limits?.pos_accounts?.limit === 0
+                      ? 'Non inclus dans votre forfait actuel'
+                      : 'Limite de votre forfait atteinte'
+                    : 'Voit ses allocations et ses collectes, se connecte avec son téléphone',
+                },
+              ]}
+            />
+          </div>
+
+          {role === 'point_de_vente' ? (
+            posAccountsFull ? (
+              <div className="flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/60 p-3 text-xs text-slate-700 dark:text-slate-300">
+                <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                <div className="space-y-1.5">
+                  <p>
+                    {limits?.pos_accounts?.limit === 0
+                      ? `L'accès point de vente n'est pas inclus dans votre forfait ${limits?.plan?.name ?? ''}.`
+                      : `Votre forfait ${limits?.plan?.name ?? ''} ne permet pas d'autre accès point de vente.`}
+                  </p>
+                  <Link href="/subscription" className="font-bold text-amber-700 dark:text-amber-400 hover:underline">
+                    Voir les forfaits
+                  </Link>
+                </div>
+              </div>
+            ) : posWithoutAccess.length === 0 ? (
+              <div className="flex gap-2.5 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 p-3 text-xs text-slate-600 dark:text-slate-300">
+                <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>
+                  {posList.length === 0
+                    ? "Vous n'avez encore aucun point de vente. Créez-en un dans Points de vente."
+                    : 'Tous vos points de vente ont déjà un accès.'}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Point de vente</label>
+                  <CustomSelect
+                    value={selectedPosId}
+                    onChange={(v) => choosePos(v)}
+                    options={posWithoutAccess.map((p) => ({ value: p.id, label: p.nom, sublabel: p.telephone || undefined }))}
+                  />
+                </div>
+                <Input label="Nom affiché" value={nom} onChange={(e) => setNom(e.target.value)} required />
+                <Input
+                  label="Téléphone (identifiant de connexion)"
+                  type="tel"
+                  placeholder="ex: +225 07 07 07 07 07"
+                  value={telephone}
+                  onChange={(e) => setTelephone(e.target.value)}
+                  helperText="Le point de vente se connectera avec ce numéro."
+                  required
+                />
+                <Input
+                  label="Adresse e-mail (facultatif)"
+                  type="email"
+                  placeholder="gerant@exemple.ci"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </>
+            )
+          ) : (
+            <>
           <Input label="Nom Complet" placeholder="ex: Konan Philippe" value={nom} onChange={(e) => setNom(e.target.value)} required />
           <Input label="Adresse Email" type="email" placeholder="agent@optiwifi.ci" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <Input label="Téléphone" type="tel" placeholder="ex: +225 07 07 07 07" value={telephone} onChange={(e) => setTelephone(e.target.value)} />
+            </>
+          )}
+          {!(role === 'point_de_vente' && (posAccountsFull || posWithoutAccess.length === 0)) && (
+          <>
           <Input
             label="Mot de passe temporaire (facultatif)"
             type="text"
@@ -424,25 +574,14 @@ function UsersContent() {
             helperText="Le membre choisira son propre mot de passe à sa première connexion."
             autoComplete="off"
           />
-          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
-            Envoyer les accès par e-mail
-          </label>
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Rôle</label>
-            <CustomSelect
-              value={role}
-              onChange={(v) => setRole(v as UserRole)}
-              options={[
-                {
-                  value: 'collecteur',
-                  label: 'Collecteur / Agent Terrain',
-                  sublabel: collectorsFull ? 'Non inclus dans votre forfait actuel' : undefined,
-                },
-                { value: 'administrateur', label: 'Administrateur Système' },
-              ]}
-            />
-          </div>
+          {(role !== 'point_de_vente' || email.trim() !== '') && (
+            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
+              Envoyer les accès par e-mail
+            </label>
+          )}
+          </>
+          )}
           {role === 'collecteur' && collectorsFull && (
             <div className="flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/60 p-3 text-xs text-slate-700 dark:text-slate-300">
               <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
@@ -466,7 +605,14 @@ function UsersContent() {
           )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Annuler</Button>
-            <Button type="submit" disabled={isSubmitting || (role === 'collecteur' && collectorsFull)}>
+            <Button
+              type="submit"
+              disabled={
+                isSubmitting ||
+                (role === 'collecteur' && collectorsFull) ||
+                (role === 'point_de_vente' && (posAccountsFull || posWithoutAccess.length === 0))
+              }
+            >
               {isSubmitting ? 'Création...' : 'Créer le Compte'}
             </Button>
           </div>
