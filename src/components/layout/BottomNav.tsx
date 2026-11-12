@@ -81,6 +81,7 @@ export function BottomNav({ onOpenMobileMenu, items }: BottomNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              data-tour={`nav:${item.href}`}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'md-ripple flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl py-1 transition-all duration-200 tap-target',
@@ -121,6 +122,7 @@ export function BottomNav({ onOpenMobileMenu, items }: BottomNavProps) {
         <button
           type="button"
           onClick={onOpenMobileMenu}
+          data-tour="nav:menu"
           aria-label="Ouvrir le menu complet"
           className="md-ripple flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl py-1 text-slate-300 hover:text-white transition-all duration-200 tap-target"
         >

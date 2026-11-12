@@ -32,6 +32,8 @@ export function Spotlight({
   title,
   text,
   onClose,
+  footer,
+  closeOnTargetClick = true,
 }: {
   target: string;
   /** Ex. « Étape 2 sur 5 » */
@@ -39,6 +41,10 @@ export function Spotlight({
   title: string;
   text: string;
   onClose: () => void;
+  /** Boutons de la bulle (visite guidée : Précédent / Suivant) ; par défaut « Compris ». */
+  footer?: React.ReactNode;
+  /** Fermer quand on clique sur l'élément éclairé (désactivé pendant une visite guidée). */
+  closeOnTargetClick?: boolean;
 }) {
   const [rect, setRect] = useState<Rect | null>(null);
   // Affiché une fois l'élément immobile (fin du défilement automatique vers lui)
@@ -51,7 +57,9 @@ export function Spotlight({
     let tries = 0;
     let still = 0;
     let last = '';
-    const onClick = () => onClose();
+    const onClick = () => {
+      if (closeOnTargetClick) onClose();
+    };
 
     const follow = () => {
       if (!el || !el.isConnected) {
@@ -90,7 +98,7 @@ export function Spotlight({
       window.removeEventListener(GUIDE_OPEN_EVENT, onClick);
       el?.removeEventListener('click', onClick, { capture: true });
     };
-  }, [target, onClose]);
+  }, [target, onClose, closeOnTargetClick]);
 
   // Échap ferme le projecteur
   useLayoutEffect(() => {
@@ -158,9 +166,11 @@ export function Spotlight({
         </p>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{text}</p>
         <div className="mt-3 flex justify-end">
-          <button type="button" onClick={onClose} className="h-8 px-3 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-            Compris
-          </button>
+          {footer ?? (
+            <button type="button" onClick={onClose} className="h-8 px-3 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+              Compris
+            </button>
+          )}
         </div>
       </div>
     </div>,
