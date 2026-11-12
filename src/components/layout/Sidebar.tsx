@@ -28,6 +28,7 @@ import {
   Repeat,
   ClipboardCheck,
   FileText,
+  Coins,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
@@ -125,6 +126,7 @@ const posAccountSections: NavSection[] = [
       { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard, roles: ['point_de_vente'] },
       { label: 'Mes allocations', href: '/allocations', icon: ArrowLeftRight, roles: ['point_de_vente'] },
       { label: 'Mes collectes', href: '/collections', icon: Receipt, roles: ['point_de_vente'] },
+      { label: 'Mes commissions', href: '/commissions', icon: Coins, roles: ['point_de_vente'] },
     ],
   },
   {
