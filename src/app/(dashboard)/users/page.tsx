@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Mail, Loader2, Trash2, Info, KeyRound, UserCheck, Clock, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Users, Mail, Loader2, Trash2, Info, KeyRound, UserCheck, Clock, CheckCircle2, ArrowRight, Store, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,15 @@ import { isInternalPosAccountEmail } from '@/lib/pos-account-email';
 import { useGuideOpenForm } from '@/lib/onboarding';
 
 export default function UsersPage() {
+  // useSearchParams impose une frontière Suspense pour une page prérendue
+  return (
+    <Suspense fallback={null}>
+      <UsersContent />
+    </Suspense>
+  );
+}
+
+function UsersContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,10 +95,27 @@ export default function UsersPage() {
 
   const supabase = createClient();
 
+  // Filtre : équipe (administrateurs, collecteurs) ou accès points de vente (?filtre=points-de-vente)
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const filter: 'equipe' | 'points-de-vente' = searchParams.get('filtre') === 'points-de-vente' ? 'points-de-vente' : 'equipe';
+  const selectFilter = (value: 'equipe' | 'points-de-vente') =>
+    router.replace(value === 'points-de-vente' ? `${pathname}?filtre=points-de-vente` : pathname, { scroll: false });
+  // Nom du point de vente de chaque accès point de vente
+  const [posNames, setPosNames] = useState<Record<string, string>>({});
+  const posAccounts = users.filter((u) => u.role === 'point_de_vente');
+  const teamMembers = users.filter((u) => u.role !== 'point_de_vente');
+  const shownUsers = filter === 'points-de-vente' ? posAccounts : teamMembers;
+
   useEffect(() => {
     async function loadUsers() {
       setLoading(true);
-      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      const [{ data }, { data: posData }] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.from('points_of_sale').select('id, nom'),
+      ]);
+      setPosNames(Object.fromEntries(((posData || []) as { id: string; nom: string }[]).map((p) => [p.id, p.nom])));
       // Les comptes supprimés disparaissent de l'équipe (leurs collectes restent dans l'historique)
       setUsers((data || []).filter(isActiveProfile));
       setLoading(false);
@@ -174,18 +201,20 @@ export default function UsersPage() {
       {/* Forfait : places utilisées et disponibles, bien visibles */}
       {limits?.plan && (
         <Card className="p-4 sm:p-5">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            <div className="lg:w-56 shrink-0">
+          <div className="flex flex-col xl:flex-row xl:items-center gap-4">
+            <div className="xl:w-56 shrink-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Votre forfait</p>
               <p className="text-lg font-extrabold text-slate-900 dark:text-white">{limits.plan.name}</p>
               <Link href="/subscription" className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline">
                 Changer de forfait <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+            {/* Toutes les limites du forfait sur une seule ligne */}
+            <div className={cn('grid grid-cols-1 gap-3 flex-1', limits.pos_accounts ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
               {[
                 { label: 'Utilisateurs', icon: Users, usage: limits.users },
                 { label: 'Collecteurs', icon: UserCheck, usage: limits.collectors },
+                ...(limits.pos_accounts ? [{ label: 'Accès points de vente', icon: Store, usage: limits.pos_accounts }] : []),
               ].map(({ label, icon: Icon, usage }) => {
                 const full = isFull(usage);
                 const percent =
@@ -202,7 +231,7 @@ export default function UsersPage() {
                       <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
                         <Icon className="w-4 h-4 text-slate-400" /> {label}
                       </span>
-                      <span className="text-xl font-extrabold tabular-nums text-slate-900 dark:text-white">
+                      <span className="text-xl font-extrabold tabular-nums whitespace-nowrap text-slate-900 dark:text-white">
                         {usage.current}
                         <span className="text-sm font-semibold text-slate-400"> / {usage.limit === null ? '∞' : usage.limit}</span>
                       </span>
@@ -229,12 +258,65 @@ export default function UsersPage() {
         </Card>
       )}
 
+      {/* Équipe / accès points de vente : chacun géré séparément */}
+      <div role="tablist" aria-label="Type de comptes" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+        {(
+          [
+            { value: 'equipe', label: 'Équipe', icon: Users, count: teamMembers.length },
+            { value: 'points-de-vente', label: 'Accès points de vente', icon: Store, count: posAccounts.length },
+          ] as const
+        ).map((t) => {
+          const Icon = t.icon;
+          const active = filter === t.value;
+          return (
+            <button
+              key={t.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => selectFilter(t.value)}
+              className={cn(
+                'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition',
+                active
+                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+              )}
+            >
+              <Icon className="w-4 h-4" /> {t.label}
+              <span className={cn('text-xs tabular-nums', active ? 'opacity-80' : 'text-slate-400')}>{t.count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {filter === 'points-de-vente' && (
+        <p className="flex items-start gap-2 text-xs text-slate-500">
+          <Eye className="w-4 h-4 shrink-0" />
+          <span>
+            Accès en consultation seule : chaque point de vente voit ses allocations et ses collectes. Pour créer un accès,
+            ouvrez le point de vente dans{' '}
+            <Link href="/pos" className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+              Points de vente
+            </Link>{' '}
+            puis l&apos;onglet « Accès point de vente ».
+          </span>
+        </p>
+      )}
+
       {loading ? (
         <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
           Chargement des utilisateurs...
         </div>
-      ) : users.length === 0 ? (
+      ) : filter === 'points-de-vente' && shownUsers.length === 0 ? (
+        <Card className="p-10 text-center space-y-2">
+          <Store className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun accès point de vente</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Créez-les depuis la fiche de chaque point de vente, onglet « Accès point de vente ».
+          </p>
+        </Card>
+      ) : shownUsers.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
           <div className="w-14 h-14 rounded-full bg-blue-900/10 text-blue-900 dark:text-amber-400 flex items-center justify-center mx-auto">
             <Users className="w-7 h-7" />
@@ -247,10 +329,10 @@ export default function UsersPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {users.map((u: Profile) => (
+          {shownUsers.map((u: Profile) => (
             <Card key={u.id} className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-wrap-reverse items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-[12rem] flex-1">
                     <div className="w-10 h-10 rounded-full bg-brand-900 text-brand-400 font-bold flex items-center justify-center text-sm border border-brand-500/30">
                       {u.nom ? u.nom.slice(0, 2).toUpperCase() : 'US'}
                     </div>
@@ -263,13 +345,24 @@ export default function UsersPage() {
                       {u.telephone && (
                         <p className="text-xs text-slate-500 mt-0.5">{u.telephone}</p>
                       )}
+                      {u.role === 'point_de_vente' && u.pos_id && (
+                        <Link
+                          href={`/pos/${u.pos_id}?tab=acces`}
+                          className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline"
+                        >
+                          <Store className="w-3 h-3" /> {posNames[u.pos_id] || 'Point de vente'}
+                        </Link>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {u.is_active === false && (
                       <Badge variant="neutral" className="text-xs">Inactif</Badge>
                     )}
-                    <Badge variant={u.role === 'administrateur' ? 'warning' : u.role === 'point_de_vente' ? 'success' : 'info'}>
+                    <Badge
+                      variant={u.role === 'administrateur' ? 'warning' : u.role === 'point_de_vente' ? 'success' : 'info'}
+                      className="whitespace-nowrap"
+                    >
                       {u.role === 'point_de_vente' ? 'point de vente' : u.role}
                     </Badge>
                   </div>
