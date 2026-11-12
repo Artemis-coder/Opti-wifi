@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowDownLeft, ArrowUpRight, Banknote, CalendarCheck, Eye, Loader2, MapPin, Percent, Receipt, Store, Ticket } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Banknote, CalendarCheck, Compass, Eye, Loader2, MapPin, Percent, Receipt, Store, Ticket } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatTile } from '@/components/ui/StatTile';
 import { cn } from '@/lib/utils/cn';
 import { formatAmountShort, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { DashboardPeriod, PosAccountDashboard as Data } from '@/lib/pos-account-dashboard';
+import { POS_TOUR_EVENT, PosAccountTour } from '@/components/pos-account/PosAccountTour';
 
 const money = formatAmountShort;
 
@@ -70,7 +71,7 @@ export function PosAccountDashboard() {
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-        <div>
+        <div data-tour="pos:header">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Bonjour{user?.nom ? `, ${user.nom}` : ''}</p>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Store className="w-5 h-5 text-brand-600" /> {data.pos.name}
@@ -81,13 +82,23 @@ export function PosAccountDashboard() {
           </p>
           {data.pos.collector && <p className="text-xs text-slate-500 mt-0.5">Collecteur : {data.pos.collector}</p>}
         </div>
-        <span className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
-          <Eye className="w-3.5 h-3.5" /> Consultation seule
-        </span>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {/* Relance de la visite guidée */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event(POS_TOUR_EVENT))}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:border-slate-300"
+          >
+            <Compass className="w-3.5 h-3.5" /> Revoir la visite guidée
+          </button>
+          <span data-tour="pos:readonly" className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <Eye className="w-3.5 h-3.5" /> Consultation seule
+          </span>
+        </div>
       </div>
 
       {/* Période : s'applique aux chiffres clés (les listes montrent toujours les 5 derniers) */}
-      <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+      <div role="group" aria-label="Période" data-tour="pos:period" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
         {PERIODS.map((p) => (
           <button
             key={p.value}
@@ -106,7 +117,7 @@ export function PosAccountDashboard() {
         ))}
       </div>
 
-      <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-60')}>
+      <div data-tour="pos:kpis" className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-60')}>
         <StatTile
           label="Tickets reçus"
           value={formatNumber(m?.tickets_received ?? 0)}
@@ -140,7 +151,7 @@ export function PosAccountDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* 5 dernières collectes : montant, date, collecteur, écart et commission */}
-        <Card className="p-4 sm:p-5 space-y-3">
+        <Card className="p-4 sm:p-5 space-y-3" data-tour="pos:collections">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">5 dernières collectes</h2>
             <Link href="/collections" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
@@ -184,7 +195,7 @@ export function PosAccountDashboard() {
         </Card>
 
         {/* Derniers tickets reçus (allocations et échanges) */}
-        <Card className="p-4 sm:p-5 space-y-3">
+        <Card className="p-4 sm:p-5 space-y-3" data-tour="pos:tickets">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">5 derniers tickets reçus</h2>
             <Link href="/allocations" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
@@ -228,6 +239,8 @@ export function PosAccountDashboard() {
           )}
         </Card>
       </div>
+      {/* Visite guidée : automatique à la première connexion, relançable */}
+      {user?.id && <PosAccountTour userId={user.id} ready={!!data?.pos && !loading} />}
     </div>
   );
 }
