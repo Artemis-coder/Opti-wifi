@@ -60,6 +60,8 @@ export default function PlatformPlansPage() {
   const [formMaxUsers, setFormMaxUsers] = useState('');
   const [formMaxPos, setFormMaxPos] = useState('');
   const [formMaxCollectors, setFormMaxCollectors] = useState('');
+  // Accès « point de vente » : 0 = non inclus, vide ou -1 = illimité
+  const [formMaxPosAccounts, setFormMaxPosAccounts] = useState('');
   const [formMaxTickets, setFormMaxTickets] = useState('');
   const [formFeatures, setFormFeatures] = useState('');
   const [formStatus, setFormStatus] = useState<PlanStatus>('active');
@@ -93,6 +95,7 @@ export default function PlatformPlansPage() {
     setFormMaxUsers('');
     setFormMaxPos('');
     setFormMaxCollectors('');
+    setFormMaxPosAccounts('0');
     setFormMaxTickets('');
     setFormFeatures('');
     setFormStatus('active');
@@ -111,6 +114,7 @@ export default function PlatformPlansPage() {
       setFormMaxUsers(plan.max_users?.toString() || '');
       setFormMaxPos(plan.max_points_of_sale?.toString() || '');
       setFormMaxCollectors(plan.max_collectors?.toString() || '');
+      setFormMaxPosAccounts(plan.max_pos_accounts?.toString() ?? '');
       setFormMaxTickets(plan.max_tickets_per_month?.toString() || '');
       setFormFeatures(planFeatureList(plan.features).join('\n'));
       setFormStatus(plan.status);
@@ -144,6 +148,7 @@ export default function PlatformPlansPage() {
       max_users: formMaxUsers ? parseInt(formMaxUsers) : null,
       max_points_of_sale: formMaxPos ? parseInt(formMaxPos) : null,
       max_collectors: formMaxCollectors ? parseInt(formMaxCollectors) : null,
+      max_pos_accounts: formMaxPosAccounts.trim() !== '' ? parseInt(formMaxPosAccounts) : null,
       max_tickets_per_month: formMaxTickets ? parseInt(formMaxTickets) : null,
       features: normalizePlanFeatures(formFeatures.split('\n')),
       status: formStatus,
@@ -290,6 +295,14 @@ export default function PlatformPlansPage() {
                     {plan.max_collectors < 0 ? 'Illimités' : plan.max_collectors === 0 ? 'Aucun' : plan.max_collectors}
                   </p>
                 )}
+                <p>
+                  <span className="font-semibold">Accès points de vente :</span>{' '}
+                  {plan.max_pos_accounts === 0
+                    ? 'Non inclus'
+                    : plan.max_pos_accounts === null || plan.max_pos_accounts === undefined || plan.max_pos_accounts < 0
+                      ? 'Illimités'
+                      : plan.max_pos_accounts}
+                </p>
                 {plan.max_tickets_per_month && (
                   <p><span className="font-semibold">Tickets/mois :</span> {plan.max_tickets_per_month === -1 ? 'Illimités' : plan.max_tickets_per_month}</p>
                 )}
@@ -405,6 +418,14 @@ export default function PlatformPlansPage() {
             placeholder="-1"
             value={formMaxCollectors}
             onChange={(e) => setFormMaxCollectors(e.target.value)}
+          />
+          <Input
+            label="Accès points de vente (0 = non inclus, vide ou -1 = illimité)"
+            type="number"
+            placeholder="0"
+            value={formMaxPosAccounts}
+            onChange={(e) => setFormMaxPosAccounts(e.target.value)}
+            helperText="Comptes en consultation seule que le client peut créer pour ses points de vente."
           />
           <Input
             label="Max Tickets/mois (-1 = illimité)"

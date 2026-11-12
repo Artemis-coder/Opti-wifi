@@ -34,6 +34,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { StatTile } from '@/components/ui/StatTile';
 import { PosAccessCard } from '@/components/pos/PosAccessCard';
+import type { PlanLimits } from '@/components/team/PlanLimitDialog';
 
 interface AllocationSummary {
   ticketType: TicketType;
@@ -112,10 +113,22 @@ export default function PosDetailPage() {
     loadData();
   }, [posId]);
 
+  // Limites du forfait : l'accès point de vente n'est inclus qu'à partir de certains forfaits
+  const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
+  const loadPlanLimits = () =>
+    fetch('/api/account/plan-limits')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => res?.data && setPlanLimits(res.data as PlanLimits))
+      .catch(() => {});
+  useEffect(() => {
+    if (isAdmin) loadPlanLimits();
+  }, [isAdmin]);
+
   // Accès en consultation seule du point de vente (un seul compte non supprimé)
   const posAccount =
     profiles.find((p: Profile) => p.role === 'point_de_vente' && p.pos_id === posId && !p.deleted_at) ?? null;
   const handlePosAccountChanged = (account: Profile | null) => {
+    loadPlanLimits();
     setProfiles((prev) => {
       const others = prev.filter((p) => !(p.role === 'point_de_vente' && p.pos_id === posId));
       return account ? [account, ...others] : others;
@@ -350,7 +363,7 @@ export default function PosDetailPage() {
         </div>
       </Card>
 
-      {isAdmin && <PosAccessCard pos={pos} account={posAccount} onChanged={handlePosAccountChanged} />}
+      {isAdmin && <PosAccessCard pos={pos} account={posAccount} onChanged={handlePosAccountChanged} limits={planLimits} />}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">

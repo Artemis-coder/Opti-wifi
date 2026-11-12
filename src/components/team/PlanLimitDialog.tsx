@@ -18,12 +18,16 @@ export interface LimitPlan {
   max_users: number | null;
   max_collectors: number | null;
   max_points_of_sale: number | null;
+  /** Accès point de vente : 0 = non inclus, null ou négatif = illimité */
+  max_pos_accounts?: number | null;
 }
 
 export interface PlanLimits {
   plan: { id: string; name: string } | null;
   users: { current: number; limit: number | null };
   collectors: { current: number; limit: number | null };
+  /** Accès point de vente : limite 0 = non inclus dans le forfait */
+  pos_accounts?: { current: number; limit: number | null };
   plans: LimitPlan[];
 }
 
