@@ -14,6 +14,7 @@ const PROTECTED_CLIENT_ROUTES = [
   '/subscription',
   '/support',
   '/conditions-utilisation',
+  '/commissions',
 ];
 
 // Pages de gestion réservées à l'administrateur : le collecteur est renvoyé vers sa tournée.
@@ -21,7 +22,9 @@ const PROTECTED_CLIENT_ROUTES = [
 const ADMIN_ONLY_ROUTES = ['/spaces', '/tickets', '/users', '/reports', '/subscription'];
 
 // Compte « point de vente » (consultation seule) : seules ces pages lui sont ouvertes.
-const POS_ACCOUNT_ROUTES = ['/dashboard', '/allocations', '/collections', '/settings', '/support', '/conditions-utilisation', '/notifications'];
+const POS_ACCOUNT_ROUTES = ['/dashboard', '/allocations', '/collections', '/commissions', '/settings', '/support', '/conditions-utilisation', '/notifications'];
+// Pages propres au compte point de vente : les autres rôles sont renvoyés à leur accueil.
+const POS_ACCOUNT_ONLY_ROUTES = ['/commissions'];
 // … sauf les pages de saisie.
 const POS_ACCOUNT_BLOCKED_ROUTES = ['/allocations/new', '/allocations/exchange', '/collections/new'];
 
@@ -152,6 +155,13 @@ export async function proxy(request: NextRequest) {
     isClientRoute &&
     (!POS_ACCOUNT_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/')) ||
       POS_ACCOUNT_BLOCKED_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/')))
+  ) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  if (
+    user?.role !== 'point_de_vente' &&
+    POS_ACCOUNT_ONLY_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/'))
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

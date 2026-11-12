@@ -44,6 +44,7 @@ const POS_ACCOUNT_TITLES: Record<string, string> = {
   '/dashboard': 'Mon point de vente',
   '/collections': 'Mes collectes',
   '/allocations': 'Mes allocations',
+  '/commissions': 'Mes commissions',
 };
 
 function resolveTitle(pathname: string, isCollector: boolean, isPosAccount = false): string {

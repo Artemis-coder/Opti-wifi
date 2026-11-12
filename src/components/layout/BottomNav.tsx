@@ -10,6 +10,7 @@ import {
   ArrowLeftRight,
   Menu,
   PlusCircle,
+  Coins,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { cn } from '@/lib/utils/cn';
@@ -49,6 +50,7 @@ const posAccountItems: BottomNavItem[] = [
   { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard, exact: true },
   { label: 'Allocations', href: '/allocations', icon: ArrowLeftRight },
   { label: 'Collectes', href: '/collections', icon: Receipt },
+  { label: 'Commissions', href: '/commissions', icon: Coins },
 ];
 
 export function BottomNav({ onOpenMobileMenu, items }: BottomNavProps) {
