@@ -1,12 +1,14 @@
 import { createServerClient } from '@/lib/neon/server';
 import { getSessionContext } from '@/lib/tenant';
 
-export type QuotaType = 'users' | 'collectors' | 'points_of_sale' | 'tickets_per_month';
+export type QuotaType = 'users' | 'collectors' | 'points_of_sale' | 'pos_accounts' | 'tickets_per_month';
 
 export interface QuotaLimits {
   max_users: number | null;
   max_points_of_sale: number | null;
   max_collectors: number | null;
+  /** Accès « point de vente » (consultation seule) : 0 = non inclus, null ou -1 = illimité. */
+  max_pos_accounts: number | null;
   max_tickets_per_month: number | null;
   plan_name: string | null;
 }
@@ -31,7 +33,7 @@ export async function getOrganizationQuotaLimits(
     .from('subscriptions')
     .select(`
       *,
-      plan:subscription_plans(max_users, max_points_of_sale, max_collectors, max_tickets_per_month, name)
+      plan:subscription_plans(max_users, max_points_of_sale, max_collectors, max_pos_accounts, max_tickets_per_month, name)
     `)
     .eq('organization_id', organizationId)
     .in('status', ['active', 'trialing'])
@@ -44,6 +46,7 @@ export async function getOrganizationQuotaLimits(
       max_users: null,
       max_points_of_sale: null,
       max_collectors: null,
+      max_pos_accounts: null,
       max_tickets_per_month: null,
       plan_name: null,
     };
@@ -53,6 +56,7 @@ export async function getOrganizationQuotaLimits(
     max_users: sub.plan.max_users ?? null,
     max_points_of_sale: sub.plan.max_points_of_sale ?? null,
     max_collectors: sub.plan.max_collectors ?? null,
+    max_pos_accounts: sub.plan.max_pos_accounts ?? null,
     max_tickets_per_month: sub.plan.max_tickets_per_month ?? null,
     plan_name: sub.plan.name ?? null,
   };
@@ -101,6 +105,31 @@ export async function checkQuota(
         .eq('role', 'collecteur')
         .eq('is_active', true);
       current = collectorCount ?? 0;
+      break;
+
+    case 'pos_accounts':
+      limit = limits.max_pos_accounts;
+      quotaLabel = 'max_pos_accounts';
+      if (limit === null || limit < 0) {
+        return { allowed: true, quota: quotaType, current: 0, limit: -1, plan_name: limits.plan_name };
+      }
+      const { count: posAccountCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('role', 'point_de_vente')
+        .eq('is_active', true);
+      current = posAccountCount ?? 0;
+      if (limit === 0) {
+        return {
+          allowed: false,
+          quota: quotaType,
+          current,
+          limit,
+          plan_name: limits.plan_name,
+          message: `L'accès point de vente n'est pas inclus dans le forfait "${limits.plan_name}". Passez à un forfait supérieur pour en créer.`,
+        };
+      }
       break;
 
     case 'points_of_sale':
@@ -189,6 +218,8 @@ function getQuotaLabel(quota: QuotaType): string {
       return 'collecteurs';
     case 'points_of_sale':
       return 'points de vente';
+    case 'pos_accounts':
+      return 'comptes point de vente';
     case 'tickets_per_month':
       return 'tickets par mois';
   }

@@ -107,6 +107,13 @@ export async function POST(request: NextRequest) {
         error: quotaCheck.message
       }, { status: 403 });
     }
+    // Accès point de vente : inclus selon le forfait (à partir de Standard), nombre éventuellement limité
+    if (isPosAccountRole) {
+      const posAccountCheck = await checkQuota(clientSupabase, orgId, 'pos_accounts');
+      if (!posAccountCheck.allowed) {
+        return NextResponse.json({ error: posAccountCheck.message, planLimit: 'pos_accounts' }, { status: 403 });
+      }
+    }
     // Nombre de collecteurs limité par le forfait
     if (role === 'collecteur') {
       const collectorCheck = await checkQuota(clientSupabase, orgId, 'collectors');

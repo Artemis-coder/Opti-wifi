@@ -86,7 +86,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, description, price, currency, billing_period, trial_days, max_users, max_points_of_sale, max_collectors, max_tickets_per_month, features, status } = body;
+  const { name, description, price, currency, billing_period, trial_days, max_users, max_points_of_sale, max_collectors, max_pos_accounts, max_tickets_per_month, features, status } = body;
 
   if (!name || price === undefined) {
     return NextResponse.json({ error: 'Nom et prix requis' }, { status: 400 });
@@ -107,6 +107,8 @@ export async function POST(request: Request) {
       max_points_of_sale: max_points_of_sale || null,
       // 0 = aucun collecteur (ne pas le confondre avec « non renseigné »)
       max_collectors: max_collectors ?? null,
+      // Accès point de vente : 0 = non inclus (valeur par défaut d'un nouveau forfait), null = illimité
+      max_pos_accounts: max_pos_accounts === undefined ? 0 : max_pos_accounts,
       max_tickets_per_month: max_tickets_per_month || null,
       features: normalizePlanFeatures(features),
       status: status || 'active',
