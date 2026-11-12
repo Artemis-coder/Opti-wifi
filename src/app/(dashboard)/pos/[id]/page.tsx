@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Store,
   MapPin,
@@ -20,6 +20,7 @@ import {
   User,
   FileText,
   Trash2,
+  KeyRound,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button, buttonClassName } from '@/components/ui/Button';
@@ -33,6 +34,7 @@ import { isActiveProfile } from '@/lib/utils/profiles';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { StatTile } from '@/components/ui/StatTile';
+import { cn } from '@/lib/utils/cn';
 import { PosAccessCard } from '@/components/pos/PosAccessCard';
 import type { PlanLimits } from '@/components/team/PlanLimitDialog';
 
@@ -46,6 +48,15 @@ interface AllocationSummary {
 }
 
 export default function PosDetailPage() {
+  // useSearchParams impose une frontière Suspense
+  return (
+    <Suspense fallback={null}>
+      <PosDetailContent />
+    </Suspense>
+  );
+}
+
+function PosDetailContent() {
   const params = useParams();
   const posId = params?.id as string;
 
@@ -112,6 +123,14 @@ export default function PosDetailPage() {
 
     loadData();
   }, [posId]);
+
+  // Onglets (administrateur) : détails du point de vente / accès du point de vente (?tab=acces)
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab: 'details' | 'acces' = searchParams.get('tab') === 'acces' ? 'acces' : 'details';
+  const selectTab = (value: 'details' | 'acces') =>
+    router.replace(value === 'acces' ? `${pathname}?tab=acces` : pathname, { scroll: false });
 
   // Limites du forfait : l'accès point de vente n'est inclus qu'à partir de certains forfaits
   const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
@@ -306,6 +325,46 @@ export default function PosDetailPage() {
         </div>
       </div>
 
+      {isAdmin && (
+        <div role="tablist" aria-label="Rubriques du point de vente" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+          {(
+            [
+              { value: 'details', label: 'Détails du point de vente', icon: Store },
+              { value: 'acces', label: 'Accès point de vente', icon: KeyRound },
+            ] as const
+          ).map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.value;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => selectTab(t.value)}
+                className={cn(
+                  'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition',
+                  active
+                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+                )}
+              >
+                <Icon className="w-4 h-4" /> {t.label}
+                {t.value === 'acces' && posAccount && (
+                  <span className={cn('w-2 h-2 rounded-full', posAccount.is_active === false ? 'bg-slate-400' : 'bg-emerald-500')} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {isAdmin && tab === 'acces' && (
+        <PosAccessCard pos={pos} account={posAccount} onChanged={handlePosAccountChanged} limits={planLimits} />
+      )}
+
+      {(!isAdmin || tab === 'details') && (
+      <>
       {/* POS Info Card */}
       <Card className="p-6 space-y-4">
         <div className="flex items-start justify-between">
@@ -362,8 +421,6 @@ export default function PosDetailPage() {
           </div>
         </div>
       </Card>
-
-      {isAdmin && <PosAccessCard pos={pos} account={posAccount} onChanged={handlePosAccountChanged} limits={planLimits} />}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
@@ -909,6 +966,9 @@ export default function PosDetailPage() {
           </div>
         </div>
       </Card>
+
+      </>
+      )}
 
       {/* Edit POS Modal */}
       <EditPosModal

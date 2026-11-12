@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Eye, KeyRound, Loader2, Lock, Mail, Phone, Trash2, UserPlus } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Eye, KeyRound, Loader2, Lock, Mail, Phone, Trash2, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -51,6 +51,28 @@ function planBlock(limits: PlanLimits | null): { title: string; hint: string } |
 export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCardProps) {
   const blocked = planBlock(limits);
   const [isOpen, setIsOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  // Rafraîchit l'état de connexion après « Gérer l'accès »
+  const [manageOpenCount, setManageOpenCount] = useState(0);
+  // Dernière connexion du compte, ou accès pas encore utilisés (mot de passe temporaire)
+  const [status, setStatus] = useState<{ last_sign_in_at: string | null; pending_password: boolean } | null>(null);
+  const accountId = account?.id ?? null;
+  useEffect(() => {
+    if (!accountId) return;
+    let cancelled = false;
+    fetch('/api/users/access-status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        const row = (res?.data as { id: string; last_sign_in_at: string | null; pending_password: boolean }[] | undefined)?.find(
+          (s) => s.id === accountId,
+        );
+        if (!cancelled) setStatus(row ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, manageOpenCount]);
   const [submitting, setSubmitting] = useState(false);
   const [nom, setNom] = useState(pos.nom);
   const [email, setEmail] = useState('');
@@ -58,7 +80,6 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
   const [motDePasse, setMotDePasse] = useState('');
   const [sendEmail, setSendEmail] = useState(true);
   const [created, setCreated] = useState<{ member: Profile; access: MemberAccessInfo; emailSent: boolean } | null>(null);
-  const [manageOpen, setManageOpen] = useState(false);
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,9 +175,31 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
                 <Mail className="w-3 h-3" /> {account.email}
               </p>
             )}
+            {status && (
+              <p
+                className={
+                  status.pending_password
+                    ? 'mt-1 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400'
+                    : 'mt-1 flex items-center gap-1.5 text-xs text-slate-500'
+                }
+              >
+                {status.pending_password ? <Clock className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                {status.pending_password
+                  ? 'Accès pas encore utilisés'
+                  : status.last_sign_in_at
+                    ? `Dernière connexion le ${new Date(status.last_sign_in_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                    : 'Jamais connecté'}
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <WriteButton variant="outline" size="sm" className="h-10 font-semibold" onClick={() => setManageOpen(true)}>
+            <WriteButton
+              variant="outline"
+              size="sm"
+              className="h-10 font-semibold"
+              onClick={() => setManageOpen(true)}
+              disabled={account.is_active === false}
+            >
               <KeyRound className="w-4 h-4 mr-1.5" /> Gérer l’accès
             </WriteButton>
             <WriteButton
@@ -168,6 +211,12 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
               <Trash2 className="w-4 h-4 mr-1.5" /> Retirer
             </WriteButton>
           </div>
+          <Link
+            href="/users?filtre=points-de-vente"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline"
+          >
+            <Users className="w-3.5 h-3.5" /> Voir tous les accès dans Utilisateurs &amp; équipe
+          </Link>
         </div>
       ) : blocked ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30 p-3.5 flex flex-col sm:flex-row sm:items-center gap-3">
@@ -256,7 +305,13 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
         )}
       </Modal>
 
-      <MemberAccessDialog member={manageOpen ? account : null} onClose={() => setManageOpen(false)} />
+      <MemberAccessDialog
+        member={manageOpen ? account : null}
+        onClose={() => {
+          setManageOpen(false);
+          setManageOpenCount((n) => n + 1);
+        }}
+      />
     </Card>
   );
 }
