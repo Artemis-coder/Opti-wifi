@@ -8,9 +8,17 @@ import { StatTile } from '@/components/ui/StatTile';
 import { cn } from '@/lib/utils/cn';
 import { formatAmountShort, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import { useAuthStore } from '@/lib/stores/authStore';
-import type { PosAccountDashboard as Data } from '@/lib/pos-account-dashboard';
+import type { DashboardPeriod, PosAccountDashboard as Data } from '@/lib/pos-account-dashboard';
 
 const money = formatAmountShort;
+
+// Une seule période pour les chiffres clés ET les listes : tout concorde à l'écran
+const PERIODS: { value: DashboardPeriod; label: string; scope: string }[] = [
+  { value: 'month', label: 'Ce mois-ci', scope: 'ce mois-ci' },
+  { value: '3months', label: '3 derniers mois', scope: 'sur 3 mois' },
+  { value: 'year', label: 'Cette année', scope: 'cette année' },
+  { value: 'all', label: 'Tout', scope: 'depuis le début' },
+];
 
 const MOVEMENT: Record<Data['recent'][number]['kind'], { label: string; icon: React.ElementType; tone: string; href: string }> = {
   allocation: { label: 'Tickets reçus', icon: Ticket, tone: 'text-amber-600 bg-amber-500/10', href: '/allocations' },
@@ -18,29 +26,30 @@ const MOVEMENT: Record<Data['recent'][number]['kind'], { label: string; icon: Re
   exchange_return: { label: 'Échange : retour', icon: ArrowUpRight, tone: 'text-slate-600 bg-slate-500/10', href: '/allocations' },
 };
 
-/** Accueil d'un compte point de vente : résumé du mois et derniers mouvements (consultation seule). */
+/** Accueil d'un compte point de vente : chiffres clés et derniers mouvements de la période choisie (consultation seule). */
 export function PosAccountDashboard() {
   const user = useAuthStore((s) => s.user);
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Data | null>(null);
+  const [period, setPeriod] = useState<DashboardPeriod>('month');
+  const [result, setResult] = useState<{ period: DashboardPeriod; data: Data | null } | null>(null);
+  const loading = result?.period !== period;
+  const data = result?.data ?? null;
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/pos-account/dashboard', { cache: 'no-store' })
+    fetch(`/api/pos-account/dashboard?period=${period}`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : { data: null }))
-      .then((json) => !cancelled && setData(json.data ?? null))
-      .catch(() => !cancelled && setData(null))
-      .finally(() => !cancelled && setLoading(false));
+      .then((json) => !cancelled && setResult({ period, data: json.data ?? null }))
+      .catch(() => !cancelled && setResult({ period, data: null }));
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [period]);
 
-  const month = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(new Date());
-  const m = data?.month;
+  const scope = PERIODS.find((p) => p.value === period)?.scope ?? '';
+  const m = data?.totals;
   const gapAlert = !!m && m.gap < 0;
 
-  if (loading) {
+  if (!result) {
     return (
       <div className="py-24 flex justify-center text-slate-400">
         <Loader2 className="w-6 h-6 animate-spin" />
@@ -77,14 +86,33 @@ export function PosAccountDashboard() {
         </span>
       </div>
 
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 first-letter:uppercase">{month}</p>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Période : s'applique aux chiffres clés et aux deux listes */}
+      <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+        {PERIODS.map((p) => (
+          <button
+            key={p.value}
+            type="button"
+            onClick={() => setPeriod(p.value)}
+            aria-pressed={period === p.value}
+            className={cn(
+              'shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold border transition',
+              period === p.value
+                ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+            )}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-60')}>
         <StatTile
           label="Tickets reçus"
           value={formatNumber(m?.tickets_received ?? 0)}
           icon={Ticket}
           accent="amber"
-          hint="Allocations du mois (échanges compris)"
+          hint={`Allocations ${scope} (échanges compris)`}
           href="/allocations"
         />
         <StatTile
@@ -92,7 +120,7 @@ export function PosAccountDashboard() {
           value={money(m?.collected ?? 0)}
           icon={Banknote}
           accent="emerald"
-          hint={m?.collections ? `${m.collections} collecte${m.collections > 1 ? 's' : ''}` : 'Aucune collecte ce mois-ci'}
+          hint={m?.collections ? `${m.collections} collecte${m.collections > 1 ? 's' : ''} ${scope}` : `Aucune collecte ${scope}`}
           href="/collections"
         />
         <StatTile
@@ -101,22 +129,26 @@ export function PosAccountDashboard() {
           icon={CalendarCheck}
           accent="red"
           alert={gapAlert}
-          hint={`Attendu : ${money(m?.expected ?? 0)}`}
+          hint={
+            m?.gap_count
+              ? `${m.gap_count} collecte${m.gap_count > 1 ? 's' : ''} avec écart · attendu ${money(m.expected)}`
+              : `Aucun écart · attendu ${money(m?.expected ?? 0)}`
+          }
         />
-        <StatTile label="Ma commission" value={money(m?.commission ?? 0)} icon={Percent} accent="indigo" hint="Total du mois" />
+        <StatTile label="Ma commission" value={money(m?.commission ?? 0)} icon={Percent} accent="indigo" hint={`Total ${scope}`} href="/commissions" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* 5 dernières collectes : montant, date, collecteur, écart et commission */}
         <Card className="p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">5 dernières collectes</h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">5 dernières collectes <span className="font-normal text-slate-500">· {scope}</span></h2>
             <Link href="/collections" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
               Tout voir
             </Link>
           </div>
           {data.last_collections.length === 0 ? (
-            <p className="text-sm text-slate-500 py-6 text-center">Aucune collecte pour l&apos;instant.</p>
+            <p className="text-sm text-slate-500 py-6 text-center">Aucune collecte {scope}.</p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.last_collections.map((c) => (
@@ -154,13 +186,13 @@ export function PosAccountDashboard() {
         {/* Derniers tickets reçus (allocations et échanges) */}
         <Card className="p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers tickets reçus</h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers tickets reçus <span className="font-normal text-slate-500">· {scope}</span></h2>
             <Link href="/allocations" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
               Tout voir
             </Link>
           </div>
           {data.recent.length === 0 ? (
-            <p className="text-sm text-slate-500 py-6 text-center">Aucun ticket reçu pour l&apos;instant.</p>
+            <p className="text-sm text-slate-500 py-6 text-center">Aucun ticket reçu {scope}.</p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.recent.map((r) => {
