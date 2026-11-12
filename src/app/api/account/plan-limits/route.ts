@@ -23,7 +23,8 @@ export async function GET() {
         [ctx.organizationId]
       ),
       query(
-        `SELECT COUNT(*)::int AS users,
+        // Les accès point de vente (consultation seule) ne comptent pas dans le forfait
+        `SELECT COUNT(*) FILTER (WHERE role <> 'point_de_vente')::int AS users,
                 COUNT(*) FILTER (WHERE role = 'collecteur')::int AS collectors
            FROM profiles
           WHERE organization_id = $1 AND is_active = true`,

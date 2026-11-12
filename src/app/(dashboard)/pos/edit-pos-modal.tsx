@@ -29,6 +29,8 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
   const [nom, setNom] = useState(pos?.nom || '');
   const [adresse, setAdresse] = useState(pos?.adresse || '');
   const [ville, setVille] = useState(pos?.ville || 'Abidjan');
+  // Numéro du point de vente : identifiant de connexion de son accès en consultation
+  const [telephone, setTelephone] = useState(pos?.telephone || '');
   const [collecteurId, setCollecteurId] = useState(pos?.collecteur_id || '');
   const [spaceId, setSpaceId] = useState(pos?.space_id || currentSpaceId || '');
   const [statut, setStatut] = useState<PosStatus>(pos?.statut || 'actif');
@@ -73,6 +75,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
       nom: nom.trim(),
       adresse: adresse.trim() || null,
       ville: ville.trim(),
+      telephone: telephone.trim() || null,
       collecteur_id: collecteurId || null,
       space_id: spaceId || null,
       statut,
@@ -144,6 +147,14 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
           value={ville}
           onChange={(e) => setVille(e.target.value)}
           required
+        />
+        <Input
+          label="Téléphone du point de vente"
+          type="tel"
+          placeholder="ex: +225 07 07 07 07 07"
+          value={telephone}
+          onChange={(e) => setTelephone(e.target.value)}
+          helperText="Le point de vente se connectera avec ce numéro pour consulter ses allocations et collectes."
         />
 
         <div className="space-y-1.5">

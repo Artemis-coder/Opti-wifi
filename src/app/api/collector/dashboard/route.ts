@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSessionContext } from '@/lib/tenant';
+import { getSessionContext, isPosAccount } from '@/lib/tenant';
 import { getCollectorDashboard } from '@/lib/collector-dashboard';
 import { parseDashboardPeriod } from '@/lib/client-dashboard';
 
@@ -9,7 +9,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export async function GET(request: Request) {
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  if (!ctx.organizationId || ctx.organizationBlocked) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  if (!ctx.organizationId || ctx.organizationBlocked || isPosAccount(ctx)) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  }
 
   const params = new URL(request.url).searchParams;
   const space = params.get('space');

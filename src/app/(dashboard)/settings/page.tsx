@@ -58,7 +58,7 @@ const ORGANIZATION_STATUSES: Record<string, { label: string; variant: 'success' 
   pending_approval: { label: 'En attente', variant: 'info' },
 };
 
-const ROLE_LABELS: Record<string, string> = { administrateur: 'Administrateur', collecteur: 'Collecteur' };
+const ROLE_LABELS: Record<string, string> = { administrateur: 'Administrateur', collecteur: 'Collecteur', point_de_vente: 'Point de vente (consultation)' };
 
 const TABS = [
   { value: 'profile', label: 'Profil', icon: User },

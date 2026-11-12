@@ -17,7 +17,9 @@ export interface NeonUser {
   id: string;
   email: string;
   nom?: string;
-  role: 'administrateur' | 'collecteur';
+  role: 'administrateur' | 'collecteur' | 'point_de_vente';
+  /** Compte « point de vente » : le point de vente qu'il consulte (lecture seule). */
+  pos_id?: string | null;
   telephone?: string | null;
   devise?: string | null;
   organization_id?: string | null;
@@ -119,7 +121,7 @@ export async function createUserInDb(
 export async function getUserById(id: string): Promise<NeonUser | null> {
   const result = await query(
     `SELECT u.id, u.email, u.email_confirmed, u.user_metadata, u.app_metadata, u.created_at, u.updated_at,
-            p.nom, p.role, p.telephone, p.devise, p.organization_id,
+            p.nom, p.role, p.pos_id, p.telephone, p.devise, p.organization_id,
             o.status AS organization_status,
             CASE
               WHEN p.organization_id IS NULL THEN false
@@ -150,6 +152,7 @@ export async function getUserById(id: string): Promise<NeonUser | null> {
     email: row.email,
     nom: row.nom,
     role: row.role || 'collecteur',
+    pos_id: row.pos_id ?? null,
     telephone: row.telephone,
     devise: row.devise,
     organization_id: row.organization_id,
@@ -166,7 +169,7 @@ export async function getUserById(id: string): Promise<NeonUser | null> {
 export async function authenticate(email: string, password: string): Promise<NeonUser | null> {
   const result = await query(
     `SELECT u.id, u.email, u.password_hash, u.email_confirmed, u.banned_until, u.user_metadata, u.app_metadata, u.created_at, u.updated_at,
-            p.nom, p.role, p.telephone, p.devise, p.organization_id, p.is_active, p.deleted_at
+            p.nom, p.role, p.pos_id, p.telephone, p.devise, p.organization_id, p.is_active, p.deleted_at
      FROM users u
      LEFT JOIN profiles p ON p.id = u.id
      WHERE u.email = $1`,
@@ -199,6 +202,7 @@ export async function authenticate(email: string, password: string): Promise<Neo
     email: row.email,
     nom: row.nom,
     role: row.role || 'collecteur',
+    pos_id: row.pos_id ?? null,
     telephone: row.telephone,
     devise: row.devise,
     organization_id: row.organization_id,

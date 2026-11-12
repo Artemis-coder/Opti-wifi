@@ -275,9 +275,11 @@ export default function LoginPage() {
         {mode === 'login' && !recoveryReady && (
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
-              label="Adresse Email"
-              type="email"
-              placeholder="votre.email@exemple.ci"
+              label="E-mail ou téléphone"
+              type="text"
+              inputMode="email"
+              autoComplete="username"
+              placeholder="votre.email@exemple.ci ou 07 07 07 07 07"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

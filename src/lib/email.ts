@@ -133,7 +133,7 @@ export interface InvitationEmail {
   name: string;
   organizationName: string;
   inviterName?: string | null;
-  role: 'administrateur' | 'collecteur';
+  role: 'administrateur' | 'collecteur' | 'point_de_vente';
   loginUrl: string;
   /** Mot de passe temporaire à changer à la première connexion */
   temporaryPassword?: string;
@@ -142,7 +142,7 @@ export interface InvitationEmail {
 }
 
 export async function sendInvitationEmail(i: InvitationEmail) {
-  const roleLabel = i.role === 'administrateur' ? 'administrateur' : 'collecteur';
+  const roleLabel = i.role === 'administrateur' ? 'administrateur' : i.role === 'point_de_vente' ? 'point de vente (consultation seule)' : 'collecteur';
   const by = i.inviterName ? `${esc(i.inviterName)} vous a ajouté` : 'Vous avez été ajouté';
   const access = i.temporaryPassword
     ? `<table style="width:100%;background:#ffffff;border:1px solid #dee2e6;border-radius:10px;padding:14px;margin:18px 0;font-size:14px;">

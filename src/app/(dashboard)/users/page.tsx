@@ -18,6 +18,7 @@ import { AddButton } from '@/components/ui/AddButton';
 import { PlanLimitDialog, type LimitKind, type PlanLimits } from '@/components/team/PlanLimitDialog';
 import { AccessCard, MemberAccessDialog, type MemberAccessInfo } from '@/components/team/MemberAccess';
 import { cn } from '@/lib/utils/cn';
+import { isInternalPosAccountEmail } from '@/lib/pos-account-email';
 import { useGuideOpenForm } from '@/lib/onboarding';
 
 export default function UsersPage() {
@@ -257,7 +258,7 @@ export default function UsersPage() {
                       <h3 className="font-bold text-sm text-slate-900 dark:text-white">{u.nom}</h3>
                       <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                         <Mail className="w-3 h-3" />
-                        <span>{u.email}</span>
+                        <span>{isInternalPosAccountEmail(u.email) ? 'Connexion par téléphone' : u.email}</span>
                       </div>
                       {u.telephone && (
                         <p className="text-xs text-slate-500 mt-0.5">{u.telephone}</p>
@@ -268,8 +269,8 @@ export default function UsersPage() {
                     {u.is_active === false && (
                       <Badge variant="neutral" className="text-xs">Inactif</Badge>
                     )}
-                    <Badge variant={u.role === 'administrateur' ? 'warning' : 'info'}>
-                      {u.role}
+                    <Badge variant={u.role === 'administrateur' ? 'warning' : u.role === 'point_de_vente' ? 'success' : 'info'}>
+                      {u.role === 'point_de_vente' ? 'point de vente' : u.role}
                     </Badge>
                   </div>
                 </div>

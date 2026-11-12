@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { TableBuilder, makeError, type QuerySpec } from '@/lib/neon/query-builder';
 import { AUTH_COOKIE_NAME } from '@/lib/neon/auth';
-import { getSessionContext, READ_ONLY_MESSAGE, type SessionContext } from '@/lib/tenant';
+import { getSessionContext, isPosAccount, POS_ACCOUNT_READ_ONLY_MESSAGE, READ_ONLY_MESSAGE, type SessionContext } from '@/lib/tenant';
 import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
-import { getAssignedPosIds, getVisibleCollectionIds, getVisiblePosIds, ownsCollections } from '@/lib/collector-scope';
+import { getAssignedPosIds, getVisibleCollectionIds, getVisiblePosIds, NO_MATCH_ID, ownsCollections } from '@/lib/collector-scope';
+import { query } from '@/lib/neon/db';
+import { findPosAccountsByPhone } from '@/lib/pos-account-phone';
 import { recordSystemError } from '@/lib/system-errors';
 
 // Passerelle générique utilisée par le client navigateur (lib/supabase/client).
@@ -58,6 +60,26 @@ const COLLECTOR_JOINS: Record<string, string[]> = {
   license_requests: ['subscription_plans'],
 };
 
+// Compte « point de vente » : consultation seule de son point de vente (allocations reçues,
+// collectes faites chez lui). Seule écriture permise : son propre profil (nom, téléphone).
+// Son périmètre est imposé dans restrictToPosAccount.
+const POS_ACCOUNT_ACTIONS: Record<string, Action[]> = {
+  points_of_sale: ['select'],
+  ticket_allocations: ['select'],
+  collections: ['select'],
+  collection_items: ['select'],
+  ticket_types: ['select'],
+  wifi_spaces: ['select'],
+  profiles: ['select', 'update'],
+  organizations: ['select'],
+  subscriptions: ['select'],
+  subscription_plans: ['select'],
+  platform_users: ['select'],
+};
+
+// Notes internes de l'administrateur : jamais renvoyées à un compte point de vente.
+const POS_ACCOUNT_HIDDEN_COLUMNS = ['notes'];
+
 // Le super admin lit et modifie toutes les organisations, mais jamais la table des comptes (hash de mots de passe).
 const PLATFORM_ADMIN_TABLES = new Set([...Object.keys(CLIENT_POLICIES)]);
 
@@ -77,7 +99,55 @@ const NESTED_RE = /(\w+):(\w+)(!inner|!left)?\(([^)]*)\)/g;
 class ForbiddenError extends Error {}
 
 function isCollector(ctx: SessionContext): boolean {
-  return !ctx.isPlatformAdmin && ctx.role !== 'administrateur';
+  return !ctx.isPlatformAdmin && ctx.role !== 'administrateur' && !isPosAccount(ctx);
+}
+
+/** Restreint la lecture au point de vente du compte (aucun résultat s'il n'est rattaché à aucun). */
+async function restrictToPosAccount(spec: QuerySpec, ctx: SessionContext): Promise<void> {
+  const org = ctx.organizationId;
+  if (!org) throw new ForbiddenError('Aucune organisation associée');
+  const posId = ctx.posId || NO_MATCH_ID;
+  const and = (column: string, operator: '=' | 'IN', value: unknown) =>
+    spec.filters.push({ column, operator, value, logic: 'and' } as QuerySpec['filters'][number]);
+
+  switch (spec.tableName) {
+    case 'points_of_sale':
+      and('id', '=', posId);
+      break;
+    case 'ticket_allocations':
+    case 'collections':
+      and('pos_id', '=', posId);
+      break;
+    case 'collection_items': {
+      const res = await query(
+        `SELECT id FROM collections WHERE pos_id = $1 AND COALESCE(organization_id, organisation_id) = $2`,
+        [posId, org],
+      );
+      const ids = res.rows.map((r) => r.id as string);
+      and('collection_id', 'IN', ids.length > 0 ? ids : [NO_MATCH_ID]);
+      break;
+    }
+    case 'wifi_spaces': {
+      const res = await query(`SELECT space_id FROM points_of_sale WHERE id = $1 AND organization_id = $2`, [posId, org]);
+      and('id', '=', (res.rows[0]?.space_id as string | null) || NO_MATCH_ID);
+      break;
+    }
+    case 'profiles':
+      if (spec.action === 'select') and('id', '=', ctx.userId);
+      break;
+  }
+}
+
+/** Retire les notes internes des lignes renvoyées (y compris dans les jointures). */
+function stripHiddenColumns(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripHiddenColumns);
+  // Seulement les lignes (objets simples) : dates et autres valeurs restent intactes
+  if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+    if (!POS_ACCOUNT_HIDDEN_COLUMNS.includes(key)) out[key] = stripHiddenColumns(v);
+  }
+  return out;
 }
 
 /**
@@ -185,6 +255,8 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
     if (!PLATFORM_ADMIN_TABLES.has(tableName) || action === 'rpc') throw new ForbiddenError('Action non autorisée');
   } else if (!policy.actions.includes(action)) {
     throw new ForbiddenError('Action non autorisée');
+  } else if (isPosAccount(ctx) && !(POS_ACCOUNT_ACTIONS[tableName] || []).includes(action)) {
+    throw new ForbiddenError(action === 'select' ? 'Accès non autorisé' : POS_ACCOUNT_READ_ONLY_MESSAGE);
   } else if (isCollector(ctx) && !(COLLECTOR_ACTIONS[tableName] || ['select']).includes(action)) {
     throw new ForbiddenError('Action réservée à l’administrateur');
   } else if (ctx.organizationBlocked && (action !== 'select' || !BLOCKED_ORG_READABLE_TABLES.has(tableName))) {
@@ -205,7 +277,7 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
   const order = Array.isArray(body.order) ? body.order : [];
   for (const o of order) assertIdent(o?.column, 'Colonne de tri');
   validateSelect(body.selectColumns ?? null);
-  if (isCollector(ctx) && body.selectColumns) {
+  if ((isCollector(ctx) || isPosAccount(ctx)) && body.selectColumns) {
     const allowedJoins = COLLECTOR_JOINS[tableName] || [];
     for (const m of body.selectColumns.matchAll(NESTED_RE)) {
       if (!allowedJoins.includes(m[2])) throw new ForbiddenError('Jointure non autorisée');
@@ -235,9 +307,11 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
         if (action === 'update' && updateData) {
           const clean = { ...updateData };
           for (const col of PROTECTED_COLUMNS) delete clean[col];
-          // Un collecteur ne modifie que son propre profil, et jamais son rôle.
+          // Un collecteur ou un point de vente ne modifie que son propre profil, jamais son rôle
+          // ni le point de vente auquel il est rattaché.
           if (tableName === 'profiles' && ctx.role !== 'administrateur') {
             delete clean.role;
+            delete clean.pos_id;
             and('id', ctx.userId);
           }
           updateData = clean;
@@ -280,6 +354,17 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
   };
 }
 
+/** Mise à jour du téléphone d'un point de vente précis (filtre id = …), sinon null. */
+function posPhoneUpdate(spec: QuerySpec): { posId: string; phone: string | null } | null {
+  if (spec.tableName !== 'points_of_sale' || spec.action !== 'update' || !spec.updateData) return null;
+  const data = spec.updateData as Record<string, unknown>;
+  if (!('telephone' in data)) return null;
+  const idFilter = spec.filters.find((f) => f.column === 'id' && f.operator === '=' && typeof f.value === 'string');
+  if (!idFilter) return null;
+  const phone = typeof data.telephone === 'string' && data.telephone.trim() ? data.telephone.trim() : null;
+  return { posId: idFilter.value as string, phone };
+}
+
 export async function POST(request: NextRequest) {
   const ctx = await getSessionContext(request.cookies.get(AUTH_COOKIE_NAME)?.value ?? null);
   if (!ctx) {
@@ -290,6 +375,7 @@ export async function POST(request: NextRequest) {
   try {
     spec = buildSpec(await request.json(), ctx);
     if (isCollector(ctx)) await restrictToCollector(spec, ctx);
+    if (isPosAccount(ctx)) await restrictToPosAccount(spec, ctx);
   } catch (err) {
     const message = err instanceof ForbiddenError ? err.message : 'Requête invalide';
     return NextResponse.json({ data: null, error: makeError(message) }, { status: 403 });
@@ -300,8 +386,42 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: null, error: makeError('Filtre requis') }, { status: 403 });
   }
 
+  // Numéro d'un point de vente modifié : c'est l'identifiant de connexion de son accès,
+  // il ne doit pas être celui d'un autre point de vente.
+  const posPhoneChange = posPhoneUpdate(spec);
+  if (posPhoneChange) {
+    const own = await query(
+      `SELECT p.id FROM profiles p JOIN points_of_sale s ON s.id = p.pos_id
+        WHERE p.pos_id = $1 AND p.role = 'point_de_vente' AND p.deleted_at IS NULL
+          AND ($2::uuid IS NULL OR s.organization_id = $2::uuid)`,
+      [posPhoneChange.posId, ctx.isPlatformAdmin ? null : ctx.organizationId],
+    );
+    const ownId = (own.rows[0]?.id as string | undefined) ?? null;
+    if (ownId && !posPhoneChange.phone) {
+      return NextResponse.json(
+        { data: null, error: makeError('Ce point de vente a un accès : son numéro de téléphone est obligatoire.') },
+        { status: 400 },
+      );
+    }
+    if (ownId && posPhoneChange.phone && (await findPosAccountsByPhone(posPhoneChange.phone, ownId)).length > 0) {
+      return NextResponse.json(
+        { data: null, error: makeError('Ce numéro est déjà utilisé par un autre point de vente.') },
+        { status: 409 },
+      );
+    }
+  }
+
   try {
     const result = await TableBuilder.fromSpec(spec).execute();
+    if (posPhoneChange && !result.error) {
+      await query(
+        `UPDATE profiles p SET telephone = $1, updated_at = NOW()
+           FROM points_of_sale s
+          WHERE s.id = p.pos_id AND p.pos_id = $2 AND p.role = 'point_de_vente' AND p.deleted_at IS NULL
+            AND ($3::uuid IS NULL OR s.organization_id = $3::uuid)`,
+        [posPhoneChange.phone, posPhoneChange.posId, ctx.isPlatformAdmin ? null : ctx.organizationId],
+      );
+    }
     // Erreur SQL (hors doublon, normal lors d'un renvoi hors ligne) : journalisée pour l'État du système
     if (result.error && !/duplicate key|déjà/i.test(result.error.message)) {
       await recordSystemError('api', `${spec.action} ${spec.tableName} : ${result.error.message}`, { route: '/api/db' });
@@ -316,6 +436,9 @@ export async function POST(request: NextRequest) {
       if (inserted) notifyInBackground(() => notifyCollectionCreated(organizationId, ctx.userId, inserted));
     }
 
+    if (isPosAccount(ctx) && result.data) {
+      return NextResponse.json({ ...result, data: stripHiddenColumns(result.data) });
+    }
     return NextResponse.json(result);
   } catch (err) {
     console.error('API db error:', err);

@@ -1,4 +1,4 @@
-export type UserRole = 'administrateur' | 'collecteur';
+export type UserRole = 'administrateur' | 'collecteur' | 'point_de_vente';
 export type PosStatus = 'actif' | 'inactif' | 'suspendu';
 export type CollectionStatus = 'brouillon' | 'validee' | 'annulee';
 export type AllocationType = 'allocation' | 'exchange_return' | 'exchange_receive';
@@ -19,6 +19,8 @@ export interface Profile {
   nom: string;
   email: string;
   role: UserRole;
+  /** Compte « point de vente » : point de vente consulté (lecture seule). */
+  pos_id?: string | null;
   telephone?: string;
   devise?: string;
   organization_id?: string;
@@ -33,6 +35,8 @@ export interface PointOfSale {
   id: string;
   nom: string;
   adresse?: string;
+  /** Numéro du point de vente : identifiant de connexion de son accès en consultation. */
+  telephone?: string | null;
   ville: string;
   statut: PosStatus;
   collecteur_id?: string;

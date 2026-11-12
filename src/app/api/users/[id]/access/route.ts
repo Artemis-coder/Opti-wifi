@@ -5,6 +5,7 @@ import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
 import { setMustChangePassword } from '@/lib/password-change';
 import { appUrl, createPasswordToken, generateTemporaryPassword } from '@/lib/password-tokens';
 import { isEmailConfigured, sendInvitationEmail } from '@/lib/email';
+import { isInternalPosAccountEmail } from '@/lib/pos-account-phone';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -39,14 +40,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const body = await request.json().catch(() => ({}));
   const action = body.action as string;
-  const sendByEmail = body.send_email === true;
+  let sendByEmail = body.send_email === true;
   if (action !== 'temporary_password' && action !== 'invite_link') {
     return NextResponse.json({ error: 'Action invalide.' }, { status: 400 });
   }
 
   try {
     const { rows } = await query(
-      `SELECT p.id, p.nom, p.role, u.email, o.name AS org, me.nom AS inviter
+      `SELECT p.id, p.nom, p.role, p.telephone, u.email, o.name AS org, me.nom AS inviter
          FROM profiles p
          JOIN users u ON u.id = p.id
          JOIN organizations o ON o.id = p.organization_id
@@ -56,13 +57,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
     const member = rows[0];
     if (!member) return NextResponse.json({ error: 'Membre introuvable.' }, { status: 404 });
+    // Point de vente sans e-mail : adresse interne, jamais d'envoi ; il se connecte avec son numéro
+    const internalEmail = isInternalPosAccountEmail(member.email);
+    if (internalEmail) sendByEmail = false;
+    const loginPhone = member.role === 'point_de_vente' && member.telephone ? { login_phone: member.telephone as string, email_is_internal: internalEmail } : {};
 
     const base = {
       to: member.email as string,
       name: member.nom || member.email,
       organizationName: member.org || 'votre organisation',
       inviterName: member.inviter || null,
-      role: (member.role === 'administrateur' ? 'administrateur' : 'collecteur') as 'administrateur' | 'collecteur',
+      role: (member.role === 'administrateur' || member.role === 'point_de_vente' ? member.role : 'collecteur') as
+        | 'administrateur'
+        | 'collecteur'
+        | 'point_de_vente',
       loginUrl: appUrl('/login', request),
     };
 
@@ -94,7 +102,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({
       success: true,
       email_sent: emailSent,
-      access: { email: member.email, temporary_password: temporaryPassword, login_url: appUrl('/login', request) },
+      access: { email: member.email, temporary_password: temporaryPassword, login_url: appUrl('/login', request), ...loginPhone },
     });
   } catch (err) {
     console.error('Member access error:', err);

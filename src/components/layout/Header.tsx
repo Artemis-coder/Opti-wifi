@@ -39,7 +39,15 @@ const COLLECTOR_TITLES: Record<string, string> = {
   '/allocations/new': 'Attribuer des tickets',
 };
 
-function resolveTitle(pathname: string, isCollector: boolean): string {
+// Compte point de vente : consultation seule
+const POS_ACCOUNT_TITLES: Record<string, string> = {
+  '/dashboard': 'Mon point de vente',
+  '/collections': 'Mes collectes',
+  '/allocations': 'Mes allocations',
+};
+
+function resolveTitle(pathname: string, isCollector: boolean, isPosAccount = false): string {
+  if (isPosAccount && POS_ACCOUNT_TITLES[pathname]) return POS_ACCOUNT_TITLES[pathname];
   if (isCollector && COLLECTOR_TITLES[pathname]) return COLLECTOR_TITLES[pathname];
   if (TITLES[pathname]) return TITLES[pathname];
   const match = Object.keys(TITLES)
@@ -54,7 +62,7 @@ function resolveTitle(pathname: string, isCollector: boolean): string {
 export function Header({ onOpenMobileMenu, title }: HeaderProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
-  const heading = title ?? resolveTitle(pathname ?? '/', user?.role === 'collecteur');
+  const heading = title ?? resolveTitle(pathname ?? '/', user?.role === 'collecteur', user?.role === 'point_de_vente');
   const { isOnline, isOffline, isUnstable } = useOnlineStatus();
 
   const isAdmin = user?.role === 'administrateur';
