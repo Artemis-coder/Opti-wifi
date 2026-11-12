@@ -86,7 +86,7 @@ export function PosAccountDashboard() {
         </span>
       </div>
 
-      {/* Période : s'applique aux chiffres clés et aux deux listes */}
+      {/* Période : s'applique aux chiffres clés (les listes montrent toujours les 5 derniers) */}
       <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
         {PERIODS.map((p) => (
           <button
@@ -142,13 +142,13 @@ export function PosAccountDashboard() {
         {/* 5 dernières collectes : montant, date, collecteur, écart et commission */}
         <Card className="p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">5 dernières collectes <span className="font-normal text-slate-500">· {scope}</span></h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">5 dernières collectes</h2>
             <Link href="/collections" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
               Tout voir
             </Link>
           </div>
           {data.last_collections.length === 0 ? (
-            <p className="text-sm text-slate-500 py-6 text-center">Aucune collecte {scope}.</p>
+            <p className="text-sm text-slate-500 py-6 text-center">Aucune collecte pour l&apos;instant.</p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.last_collections.map((c) => (
@@ -186,13 +186,13 @@ export function PosAccountDashboard() {
         {/* Derniers tickets reçus (allocations et échanges) */}
         <Card className="p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers tickets reçus <span className="font-normal text-slate-500">· {scope}</span></h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">5 derniers tickets reçus</h2>
             <Link href="/allocations" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
               Tout voir
             </Link>
           </div>
           {data.recent.length === 0 ? (
-            <p className="text-sm text-slate-500 py-6 text-center">Aucun ticket reçu {scope}.</p>
+            <p className="text-sm text-slate-500 py-6 text-center">Aucun ticket reçu pour l&apos;instant.</p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.recent.map((r) => {

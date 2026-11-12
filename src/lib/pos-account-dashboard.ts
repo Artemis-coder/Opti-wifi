@@ -2,10 +2,10 @@ import { query } from '@/lib/neon/db';
 import { PERIOD_START, type CommissionPeriod } from '@/lib/pos-account-commissions';
 
 /**
- * Accueil d'un compte « point de vente » (consultation seule). Tout est calculé sur la MÊME
- * période choisie (ce mois-ci par défaut), pour que les chiffres clés et les listes concordent :
- * tickets reçus, total collecté, écart (et nombre de collectes avec écart), commission,
- * ses 5 dernières collectes et ses 5 derniers tickets reçus de la période.
+ * Accueil d'un compte « point de vente » (consultation seule) :
+ * - chiffres clés sur la période choisie (ce mois-ci par défaut) : tickets reçus, total collecté,
+ *   écart (et nombre de collectes avec écart), commission ;
+ * - toujours ses 5 dernières collectes et ses 5 derniers tickets reçus, quelle que soit la période.
  * Toujours limité au point de vente rattaché au compte, dans son organisation.
  * Collectes annulées exclues. Notes internes jamais renvoyées.
  */
@@ -24,9 +24,9 @@ export interface PosAccountDashboard {
     commission: number;
     collections: number;
   };
-  /** 5 dernières collectes de la période (hors annulées), la plus récente d'abord. */
+  /** 5 dernières collectes (hors annulées), la plus récente d'abord, toutes périodes confondues. */
   last_collections: { id: string; date: string; collected: number; expected: number; gap: number; commission: number; collector: string | null }[];
-  /** 5 derniers mouvements de tickets de la période (allocations et échanges). */
+  /** 5 derniers mouvements de tickets (allocations et échanges), toutes périodes confondues. */
   recent: {
     kind: 'allocation' | 'exchange_return' | 'exchange_receive';
     id: string;
@@ -49,10 +49,11 @@ export async function getPosAccountDashboard(
   const params = [posId, organizationId];
   const start = PERIOD_START[period];
   const when = 'COALESCE(c.date_collecte::timestamptz, c.created_at)';
-  const collected = `c.pos_id = $1 AND COALESCE(c.organization_id, c.organisation_id) = $2
-                     AND c.statut <> 'annulee' AND ${when} >= ${start}`;
+  const ofPos = `c.pos_id = $1 AND COALESCE(c.organization_id, c.organisation_id) = $2 AND c.statut <> 'annulee'`;
+  const collected = `${ofPos} AND ${when} >= ${start}`;
   const allocWhen = 'COALESCE(a.date_allocation::timestamptz, a.created_at)';
-  const allocated = `a.pos_id = $1 AND a.organization_id = $2 AND ${allocWhen} >= ${start}`;
+  const allocOfPos = `a.pos_id = $1 AND a.organization_id = $2`;
+  const allocated = `${allocOfPos} AND ${allocWhen} >= ${start}`;
 
   const [pos, tickets, totals, last, recent] = await Promise.all([
     query(
@@ -82,14 +83,14 @@ export async function getPosAccountDashboard(
       `SELECT c.id, ${when} AS date, c.montant_collecte::float AS collected, c.montant_attendu::float AS expected,
               c.difference::float AS gap, c.commission::float AS commission, col.nom AS collector
          FROM collections c LEFT JOIN profiles col ON col.id = c.collecteur_id
-        WHERE ${collected}
+        WHERE ${ofPos}
         ORDER BY ${when} DESC, c.created_at DESC LIMIT 5`,
       params,
     ),
     query(
       `SELECT a.type AS kind, a.id, ${allocWhen} AS date, a.quantite::float AS value, t.nom AS label
          FROM ticket_allocations a LEFT JOIN ticket_types t ON t.id = a.ticket_type_id
-        WHERE ${allocated}
+        WHERE ${allocOfPos}
         ORDER BY date DESC, a.created_at DESC LIMIT 5`,
       params,
     ),
