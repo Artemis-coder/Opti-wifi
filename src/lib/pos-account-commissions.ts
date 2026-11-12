@@ -16,8 +16,8 @@ export function parseCommissionPeriod(value: string | null): CommissionPeriod {
   return COMMISSION_PERIODS.includes(value as CommissionPeriod) ? (value as CommissionPeriod) : 'all';
 }
 
-// Début de la période (fuseau Abidjan = UTC)
-const PERIOD_START: Record<CommissionPeriod, string> = {
+// Début de la période (fuseau Abidjan = UTC) ; aussi utilisé par le tableau de bord du point de vente
+export const PERIOD_START: Record<CommissionPeriod, string> = {
   all: "'-infinity'::timestamptz",
   month: "date_trunc('month', NOW())",
   '3months': "date_trunc('month', NOW()) - interval '2 months'",

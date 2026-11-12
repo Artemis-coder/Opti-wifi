@@ -1,17 +1,32 @@
 import { query } from '@/lib/neon/db';
+import { PERIOD_START, type CommissionPeriod } from '@/lib/pos-account-commissions';
 
 /**
- * Accueil d'un compte « point de vente » (consultation seule) : résumé du mois en cours
- * (tickets reçus, encaissé, commission), ses 5 dernières collectes et ses derniers tickets reçus.
+ * Accueil d'un compte « point de vente » (consultation seule). Tout est calculé sur la MÊME
+ * période choisie (ce mois-ci par défaut), pour que les chiffres clés et les listes concordent :
+ * tickets reçus, total collecté, écart (et nombre de collectes avec écart), commission,
+ * ses 5 dernières collectes et ses 5 derniers tickets reçus de la période.
  * Toujours limité au point de vente rattaché au compte, dans son organisation.
- * Collectes annulées exclues des totaux. Notes internes jamais renvoyées.
+ * Collectes annulées exclues. Notes internes jamais renvoyées.
  */
+export type DashboardPeriod = CommissionPeriod;
+
 export interface PosAccountDashboard {
+  period: DashboardPeriod;
   pos: { id: string; name: string; city: string | null; address: string | null; space: string | null; collector: string | null } | null;
-  month: { tickets_received: number; collected: number; expected: number; gap: number; commission: number; collections: number };
-  /** 5 dernières collectes (hors annulées), la plus récente d'abord. */
+  totals: {
+    tickets_received: number;
+    collected: number;
+    expected: number;
+    gap: number;
+    /** Nombre de collectes dont le montant collecté diffère du montant attendu. */
+    gap_count: number;
+    commission: number;
+    collections: number;
+  };
+  /** 5 dernières collectes de la période (hors annulées), la plus récente d'abord. */
   last_collections: { id: string; date: string; collected: number; expected: number; gap: number; commission: number; collector: string | null }[];
-  /** Derniers mouvements de tickets (allocations et échanges). */
+  /** 5 derniers mouvements de tickets de la période (allocations et échanges). */
   recent: {
     kind: 'allocation' | 'exchange_return' | 'exchange_receive';
     id: string;
@@ -22,15 +37,22 @@ export interface PosAccountDashboard {
   }[];
 }
 
-const EMPTY_MONTH = { tickets_received: 0, collected: 0, expected: 0, gap: 0, commission: 0, collections: 0 };
+const EMPTY_TOTALS = { tickets_received: 0, collected: 0, expected: 0, gap: 0, gap_count: 0, commission: 0, collections: 0 };
 
-export async function getPosAccountDashboard(posId: string | null, organizationId: string): Promise<PosAccountDashboard> {
-  if (!posId) return { pos: null, month: EMPTY_MONTH, last_collections: [], recent: [] };
+export async function getPosAccountDashboard(
+  posId: string | null,
+  organizationId: string,
+  period: DashboardPeriod = 'month',
+): Promise<PosAccountDashboard> {
+  if (!posId) return { period, pos: null, totals: EMPTY_TOTALS, last_collections: [], recent: [] };
 
   const params = [posId, organizationId];
-  const monthStart = "date_trunc('month', NOW())";
-  const collected = `c.pos_id = $1 AND COALESCE(c.organization_id, c.organisation_id) = $2 AND c.statut <> 'annulee'`;
+  const start = PERIOD_START[period];
   const when = 'COALESCE(c.date_collecte::timestamptz, c.created_at)';
+  const collected = `c.pos_id = $1 AND COALESCE(c.organization_id, c.organisation_id) = $2
+                     AND c.statut <> 'annulee' AND ${when} >= ${start}`;
+  const allocWhen = 'COALESCE(a.date_allocation::timestamptz, a.created_at)';
+  const allocated = `a.pos_id = $1 AND a.organization_id = $2 AND ${allocWhen} >= ${start}`;
 
   const [pos, tickets, totals, last, recent] = await Promise.all([
     query(
@@ -43,18 +65,17 @@ export async function getPosAccountDashboard(posId: string | null, organizationI
     ),
     query(
       `SELECT COALESCE(SUM(CASE WHEN a.type = 'exchange_return' THEN -a.quantite ELSE a.quantite END), 0)::int AS n
-         FROM ticket_allocations a
-        WHERE a.pos_id = $1 AND a.organization_id = $2
-          AND COALESCE(a.date_allocation::timestamptz, a.created_at) >= ${monthStart}`,
+         FROM ticket_allocations a WHERE ${allocated}`,
       params,
     ),
     query(
       `SELECT COUNT(*)::int AS n,
+              COUNT(*) FILTER (WHERE c.difference <> 0)::int AS gap_count,
               COALESCE(SUM(c.montant_collecte), 0)::float AS collected,
               COALESCE(SUM(c.montant_attendu), 0)::float AS expected,
               COALESCE(SUM(c.difference), 0)::float AS gap,
               COALESCE(SUM(c.commission), 0)::float AS commission
-         FROM collections c WHERE ${collected} AND ${when} >= ${monthStart}`,
+         FROM collections c WHERE ${collected}`,
       params,
     ),
     query(
@@ -66,10 +87,9 @@ export async function getPosAccountDashboard(posId: string | null, organizationI
       params,
     ),
     query(
-      `SELECT a.type AS kind, a.id, COALESCE(a.date_allocation::timestamptz, a.created_at) AS date,
-              a.quantite::float AS value, t.nom AS label
+      `SELECT a.type AS kind, a.id, ${allocWhen} AS date, a.quantite::float AS value, t.nom AS label
          FROM ticket_allocations a LEFT JOIN ticket_types t ON t.id = a.ticket_type_id
-        WHERE a.pos_id = $1 AND a.organization_id = $2
+        WHERE ${allocated}
         ORDER BY date DESC, a.created_at DESC LIMIT 5`,
       params,
     ),
@@ -78,14 +98,16 @@ export async function getPosAccountDashboard(posId: string | null, organizationI
   const p = pos.rows[0];
   const t = totals.rows[0] || {};
   return {
+    period,
     pos: p
       ? { id: p.id, name: p.nom, city: p.ville ?? null, address: p.adresse ?? null, space: p.space ?? null, collector: p.collector ?? null }
       : null,
-    month: {
+    totals: {
       tickets_received: Number(tickets.rows[0]?.n || 0),
       collected: Number(t.collected || 0),
       expected: Number(t.expected || 0),
       gap: Number(t.gap || 0),
+      gap_count: Number(t.gap_count || 0),
       commission: Number(t.commission || 0),
       collections: Number(t.n || 0),
     },
