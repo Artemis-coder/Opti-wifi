@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { Collection, CollectionItem } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { RecordChangeActions } from '@/components/records/RecordChangeActions';
@@ -249,8 +250,8 @@ export default function CollectionDetailPage() {
         {/* Separator */}
         <div className="border-t border-slate-200 dark:border-slate-800" />
 
-        {/* Chiffres de l'encaissement : mêmes cadres que le reste de l'application */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {/* Chiffres de l'encaissement : la dernière ligne occupe toujours toute la largeur */}
+        <KpiGrid cols={{ base: 2, sm: 3 }}>
           <StatTile label="Attendu" value={formatAmountShort(montantAttendu)} icon={DollarSign} accent="indigo" hint="D’après les tickets vendus" />
           <StatTile label="Total encaissé" value={formatAmountShort(montantCollecte)} icon={Receipt} accent="emerald" />
           <StatTile label="Commission" value={formatAmountShort(commission)} icon={ShoppingBag} accent="amber" hint="Versée au point de vente" />
@@ -264,7 +265,7 @@ export default function CollectionDetailPage() {
             hint={diffIsZero ? 'Aucun écart' : diffIsNeg ? 'Manque à encaisser' : 'Excédent de caisse'}
             sensitive
           />
-        </div>
+        </KpiGrid>
 
         {/* Notes */}
         {collection.notes && (

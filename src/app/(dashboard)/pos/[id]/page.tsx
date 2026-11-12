@@ -34,6 +34,7 @@ import { isActiveProfile } from '@/lib/utils/profiles';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { cn } from '@/lib/utils/cn';
 import { PosAccessCard } from '@/components/pos/PosAccessCard';
 import type { PlanLimits } from '@/components/team/PlanLimitDialog';
@@ -423,7 +424,7 @@ function PosDetailContent() {
       </Card>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+      <KpiGrid cols={{ base: 2, sm: 3, xl: 5 }}>
         <StatTile
           label="Tickets Alloués"
           value={totalAlloue}
@@ -462,9 +463,8 @@ function PosDetailContent() {
           icon={Receipt}
           accent="amber"
           hint="Total commissions versées"
-          className="col-span-2 sm:col-span-1"
         />
-      </div>
+      </KpiGrid>
 
       {/* Allocation Summary Table */}
       <Card className="p-0 overflow-hidden">
