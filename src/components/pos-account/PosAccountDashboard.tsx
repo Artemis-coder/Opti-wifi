@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Banknote, CalendarCheck, Eye, Loader2, MapPin, Percent, Receipt, Store, Ticket } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Banknote, CalendarCheck, Eye, Loader2, MapPin, Percent, Receipt, Store, Ticket } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatTile } from '@/components/ui/StatTile';
 import { cn } from '@/lib/utils/cn';
@@ -16,7 +16,6 @@ const MOVEMENT: Record<Data['recent'][number]['kind'], { label: string; icon: Re
   allocation: { label: 'Tickets reçus', icon: Ticket, tone: 'text-amber-600 bg-amber-500/10', href: '/allocations' },
   exchange_receive: { label: 'Échange : réception', icon: ArrowDownLeft, tone: 'text-indigo-600 bg-indigo-500/10', href: '/allocations' },
   exchange_return: { label: 'Échange : retour', icon: ArrowUpRight, tone: 'text-slate-600 bg-slate-500/10', href: '/allocations' },
-  collection: { label: 'Collecte', icon: Receipt, tone: 'text-emerald-600 bg-emerald-500/10', href: '/collections' },
 };
 
 /** Accueil d'un compte point de vente : résumé du mois et derniers mouvements (consultation seule). */
@@ -107,43 +106,66 @@ export function PosAccountDashboard() {
         <StatTile label="Ma commission" value={money(m?.commission ?? 0)} icon={Percent} accent="indigo" hint="Total du mois" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="p-4 sm:p-5 space-y-2">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Dernière collecte</h2>
-          {data.last_collection ? (
-            <Link href={`/collections/${data.last_collection.id}`} className="block group">
-              <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-white group-hover:underline">
-                {money(data.last_collection.collected)}
-              </p>
-              <p className="text-xs text-slate-500">le {formatDateOnlyFR(data.last_collection.date)}</p>
-              <p
-                className={cn(
-                  'text-xs font-semibold mt-1',
-                  data.last_collection.gap < 0 ? 'text-red-600' : 'text-emerald-700 dark:text-emerald-400',
-                )}
-              >
-                Écart : {data.last_collection.gap > 0 ? '+' : ''}
-                {money(data.last_collection.gap)}
-              </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* 5 dernières collectes : montant, date, collecteur, écart et commission */}
+        <Card className="p-4 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">5 dernières collectes</h2>
+            <Link href="/collections" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+              Tout voir
             </Link>
+          </div>
+          {data.last_collections.length === 0 ? (
+            <p className="text-sm text-slate-500 py-6 text-center">Aucune collecte pour l&apos;instant.</p>
           ) : (
-            <p className="text-sm text-slate-500">Aucune collecte pour l&apos;instant.</p>
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.last_collections.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/collections/${c.id}`}
+                    className="flex items-center gap-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg px-1"
+                  >
+                    <span className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-emerald-600 bg-emerald-500/10">
+                      <Receipt className="w-4 h-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-slate-900 dark:text-white">{formatDateOnlyFR(c.date)}</span>
+                      {c.collector && <span className="block text-xs text-slate-500 truncate">Par {c.collector}</span>}
+                      <span className="block text-xs text-slate-500">Commission {money(c.commission)}</span>
+                    </span>
+                    <span className="text-right">
+                      <span className="block text-sm font-bold tabular-nums text-slate-900 dark:text-white">{money(c.collected)}</span>
+                      <span
+                        className={cn(
+                          'block text-xs font-semibold tabular-nums',
+                          c.gap < 0 ? 'text-red-600' : 'text-emerald-700 dark:text-emerald-400',
+                        )}
+                      >
+                        {c.gap === 0 ? 'Sans écart' : `Écart ${c.gap > 0 ? '+' : ''}${money(c.gap)}`}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
         </Card>
 
-        <Card className="p-4 sm:p-5 space-y-3 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers mouvements</h2>
-            <ArrowLeftRight className="w-4 h-4 text-slate-400" />
+        {/* Derniers tickets reçus (allocations et échanges) */}
+        <Card className="p-4 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers tickets reçus</h2>
+            <Link href="/allocations" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+              Tout voir
+            </Link>
           </div>
           {data.recent.length === 0 ? (
-            <p className="text-sm text-slate-500 py-6 text-center">Aucun mouvement pour l&apos;instant.</p>
+            <p className="text-sm text-slate-500 py-6 text-center">Aucun ticket reçu pour l&apos;instant.</p>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.recent.map((r) => {
                 const meta = MOVEMENT[r.kind] ?? MOVEMENT.allocation;
                 const Icon = meta.icon;
-                const isCollection = r.kind === 'collection';
                 return (
                   <li key={`${r.kind}-${r.id}`}>
                     <Link
@@ -154,16 +176,17 @@ export function PosAccountDashboard() {
                         <Icon className="w-4 h-4" />
                       </span>
                       <span className="min-w-0 flex-1">
+                        {/* Type de ticket en titre ; la nature n'est précisée que pour un échange */}
                         <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">
-                          {meta.label}
-                          {r.label ? ` · ${r.label}` : ''}
+                          {r.label || meta.label}
                         </span>
-                        <span className="block text-xs text-slate-500">{formatDateOnlyFR(r.date)}</span>
+                        <span className="block text-xs text-slate-500">
+                          {r.kind !== 'allocation' ? `${meta.label} · ` : ''}
+                          {formatDateOnlyFR(r.date)}
+                        </span>
                       </span>
                       <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-white">
-                        {isCollection
-                          ? money(r.value)
-                          : `${r.kind === 'exchange_return' ? '−' : '+'}${formatNumber(r.value)} tickets`}
+                        {`${r.kind === 'exchange_return' ? '−' : '+'}${formatNumber(r.value)} tickets`}
                       </span>
                     </Link>
                   </li>

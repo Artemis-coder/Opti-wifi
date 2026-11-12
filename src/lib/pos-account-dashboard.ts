@@ -2,19 +2,21 @@ import { query } from '@/lib/neon/db';
 
 /**
  * Accueil d'un compte « point de vente » (consultation seule) : résumé du mois en cours
- * (tickets reçus, encaissé, commission), dernière collecte et derniers mouvements.
+ * (tickets reçus, encaissé, commission), ses 5 dernières collectes et ses derniers tickets reçus.
  * Toujours limité au point de vente rattaché au compte, dans son organisation.
  * Collectes annulées exclues des totaux. Notes internes jamais renvoyées.
  */
 export interface PosAccountDashboard {
   pos: { id: string; name: string; city: string | null; address: string | null; space: string | null; collector: string | null } | null;
   month: { tickets_received: number; collected: number; expected: number; gap: number; commission: number; collections: number };
-  last_collection: { id: string; date: string; collected: number; gap: number } | null;
+  /** 5 dernières collectes (hors annulées), la plus récente d'abord. */
+  last_collections: { id: string; date: string; collected: number; expected: number; gap: number; commission: number; collector: string | null }[];
+  /** Derniers mouvements de tickets (allocations et échanges). */
   recent: {
-    kind: 'allocation' | 'exchange_return' | 'exchange_receive' | 'collection';
+    kind: 'allocation' | 'exchange_return' | 'exchange_receive';
     id: string;
     date: string;
-    /** Quantité de tickets (mouvement de tickets) ou montant encaissé (collecte). */
+    /** Quantité de tickets. */
     value: number;
     label: string | null;
   }[];
@@ -23,7 +25,7 @@ export interface PosAccountDashboard {
 const EMPTY_MONTH = { tickets_received: 0, collected: 0, expected: 0, gap: 0, commission: 0, collections: 0 };
 
 export async function getPosAccountDashboard(posId: string | null, organizationId: string): Promise<PosAccountDashboard> {
-  if (!posId) return { pos: null, month: EMPTY_MONTH, last_collection: null, recent: [] };
+  if (!posId) return { pos: null, month: EMPTY_MONTH, last_collections: [], recent: [] };
 
   const params = [posId, organizationId];
   const monthStart = "date_trunc('month', NOW())";
@@ -56,27 +58,25 @@ export async function getPosAccountDashboard(posId: string | null, organizationI
       params,
     ),
     query(
-      `SELECT c.id, ${when} AS date, c.montant_collecte::float AS collected, c.difference::float AS gap
-         FROM collections c WHERE ${collected}
-        ORDER BY ${when} DESC LIMIT 1`,
+      `SELECT c.id, ${when} AS date, c.montant_collecte::float AS collected, c.montant_attendu::float AS expected,
+              c.difference::float AS gap, c.commission::float AS commission, col.nom AS collector
+         FROM collections c LEFT JOIN profiles col ON col.id = c.collecteur_id
+        WHERE ${collected}
+        ORDER BY ${when} DESC, c.created_at DESC LIMIT 5`,
       params,
     ),
     query(
-      `(SELECT a.type AS kind, a.id, COALESCE(a.date_allocation::timestamptz, a.created_at) AS date,
-               a.quantite::float AS value, t.nom AS label
-          FROM ticket_allocations a LEFT JOIN ticket_types t ON t.id = a.ticket_type_id
-         WHERE a.pos_id = $1 AND a.organization_id = $2)
-       UNION ALL
-       (SELECT 'collection' AS kind, c.id, ${when} AS date, c.montant_collecte::float AS value, NULL AS label
-          FROM collections c WHERE ${collected})
-       ORDER BY date DESC LIMIT 5`,
+      `SELECT a.type AS kind, a.id, COALESCE(a.date_allocation::timestamptz, a.created_at) AS date,
+              a.quantite::float AS value, t.nom AS label
+         FROM ticket_allocations a LEFT JOIN ticket_types t ON t.id = a.ticket_type_id
+        WHERE a.pos_id = $1 AND a.organization_id = $2
+        ORDER BY date DESC, a.created_at DESC LIMIT 5`,
       params,
     ),
   ]);
 
   const p = pos.rows[0];
   const t = totals.rows[0] || {};
-  const l = last.rows[0];
   return {
     pos: p
       ? { id: p.id, name: p.nom, city: p.ville ?? null, address: p.adresse ?? null, space: p.space ?? null, collector: p.collector ?? null }
@@ -89,7 +89,15 @@ export async function getPosAccountDashboard(posId: string | null, organizationI
       commission: Number(t.commission || 0),
       collections: Number(t.n || 0),
     },
-    last_collection: l ? { id: l.id, date: new Date(l.date).toISOString(), collected: Number(l.collected || 0), gap: Number(l.gap || 0) } : null,
+    last_collections: last.rows.map((l) => ({
+      id: l.id,
+      date: new Date(l.date).toISOString(),
+      collected: Number(l.collected || 0),
+      expected: Number(l.expected || 0),
+      gap: Number(l.gap || 0),
+      commission: Number(l.commission || 0),
+      collector: l.collector ?? null,
+    })),
     recent: recent.rows.map((r) => ({
       kind: r.kind,
       id: r.id,
