@@ -40,7 +40,10 @@ export default function AllocationsPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const supabase = createClient();
-  const isCollector = useAuthStore((s) => s.user?.role) === 'collecteur';
+  const role = useAuthStore((s) => s.user?.role);
+  const isCollector = role === 'collecteur';
+  // Compte point de vente : consultation seule de ses propres allocations
+  const isPosAccount = role === 'point_de_vente';
 
   useEffect(() => {
     async function loadData() {
@@ -70,7 +73,7 @@ export default function AllocationsPage() {
   const getAllocatorName = (allouePar?: string) => {
     if (!allouePar) return 'Système';
     const profile = profiles.find((p: Profile) => p.id === allouePar);
-    return profile?.nom || 'Utilisateur inconnu';
+    return profile?.nom || (isPosAccount ? 'Votre fournisseur' : 'Utilisateur inconnu');
   };
 
   const getTicketTypeName = (ticketTypeId: string) => {
@@ -166,16 +169,19 @@ export default function AllocationsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
-            <span>{isCollector ? 'Mes allocations' : 'Suivi des Allocations'}</span>
+            <span>{isCollector || isPosAccount ? 'Mes allocations' : 'Suivi des Allocations'}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isCollector
+            {isPosAccount
+              ? 'Les tickets reçus par votre point de vente (consultation seule).'
+              : isCollector
               ? 'Les tickets attribués à vos points de vente.'
               : 'Historique complet des mouvements et attributions de tickets par point de vente.'}
           </p>
         </div>
 
         {/* Action Buttons */}
+        {!isPosAccount && (
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link href="/allocations/exchange" className="flex-1 sm:flex-initial">
             <Button variant="outline" size="sm" className="w-full gap-1.5 font-semibold text-xs sm:text-sm">
@@ -185,20 +191,23 @@ export default function AllocationsPage() {
           </Link>
           <AddButton what="une allocation" tour="add:allocation" href="/allocations/new" className="flex-1 sm:flex-initial" />
         </div>
+        )}
       </div>
 
       {/* Chiffres clés : mêmes cadres que le tableau de bord et les rapports */}
       {allocations.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className={`grid grid-cols-2 ${isPosAccount ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
           <StatTile label="Tickets alloués" value={formatNumber(totalNetTickets)} icon={Ticket} accent="indigo" hint="Stock net confié aux points de vente" />
           <StatTile label="Valeur du stock" value={formatAmountShort(totalNetValeur)} icon={DollarSign} accent="amber" hint="Au prix de vente des tickets" />
-          <StatTile
-            label="Points de vente servis"
-            value={formatNumber(uniquePosCount)}
-            icon={Store}
-            accent="blue"
-            hint={uniquePosCount > 1 ? 'points de vente' : 'point de vente'}
-          />
+          {!isPosAccount && (
+            <StatTile
+              label="Points de vente servis"
+              value={formatNumber(uniquePosCount)}
+              icon={Store}
+              accent="blue"
+              hint={uniquePosCount > 1 ? 'points de vente' : 'point de vente'}
+            />
+          )}
           <StatTile label="Mouvements" value={formatNumber(allocations.length)} icon={TrendingUp} accent="emerald" hint="Allocations et échanges" />
         </div>
       )}
@@ -206,6 +215,7 @@ export default function AllocationsPage() {
       {/* Filter and Search Bar */}
       <Card className="p-3.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row gap-3">
+          {!isPosAccount && (
           <div className="flex-1">
             <CustomSelect
               label="Filtrer par Point de Vente"
@@ -225,6 +235,7 @@ export default function AllocationsPage() {
               leadingIcon={<Store className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
             />
           </div>
+          )}
 
           <div className="flex-1">
             <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">
@@ -253,9 +264,11 @@ export default function AllocationsPage() {
               ? "Aucune allocation n'a été effectuée pour le moment."
               : 'Aucun enregistrement ne correspond à vos critères de recherche.'}
           </p>
-          <div className="pt-2">
-            <AddButton what="une allocation" tour="add:allocation" href="/allocations/new" />
-          </div>
+          {!isPosAccount && (
+            <div className="pt-2">
+              <AddButton what="une allocation" tour="add:allocation" href="/allocations/new" />
+            </div>
+          )}
         </Card>
       ) : (
         <div className="space-y-5">

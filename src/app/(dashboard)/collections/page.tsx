@@ -35,6 +35,8 @@ export default function CollectionsPage() {
   const { currentSpaceId } = useSpaceStore();
   const user = useAuthStore((s) => s.user);
   const isCollector = user?.role === 'collecteur';
+  // Compte point de vente : consultation seule des collectes faites chez lui (filtrées côté serveur)
+  const isPosAccount = user?.role === 'point_de_vente';
 
   useEffect(() => {
     async function loadCollections() {
@@ -44,7 +46,7 @@ export default function CollectionsPage() {
         .select('*, pos:points_of_sale(*), collecteur:profiles(*)')
         .order('created_at', { ascending: false });
 
-      if (currentSpaceId) {
+      if (currentSpaceId && !isPosAccount) {
         query = query.eq('space_id', currentSpaceId);
       }
       // Le collecteur ne voit ici que les collectes qu'il a faites (mêmes chiffres que « Ma tournée »)
@@ -57,7 +59,7 @@ export default function CollectionsPage() {
       setLoading(false);
     }
     loadCollections();
-  }, [currentSpaceId, supabase, isCollector, user?.id]);
+  }, [currentSpaceId, supabase, isCollector, isPosAccount, user?.id]);
 
   // Financial KPIs
   const { totalEncaissé, totalAttendu, totalDifference, totalCommissions } = useMemo(() => {
@@ -92,15 +94,17 @@ export default function CollectionsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Receipt className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
-            <span>{isCollector ? 'Mes collectes' : 'Encaissements & Collectes'}</span>
+            <span>{isCollector || isPosAccount ? 'Mes collectes' : 'Encaissements & Collectes'}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isCollector
+            {isPosAccount
+              ? 'Les collectes faites dans votre point de vente (consultation seule).'
+              : isCollector
               ? 'Les encaissements faits sur vos points de vente.'
               : 'Historique et suivi des levées de fonds et encaissements de caisse.'}
           </p>
         </div>
-        <AddButton what="une collecte de caisse" tour="add:collection" href="/collections/new" />
+        {!isPosAccount && <AddButton what="une collecte de caisse" tour="add:collection" href="/collections/new" />}
       </div>
 
       {/* Chiffres clés : mêmes cadres que le tableau de bord et les rapports */}
@@ -148,11 +152,15 @@ export default function CollectionsPage() {
             Aucun encaissement pour le moment
           </h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Vous n&apos;avez enregistré aucune collecte de caisse. Lancez votre première levée de fonds.
+            {isPosAccount
+              ? 'Aucune collecte n’a encore été faite dans votre point de vente.'
+              : 'Vous n’avez enregistré aucune collecte de caisse. Lancez votre première levée de fonds.'}
           </p>
-          <div className="pt-2">
-            <AddButton what="une collecte de caisse" tour="add:collection" href="/collections/new" />
-          </div>
+          {!isPosAccount && (
+            <div className="pt-2">
+              <AddButton what="une collecte de caisse" tour="add:collection" href="/collections/new" />
+            </div>
+          )}
         </Card>
       ) : filteredCollections.length === 0 ? (
         <Card className="p-8 text-center space-y-2">

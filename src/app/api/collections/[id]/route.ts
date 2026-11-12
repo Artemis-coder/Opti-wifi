@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import { getSessionContext, canAccessOrganization } from '@/lib/tenant';
+import { getSessionContext, canAccessOrganization, isPosAccount } from '@/lib/tenant';
 import { getVisiblePosIds } from '@/lib/collector-scope';
 import { handleRecordChange } from '@/lib/record-changes';
 
@@ -19,6 +19,13 @@ async function getSupabaseServerClient() {
       },
     },
   });
+}
+
+/** Retire les notes internes (jamais montrées à un compte point de vente). */
+function withoutNotes<T extends Record<string, unknown>>(row: T): Omit<T, 'notes'> {
+  const copy: Record<string, unknown> = { ...row };
+  delete copy.notes;
+  return copy as Omit<T, 'notes'>;
 }
 
 export async function GET(
@@ -49,8 +56,11 @@ export async function GET(
     }
 
     // Un collecteur ne consulte que les collectes de ses points de vente
+    // Un compte point de vente ne consulte que son propre point de vente
     if (!ctx.isPlatformAdmin && ctx.role !== 'administrateur' && ctx.organizationId) {
-      const visible = await getVisiblePosIds(ctx.userId, ctx.organizationId);
+      const visible = isPosAccount(ctx)
+        ? (ctx.posId ? [ctx.posId] : [])
+        : await getVisiblePosIds(ctx.userId, ctx.organizationId);
       if (!visible.includes(collection.pos_id)) {
         return NextResponse.json({ error: 'Collecte introuvable' }, { status: 404 });
       }
@@ -64,6 +74,11 @@ export async function GET(
 
     if (itemsError) {
       console.warn('Collection items error:', itemsError);
+    }
+
+    if (isPosAccount(ctx)) {
+      // Compte point de vente : pas de notes internes
+      return NextResponse.json({ ...withoutNotes(collection), items: items || [] });
     }
 
     return NextResponse.json({ ...collection, items: items || [] });

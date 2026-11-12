@@ -144,7 +144,7 @@ const PERIOD_LABELS: Record<string, string> = {
   semiannual: 'Semestrielle',
   annual: 'Annuelle',
 };
-const ROLE_LABELS: Record<string, string> = { administrateur: 'Administrateur', collecteur: 'Collecteur', super_admin: 'Super admin' };
+const ROLE_LABELS: Record<string, string> = { administrateur: 'Administrateur', collecteur: 'Collecteur', point_de_vente: 'Point de vente', super_admin: 'Super admin' };
 
 // Champs techniques jamais affichés dans « Ce qui a changé »
 const HIDDEN_FIELDS = new Set(['id', 'created_at', 'updated_at', 'organization_id']);

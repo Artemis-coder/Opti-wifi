@@ -20,6 +20,11 @@ const PROTECTED_CLIENT_ROUTES = [
 // (Simple confort de navigation : les données restent protégées côté serveur.)
 const ADMIN_ONLY_ROUTES = ['/spaces', '/tickets', '/users', '/reports', '/subscription'];
 
+// Compte « point de vente » (consultation seule) : seules ces pages lui sont ouvertes.
+const POS_ACCOUNT_ROUTES = ['/dashboard', '/allocations', '/collections', '/settings', '/support', '/conditions-utilisation', '/notifications'];
+// … sauf les pages de saisie.
+const POS_ACCOUNT_BLOCKED_ROUTES = ['/allocations/new', '/allocations/exchange', '/collections/new'];
+
 const CSRF_EXEMPT_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
@@ -140,6 +145,15 @@ export async function proxy(request: NextRequest) {
   // Le super admin n'accède pas aux espaces clients : il reste dans le back-office
   if (isClientRoute && (user?.role === 'super_admin' || user?.app_metadata?.role === 'super_admin')) {
     return NextResponse.redirect(new URL('/platform/dashboard', request.url));
+  }
+
+  if (
+    user?.role === 'point_de_vente' &&
+    isClientRoute &&
+    (!POS_ACCOUNT_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/')) ||
+      POS_ACCOUNT_BLOCKED_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/')))
+  ) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   if (

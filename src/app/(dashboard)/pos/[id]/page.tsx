@@ -33,6 +33,7 @@ import { isActiveProfile } from '@/lib/utils/profiles';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { StatTile } from '@/components/ui/StatTile';
+import { PosAccessCard } from '@/components/pos/PosAccessCard';
 
 interface AllocationSummary {
   ticketType: TicketType;
@@ -110,6 +111,16 @@ export default function PosDetailPage() {
 
     loadData();
   }, [posId]);
+
+  // Accès en consultation seule du point de vente (un seul compte non supprimé)
+  const posAccount =
+    profiles.find((p: Profile) => p.role === 'point_de_vente' && p.pos_id === posId && !p.deleted_at) ?? null;
+  const handlePosAccountChanged = (account: Profile | null) => {
+    setProfiles((prev) => {
+      const others = prev.filter((p) => !(p.role === 'point_de_vente' && p.pos_id === posId));
+      return account ? [account, ...others] : others;
+    });
+  };
 
   const handlePosUpdated = (updated: PointOfSale) => {
     setPos(updated);
@@ -338,6 +349,8 @@ export default function PosDetailPage() {
           </div>
         </div>
       </Card>
+
+      {isAdmin && <PosAccessCard pos={pos} account={posAccount} onChanged={handlePosAccountChanged} />}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">

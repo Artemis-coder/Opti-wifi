@@ -44,11 +44,20 @@ const collectorItems: BottomNavItem[] = [
   { label: 'Collectes', href: '/collections', icon: Receipt },
 ];
 
+// Barre d'un compte point de vente (consultation seule)
+const posAccountItems: BottomNavItem[] = [
+  { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard, exact: true },
+  { label: 'Allocations', href: '/allocations', icon: ArrowLeftRight },
+  { label: 'Collectes', href: '/collections', icon: Receipt },
+];
+
 export function BottomNav({ onOpenMobileMenu, items }: BottomNavProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
 
-  const filteredItems = (items ?? (user?.role === 'collecteur' ? collectorItems : primaryItems)).filter(
+  const defaultItems =
+    user?.role === 'collecteur' ? collectorItems : user?.role === 'point_de_vente' ? posAccountItems : primaryItems;
+  const filteredItems = (items ?? defaultItems).filter(
     (item) => !item.adminOnly || user?.role === 'administrateur'
   );
 

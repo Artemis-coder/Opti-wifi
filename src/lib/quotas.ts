@@ -83,6 +83,7 @@ export async function checkQuota(
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('organization_id', organizationId)
+        .neq('role', 'point_de_vente') // accès point de vente (consultation seule) : hors forfait
         .eq('is_active', true); // les membres supprimés ne comptent plus
       current = userCount ?? 0;
       break;
