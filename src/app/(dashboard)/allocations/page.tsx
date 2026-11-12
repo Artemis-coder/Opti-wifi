@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { PointOfSale, TicketAllocation, TicketType, Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { AddButton } from '@/components/ui/AddButton';
@@ -196,7 +197,8 @@ export default function AllocationsPage() {
 
       {/* Chiffres clés : mêmes cadres que le tableau de bord et les rapports */}
       {allocations.length > 0 && (
-        <div className={`grid grid-cols-2 ${isPosAccount ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
+        // Point de vente : 3 tuiles (2 + 1 sur mobile, la dernière sur toute la ligne)
+        <KpiGrid cols={{ base: 2, lg: isPosAccount ? 3 : 4 }}>
           <StatTile label="Tickets alloués" value={formatNumber(totalNetTickets)} icon={Ticket} accent="indigo" hint="Stock net confié aux points de vente" />
           <StatTile label="Valeur du stock" value={formatAmountShort(totalNetValeur)} icon={DollarSign} accent="amber" hint="Au prix de vente des tickets" />
           {!isPosAccount && (
@@ -209,7 +211,7 @@ export default function AllocationsPage() {
             />
           )}
           <StatTile label="Mouvements" value={formatNumber(allocations.length)} icon={TrendingUp} accent="emerald" hint="Allocations et échanges" />
-        </div>
+        </KpiGrid>
       )}
 
       {/* Filter and Search Bar */}
