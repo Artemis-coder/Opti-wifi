@@ -10,6 +10,7 @@ import {
   ArrowLeftRight,
   Menu,
   PlusCircle,
+  Coins,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { cn } from '@/lib/utils/cn';
@@ -44,11 +45,21 @@ const collectorItems: BottomNavItem[] = [
   { label: 'Collectes', href: '/collections', icon: Receipt },
 ];
 
+// Barre d'un compte point de vente (consultation seule)
+const posAccountItems: BottomNavItem[] = [
+  { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard, exact: true },
+  { label: 'Allocations', href: '/allocations', icon: ArrowLeftRight },
+  { label: 'Collectes', href: '/collections', icon: Receipt },
+  { label: 'Commissions', href: '/commissions', icon: Coins },
+];
+
 export function BottomNav({ onOpenMobileMenu, items }: BottomNavProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
 
-  const filteredItems = (items ?? (user?.role === 'collecteur' ? collectorItems : primaryItems)).filter(
+  const defaultItems =
+    user?.role === 'collecteur' ? collectorItems : user?.role === 'point_de_vente' ? posAccountItems : primaryItems;
+  const filteredItems = (items ?? defaultItems).filter(
     (item) => !item.adminOnly || user?.role === 'administrateur'
   );
 
@@ -70,6 +81,7 @@ export function BottomNav({ onOpenMobileMenu, items }: BottomNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              data-tour={`nav:${item.href}`}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'md-ripple flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl py-1 transition-all duration-200 tap-target',
@@ -110,6 +122,7 @@ export function BottomNav({ onOpenMobileMenu, items }: BottomNavProps) {
         <button
           type="button"
           onClick={onOpenMobileMenu}
+          data-tour="nav:menu"
           aria-label="Ouvrir le menu complet"
           className="md-ripple flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl py-1 text-slate-300 hover:text-white transition-all duration-200 tap-target"
         >

@@ -6,11 +6,16 @@ import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
+import { isInternalPosAccountEmail } from '@/lib/pos-account-email';
 
 export interface MemberAccessInfo {
   email: string;
   temporary_password: string;
   login_url: string;
+  /** Compte point de vente : il se connecte avec ce numéro. */
+  login_phone?: string;
+  /** Compte point de vente créé sans e-mail : adresse interne, à ne pas montrer. */
+  email_is_internal?: boolean;
 }
 
 interface Member {
@@ -18,13 +23,19 @@ interface Member {
   nom: string;
   email: string;
   telephone?: string | null;
+  role?: string;
+}
+
+/** Point de vente : connexion par téléphone (son adresse interne n'est jamais montrée). */
+function phoneLogin(member: Member): string | null {
+  return member.role === 'point_de_vente' && member.telephone ? member.telephone : null;
 }
 
 function shareText(name: string, a: MemberAccessInfo): string {
   return [
     `Bonjour ${name}, voici vos accès OptiSpace :`,
     `• Adresse : ${a.login_url}`,
-    `• E-mail : ${a.email}`,
+    a.login_phone ? `• Identifiant (votre numéro) : ${a.login_phone}` : `• E-mail : ${a.email}`,
     `• Mot de passe temporaire : ${a.temporary_password}`,
     'À la première connexion, vous choisirez votre propre mot de passe.',
   ].join('\n');
@@ -66,7 +77,8 @@ export function AccessCard({ member, access, emailSent }: { member: Member; acce
     <div className="space-y-4 text-left">
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 divide-y divide-slate-100 dark:divide-slate-800">
         <CopyRow label="Adresse de connexion" value={access.login_url} />
-        <CopyRow label="E-mail" value={access.email} />
+        {access.login_phone && <CopyRow label="Téléphone de connexion" value={access.login_phone} />}
+        {!access.email_is_internal && !isInternalPosAccountEmail(access.email) && <CopyRow label="E-mail" value={access.email} />}
         <CopyRow label="Mot de passe temporaire" value={access.temporary_password} mono />
       </div>
 
@@ -117,14 +129,20 @@ export function InviteLinkCard({ member, link, emailSent }: { member: Member; li
   const text = [
     `Bonjour ${member.nom}, voici votre lien pour choisir votre mot de passe OptiSpace (valable 7 jours) :`,
     link,
-    `Ensuite, connectez-vous avec votre e-mail : ${member.email}`,
+    phoneLogin(member)
+      ? `Ensuite, connectez-vous avec votre numéro : ${phoneLogin(member)}`
+      : `Ensuite, connectez-vous avec votre e-mail : ${member.email}`,
   ].join('\n');
   const phone = (member.telephone || '').replace(/\D/g, '');
   return (
     <div className="space-y-4 text-left">
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 divide-y divide-slate-100 dark:divide-slate-800">
         <CopyRow label="Lien pour choisir son mot de passe" value={link} />
-        <CopyRow label="E-mail de connexion" value={member.email} />
+        {phoneLogin(member) ? (
+          <CopyRow label="Téléphone de connexion" value={phoneLogin(member) as string} />
+        ) : (
+          <CopyRow label="E-mail de connexion" value={member.email} />
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
@@ -178,6 +196,8 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
     setResult(null);
     onClose();
   };
+  // Point de vente créé sans e-mail : pas d'envoi possible
+  const canEmail = !!member && !isInternalPosAccountEmail(member.email);
 
   const run = async (action: 'invite_link' | 'temporary_password') => {
     if (!member) return;
@@ -233,7 +253,7 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
           <div className="space-y-4 text-left">
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Les mots de passe ne sont pas conservés en clair : on ne peut pas retrouver les anciens accès, mais
-              vous pouvez en redonner à <strong>{member.nom}</strong> ({member.email}).
+              vous pouvez en redonner à <strong>{member.nom}</strong> ({phoneLogin(member) ?? member.email}).
             </p>
 
             <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
@@ -244,10 +264,12 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
                 Il choisit lui-même son mot de passe (lien valable 7 jours). Vous transmettez le lien par WhatsApp ou en
                 le copiant ; son mot de passe actuel reste valable d&apos;ici là.
               </p>
+              {canEmail && (
               <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                 <input type="checkbox" checked={linkByEmail} onChange={(e) => setLinkByEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
                 L&apos;envoyer aussi par e-mail
               </label>
+              )}
               <Button variant="outline" className="w-full h-10 font-semibold" isLoading={busy === 'invite_link'} disabled={!!busy} onClick={() => run('invite_link')}>
                 Créer le lien
               </Button>
@@ -261,10 +283,12 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
                 L&apos;ancien mot de passe ne fonctionnera plus. Vous transmettez les nouveaux accès (copie, WhatsApp) ;
                 il choisira son mot de passe à la connexion.
               </p>
+              {canEmail && (
               <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                 <input type="checkbox" checked={alsoEmail} onChange={(e) => setAlsoEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
                 Les envoyer aussi par e-mail
               </label>
+              )}
               <Button className="w-full h-10 font-semibold" isLoading={busy === 'temporary_password'} disabled={!!busy} onClick={() => run('temporary_password')}>
                 Générer et afficher les accès
               </Button>

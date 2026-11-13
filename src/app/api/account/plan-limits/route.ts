@@ -13,7 +13,7 @@ export async function GET() {
   try {
     const [subRes, countRes, plansRes] = await Promise.all([
       query(
-        `SELECT p.id, p.name, p.max_users, p.max_collectors
+        `SELECT p.id, p.name, p.max_users, p.max_collectors, p.max_pos_accounts
            FROM subscriptions s
            JOIN subscription_plans p ON p.id = s.plan_id
           WHERE s.organization_id = $1 AND s.status IN ('active', 'trialing')
@@ -23,15 +23,17 @@ export async function GET() {
         [ctx.organizationId]
       ),
       query(
-        `SELECT COUNT(*)::int AS users,
-                COUNT(*) FILTER (WHERE role = 'collecteur')::int AS collectors
+        // Les accès point de vente (consultation seule) ne comptent pas dans le forfait
+        `SELECT COUNT(*) FILTER (WHERE role <> 'point_de_vente')::int AS users,
+                COUNT(*) FILTER (WHERE role = 'collecteur')::int AS collectors,
+                COUNT(*) FILTER (WHERE role = 'point_de_vente')::int AS pos_accounts
            FROM profiles
           WHERE organization_id = $1 AND is_active = true`,
         [ctx.organizationId]
       ),
       query(
         `SELECT id, name, price::float AS price, currency, billing_period, trial_days,
-                max_users, max_collectors, max_points_of_sale
+                max_users, max_collectors, max_points_of_sale, max_pos_accounts
            FROM subscription_plans
           WHERE status = 'active'
           ORDER BY price ASC`
@@ -47,6 +49,8 @@ export async function GET() {
         plan: plan ? { id: plan.id, name: plan.name } : null,
         users: { current: Number(counts.users), limit: plan ? limit(plan.max_users) : null },
         collectors: { current: Number(counts.collectors), limit: plan ? limit(plan.max_collectors) : null },
+        // Accès point de vente : limite 0 = non inclus dans le forfait
+        pos_accounts: { current: Number(counts.pos_accounts || 0), limit: plan ? limit(plan.max_pos_accounts) : null },
         plans: plansRes.rows,
       },
     });

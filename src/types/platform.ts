@@ -79,6 +79,8 @@ export interface SubscriptionPlan {
   max_points_of_sale?: number | null;
   /** Collecteurs (profils « collecteur » actifs) ; null ou -1 = illimité */
   max_collectors?: number | null;
+  /** Accès « point de vente » (consultation seule) ; 0 = non inclus, null ou -1 = illimité */
+  max_pos_accounts?: number | null;
   max_tickets_per_month?: number | null;
   /** { items: string[] } : fonctionnalités affichées sur le site vitrine (src/lib/plan-features.ts) */
   features?: Record<string, unknown> | null;

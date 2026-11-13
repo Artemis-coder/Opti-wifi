@@ -28,6 +28,7 @@ export interface RequestedPlan {
   max_users?: number | null;
   max_points_of_sale?: number | null;
   max_collectors?: number | null;
+  max_pos_accounts?: number | null;
   max_tickets_per_month?: number | null;
 }
 
@@ -169,6 +170,13 @@ function RequestFlow({
         : plan.max_collectors && plan.max_collectors > 0
           ? `Jusqu'à ${plan.max_collectors} collecteur${plan.max_collectors > 1 ? 's' : ''}`
           : null,
+      plan.max_pos_accounts === 0
+        ? null
+        : plan.max_pos_accounts && plan.max_pos_accounts > 0
+          ? `Jusqu'à ${plan.max_pos_accounts} accès points de vente`
+          : plan.max_pos_accounts === undefined
+            ? null
+            : 'Accès points de vente (consultation)',
       plan.max_tickets_per_month ? `Jusqu'à ${plan.max_tickets_per_month.toLocaleString('fr-FR')} tickets / mois` : null,
     ].filter(Boolean) as string[];
     return (

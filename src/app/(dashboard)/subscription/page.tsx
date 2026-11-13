@@ -21,6 +21,8 @@ interface SubscriptionPlan {
   max_users?: number;
   max_points_of_sale?: number;
   max_collectors?: number | null;
+  /** Accès point de vente : 0 = non inclus, null ou négatif = illimité */
+  max_pos_accounts?: number | null;
   max_tickets_per_month?: number;
   trial_days?: number;
 }
@@ -202,6 +204,7 @@ export default function SubscriptionPage() {
         max_users: target.max_users,
         max_points_of_sale: target.max_points_of_sale,
         max_collectors: target.max_collectors,
+        max_pos_accounts: target.max_pos_accounts,
         max_tickets_per_month: target.max_tickets_per_month,
       },
       renewal: !plan,
@@ -511,6 +514,21 @@ export default function SubscriptionPage() {
                     </span>
                   </div>
                 )}
+                {/* Accès point de vente (consultation seule) : inclus ou non selon le forfait */}
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  {plan.max_pos_accounts === 0 ? (
+                    <XCircle className="w-4 h-4 text-slate-400" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  )}
+                  <span className={plan.max_pos_accounts === 0 ? 'text-slate-400 line-through' : undefined}>
+                    {plan.max_pos_accounts === 0
+                      ? 'Accès points de vente'
+                      : plan.max_pos_accounts && plan.max_pos_accounts > 0
+                        ? `Jusqu'à ${plan.max_pos_accounts} accès points de vente`
+                        : 'Accès points de vente (consultation)'}
+                  </span>
+                </div>
                 {plan.max_tickets_per_month && (
                   <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />

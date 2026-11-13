@@ -5,17 +5,20 @@ import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { countryFromRequest, rememberOrganizationCountry } from '@/lib/geo';
 import { recordLogin } from '@/lib/login-history';
+import { looksLikePhone, resolvePosAccountLogin } from '@/lib/pos-account-phone';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password } = body;
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email et mot de passe requis.' }, { status: 400 });
+    if (!email || !password || typeof email !== 'string') {
+      return NextResponse.json({ error: 'Identifiant et mot de passe requis.' }, { status: 400 });
     }
 
-    const user = await authenticate(email, password);
+    // Un point de vente se connecte avec son numéro de téléphone
+    const loginEmail = looksLikePhone(email) ? await resolvePosAccountLogin(email) : email;
+    const user = loginEmail ? await authenticate(loginEmail, password) : null;
 
     if (!user) {
       // Message générique intentionnel — ne pas distinguer "email inconnu" de "mauvais mot de passe"

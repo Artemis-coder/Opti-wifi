@@ -250,7 +250,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
       {!isSubscriptionExpired && <OnboardingLayer />}
       <ConfidentialityGuard />
-      <PushPrompt userId={user?.id} audience={user?.role === 'collecteur' ? 'collector' : 'client'} />
+      {/* Compte point de vente : aucune notification ne lui est destinée */}
+      {user?.role !== 'point_de_vente' && (
+        <PushPrompt userId={user?.id} audience={user?.role === 'collecteur' ? 'collector' : 'client'} />
+      )}
     </div>
   );
 }

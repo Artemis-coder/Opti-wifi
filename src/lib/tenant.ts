@@ -27,6 +27,19 @@ export interface SessionContext {
   readOnly: boolean;
   blockReason: 'organization_status' | 'licence_expired' | null;
   isPlatformAdmin: boolean;
+  /** Compte « point de vente » : son point de vente (null si non rattaché). */
+  posId: string | null;
+}
+
+/** Rôle du compte d'un point de vente : consultation seule de son point de vente. */
+export const POS_ACCOUNT_ROLE = 'point_de_vente';
+
+/** Message renvoyé à toute écriture tentée par un compte point de vente. */
+export const POS_ACCOUNT_READ_ONLY_MESSAGE = 'Compte point de vente : consultation seule.';
+
+/** Vrai pour le compte d'un point de vente (lecture seule, limité à son point de vente). */
+export function isPosAccount(ctx: Pick<SessionContext, 'role' | 'isPlatformAdmin'> | null | undefined): boolean {
+  return !!ctx && !ctx.isPlatformAdmin && ctx.role === POS_ACCOUNT_ROLE;
 }
 
 /** Statuts d'organisation qui coupent l'accès aux données (le super admin garde l'accès). */
@@ -57,6 +70,7 @@ export async function getSessionContext(token?: string | null): Promise<SessionC
         ? 'licence_expired'
         : null,
     isPlatformAdmin: !!platformUser?.is_active && platformUser.role === 'super_admin',
+    posId: user.role === POS_ACCOUNT_ROLE ? user.pos_id ?? null : null,
   };
 }
 
@@ -67,14 +81,18 @@ export function canAccessOrganization(ctx: SessionContext, organizationId: strin
 }
 
 
-/** Écriture interdite (abonnement expiré, organisation bloquée) ; le super admin n'est pas concerné. */
+/**
+ * Écriture interdite (abonnement expiré, organisation bloquée, compte point de vente) ;
+ * le super admin n'est pas concerné.
+ */
 export function isWriteBlocked(ctx: SessionContext | null | undefined): boolean {
-  return !!ctx && !ctx.isPlatformAdmin && ctx.readOnly;
+  return !!ctx && !ctx.isPlatformAdmin && (ctx.readOnly || isPosAccount(ctx));
 }
 
 /** Message d'erreur adapté à la raison du blocage en écriture. */
 export function writeBlockedMessage(ctx: SessionContext): string {
-  return ctx.organizationBlocked ? 'Accès suspendu pour cette organisation' : READ_ONLY_MESSAGE;
+  if (ctx.organizationBlocked) return 'Accès suspendu pour cette organisation';
+  return ctx.readOnly ? READ_ONLY_MESSAGE : POS_ACCOUNT_READ_ONLY_MESSAGE;
 }
 
 /**
@@ -84,5 +102,5 @@ export function writeBlockedMessage(ctx: SessionContext): string {
 export async function rejectIfReadOnly(ctx?: SessionContext | null): Promise<NextResponse | null> {
   const session = ctx === undefined ? await getSessionContext() : ctx;
   if (!session || !isWriteBlocked(session)) return null;
-  return NextResponse.json({ error: writeBlockedMessage(session), readOnly: true }, { status: 403 });
+  return NextResponse.json({ error: writeBlockedMessage(session), readOnly: session.readOnly }, { status: 403 });
 }

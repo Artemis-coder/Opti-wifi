@@ -10,6 +10,13 @@ import { notifyInBackground, notifyOrganizationAdmins } from '@/lib/notification
 import { query } from '@/lib/neon/db';
 import { appUrl, generateTemporaryPassword } from '@/lib/password-tokens';
 import { isEmailConfigured, sendInvitationEmail } from '@/lib/email';
+import { findPosAccountsByPhone, internalPosAccountEmail, MIN_PHONE_DIGITS, phoneDigits } from '@/lib/pos-account-phone';
+
+const ROLE_LABELS: Record<string, string> = {
+  administrateur: 'administrateur',
+  collecteur: 'collecteur',
+  point_de_vente: 'accès point de vente',
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,12 +35,18 @@ export async function POST(request: NextRequest) {
     const orgId = ctx.organizationId;
 
     const body = await request.json();
-    const { nom, email, telephone } = body;
+    const { nom, telephone } = body;
     const role = body.role || 'collecteur';
+    // Compte point de vente : connexion par téléphone, e-mail facultatif (adresse interne sinon)
+    const hasRealEmail = typeof body.email === 'string' && body.email.trim() !== '';
+    const email: string =
+      role === 'point_de_vente' && !hasRealEmail && typeof body.pos_id === 'string'
+        ? internalPosAccountEmail(body.pos_id)
+        : body.email;
     // Mot de passe temporaire : saisi par l'administrateur, ou généré s'il est laissé vide
     const mot_de_passe: string =
       typeof body.mot_de_passe === 'string' && body.mot_de_passe.trim() ? body.mot_de_passe.trim() : generateTemporaryPassword();
-    const sendByEmail = body.send_email === true;
+    const sendByEmail = body.send_email === true && (role !== 'point_de_vente' || hasRealEmail);
 
     if (!nom || !email || !mot_de_passe) {
       return NextResponse.json(
@@ -45,8 +58,34 @@ export async function POST(request: NextRequest) {
     if (testEmailError) {
       return NextResponse.json({ error: testEmailError }, { status: 400 });
     }
-    if (!['administrateur', 'collecteur'].includes(role)) {
+    if (!['administrateur', 'collecteur', 'point_de_vente'].includes(role)) {
       return NextResponse.json({ error: 'Rôle invalide.' }, { status: 400 });
+    }
+    // Compte point de vente : rattaché à un point de vente de l'organisation, un seul accès actif par point de vente
+    const isPosAccountRole = role === 'point_de_vente';
+    const posId: string | null = isPosAccountRole && typeof body.pos_id === 'string' ? body.pos_id : null;
+    if (isPosAccountRole) {
+      if (!posId) {
+        return NextResponse.json({ error: 'Point de vente manquant.' }, { status: 400 });
+      }
+      const pos = await query(`SELECT id FROM points_of_sale WHERE id = $1 AND organization_id = $2`, [posId, orgId]);
+      if (pos.rows.length === 0) {
+        return NextResponse.json({ error: 'Point de vente introuvable.' }, { status: 404 });
+      }
+      const existing = await query(
+        `SELECT id FROM profiles WHERE pos_id = $1 AND role = 'point_de_vente' AND deleted_at IS NULL`,
+        [posId],
+      );
+      if (existing.rows.length > 0) {
+        return NextResponse.json({ error: 'Ce point de vente a déjà un accès.' }, { status: 409 });
+      }
+      // Le numéro est l'identifiant de connexion : obligatoire et propre à ce point de vente
+      if (phoneDigits(telephone).length < MIN_PHONE_DIGITS) {
+        return NextResponse.json({ error: 'Numéro de téléphone requis pour la connexion du point de vente.' }, { status: 400 });
+      }
+      if ((await findPosAccountsByPhone(telephone)).length > 0) {
+        return NextResponse.json({ error: 'Ce numéro est déjà utilisé par un autre point de vente.' }, { status: 409 });
+      }
     }
     if (typeof mot_de_passe !== 'string' || mot_de_passe.length < 6) {
       return NextResponse.json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' }, { status: 400 });
@@ -60,11 +99,20 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const quotaCheck = await checkQuota(clientSupabase, orgId, 'users');
+    // Les accès point de vente (consultation seule) ne comptent pas dans le nombre d'utilisateurs
+    // du forfait : ils sont déjà limités à un par point de vente.
+    const quotaCheck = isPosAccountRole ? { allowed: true, message: '' } : await checkQuota(clientSupabase, orgId, 'users');
     if (!quotaCheck.allowed) {
       return NextResponse.json({
         error: quotaCheck.message
       }, { status: 403 });
+    }
+    // Accès point de vente : inclus selon le forfait (à partir de Standard), nombre éventuellement limité
+    if (isPosAccountRole) {
+      const posAccountCheck = await checkQuota(clientSupabase, orgId, 'pos_accounts');
+      if (!posAccountCheck.allowed) {
+        return NextResponse.json({ error: posAccountCheck.message, planLimit: 'pos_accounts' }, { status: 403 });
+      }
     }
     // Nombre de collecteurs limité par le forfait
     if (role === 'collecteur') {
@@ -115,6 +163,15 @@ export async function POST(request: NextRequest) {
       role,
       organization_id: orgId,
     };
+    if (posId) {
+      profile.pos_id = posId;
+      // Le numéro de connexion devient aussi celui de la fiche du point de vente
+      await query(`UPDATE points_of_sale SET telephone = $1, updated_at = NOW() WHERE id = $2 AND organization_id = $3`, [
+        String(telephone).trim(),
+        posId,
+        orgId,
+      ]);
+    }
 
     if (telephone) {
       profile.telephone = telephone;
@@ -145,7 +202,7 @@ export async function POST(request: NextRequest) {
         {
           type: 'team.member_added',
           title: 'Nouveau membre dans l’équipe',
-          body: `${String(nom).trim()} a été ajouté comme ${role === 'administrateur' ? 'administrateur' : 'collecteur'}.`,
+          body: `${String(nom).trim()} a été ajouté comme ${ROLE_LABELS[role] ?? 'collecteur'}.`,
           link: '/users',
         },
         creatorId
@@ -164,7 +221,7 @@ export async function POST(request: NextRequest) {
         name: String(nom).trim(),
         organizationName: info.rows[0]?.org || 'votre organisation',
         inviterName: info.rows[0]?.inviter || null,
-        role: role === 'administrateur' ? 'administrateur' : 'collecteur',
+        role: role === 'administrateur' || role === 'point_de_vente' ? role : 'collecteur',
         loginUrl: appUrl('/login', request),
         temporaryPassword: mot_de_passe,
       });
@@ -176,7 +233,13 @@ export async function POST(request: NextRequest) {
       success: true,
       profile: savedProfile ?? profile,
       // Accès à transmettre au membre (affichés une seule fois : le mot de passe n'est pas conservé en clair)
-      access: { email: String(email).trim().toLowerCase(), temporary_password: mot_de_passe, login_url: appUrl('/login', request) },
+      access: {
+        email: String(email).trim().toLowerCase(),
+        temporary_password: mot_de_passe,
+        login_url: appUrl('/login', request),
+        // Point de vente : il se connecte avec ce numéro
+        ...(posId ? { login_phone: String(telephone).trim(), email_is_internal: !hasRealEmail } : {}),
+      },
       email_sent: emailSent,
     });
   } catch (error: unknown) {

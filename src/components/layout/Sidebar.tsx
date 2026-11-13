@@ -28,6 +28,7 @@ import {
   Repeat,
   ClipboardCheck,
   FileText,
+  Coins,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
@@ -117,6 +118,27 @@ const collectorSections: NavSection[] = [
   },
 ];
 
+// Compte « point de vente » : consultation seule de ses allocations et de ses collectes
+const posAccountSections: NavSection[] = [
+  {
+    title: 'Mon point de vente',
+    items: [
+      { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard, roles: ['point_de_vente'] },
+      { label: 'Mes allocations', href: '/allocations', icon: ArrowLeftRight, roles: ['point_de_vente'] },
+      { label: 'Mes collectes', href: '/collections', icon: Receipt, roles: ['point_de_vente'] },
+      { label: 'Mes commissions', href: '/commissions', icon: Coins, roles: ['point_de_vente'] },
+    ],
+  },
+  {
+    title: 'Compte',
+    items: [
+      { label: 'Support', href: '/support', icon: LifeBuoy, roles: ['point_de_vente'] },
+      { label: "Conditions d'utilisation", href: '/conditions-utilisation', icon: FileText, roles: ['point_de_vente'] },
+      { label: 'Paramètres', href: '/settings', icon: Settings, roles: ['point_de_vente'] },
+    ],
+  },
+];
+
 export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -148,9 +170,12 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   }, [isMobileOpen, onCloseMobile]);
 
   const isAdmin = user?.role === 'administrateur';
+  const isPosAccount = user?.role === 'point_de_vente';
 
   // Filter sections by user role
-  const filteredSections = (user?.role === 'collecteur' ? collectorSections : navSections)
+  const filteredSections = (
+    user?.role === 'collecteur' ? collectorSections : isPosAccount ? posAccountSections : navSections
+  )
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => !user?.role || item.roles.includes(user.role)),
@@ -182,7 +207,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
               <PlanBadge userId={user?.id} />
             </div>
             <p className="text-[11px] text-slate-400 font-medium tracking-wide truncate">
-              {isAdmin ? 'Espace Administrateur' : 'Espace Collecteur'}
+              {isAdmin ? 'Espace Administrateur' : isPosAccount ? 'Espace Point de vente' : 'Espace Collecteur'}
             </p>
           </div>
         </div>
@@ -211,7 +236,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
               {user?.nom || 'Utilisateur'}
             </p>
             <p className="text-[10px] font-semibold text-brand-400 uppercase tracking-wider truncate">
-              {isAdmin ? 'Administrateur' : 'Collecteur'}
+              {isAdmin ? 'Administrateur' : isPosAccount ? 'Point de vente' : 'Collecteur'}
             </p>
           </div>
         </div>
