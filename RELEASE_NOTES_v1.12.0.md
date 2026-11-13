@@ -3,6 +3,7 @@
 **Date :** 13 novembre 2026
 **Production :** https://www.optiwifi.site
 **Depuis :** v1.11.0 (10/11/2026)
+**PR de mise en production :** #73
 
 Chaque **point de vente** peut maintenant avoir son propre accès, en **consultation seule** : il se connecte avec **son numéro de téléphone** et suit ses tickets reçus, ses collectes et ses commissions, sans rien pouvoir modifier. L'accès est inclus **selon le forfait** (à partir de Standard).
 
@@ -61,7 +62,7 @@ Chaque **point de vente** peut maintenant avoir son propre accès, en **consulta
 
 ## 🗄️ Base de données
 
-Migrations idempotentes, testées en développement :
+Migrations idempotentes, **appliquées en développement et en production**. Avant la mise en production, la production a été sauvegardée (36 tables), puis les définitions ont été comparées en lecture seule : elles étaient déjà en place et **identiques à la base dev**.
 
 | Fichier | Effet |
 |---|---|
@@ -92,4 +93,11 @@ Pour la production :
   - chiffres clés cohérents avec 3 collectes de novembre (250 000, 500 000 et 1 500 000 F) ;
   - Mes commissions et son graphique ;
   - visite guidée sur ordinateur et sur mobile.
-- Production : *à compléter après la mise en production.*
+- Production :
+  - sauvegarde complète en lecture seule (36 tables) ;
+  - migrations vérifiées : rôle, colonnes, clé étrangère, index et réglage des forfaits identiques à la base dev ;
+  - déploiement de `main` (PR #73) prêt sur www.optiwifi.site ;
+  - page de connexion « E-mail ou téléphone » ;
+  - `/commissions` redirigée vers la connexion sans session ;
+  - API du point de vente fermées sans session ;
+  - connexion par numéro inconnu refusée.
