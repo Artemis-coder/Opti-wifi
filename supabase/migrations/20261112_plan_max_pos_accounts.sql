@@ -9,5 +9,5 @@
 ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS max_pos_accounts INT;
 
 -- Découverte : non inclus (seulement si la valeur n'a pas encore été réglée)
-UPDATE subscription_plans SET max_pos_accounts = 0, updated_at = NOW()
+UPDATE subscription_plans SET max_pos_accounts = 0
  WHERE name = 'Découverte' AND max_pos_accounts IS NULL;
