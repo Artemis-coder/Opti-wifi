@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Bell, BellRing, PlusSquare, Share, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { isPushSupported, needsInstallForPush, subscribeToPush } from '@/lib/push-client';
+import { isPushSupported, needsInstallForPush, subscribeToPush, syncPushSubscription } from '@/lib/push-client';
 
 const LATER_DAYS = 7;
 const storageKey = (userId: string) => `optispace:push-prompt:${userId}`;
@@ -42,6 +42,12 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
   const [mode, setMode] = useState<Mode | null>(null);
   const [busy, setBusy] = useState(false);
   const open = mode !== null;
+
+  // Notifications déjà autorisées sur cet appareil : il est rattaché au compte connecté
+  // (sinon il resterait lié au compte qui s'y est connecté avant)
+  useEffect(() => {
+    if (userId) void syncPushSubscription();
+  }, [userId]);
 
   useEffect(() => {
     if (!userId || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return;

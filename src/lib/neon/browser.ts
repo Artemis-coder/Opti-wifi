@@ -75,6 +75,11 @@ function initBrowserClient() {
         const offline = await import('@/lib/offline/store');
         await offline.clearOfflineData();
       } catch {}
+      // Cet appareil ne reçoit plus les notifications du compte qui se déconnecte
+      try {
+        const push = await import('@/lib/push-client');
+        await push.detachPushSubscription();
+      } catch {}
       try {
         await fetch('/api/auth/logout', {
           method: 'POST',
