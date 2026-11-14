@@ -191,7 +191,7 @@ export const CGV: LegalDoc = {
       title: "3. Forfaits et prix",
       list: [
         "Les forfaits, leurs prix et leurs limites (points de vente, utilisateurs, collecteurs, tickets par mois, jours d'essai) sont ceux affichés sur space.optiwifi.site et dans l'espace client au moment de la souscription.",
-        "Les prix sont indiqués en francs CFA (XOF), [À COMPLÉTER : TTC / hors taxes].",
+        "Les prix sont indiqués en francs CFA (XOF). À la date de mise à jour des présentes : Découverte 2 599 FCFA par mois, Standard 5 999 FCFA par mois, Décideur (Pro) 35 999 FCFA par mois.",
         "OptiSpace peut faire évoluer ses prix ; un nouveau prix ne s'applique qu'au renouvellement suivant.",
       ],
     },
@@ -224,7 +224,7 @@ export const CGV: LegalDoc = {
       id: "remboursement",
       title: "7. Rétractation et remboursement",
       paragraphs: [
-        "Le service étant destiné aux professionnels et accessible dès son activation, [À COMPLÉTER : politique de remboursement — par exemple : aucun remboursement n'est dû pour une période entamée, sauf en cas d'indisponibilité du service imputable à OptiSpace].",
+        "Le service étant destiné aux professionnels et accessible dès son activation, aucun remboursement n'est dû pour une période entamée, sauf en cas d'indisponibilité du service imputable à OptiSpace.",
       ],
     },
     {
