@@ -67,6 +67,49 @@ export async function subscribeToPush(): Promise<PushState> {
   return res.ok ? 'subscribed' : 'default';
 }
 
+/**
+ * Rattache cet appareil au compte connecté, sans rien demander : quand la permission est déjà
+ * accordée (ex. un autre compte s'est connecté avant sur ce téléphone), l'invitation ne
+ * s'affiche plus et l'abonnement restait lié à l'ancien compte, qui recevait les
+ * notifications à sa place. Appelé à chaque ouverture de l'espace.
+ */
+export async function syncPushSubscription(): Promise<boolean> {
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (!isPushSupported() || !publicKey || Notification.permission !== 'granted') return false;
+  try {
+    const reg = await getRegistration();
+    const sub =
+      (await reg.pushManager.getSubscription()) ||
+      (await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+      }));
+    const res = await fetch('/api/notifications/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub.toJSON()),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Déconnexion : cet appareil n'est plus rattaché au compte (le navigateur garde sa permission). */
+export async function detachPushSubscription(): Promise<void> {
+  if (!isPushSupported()) return;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration('/');
+    const sub = await reg?.pushManager.getSubscription();
+    if (!sub) return;
+    await fetch('/api/notifications/push', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: sub.endpoint }),
+    });
+  } catch {}
+}
+
 /** Désabonne ce navigateur (ex. à la déconnexion d'un appareil partagé). */
 export async function unsubscribeFromPush(): Promise<void> {
   if (!isPushSupported()) return;
