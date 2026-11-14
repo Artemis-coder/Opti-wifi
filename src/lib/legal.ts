@@ -29,7 +29,7 @@ export type LegalDoc = {
 
 const EDITOR = [
   "Éditeur du service : Optimus Group.",
-  "Siège : Cocody Deux-Plateaux, Abidjan, Côte d'Ivoire. Contact : [À COMPLÉTER : e-mail OptiSpace] — WhatsApp : +225 01 40 74 76.",
+  "Siège : Cocody Deux-Plateaux, Abidjan, Côte d'Ivoire. Contact : support@optiwifi.site — WhatsApp : +225 01 40 74 76.",
   "Responsable de la publication : Optimus Group.",
 ];
 
@@ -135,7 +135,7 @@ export const CGU: LegalDoc = {
       title: "8. Vos droits",
       paragraphs: [
         "Conformément à la loi ivoirienne n° 2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel, chaque utilisateur dispose d'un droit d'accès, de rectification, d'opposition et de suppression de ses données.",
-        "Pour exercer ces droits : [À COMPLÉTER : e-mail OptiSpace]. Une réponse est apportée dans un délai d'un mois. L'utilisateur peut également saisir l'Autorité de Régulation des Télécommunications/TIC de Côte d'Ivoire (ARTCI).",
+        "Pour exercer ces droits : support@optiwifi.site. Une réponse est apportée dans un délai d'un mois. L'utilisateur peut également saisir l'Autorité de Régulation des Télécommunications/TIC de Côte d'Ivoire (ARTCI).",
       ],
     },
     {
