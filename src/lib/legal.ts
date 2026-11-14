@@ -28,9 +28,9 @@ export type LegalDoc = {
 };
 
 const EDITOR = [
-  "Éditeur du service : [À COMPLÉTER : raison sociale], [À COMPLÉTER : forme juridique], immatriculée au RCCM sous le numéro [À COMPLÉTER : n° RCCM], compte contribuable [À COMPLÉTER : n° CC].",
-  "Siège : [À COMPLÉTER : adresse complète]. Contact : [À COMPLÉTER : e-mail de contact] — [À COMPLÉTER : téléphone].",
-  "Responsable de la publication : [À COMPLÉTER : nom du responsable].",
+  "Éditeur du service : Optimus Group.",
+  "Siège : Cocody Deux-Plateaux, Abidjan, Côte d'Ivoire. Contact : [À COMPLÉTER : e-mail OptiSpace] — WhatsApp : +225 01 40 74 76.",
+  "Responsable de la publication : Optimus Group.",
 ];
 
 export const CGU: LegalDoc = {
@@ -127,7 +127,7 @@ export const CGU: LegalDoc = {
       list: [
         "Les données du compte sont conservées tant que le compte est actif.",
         "En cas d'expiration ou de suspension de l'abonnement, l'accès est coupé mais les données sont conservées pour permettre la reprise du service.",
-        "À la demande de l'utilisateur, le compte et ses données sont supprimés dans un délai de [À COMPLÉTER : 30] jours, sous réserve des documents que la loi impose de conserver (factures notamment).",
+        "À la demande de l'utilisateur, le compte et ses données sont supprimés dans un délai de 30 jours, sous réserve des documents que la loi impose de conserver (factures notamment).",
       ],
     },
     {
@@ -135,7 +135,7 @@ export const CGU: LegalDoc = {
       title: "8. Vos droits",
       paragraphs: [
         "Conformément à la loi ivoirienne n° 2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel, chaque utilisateur dispose d'un droit d'accès, de rectification, d'opposition et de suppression de ses données.",
-        "Pour exercer ces droits : [À COMPLÉTER : e-mail de contact]. Une réponse est apportée dans un délai d'un mois. L'utilisateur peut également saisir l'Autorité de Régulation des Télécommunications/TIC de Côte d'Ivoire (ARTCI).",
+        "Pour exercer ces droits : [À COMPLÉTER : e-mail OptiSpace]. Une réponse est apportée dans un délai d'un mois. L'utilisateur peut également saisir l'Autorité de Régulation des Télécommunications/TIC de Côte d'Ivoire (ARTCI).",
       ],
     },
     {
@@ -160,7 +160,7 @@ export const CGU: LegalDoc = {
       title: "11. Modification des CGU et droit applicable",
       paragraphs: [
         "OptiSpace peut faire évoluer les présentes CGU. La version en vigueur est celle publiée sur le site, avec sa date de mise à jour ; les utilisateurs sont informés de toute modification importante.",
-        "Les présentes CGU sont soumises au droit ivoirien. À défaut d'accord amiable, tout litige relève des juridictions compétentes d'[À COMPLÉTER : Abidjan].",
+        "Les présentes CGU sont soumises au droit ivoirien. À défaut d'accord amiable, tout litige relève des juridictions compétentes d'Abidjan, Côte d'Ivoire.",
       ],
     },
   ],
@@ -274,7 +274,7 @@ export const CGV: LegalDoc = {
       id: "droit",
       title: "13. Droit applicable et litiges",
       paragraphs: [
-        "Les présentes CGV sont soumises au droit ivoirien. Les parties recherchent d'abord une solution amiable ; à défaut, le litige relève des juridictions compétentes d'[À COMPLÉTER : Abidjan].",
+        "Les présentes CGV sont soumises au droit ivoirien. Les parties recherchent d'abord une solution amiable ; à défaut, le litige relève des juridictions compétentes d'Abidjan, Côte d'Ivoire.",
       ],
     },
   ],
