@@ -31,7 +31,7 @@ import { DEFAULT_COUNTRY, isValidNationalNumber, splitInternationalPhone } from 
 import { Badge } from '@/components/ui/Badge';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { getPushState, subscribeToPush, type PushState } from '@/lib/push-client';
+import { getPushState, subscribeToPush, syncPushSubscription, type PushState } from '@/lib/push-client';
 import { cn } from '@/lib/utils/cn';
 import { Profile } from '@/types/database';
 import { LoginHistorySection } from '@/components/settings/LoginHistorySection';
@@ -277,6 +277,20 @@ function SettingsContent() {
     }
   };
 
+  // Test : notification envoyée dans 10 s, le temps de verrouiller le téléphone
+  const [testingRing, setTestingRing] = useState(false);
+  const testRing = async () => {
+    setTestingRing(true);
+    try {
+      await syncPushSubscription();
+      const res = await fetch('/api/notifications/test', { method: 'POST' });
+      if (res.ok) toast.success('Verrouillez votre téléphone : il doit sonner dans 10 secondes.', { duration: 8000 });
+      else toast.error('Test impossible pour le moment.');
+    } finally {
+      setTestingRing(false);
+    }
+  };
+
   const enablePush = async () => {
     setEnablingPush(true);
     try {
@@ -511,7 +525,12 @@ function SettingsContent() {
               </div>
             </div>
             {pushState === 'subscribed' ? (
-              <Badge variant="success">Activées</Badge>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <Badge variant="success">Activées</Badge>
+                <Button variant="outline" size="sm" icon={BellRing} onClick={testRing} isLoading={testingRing} className="font-semibold">
+                  Tester la sonnerie
+                </Button>
+              </div>
             ) : pushState === 'default' ? (
               <Button icon={BellRing} onClick={enablePush} isLoading={enablingPush} className="w-full sm:w-auto font-semibold">
                 Activer
@@ -522,6 +541,18 @@ function SettingsContent() {
             Les notifications restent aussi disponibles dans la cloche, en haut de l&apos;écran. Le réglage s&apos;applique à cet appareil :
             activez-le sur chaque téléphone ou ordinateur utilisé.
           </p>
+          {pushState === 'subscribed' && (
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-4 py-3 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+              <p className="font-semibold text-slate-900 dark:text-white">« Tester la sonnerie » : appuyez sur le bouton depuis le téléphone à tester</p>
+              <p>La notification de test arrive sur les appareils du compte connecté, 10 secondes plus tard : verrouillez le téléphone pour vérifier qu&apos;il sonne.</p>
+              <p className="font-semibold text-slate-900 dark:text-white pt-1">La notification arrive sans son (Android) ?</p>
+              <p>
+                Le son se règle sur le téléphone, une seule fois : appuyez longuement sur une notification OptiSpace, choisissez{' '}
+                <strong>« Alerte »</strong> au lieu de « Silencieux », puis vérifiez que le <strong>son</strong> est activé. Ou :
+                Paramètres du téléphone → Applications → Chrome (ou OptiSpace) → Notifications → catégorie du site → Alerte, avec son.
+              </p>
+            </div>
+          )}
         </Card>
       )}
     </div>
