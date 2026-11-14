@@ -3,6 +3,7 @@ import { TableBuilder, makeError, type QuerySpec } from '@/lib/neon/query-builde
 import { AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import { getSessionContext, isPosAccount, POS_ACCOUNT_READ_ONLY_MESSAGE, READ_ONLY_MESSAGE, type SessionContext } from '@/lib/tenant';
 import { notifyCollectionCreated, notifyInBackground } from '@/lib/notifications';
+import { notifyAllocationsCreated } from '@/lib/activity-notifications';
 import { getAssignedPosIds, getVisibleCollectionIds, getVisiblePosIds, NO_MATCH_ID, ownsCollections } from '@/lib/collector-scope';
 import { query } from '@/lib/neon/db';
 import { findPosAccountsByPhone } from '@/lib/pos-account-phone';
@@ -434,6 +435,13 @@ export async function POST(request: NextRequest) {
         | null;
       const organizationId = ctx.organizationId;
       if (inserted) notifyInBackground(() => notifyCollectionCreated(organizationId, ctx.userId, inserted));
+    }
+
+    // Tickets attribués : le point de vente (son téléphone sonne), son collecteur et les administrateurs
+    if (spec.tableName === 'ticket_allocations' && spec.action === 'insert' && !result.error && ctx.organizationId && result.data) {
+      const inserted = (Array.isArray(result.data) ? result.data : [result.data]) as Record<string, unknown>[];
+      const organizationId = ctx.organizationId;
+      notifyInBackground(() => notifyAllocationsCreated(organizationId, ctx.userId, inserted));
     }
 
     if (isPosAccount(ctx) && result.data) {

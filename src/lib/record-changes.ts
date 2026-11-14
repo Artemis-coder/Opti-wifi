@@ -10,6 +10,7 @@ import { query } from '@/lib/neon/db';
 import { getSessionContext, rejectIfReadOnly, type SessionContext } from '@/lib/tenant';
 import { getVisiblePosIds } from '@/lib/collector-scope';
 import { getOrganizationAdminIds, notifyInBackground, notifyUsers } from '@/lib/notifications';
+import { notifyRecordChanged } from '@/lib/activity-notifications';
 
 export type EntityType = 'collection' | 'allocation';
 export type ChangeAction = 'update' | 'delete';
@@ -182,6 +183,9 @@ export async function handleRecordChange(request: Request, type: EntityType, id:
 
     if (ctx.role === 'administrateur') {
       await apply(type, entity.row, action, changes, ctx.userId);
+      // Le point de vente et le collecteur concernés sont prévenus
+      const actorId = ctx.userId;
+      notifyInBackground(() => notifyRecordChanged(organizationId, actorId, type, entity.row, action, entity.label));
       return NextResponse.json({ applied: true, message: action === 'delete' ? 'Supprimé.' : 'Modification enregistrée.' });
     }
 
@@ -246,6 +250,13 @@ export async function decideChangeRequest(ctx: SessionContext, requestId: string
       const changes = (req.changes || {}) as Row;
       await validate(req.entity_type, entity.row, req.action, req.action === 'update' ? diff(entity.row, changes).changes : {});
       await apply(req.entity_type, entity.row, req.action, req.action === 'update' ? diff(entity.row, changes).changes : {}, ctx.userId);
+      // Le point de vente est prévenu (le collecteur l'est par la décision, plus bas)
+      const organizationId = ctx.organizationId!;
+      const actorId = ctx.userId;
+      const requesterId = req.requested_by as string | null;
+      notifyInBackground(() =>
+        notifyRecordChanged(organizationId, actorId, req.entity_type, entity.row, req.action, entity.label, requesterId)
+      );
     }
   } else if (!note) {
     throw new ChangeError('Indiquez le motif du refus.');

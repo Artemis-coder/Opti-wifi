@@ -1050,7 +1050,7 @@ ALTER TABLE integration_secrets ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS site_content (
   key         VARCHAR(40) PRIMARY KEY
-              CHECK (key IN ('links', 'hero', 'sections', 'pricing', 'faq', 'final_cta', 'seo')),
+              CHECK (key IN ('links', 'hero', 'sections', 'pricing', 'faq', 'final_cta', 'seo', 'cgu', 'cgv')),
   value       JSONB NOT NULL,
   updated_by  UUID REFERENCES users(id) ON DELETE SET NULL,
   updated_at  TIMESTAMPTZ DEFAULT NOW()

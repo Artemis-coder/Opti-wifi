@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
+import { notifyInBackground } from '@/lib/notifications';
+import { notifyExchange } from '@/lib/activity-notifications';
 import { query } from '@/lib/neon/db';
 import { getAssignedPosIds } from '@/lib/collector-scope';
 import { trackServer } from '@/lib/analytics/server';
@@ -161,6 +163,20 @@ export async function POST(request: NextRequest) {
       tickets_returned: sum(returnsPayload),
       tickets_received: sum(receivesPayload),
     });
+
+    // Le point de vente (son téléphone sonne), son collecteur et les administrateurs sont prévenus
+    if (ctx.organizationId) {
+      const organizationId = ctx.organizationId;
+      notifyInBackground(() =>
+        notifyExchange(
+          organizationId,
+          user.id,
+          body.pos_id,
+          returnsPayload.map((r) => ({ ticket_type_id: r.ticket_type_id as string, quantite: Number(r.quantite) })),
+          receivesPayload.map((r) => ({ ticket_type_id: r.ticket_type_id as string, quantite: Number(r.quantite) }))
+        )
+      );
+    }
 
     return NextResponse.json({
       success: true,

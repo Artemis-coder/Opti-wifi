@@ -88,6 +88,14 @@ export function PosAccountTour({ userId, ready }: { userId: string; ready: boole
   const [index, setIndex] = useState<number | null>(null);
   const [steps, setSteps] = useState<TourStep[]>([]);
 
+  // Pendant la visite guidée, l'invitation à activer les notifications attend la fin
+  useEffect(() => {
+    window.__optispaceWelcomeOpen = index !== null;
+    return () => {
+      window.__optispaceWelcomeOpen = false;
+    };
+  }, [index]);
+
   const start = useCallback(() => {
     // Menu latéral sur ordinateur (≥ 1024 px), barre du bas sur mobile
     const desktop = window.matchMedia('(min-width: 1024px)').matches;

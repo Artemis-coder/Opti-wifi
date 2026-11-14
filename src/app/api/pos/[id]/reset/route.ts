@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getSessionContext, canAccessOrganization, rejectIfReadOnly } from '@/lib/tenant';
+import { notifyInBackground } from '@/lib/notifications';
+import { notifyPosReset } from '@/lib/activity-notifications';
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -127,6 +129,13 @@ export async function DELETE(
       { error: 'Erreur lors de la suppression des allocations de tickets.' },
       { status: 500 }
     );
+  }
+
+  // Le point de vente, son collecteur et les autres administrateurs sont prévenus
+  if (ctx.organizationId) {
+    const organizationId = ctx.organizationId;
+    const actorId = ctx.userId;
+    notifyInBackground(() => notifyPosReset(organizationId, actorId, posId));
   }
 
   return NextResponse.json({

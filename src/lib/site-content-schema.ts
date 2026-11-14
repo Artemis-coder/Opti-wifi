@@ -1,4 +1,5 @@
 // Schéma du contenu du site vitrine : sans import serveur, utilisable dans le back-office.
+import { LEGAL_DEFAULTS } from '@/lib/legal-defaults';
 
 /**
  * Contenu du site vitrine (branche `landing`, projet Vercel optispace-landing),
@@ -33,6 +34,7 @@ export const SITE_SECTION_KEYS = [
   'calculator',
   'how_it_works',
   'showcase',
+  'roles',
   'field',
   'audience',
   'pricing',
@@ -63,6 +65,14 @@ export type SiteFinalCta = {
 
 export type SiteSeo = { title: string; description: string };
 
+/**
+ * CGU / CGV du site vitrine. Corps d'une section : paragraphes séparés par une
+ * ligne vide ; une ligne commençant par « - » est une puce.
+ * `updated_at` (AAAA-MM-JJ) est fixé par le serveur à chaque enregistrement.
+ */
+export type SiteLegalSection = { title: string; body: string };
+export type SiteLegalDoc = { version: string; updated_at: string; intro: string; sections: SiteLegalSection[] };
+
 export type SiteContent = {
   links: SiteLinks;
   hero: SiteHero;
@@ -71,15 +81,18 @@ export type SiteContent = {
   faq: SiteFaq;
   final_cta: SiteFinalCta;
   seo: SiteSeo;
+  cgu: SiteLegalDoc;
+  cgv: SiteLegalDoc;
 };
 export type SiteContentKey = keyof SiteContent;
-export const SITE_CONTENT_KEYS: SiteContentKey[] = ['links', 'hero', 'sections', 'pricing', 'faq', 'final_cta', 'seo'];
+export const SITE_CONTENT_KEYS: SiteContentKey[] = ['links', 'hero', 'sections', 'pricing', 'faq', 'final_cta', 'seo', 'cgu', 'cgv'];
 
 export const SITE_SECTION_LABELS: Record<SiteSectionKey, string> = {
   pains: '« Ça vous parle ? » (les problèmes)',
   calculator: 'Calculateur de fuites',
   how_it_works: 'Comment ça marche',
   showcase: "Les écrans de l'outil",
+  roles: 'Les espaces (gérant, collecteur, point de vente)',
   field: 'Sur le terrain (mobile)',
   audience: 'Pour qui / Avant-après',
   pricing: 'Tarifs',
@@ -151,6 +164,8 @@ export const SITE_DEFAULTS: SiteContent = {
     description:
       'Le logiciel des gérants de zones Wi-Fi : suivez vos tickets par point de vente, encaissez vos collecteurs sans écart et pilotez tout votre réseau depuis votre téléphone.',
   },
+  cgu: LEGAL_DEFAULTS.cgu,
+  cgv: LEGAL_DEFAULTS.cgv,
 };
 
 // ---------------------------------------------------------------- validation
@@ -251,6 +266,25 @@ function parse(key: SiteContentKey, raw: unknown): SiteContent[SiteContentKey] {
         title: text(o, 'title', 'Titre Google', 70),
         description: text(o, 'description', 'Description Google', 170),
       };
+    case 'cgu':
+    case 'cgv': {
+      const sections = Array.isArray(o.sections) ? o.sections : [];
+      if (sections.length === 0) throw new FieldError('Au moins une section est requise');
+      if (sections.length > 40) throw new FieldError('40 sections maximum');
+      const updated = typeof o.updated_at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.updated_at) ? o.updated_at : new Date().toISOString().slice(0, 10);
+      return {
+        version: text(o, 'version', 'Version', 20),
+        updated_at: updated,
+        intro: text(o, 'intro', 'Introduction', 1500),
+        sections: sections.map((it, i) => {
+          const sec = obj(it);
+          return {
+            title: text(sec, 'title', `Titre de la section ${i + 1}`, 150),
+            body: text(sec, 'body', `Texte de la section ${i + 1}`, 8000),
+          };
+        }),
+      };
+    }
   }
 }
 

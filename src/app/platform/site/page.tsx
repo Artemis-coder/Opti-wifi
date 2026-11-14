@@ -6,6 +6,8 @@ import {
   ArrowDown,
   ArrowUp,
   ExternalLink,
+  FileText,
+  Scale,
   Globe,
   HelpCircle,
   LayoutList,
@@ -29,6 +31,7 @@ import {
   SITE_SECTION_LABELS,
   type SiteContent,
   type SiteContentKey,
+  type SiteLegalDoc,
 } from '@/lib/site-content-schema';
 
 /** Adresse publique du site vitrine (projet Vercel optispace-landing). */
@@ -44,6 +47,8 @@ const TABS = [
   { value: 'faq', label: 'FAQ', icon: HelpCircle },
   { value: 'final_cta', label: 'Appel final', icon: Megaphone },
   { value: 'seo', label: 'Google', icon: Search },
+  { value: 'cgu', label: 'CGU', icon: FileText },
+  { value: 'cgv', label: 'CGV', icon: Scale },
 ] as const satisfies readonly { value: SiteContentKey; label: string; icon: unknown }[];
 
 export default function PlatformSitePage() {
@@ -351,6 +356,15 @@ function SiteContentEditor() {
           />
         </Section>
       )}
+
+      {(tab === 'cgu' || tab === 'cgv') && (
+        <LegalEditor
+          key={tab}
+          kind={tab}
+          doc={draft[tab]}
+          onChange={(doc) => set(tab, doc)}
+        />
+      )}
     </div>
   );
 }
@@ -370,7 +384,90 @@ function Section({ icon: Icon, title, hint, children }: { icon: React.ElementTyp
   );
 }
 
-function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+const LEGAL_LABELS = {
+  cgu: { short: 'CGU', title: "Conditions générales d'utilisation", path: '/cgu' },
+  cgv: { short: 'CGV', title: 'Conditions générales de vente', path: '/cgv' },
+} as const;
+
+/** Éditeur des CGU / CGV : publiées sur le site (page + PDF) dès l'enregistrement. */
+function LegalEditor({ kind, doc, onChange }: { kind: 'cgu' | 'cgv'; doc: SiteLegalDoc; onChange: (doc: SiteLegalDoc) => void }) {
+  const meta = LEGAL_LABELS[kind];
+  const sections = doc.sections;
+  const setSections = (next: SiteLegalDoc['sections']) => onChange({ ...doc, sections: next });
+  const updated = doc.updated_at
+    ? new Date(`${doc.updated_at}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '—';
+
+  return (
+    <Section
+      icon={kind === 'cgu' ? FileText : Scale}
+      title={meta.title}
+      hint={`Publiées sur ${SITE_URL}${meta.path} et dans le PDF téléchargeable, moins d'une minute après l'enregistrement.`}
+    >
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+        <span>
+          Dernière mise à jour publiée : <strong>{updated}</strong> (mise à jour automatiquement à l&apos;enregistrement)
+        </span>
+        <a href={`${SITE_URL}${meta.path}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:underline">
+          <ExternalLink className="w-3.5 h-3.5" /> Voir la page
+        </a>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4">
+        <Input label="Version" value={doc.version} onChange={(e) => onChange({ ...doc, version: e.target.value })} placeholder="1.1" />
+        <TextArea label="Introduction" value={doc.intro} onChange={(v) => onChange({ ...doc, intro: v })} />
+      </div>
+
+      <p className="text-xs text-slate-500">
+        Dans le texte d&apos;une section : une ligne vide sépare deux paragraphes ; une ligne qui commence par « - » devient une puce.
+        Pensez à augmenter le numéro de version lors d&apos;un changement important.
+      </p>
+
+      <div className="space-y-4">
+        {sections.map((sec, i) => (
+          <div key={i} className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500">Section {i + 1}</span>
+              <div className="flex gap-1">
+                <IconButton label="Monter" disabled={i === 0} onClick={() => setSections(move(sections, i, i - 1))} icon={ArrowUp} />
+                <IconButton label="Descendre" disabled={i === sections.length - 1} onClick={() => setSections(move(sections, i, i + 1))} icon={ArrowDown} />
+                <IconButton
+                  label="Supprimer"
+                  danger
+                  disabled={sections.length <= 1}
+                  onClick={() => setSections(sections.filter((_, j) => j !== i))}
+                  icon={Trash2}
+                />
+              </div>
+            </div>
+            <Input
+              label="Titre"
+              value={sec.title}
+              onChange={(e) => setSections(sections.map((s, j) => (j === i ? { ...s, title: e.target.value } : s)))}
+            />
+            <TextArea
+              label="Texte"
+              rows={8}
+              value={sec.body}
+              onChange={(v) => setSections(sections.map((s, j) => (j === i ? { ...s, body: v } : s)))}
+            />
+          </div>
+        ))}
+      </div>
+
+      <Button
+        variant="outline"
+        className="gap-2"
+        disabled={sections.length >= 40}
+        onClick={() => setSections([...sections, { title: `${sections.length + 1}. Nouvelle section`, body: '' }])}
+      >
+        <Plus className="w-4 h-4" /> Ajouter une section
+      </Button>
+    </Section>
+  );
+}
+
+function TextArea({ label, value, onChange, rows = 3 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   const id = React.useId();
   return (
     <div className="w-full space-y-1.5">
@@ -379,7 +476,7 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
       </label>
       <textarea
         id={id}
-        rows={3}
+        rows={rows}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-4 sm:px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition duration-150 resize-y"

@@ -43,6 +43,10 @@ export async function PUT(request: Request) {
   const key = body.key;
   const parsed = parseSiteContent(key, body.value);
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+  // CGU / CGV : la date de mise à jour affichée sur le site est celle de l'enregistrement
+  if (key === 'cgu' || key === 'cgv') {
+    (parsed.value as { updated_at: string }).updated_at = new Date().toISOString().slice(0, 10);
+  }
 
   try {
     const { rows: before } = await query(`SELECT value FROM site_content WHERE key = $1`, [key]);
