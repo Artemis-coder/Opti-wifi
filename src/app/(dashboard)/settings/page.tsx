@@ -541,6 +541,18 @@ function SettingsContent() {
             Les notifications restent aussi disponibles dans la cloche, en haut de l&apos;écran. Le réglage s&apos;applique à cet appareil :
             activez-le sur chaque téléphone ou ordinateur utilisé.
           </p>
+          {pushState === 'subscribed' && (
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-4 py-3 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+              <p className="font-semibold text-slate-900 dark:text-white">« Tester la sonnerie » : appuyez sur le bouton depuis le téléphone à tester</p>
+              <p>La notification de test arrive sur les appareils du compte connecté, 10 secondes plus tard : verrouillez le téléphone pour vérifier qu&apos;il sonne.</p>
+              <p className="font-semibold text-slate-900 dark:text-white pt-1">La notification arrive sans son (Android) ?</p>
+              <p>
+                Le son se règle sur le téléphone, une seule fois : appuyez longuement sur une notification OptiSpace, choisissez{' '}
+                <strong>« Alerte »</strong> au lieu de « Silencieux », puis vérifiez que le <strong>son</strong> est activé. Ou :
+                Paramètres du téléphone → Applications → Chrome (ou OptiSpace) → Notifications → catégorie du site → Alerte, avec son.
+              </p>
+            </div>
+          )}
         </Card>
       )}
     </div>
