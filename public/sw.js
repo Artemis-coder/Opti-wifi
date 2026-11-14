@@ -101,8 +101,10 @@ self.addEventListener('push', (event) => {
     Promise.all([
       self.registration.showNotification(title, {
         body: data.body || '',
+        // Grande image : le logo en couleur ; petite icône de la barre d'état (Android) :
+        // silhouette blanche des lunettes OptiSpace (Android n'en garde que la forme)
         icon: '/icon.png',
-        badge: '/icon.png',
+        badge: '/notification-badge.png',
         tag: data.tag || undefined,
         renotify: Boolean(data.tag),
         // Jamais silencieuse : le téléphone sonne avec la sonnerie de notification du système
