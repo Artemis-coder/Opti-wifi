@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   Receipt,
   Search,
@@ -76,9 +77,12 @@ export default function PlatformPaymentsPage() {
       if (res.ok) {
         setPayments(result.data || []);
         if (result.stats) setStats(result.stats);
+      } else {
+        toast.error(result.error || 'Impossible de charger les paiements.');
       }
-    } catch {
-      // error
+    } catch (err) {
+      console.error('Chargement des paiements :', err);
+      toast.error('Impossible de charger les paiements. Vérifiez votre connexion.');
     } finally {
       setLoading(false);
     }

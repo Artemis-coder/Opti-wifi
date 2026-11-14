@@ -10,6 +10,7 @@
  *
  *   node scripts/posthog-dashboards.mjs            # crée ce qui manque
  *   node scripts/posthog-dashboards.mjs --dry-run  # affiche ce qui serait créé
+ *   node scripts/posthog-dashboards.mjs --check    # exécute chaque indicateur (lecture seule, droit query:read)
  *
  * Les événements sont définis dans src/lib/analytics/events.ts (outil) et
  * landing/src/instrumentation-client.ts (site, branche landing).
@@ -28,6 +29,7 @@ const KEY = env.POSTHOG_PERSONAL_API_KEY;
 const PROJECT = env.POSTHOG_PROJECT_ID;
 const HOST = (env.POSTHOG_APP_HOST || "https://us.posthog.com").replace(/\/$/, "");
 const DRY = process.argv.includes("--dry-run");
+const CHECK = process.argv.includes("--check");
 
 if (!DRY && (!KEY || !PROJECT)) {
   console.error("POSTHOG_PERSONAL_API_KEY et POSTHOG_PROJECT_ID sont requis (voir l'en-tête du script).");
@@ -249,6 +251,23 @@ async function main() {
       console.log(`\n${d.name}`);
       for (const i of d.insights) console.log(`  • ${i.name}`);
     }
+    return;
+  }
+  if (CHECK) {
+    let failed = 0;
+    for (const d of DASHBOARDS) {
+      for (const i of d.insights) {
+        try {
+          const r = await api(`/query/`, { method: "POST", body: JSON.stringify({ query: i.query.source }) });
+          const n = Array.isArray(r.results) ? r.results.length : 0;
+          console.log(`✓ ${i.name} (${n} série${n > 1 ? "s" : ""})`);
+        } catch (err) {
+          failed++;
+          console.log(`✗ ${i.name} : ${err.message}`);
+        }
+      }
+    }
+    if (failed) process.exit(1);
     return;
   }
   const existing = await api(`/dashboards/?limit=200`);
