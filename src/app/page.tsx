@@ -11,6 +11,7 @@ import { HowItWorks } from "@/components/HowItWorks";
 import { Nav } from "@/components/Nav";
 import { Pains } from "@/components/Pains";
 import { Pricing } from "@/components/Pricing";
+import { Roles } from "@/components/Roles";
 import { Showcase } from "@/components/Showcase";
 import { SiteProvider } from "@/components/SiteProvider";
 
@@ -45,6 +46,7 @@ export default async function LandingPage() {
           {show.calculator && <Calculator />}
           {show.how_it_works && <HowItWorks />}
           {show.showcase && <Showcase />}
+          {show.roles && <Roles />}
           {show.field && <Field />}
           {show.audience && <Audience />}
           {show.pricing && <Pricing />}

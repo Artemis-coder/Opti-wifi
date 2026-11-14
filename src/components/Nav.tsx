@@ -12,6 +12,7 @@ const ALL_SECTIONS: { href: string; label: string; key: SectionKey }[] = [
   { href: "#probleme", label: "Le problème", key: "pains" },
   { href: "#fonctionnement", label: "Comment ça marche", key: "how_it_works" },
   { href: "#fonctionnalites", label: "Fonctionnalités", key: "showcase" },
+  { href: "#espaces", label: "Les espaces", key: "roles" },
   { href: "#tarifs", label: "Tarifs", key: "pricing" },
   { href: "#faq", label: "FAQ", key: "faq" },
 ];

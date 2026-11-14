@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { SCREENS_VERSION } from "./src/lib/screens";
 
 // Relais PostHog : /ingest sur le même domaine (contourne les bloqueurs de publicité).
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
@@ -8,6 +9,13 @@ const POSTHOG_ASSETS = POSTHOG_HOST.replace(".i.posthog.com", "-assets.i.posthog
 // Application autonome : le site vitrine ne partage rien avec l'outil (../src).
 const nextConfig: NextConfig = {
   turbopack: { root: path.join(__dirname) },
+  images: {
+    // Captures versionnées (src/lib/screens.ts) : seule la version en cours est optimisée
+    localPatterns: [
+      { pathname: "/screens/**", search: `?v=${SCREENS_VERSION}` },
+      { pathname: "/logo.jpg", search: "" },
+    ],
+  },
   skipTrailingSlashRedirect: true,
   async rewrites() {
     return [

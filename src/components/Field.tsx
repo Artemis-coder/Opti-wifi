@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { BellRing, CloudOff, UserCog, Wifi } from "lucide-react";
 import { useRef } from "react";
 import { Item, Reveal, SectionTag } from "./motion";
+import { screen } from "@/lib/screens";
 
 const POINTS = [
   {
@@ -63,10 +64,10 @@ export function Field() {
 
         <div className="relative mx-auto h-[560px] w-full max-w-md sm:h-[640px]">
           <motion.div style={{ y: yBack, rotate: rot }} className="absolute left-0 top-6 w-[54%]">
-            <Phone src="/screens/m-dashboard.png" alt="Tableau de bord OptiSpace sur téléphone" />
+            <Phone src={screen("m-dashboard")} alt="Tableau de bord OptiSpace sur téléphone" />
           </motion.div>
           <motion.div style={{ y: yFront }} className="absolute right-0 top-20 w-[56%]">
-            <Phone src="/screens/m-collection-new.png" alt="Assistant d'encaissement OptiSpace sur téléphone" />
+            <Phone src={screen("m-collection-new")} alt="Assistant d'encaissement OptiSpace sur téléphone" />
           </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}

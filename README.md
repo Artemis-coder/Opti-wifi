@@ -102,11 +102,15 @@ de zone Wi-Fi. Chaque section (sauf l'accroche) peut être masquée depuis le ba
 | 3 | Calculateur de fuites | `Calculator` | `#calculateur` | Le visiteur chiffre ce qu'il perd |
 | 4 | Comment ça marche | `HowItWorks` | `#fonctionnement` | Allouer → Vendre → Encaisser → Savoir |
 | 5 | L'outil | `Showcase` | `#fonctionnalites` | Vrais écrans, défilement guidé |
-| 6 | Sur le terrain | `Field` | — | Mobile, hors-ligne, rôles, notifications |
-| 7 | Pour qui | `Audience` | — | 3 profils et comparatif Avant / Avec |
-| 8 | Tarifs | `Pricing` | `#tarifs` | Forfaits de l'outil + inclus |
-| 9 | FAQ | `Faq` | `#faq` | Objections fréquentes |
-| 10 | Appel final | `FinalCta` | — | Dernier appel + défilé de mots-clés |
+| 6 | Les espaces | `Roles` | `#espaces` | Gérant, collecteur, point de vente (onglets, captures ordinateur + téléphone) |
+| 7 | Sur le terrain | `Field` | — | Mobile, hors-ligne, rôles, notifications |
+| 8 | Pour qui | `Audience` | — | 3 profils et comparatif Avant / Avec |
+| 9 | Tarifs | `Pricing` | `#tarifs` | Forfaits de l'outil + inclus |
+| 10 | FAQ | `Faq` | `#faq` | Objections fréquentes |
+| 11 | Appel final | `FinalCta` | — | Dernier appel + défilé de mots-clés |
+
+Pages annexes : **`/cgu`** et **`/cgv`** (liens dans le pied de page), avec leurs PDF
+`/legal/optispace-cgu.pdf` et `/legal/optispace-cgv.pdf`.
 
 Les boutons qui mènent à l'outil (« Se connecter », « Essai gratuit », choix d'un forfait…)
 **s'ouvrent dans un nouvel onglet**.
@@ -129,6 +133,7 @@ Les modifications apparaissent sur le site en **moins d'une minute**.
 | **FAQ** | Ajouter, modifier, supprimer, réordonner les questions |
 | **Appel final** | Titre, texte, bouton, mention |
 | **Google** | Titre et description (résultats Google, partages WhatsApp) |
+| **CGU / CGV** | Version, introduction et sections ; date de mise à jour automatique |
 
 Les **prix et limites des forfaits** viennent directement de *Licences → Forfaits* :
 une seule saisie pour l'outil et le site.
@@ -146,6 +151,14 @@ Site vitrine ◀── GET /api/public/site-content ┘   (+ forfaits actifs)
   `src/app/api/platform/site-content` (back-office), `src/app/api/public/site-content` (lecture publique).
 - Côté site : `src/lib/content.ts` (lecture de l'API, contenu de secours, mise en forme des forfaits)
   et `src/components/SiteProvider.tsx` (met le contenu à disposition de toutes les sections).
+
+### CGU et CGV
+
+Rédigées et modifiées dans *Site vitrine → CGU / CGV*. Dans le texte d'une section, une ligne
+vide sépare deux paragraphes et une ligne commençant par « - » devient une puce. La page
+(`src/components/LegalPage.tsx`) et le **PDF, généré à la volée** (`src/lib/legal-pdf.tsx`,
+route `src/app/legal/[file]/route.ts`), reprennent toujours le texte en vigueur.
+Texte de secours : `src/lib/legal.ts` (identique à `src/lib/legal-defaults.ts` de l'outil).
 
 ### Ce qui reste dans le code
 
@@ -232,8 +245,9 @@ le site lit le contenu géré dans le back-office de **production**.
 
 ## Mettre à jour les captures
 
-Les écrans de la section « L'outil » et des téléphones sont de **vraies captures** de l'outil,
-prises avec le compte client démo de la base **dev**. Après une évolution de l'interface :
+Les écrans des sections « L'outil », « Les espaces » et des téléphones sont de **vraies captures**
+de l'outil, prises avec les comptes de démonstration de la base **dev** (administrateur, collecteur,
+point de vente). Après une évolution de l'interface :
 
 1. Lancer l'outil en local sur `http://localhost:3000` (branche `develop`, base Neon dev).
 2. Depuis `landing/` :
@@ -242,9 +256,12 @@ prises avec le compte client démo de la base **dev**. Après une évolution de 
    npm run capture
    ```
 
-   Le script se connecte avec `DEV_TEST_CLIENT_EMAIL` / `DEV_TEST_CLIENT_PASSWORD`
-   (lus dans `../.env.local`, jamais affichés), masque le badge de développement de Next.js
-   et remplace les 6 fichiers de `public/screens/` (desktop 1440 × 900 et téléphone 390 × 844, en ×2).
+   Le script se connecte successivement avec `DEV_TEST_CLIENT_*`, `DEV_TEST_COLLECTOR_*` et
+   `DEV_TEST_POS_PHONE` / `DEV_TEST_POS_PASSWORD` (lus dans `../.env.local`, jamais affichés),
+   ferme la fenêtre de notifications et la visite guidée, masque le badge de développement de Next.js,
+   puis remplace les 10 fichiers de `public/screens/` (ordinateur 1440 × 900 et téléphone 390 × 844, en ×2).
+   Il met aussi à jour `SCREENS_VERSION` (`src/lib/screens.ts`) : l'adresse des images change, donc
+   aucun cache (navigateur, CDN Vercel) ne peut servir une ancienne capture.
 3. Vérifier le rendu (`npm run dev`), puis commiter et pousser sur `landing`.
 
 Le tableau de bord animé de l'accroche (`DashboardMock.tsx`) est une **réplique codée** :

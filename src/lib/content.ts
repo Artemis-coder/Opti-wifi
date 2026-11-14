@@ -35,6 +35,7 @@ export type SectionKey =
   | "calculator"
   | "how_it_works"
   | "showcase"
+  | "roles"
   | "field"
   | "audience"
   | "pricing"
@@ -92,6 +93,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     calculator: true,
     how_it_works: true,
     showcase: true,
+    roles: true,
     field: true,
     audience: true,
     pricing: true,

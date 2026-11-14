@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useInView } from "motion/react";
 import { Check, FileSpreadsheet, LayoutDashboard, PackagePlus, Receipt } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { EASE_OUT, Item, Reveal, SectionTag } from "./motion";
+import { screen } from "@/lib/screens";
 
 const FEATURES = [
   {
@@ -13,7 +14,7 @@ const FEATURES = [
     title: "Toute votre activité en un coup d'œil",
     text: "Tickets vendus, chiffre d'affaires, total encaissé et écart : les 4 chiffres qui comptent, sur la période de votre choix, mis à jour à chaque encaissement.",
     points: ["Aujourd'hui, 7 jours, ce mois-ci ou depuis le début", "Ventes par point de vente, écarts signalés en rouge", "Derniers encaissements et raccourcis du quotidien"],
-    shot: "/screens/dashboard.png",
+    shot: screen("dashboard"),
     url: "optiwifi.site/dashboard",
   },
   {
@@ -22,7 +23,7 @@ const FEATURES = [
     title: "Un encaissement juste, en 5 étapes guidées",
     text: "Choisissez le point de vente, saisissez les tickets vendus : OptiSpace calcule le montant attendu, la commission du collecteur, et compare avec l'argent réellement remis.",
     points: ["Impossible de déclarer plus que le stock", "Écart calculé automatiquement", "Validation finale tracée"],
-    shot: "/screens/collection-new.png",
+    shot: screen("collection-new"),
     url: "optiwifi.site/collections/new",
   },
   {
@@ -31,7 +32,7 @@ const FEATURES = [
     title: "Chaque ticket a une adresse",
     text: "Distribuez vos stocks par point de vente et suivez alloué, vendu et restant. Un revendeur veut échanger des tickets invendus ? L'assistant d'échange vérifie que la valeur est équivalente.",
     points: ["Historique complet : qui a alloué, quand", "Échanges contrôlés en FCFA", "Remise à zéro sécurisée d'un POS"],
-    shot: "/screens/allocations.png",
+    shot: screen("allocations"),
     url: "optiwifi.site/allocations",
   },
   {
@@ -40,7 +41,7 @@ const FEATURES = [
     title: "Vos comptes prêts, sans recopier",
     text: "Filtrez par période et exportez vos encaissements et vos points de vente en CSV, prêts pour votre comptable ou votre associé.",
     points: ["Filtre par période", "Export des encaissements et des POS", "Attendu, encaissé, commission, écart"],
-    shot: "/screens/reports.png",
+    shot: screen("reports"),
     url: "optiwifi.site/reports",
   },
 ];
