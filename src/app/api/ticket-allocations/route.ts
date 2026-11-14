@@ -5,6 +5,8 @@ import { checkQuota, getUserOrganizationId } from '@/lib/quotas';
 import { trackServer } from '@/lib/analytics/server';
 import { EVENTS } from '@/lib/analytics/events';
 import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
+import { notifyInBackground } from '@/lib/notifications';
+import { notifyAllocationsCreated } from '@/lib/activity-notifications';
 import { getAssignedPosIds } from '@/lib/collector-scope';
 
 export async function POST(request: NextRequest) {
@@ -91,6 +93,9 @@ export async function POST(request: NextRequest) {
       ticket_type_id,
       quantity: Number(quantite) || 0,
     });
+
+    // Le point de vente (son téléphone sonne), son collecteur et les administrateurs sont prévenus
+    if (allocation) notifyInBackground(() => notifyAllocationsCreated(orgId, ctx.userId, [allocation as Record<string, unknown>]));
 
     return NextResponse.json({
       success: true,

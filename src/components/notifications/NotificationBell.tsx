@@ -89,6 +89,11 @@ export function NotificationBell({ className }: { className?: string }) {
             }
           }
           seenIds.current = new Set(list.map((n) => n.id));
+          // Synchronisation : une notification lue sur un autre appareil est retirée de celui-ci
+          const read = new Set(list.filter((n) => n.read_at).map((n) => `n:${n.id}`));
+          navigator.serviceWorker?.getRegistration().then((reg) =>
+            reg?.getNotifications().then((shown) => shown.forEach((sn) => read.has(sn.tag) && sn.close())),
+          ).catch(() => {});
           setItems(list);
           setUnread(res.unread || 0);
         })

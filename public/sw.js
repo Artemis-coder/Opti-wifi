@@ -105,7 +105,13 @@ self.addEventListener('push', (event) => {
         badge: '/icon.png',
         tag: data.tag || undefined,
         renotify: Boolean(data.tag),
-        data: { url: data.url || '/' },
+        // Jamais silencieuse : le téléphone sonne avec la sonnerie de notification du système
+        silent: false,
+        // Notification importante (ex. tickets reçus par le point de vente) : vibration
+        // marquée, et elle reste affichée jusqu'à ce qu'on la touche
+        vibrate: data.ring ? [400, 150, 400, 150, 400] : [200, 100, 200],
+        requireInteraction: Boolean(data.ring),
+        data: { url: data.url || '/', tag: data.tag || null },
       }),
       // Onglets ouverts : la cloche se met à jour immédiatement, sans attendre le rafraîchissement périodique
       self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
@@ -115,8 +121,21 @@ self.addEventListener('push', (event) => {
   );
 });
 
+// Notification ouverte sur le téléphone : marquée lue sur le serveur, donc sur tous les appareils
+function markNotificationRead(tag) {
+  const id = typeof tag === 'string' && tag.startsWith('n:') ? tag.slice(2) : null;
+  if (!id) return Promise.resolve();
+  return fetch('/api/notifications', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [id] }),
+  }).catch(() => {});
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  event.waitUntil(markNotificationRead(event.notification.tag));
   const target = new URL(event.notification.data && event.notification.data.url ? event.notification.data.url : '/', self.location.origin);
   // Ne jamais ouvrir une adresse externe
   const url = target.origin === self.location.origin ? target.href : self.location.origin + '/';

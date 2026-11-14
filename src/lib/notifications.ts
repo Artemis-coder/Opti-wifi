@@ -36,7 +36,17 @@ export type NotificationType =
   | 'system.alert'
   | 'account.deletion_requested'
   | 'account.deletion_rejected'
-  | 'system.recovered';
+  | 'system.recovered'
+  // Activité des espaces (allocations, collectes, échanges, corrections…)
+  | 'pos.tickets_received'
+  | 'pos.collection_recorded'
+  | 'pos.exchange'
+  | 'pos.record_changed'
+  | 'pos.reset'
+  | 'team.allocation_created'
+  | 'team.exchange'
+  | 'team.record_changed'
+  | 'team.pos_reset';
 
 export interface NotificationInput {
   type: NotificationType;
@@ -46,6 +56,8 @@ export interface NotificationInput {
   link?: string | null;
   /** Évite les doublons pour un même destinataire (rappels automatiques). */
   dedupeKey?: string | null;
+  /** Notification importante : le téléphone sonne et vibre, elle reste affichée jusqu'à ce qu'on la touche. */
+  ring?: boolean;
 }
 
 let vapidConfigured: boolean | null = null;
@@ -70,22 +82,34 @@ export interface PushResult {
   failed: number;
 }
 
-async function sendPush(userIds: string[], n: NotificationInput): Promise<PushResult> {
+/**
+ * Envoie le push à chaque appareil des destinataires. `notificationIds` (utilisateur →
+ * notification in-app) sert d'étiquette : chaque notification reste distincte sur le
+ * téléphone, et est retirée de tous les appareils dès qu'elle est lue sur l'un d'eux.
+ */
+async function sendPush(userIds: string[], n: NotificationInput, notificationIds?: Map<string, string>): Promise<PushResult> {
   const result: PushResult = { configured: configureVapid(), subscriptions: 0, sent: 0, failed: 0 };
   if (!result.configured || userIds.length === 0) return result;
   const { rows } = await query(
-    'SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ANY($1::uuid[])',
+    'SELECT id, user_id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ANY($1::uuid[])',
     [userIds]
   );
   result.subscriptions = rows.length;
   // Urgence haute : livraison immédiate même si l'appareil est en veille
-  const payload = JSON.stringify({ title: n.title, body: n.body || '', url: n.link || '/', tag: n.type });
+  const payloadFor = (userId: string) =>
+    JSON.stringify({
+      title: n.title,
+      body: n.body || '',
+      url: n.link || '/',
+      tag: notificationIds?.get(userId) ? `n:${notificationIds.get(userId)}` : n.type,
+      ring: n.ring === true,
+    });
   await Promise.all(
     rows.map(async (sub) => {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload,
+          payloadFor(sub.user_id as string),
           { TTL: 60 * 60 * 24, urgency: 'high' }
         );
         result.sent++;
@@ -115,11 +139,12 @@ export async function notifyUsers(userIds: string[], n: NotificationInput): Prom
       `INSERT INTO notifications (user_id, type, title, body, link, dedupe_key)
        SELECT u, $2, $3, $4, $5, $6 FROM unnest($1::uuid[]) AS u
        ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING
-       RETURNING user_id`,
+       RETURNING id, user_id`,
       [recipients, n.type, n.title.slice(0, 200), n.body ?? null, n.link ?? null, n.dedupeKey ?? null]
     );
     // Push uniquement pour les notifications réellement créées (pas les doublons ignorés)
-    await sendPush(rows.map((r) => r.user_id as string), n);
+    const ids = new Map(rows.map((r) => [r.user_id as string, r.id as string]));
+    await sendPush([...ids.keys()], n, ids);
   } catch (err) {
     console.error('notifyUsers error:', err);
   }
@@ -203,7 +228,7 @@ export async function sendTestNotification(userId: string) {
     `INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
     [userId, n.type, n.title, n.body, n.link]
   );
-  const push = await sendPush([userId], n);
+  const push = await sendPush([userId], { ...n, ring: true }, new Map([[userId, rows[0]?.id as string]]));
   const telegram = await sendSuperAdminTelegram(n);
   return { inApp: Boolean(rows[0]), push, telegram };
 }
@@ -253,5 +278,9 @@ export async function notifyCollectionCreated(
       link: collection.id ? `/collections/${collection.id}` : '/collections',
     },
     actorId
-  );
+  );  // Le point de vente (son téléphone sonne) et son collecteur
+  if (collection.id) {
+    const { notifyCollectionToPos } = await import('@/lib/activity-notifications');
+    await notifyCollectionToPos(organizationId, actorId, collection.id);
+  }
 }

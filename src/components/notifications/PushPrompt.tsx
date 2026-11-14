@@ -12,11 +12,15 @@ const storageKey = (userId: string) => `optispace:push-prompt:${userId}`;
 const TEXT = {
   client: {
     title: 'Activer les notifications ?',
-    body: 'Soyez prévenu sur cet appareil, même application fermée : nouvelles collectes de votre équipe, fin de licence, réponses du support.',
+    body: 'Soyez prévenu sur cet appareil, même application fermée : tickets attribués, collectes et échanges de votre équipe, fin de licence, réponses du support.',
+  },
+  pos: {
+    title: 'Activer les notifications ?',
+    body: 'Votre téléphone sonnera dès que vous recevez des tickets, qu’une collecte est enregistrée ou qu’un échange est fait à votre point de vente, même application fermée.',
   },
   collector: {
     title: 'Activer les notifications ?',
-    body: 'Soyez prévenu sur cet appareil, même application fermée : messages de votre administrateur, réponses du support et informations sur votre espace.',
+    body: 'Soyez prévenu sur cet appareil, même application fermée : tickets attribués à vos points de vente, collectes, corrections et réponses du support.',
   },
   platform: {
     title: 'Activer les notifications ?',
@@ -34,7 +38,7 @@ type Mode = 'enable' | 'install';
  * n'existent pas, explique comment installer l'application.
  * « Plus tard » : reproposé dans 7 jours ; jamais si déjà autorisées ou refusées.
  */
-export function PushPrompt({ userId, audience }: { userId: string | null | undefined; audience: 'client' | 'collector' | 'platform' }) {
+export function PushPrompt({ userId, audience }: { userId: string | null | undefined; audience: 'client' | 'collector' | 'pos' | 'platform' }) {
   const [mode, setMode] = useState<Mode | null>(null);
   const [busy, setBusy] = useState(false);
   const open = mode !== null;
