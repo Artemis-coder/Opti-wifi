@@ -8,10 +8,10 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint",
-    "capture": "node scripts/capture-screens.mjs ../.env.local",
-    "legal:pdf": "node scripts/legal-pdf.mjs"
+    "capture": "node scripts/capture-screens.mjs ../.env.local"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
     "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.64.0",

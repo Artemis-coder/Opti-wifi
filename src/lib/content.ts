@@ -1,3 +1,5 @@
+import { DEFAULT_LEGAL, type LegalDoc, type LegalSlug } from "@/lib/legal";
+
 /**
  * Contenu du site vitrine.
  *
@@ -23,6 +25,9 @@ export type SiteContent = {
   faq: { items: { q: string; a: string }[] };
   final_cta: { title: string; highlight: string; text: string; cta_label: string; note: string };
   seo: { title: string; description: string };
+  /** CGU / CGV gérées dans le back-office (absentes si l'outil est plus ancien) */
+  cgu?: LegalDoc;
+  cgv?: LegalDoc;
 };
 
 export type SectionKey =
@@ -233,4 +238,10 @@ export async function getSite(): Promise<Site> {
     console.warn("Contenu du site indisponible, contenu de secours utilisé :", err instanceof Error ? err.message : err);
     return { content: DEFAULT_CONTENT, plans: toPlans(DEFAULT_PLANS, DEFAULT_CONTENT.pricing.featured_plan_id) };
   }
+}
+
+/** CGU ou CGV en vigueur (back-office), avec le texte par défaut en secours. */
+export async function getLegal(slug: LegalSlug): Promise<LegalDoc> {
+  const doc = (await getSite()).content[slug];
+  return doc && Array.isArray(doc.sections) && doc.sections.length > 0 ? doc : DEFAULT_LEGAL[slug];
 }
