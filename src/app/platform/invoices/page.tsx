@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   FileText,
   Search,
@@ -70,9 +71,12 @@ export default function PlatformInvoicesPage() {
       if (res.ok) {
         setInvoices(result.data || []);
         if (result.stats) setStats(result.stats);
+      } else {
+        toast.error(result.error || 'Impossible de charger les factures.');
       }
-    } catch {
-      // error
+    } catch (err) {
+      console.error('Chargement des factures :', err);
+      toast.error('Impossible de charger les factures. Vérifiez votre connexion.');
     } finally {
       setLoading(false);
     }

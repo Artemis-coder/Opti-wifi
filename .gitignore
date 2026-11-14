@@ -65,3 +65,7 @@ skills-lock.json
 
 # Dépôt local d'outils d'agents, non suivi (enregistré par erreur comme sous-module : avertissement Vercel)
 /agents/
+
+# cookie jars curl (jetons de session)
+cookies.txt
+*.cookies
