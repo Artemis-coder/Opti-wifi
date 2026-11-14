@@ -101,11 +101,11 @@ self.addEventListener('push', (event) => {
     Promise.all([
       self.registration.showNotification(title, {
         body: data.body || '',
-        // Grande image : le logo en couleur ; petite icône de la barre d'état (Android) :
-        // silhouette blanche du personnage OptiSpace (Android n'en garde que la forme)
+        // Logo OptiSpace en couleur (dossier Logo/) : grande image et petite icône. Dans la
+        // barre d'état, Android ne garde que la forme des icônes (affichées en blanc).
         icon: '/icon.png',
         // ?v= : nouvelle adresse à chaque changement d'image, le téléphone ne garde pas l'ancienne
-        badge: '/notification-badge.png?v=2',
+        badge: '/notification-badge.png?v=3',
         tag: data.tag || undefined,
         renotify: Boolean(data.tag),
         // Jamais silencieuse : le téléphone sonne avec la sonnerie de notification du système
