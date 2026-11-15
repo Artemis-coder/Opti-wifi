@@ -1,7 +1,7 @@
 // Faux serveur SasPay pour tester l'intégration en local (aucun appel réel).
 // Endpoints imités : POST /checkout-sessions/, GET /checkout-sessions/:id/status/, POST …/cancel/,
 // GET /payments/:id/verify/, GET /transactions/:id/, GET /pricing/my-rates/.
-// Pilotage du test : POST /mock/pay/:sessionId?result=SUCCESS|FAILED
+// Pilotage du test : POST /mock/pay/:sessionId?result=SUCCESS|FAILED[&close=1][&sessionStatus=FAILED]
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 const port = Number(process.argv[2] || 4599);
@@ -35,7 +35,7 @@ http.createServer(async (req, res) => {
   if ((m = p.match(/^\/checkout-sessions\/([^/]+)\/cancel\/$/))) {
     const s = sessions.get(m[1]);
     if (!s) return send(res, 404, { message: 'introuvable', code: 'not_found' });
-    if (s.status !== 'PENDING') return send(res, 409, { message: 'Session non en attente', code: 'not_pending' });
+    if (s.status !== 'PENDING' || s.closed) return send(res, 409, { message: 'Session non en attente', code: 'not_pending' });
     s.status = 'CANCELLED';
     return send(res, 200, s);
   }
@@ -58,6 +58,9 @@ http.createServer(async (req, res) => {
     txs.set(id, { id, reference: `TXN-MOCK-${id.slice(0, 6)}`, status: result, flow_direction: 'INBOUND', requested_amount: s.amount, debited_amount: (Number(s.amount) + Number(fee)).toFixed(2), net_amount: s.amount, currency: s.currency, network_code: 'mtn_bj' });
     s.transaction = id;
     if (result === 'SUCCESS') s.status = 'PAID';
+    // close=1 : session plus annulable (cas réel après un échec) ; sessionStatus=… : statut de session forcé
+    if (url.searchParams.get('close') === '1') s.closed = true;
+    if (url.searchParams.get('sessionStatus')) s.status = url.searchParams.get('sessionStatus');
     console.log('paiement simulé', s.id, result, id);
     return send(res, 200, { session: s.id, transaction_id: id });
   }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { AlertTriangle, CreditCard, Loader2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Ban, CreditCard, Loader2, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
@@ -82,13 +82,14 @@ export function OnlinePaymentsSection() {
     fetchOnlinePayments().then(apply);
   }, [apply]);
 
-  const resync = async (id: string) => {
+  const resync = async (id: string, action?: 'cancel') => {
+    if (action === 'cancel' && !window.confirm('Annuler ce paiement en attente ? La page SasPay du client sera fermée.')) return;
     setBusy(id);
     try {
       const res = await fetch('/api/platform/online-payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, action }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) toast.error(json.error || 'Vérification impossible');
@@ -191,6 +192,7 @@ export function OnlinePaymentsSection() {
                     <td className="px-3 py-2 text-slate-500">{formatDateFR(p.paid_at || p.created_at)}</td>
                     <td className="px-3 py-2">
                       {p.status === 'pending' && (
+                        <div className="flex flex-col items-start gap-1.5">
                         <button
                           onClick={() => void resync(p.id)}
                           disabled={busy === p.id}
@@ -198,6 +200,14 @@ export function OnlinePaymentsSection() {
                         >
                           {busy === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Revérifier
                         </button>
+                        <button
+                          onClick={() => void resync(p.id, 'cancel')}
+                          disabled={busy === p.id}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+                        >
+                          <Ban className="w-3 h-3" /> Annuler
+                        </button>
+                        </div>
                       )}
                     </td>
                   </tr>

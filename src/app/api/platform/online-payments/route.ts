@@ -3,7 +3,7 @@ import { requirePlatformAdmin } from '@/lib/supabase/platform';
 import { query } from '@/lib/neon/db';
 import { UUID_RE } from '@/lib/platform-actions';
 import { getSaspayConfig } from '@/lib/saspay/client';
-import { syncOnlinePayment } from '@/lib/saspay/payments';
+import { cancelOnlinePayment, syncOnlinePayment } from '@/lib/saspay/payments';
 import { getPaymentMode } from '@/lib/saspay/mode';
 
 // Paiements en ligne SasPay (back-office) : état de la configuration, liste, revérification.
@@ -45,16 +45,23 @@ export async function GET() {
   }
 }
 
-/** Revérifie un paiement auprès de SasPay (active la licence s'il est confirmé). */
+/** Revérifie un paiement auprès de SasPay (active la licence s'il est confirmé), ou l'annule (action: 'cancel'). */
 export async function POST(request: Request) {
   const auth = await requirePlatformAdmin();
   if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const body = (await request.json().catch(() => ({}))) as { id?: unknown };
+  const body = (await request.json().catch(() => ({}))) as { id?: unknown; action?: unknown };
   const id = typeof body.id === 'string' ? body.id : '';
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Paiement invalide' }, { status: 400 });
   try {
-    const row = await syncOnlinePayment(id);
+    const row = body.action === 'cancel' ? await cancelOnlinePayment(id) : await syncOnlinePayment(id);
+    if (body.action === 'cancel') {
+      await query(
+        `INSERT INTO platform_audit_logs (platform_user_id, organization_id, action, entity_type, entity_id, new_data)
+         VALUES ($1, $2, 'online_payment_cancelled', 'online_payment', $3, $4)`,
+        [auth.platformUser.id, row.organization_id, id, JSON.stringify({ status: row.status })]
+      ).catch((err) => console.error('Online payment cancel audit error:', err));
+    }
     return NextResponse.json({ success: true, data: { status: row.status, subscription_id: row.subscription_id } });
   } catch (err) {
     console.error('Online payment resync error:', err);

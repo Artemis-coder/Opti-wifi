@@ -203,18 +203,33 @@ export async function startOnlinePayment(input: {
   }
 }
 
+/** Annulation par le super admin (back-office) : un paiement confirmé entre-temps est conservé. */
+export async function cancelOnlinePayment(id: string, reason = 'Annulé par le support'): Promise<OnlinePaymentRow> {
+  const row = await loadPayment(id);
+  if (!row) throw new OnlinePaymentError('Paiement introuvable', 404);
+  if (row.status !== 'pending') return row;
+  await abandonPayment(row, reason);
+  return (await loadPayment(id))!;
+}
+
 /** Annule la session SasPay d'un paiement jamais payé (ou constate qu'il l'a été entre-temps). */
 async function abandonPayment(row: OnlinePaymentRow, reason: string): Promise<void> {
   if (row.checkout_session_id) {
     try {
       await cancelCheckoutSession(row.checkout_session_id);
     } catch (err) {
-      // 409 not_pending : la session a changé d'état (payée ?) → on resynchronise
+      // 409 not_pending : la session n'est plus annulable chez SasPay. Payée → on confirme ;
+      // sinon (tentative échouée, session close) le paiement est clos ici, sans rester bloqué.
       if (err instanceof SaspayError && err.status === 409) {
-        await syncOnlinePayment(row.id);
-        return;
+        const st = await getCheckoutSessionStatus(row.checkout_session_id);
+        const paid = String(st.status).toUpperCase() === 'PAID' || String(st.transaction_status).toUpperCase() === 'SUCCESS';
+        if (paid) {
+          await syncOnlinePayment(row.id);
+          return;
+        }
+      } else if (!(err instanceof SaspayError && (err.status === 404 || err.status === 410))) {
+        throw err;
       }
-      if (!(err instanceof SaspayError && (err.status === 404 || err.status === 410))) throw err;
     }
   }
   await query(
@@ -280,11 +295,12 @@ export async function syncOnlinePayment(id: string): Promise<OnlinePaymentRow> {
       }
     }
 
-    if (sessionStatus === 'CANCELLED' || sessionStatus === 'EXPIRED') {
+    const TERMINAL: Record<string, OnlinePaymentStatus> = { CANCELLED: 'cancelled', EXPIRED: 'expired', FAILED: 'failed' };
+    if (TERMINAL[sessionStatus]) {
       await query(
         `UPDATE online_payments SET status = $2, failure_reason = COALESCE(failure_reason, $3), updated_at = NOW()
           WHERE id = $1 AND status = 'pending'`,
-        [id, sessionStatus === 'CANCELLED' ? 'cancelled' : 'expired', `Session ${sessionStatus.toLowerCase()}`]
+        [id, TERMINAL[sessionStatus], `Session ${sessionStatus.toLowerCase()} chez SasPay`]
       );
     } else if (Date.now() - new Date(row.created_at).getTime() > ABANDON_AFTER_MS) {
       await abandonPayment(row, 'Session non payée sous 24 h');
