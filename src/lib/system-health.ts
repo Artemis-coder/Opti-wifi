@@ -53,6 +53,7 @@ const worst = (list: SystemStatus[]): SystemStatus => list.reduce<SystemStatus>(
 export const CRON_JOBS: { name: string; label: string; maxAgeHours: number }[] = [
   { name: 'licence-reminders', label: 'Rappels de licence', maxAgeHours: 26 },
   { name: 'health-check', label: 'Contrôle de santé', maxAgeHours: 26 },
+  { name: 'business-reports', label: 'Rapports business', maxAgeHours: 26 },
 ];
 
 // ── Vérifications ──────────────────────────────────────────────────────────
