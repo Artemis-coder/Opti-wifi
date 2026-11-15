@@ -4,7 +4,7 @@
 // ============================================================
 import { hydrateTelegramEnv } from '@/lib/integration-secrets';
 
-const DEFAULT_VOICE_ID = '3bjD9dtkDRX2wP4UzdH8';
+const DEFAULT_VOICE_ID = '4SFJvuIUvxaPLgk8FoK3';
 // Modèle rapide et économique (environ 0,5 crédit par caractère)
 const TTS_MODEL = 'eleven_flash_v2_5';
 const MAX_SPOKEN_CHARS = 450;
