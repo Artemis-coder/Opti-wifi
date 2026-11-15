@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { query } from '@/lib/neon/db';
 import { sendTelegramMessageDetailed } from '@/lib/telegram';
+import { isVoiceReplyConfigured, sendVoiceReply, splitSpokenSummary, VOICE_INSTRUCTION } from '@/lib/bot/voice-reply';
 import { INCIDENT_STATUS_LABEL, listIncidents, securitySummary, SECURITY_EVENTS, SEVERITY_LABEL } from '@/lib/security-events';
 import {
   activateLicense,
@@ -662,15 +663,16 @@ export function isAssistantAvailable(): boolean {
 export async function runAssistant(
   chatId: string,
   userText: string,
-  opts: { deliver?: boolean; fallbackView?: () => Promise<string> } = {}
+  opts: { deliver?: boolean; fallbackView?: () => Promise<string>; voice?: boolean } = {}
 ): Promise<{ text: string; model: string; ok: boolean }> {
   const deliver = opts.deliver !== false;
+  const voice = Boolean(opts.voice && deliver && isVoiceReplyConfigured());
   if (deliver) await sendTyping(chatId);
   const history = await loadHistory(chatId);
   await query(`INSERT INTO conversation_messages (chat_id, role, content) VALUES ($1, 'user', $2)`, [chatId, userText]);
 
   const now = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'full', timeStyle: 'short' });
-  const userContent = `[${now}]\n${userText}`;
+  const userContent = `[${now}]\n${userText}${voice ? `\n\n${VOICE_INSTRUCTION}` : ''}`;
 
   let text = '';
   let model = CLAUDE_MODEL;
@@ -724,12 +726,17 @@ export async function runAssistant(
       : '❌ Aucun modèle d’IA ne répond pour le moment. Les boutons du menu affichent les données sans IA.';
   }
 
+  // Note vocale : le résumé parlé (ligne 🔊) est retiré du texte et lu à voix haute
+  let spoken = '';
+  if (voice && ok) ({ display: text, spoken } = splitSpokenSummary(text));
+
   await query(`INSERT INTO conversation_messages (chat_id, role, content, metadata) VALUES ($1, 'assistant', $2, $3)`, [
     chatId,
     text,
     JSON.stringify({ model }),
   ]);
   if (deliver) await sendBotMessage(chatId, toTelegramHtml(text));
+  if (spoken) await sendVoiceReply(chatId, spoken);
   return { text, model, ok };
 }
 
