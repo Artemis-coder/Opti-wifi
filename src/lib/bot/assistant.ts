@@ -75,6 +75,7 @@ export const ADMIN_MENU = {
       [{ text: '📊 Vue d’ensemble' }, { text: '🧾 Demandes en attente' }],
       [{ text: '🏢 Clients' }, { text: '⏳ Licences à renouveler' }],
       [{ text: '💰 Encaissements du mois' }, { text: '🖥️ Statut technique' }],
+      [{ text: '🌅 Rapport du jour' }, { text: '📈 Bilan de la semaine' }],
       [{ text: '🛡️ Sécurité' }, { text: '🩺 Santé de l\'application' }],
       [{ text: '🔙 Menu Principal' }],
     ],

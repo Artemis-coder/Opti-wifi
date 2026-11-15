@@ -2,6 +2,7 @@ import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
 import { reportSecurityEvent } from '@/lib/security-events';
 import { handleHealthButton, handleSecurityButton, handleSecurityCallback, HEALTH_BUTTON, HEALTH_MENU } from '@/lib/telegram-health';
 import { handleDevButton, handleDevCallback, handleDevContext } from '@/lib/telegram-dev';
+import { collectionAnomalies, morningReport, riskClients, weeklyReport } from '@/lib/business-reports';
 /**
  * Advanced AI Telegram Webhook with OpenRouter LLM + Function Calling
  * Supports: Free models (DeepSeek, Llama, Mistral, etc.), Voice transcription, Menus, Memory
@@ -56,6 +57,7 @@ import {
   isAssistantAvailable,
   runAssistant,
   sendBotMessage,
+  sendTyping,
   toTelegramHtml,
 } from '@/lib/bot/assistant';
 import { MENU_VIEWS, technicalStatusView } from '@/lib/bot/fallback-views';
@@ -231,6 +233,15 @@ async function handleClaudeMessage(message: any, chatId: string, session: any) {
   if (await handleHealthButton(text, chatId)) return;
   if (text === '🔙 Menu Principal') {
     await sendBotMessage(chatId, '🏠 <b>Menu principal</b>', HOME_MENU.reply_markup);
+    return;
+  }
+  // Rapports business à la demande (mêmes rapports que le cron du matin et du lundi)
+  if (text === '🌅 Rapport du jour' || text === '📈 Bilan de la semaine') {
+    await sendTyping(chatId);
+    const daily = text === '🌅 Rapport du jour';
+    await sendBotMessage(chatId, daily ? await morningReport() : await weeklyReport());
+    const extra = daily ? await collectionAnomalies() : await riskClients();
+    await sendBotMessage(chatId, extra ?? (daily ? '✅ Aucune anomalie d’encaissement hier.' : '✅ Aucun client à risque : tous ont eu de l’activité ces 14 derniers jours.'));
     return;
   }
 
