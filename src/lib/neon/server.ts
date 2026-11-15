@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NeonClient, TableBuilder } from './query-builder';
-import { verifyToken, getUserById, NeonUser, AUTH_COOKIE_NAME } from './auth';
+import { getUserFromToken, NeonUser, AUTH_COOKIE_NAME } from './auth';
 import type { SupabaseError, AuthUser } from './query-builder';
 
 interface CookieHelpers {
@@ -39,14 +39,11 @@ export function createServerClient(
     token = found?.value;
   }
 
-  const payload = token ? verifyToken(token) : null;
-
   const client = new NeonClient(false);
 
   const auth = {
     getUser: async () => {
-      if (!payload) return { data: { user: null }, error: null };
-      const user = await getUserById(payload.sub);
+      const user = await getUserFromToken(token);
       if (!user) return { data: { user: null }, error: null };
       return { data: { user: sessionToAuthUser(user) }, error: null };
     },
@@ -123,14 +120,9 @@ export async function getPlatformUserFromSession(): Promise<PlatformAuthResult> 
     return { authenticated: false, error: 'Not authenticated' };
   }
 
-  const payload = verifyToken(token);
-  if (!payload) {
-    return { authenticated: false, error: 'Invalid token' };
-  }
-
-  const user = await getUserById(payload.sub);
+  const user = await getUserFromToken(token);
   if (!user) {
-    return { authenticated: false, error: 'User not found' };
+    return { authenticated: false, error: 'Invalid token' };
   }
 
   const platformUser = await getPlatformUser(user.id);
@@ -147,10 +139,7 @@ export async function requirePlatformAdmin() {
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
   if (!token) return { error: 'Non authentifié', status: 401 };
 
-  const payload = verifyToken(token);
-  if (!payload) return { error: 'Non authentifié', status: 401 };
-
-  const user = await getUserById(payload.sub);
+  const user = await getUserFromToken(token);
   if (!user) return { error: 'Non authentifié', status: 401 };
 
   const platformUser = await getPlatformUser(user.id);

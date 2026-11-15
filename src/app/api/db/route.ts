@@ -94,6 +94,21 @@ const BLOCKED_ORG_READABLE_TABLES = new Set(['profiles', 'organizations', 'subsc
 // Colonnes qu'un client ne peut jamais fixer lui-même.
 const PROTECTED_COLUMNS = new Set(['organization_id', 'organisation_id']);
 
+// Colonnes qui pointent vers une ligne d'une autre table : la ligne visée doit appartenir à
+// l'organisation de l'utilisateur. Sans ce contrôle, un client pouvait créer chez lui une ligne
+// pointant vers l'identifiant d'une autre organisation puis lire celle-ci par une jointure.
+const REFERENCE_COLUMNS: Record<string, string> = {
+  pos_id: 'points_of_sale',
+  space_id: 'wifi_spaces',
+  ticket_type_id: 'ticket_types',
+  collection_id: 'collections',
+  collecteur_id: 'profiles',
+  alloue_par: 'profiles',
+};
+
+/** Nombre maximal de lignes renvoyées par une lecture. */
+const MAX_ROWS = 10000;
+
 const IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 const NESTED_RE = /(\w+):(\w+)(!inner|!left)?\(([^)]*)\)/g;
 
@@ -211,6 +226,38 @@ async function restrictToCollector(spec: QuerySpec, ctx: SessionContext): Promis
   }
 }
 
+/** Refuse toute référence (pos_id, space_id…) vers une ligne d'une autre organisation. */
+async function assertOwnedReferences(spec: QuerySpec, ctx: SessionContext): Promise<void> {
+  if (ctx.isPlatformAdmin || (spec.action !== 'insert' && spec.action !== 'update')) return;
+  const org = ctx.organizationId;
+  if (!org) throw new ForbiddenError('Aucune organisation associée');
+  const rows = (spec.action === 'insert'
+    ? (Array.isArray(spec.insertData) ? spec.insertData : [spec.insertData])
+    : [spec.updateData]) as Record<string, unknown>[];
+  for (const [column, table] of Object.entries(REFERENCE_COLUMNS)) {
+    const ids = [...new Set(rows.map((r) => r?.[column]).filter((v) => v !== null && v !== undefined))];
+    if (ids.length === 0) continue;
+    if (!ids.every((id) => typeof id === 'string' && UUID_RE.test(id))) throw new ForbiddenError('Référence invalide');
+    const res = await query(
+      table === 'collections'
+        ? `SELECT COUNT(*)::int AS n FROM collections WHERE id = ANY($1::uuid[]) AND COALESCE(organization_id, organisation_id) = $2`
+        : `SELECT COUNT(*)::int AS n FROM "${table}" WHERE id = ANY($1::uuid[]) AND organization_id = $2`,
+      [ids, org],
+    );
+    if (Number(res.rows[0]?.n) !== ids.length) throw new ForbiddenError('Référence invalide');
+  }
+}
+
+/** Message renvoyé au navigateur : jamais le texte brut de la base (tables, colonnes, contraintes). */
+function clientError(error: { message: string; code?: string }) {
+  if (/duplicate key|déjà/i.test(error.message)) return makeError('Cet élément existe déjà.', '23505');
+  if (/violates foreign key/i.test(error.message)) return makeError('Élément lié introuvable.', '23503');
+  if (/Row not found/.test(error.message)) return makeError(error.message, error.code);
+  return makeError('Erreur base de données');
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function assertIdent(value: unknown, label: string): asserts value is string {
   if (typeof value !== 'string' || !IDENT_RE.test(value)) {
     throw new ForbiddenError(`${label} invalide`);
@@ -289,6 +336,7 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
   let updateData = body.updateData ?? null;
   if (insertData) insertData = validateRows(insertData, 'Données');
   if (updateData) validateRows(updateData, 'Données');
+  if (action === 'update' && (!updateData || Object.keys(updateData).length === 0)) throw new ForbiddenError('Aucune donnée à modifier');
   if (body.upsertData) validateRows(body.upsertData, 'Données');
   if (body.upsertOpts?.onConflict) assertColumnList(body.upsertOpts.onConflict, 'Colonne');
 
@@ -315,6 +363,7 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
             delete clean.pos_id;
             and('id', ctx.userId);
           }
+          if (Object.keys(clean).length === 0) throw new ForbiddenError('Aucune donnée à modifier');
           updateData = clean;
         }
         break;
@@ -346,12 +395,18 @@ function buildSpec(body: Partial<QuerySpec>, ctx: SessionContext): QuerySpec {
     upsertOpts: body.upsertOpts ?? {},
     filters,
     order,
-    limit: typeof body.limit === 'number' ? body.limit : null,
-    range: body.range ?? null,
+    limit: Number.isSafeInteger(body.limit) && (body.limit as number) > 0 ? Math.min(body.limit as number, MAX_ROWS) : null,
+    range:
+      body.range && Number.isSafeInteger(body.range.start) && Number.isSafeInteger(body.range.end) &&
+      body.range.start >= 0 && body.range.end >= body.range.start
+        ? { start: body.range.start, end: Math.min(body.range.end, body.range.start + MAX_ROWS - 1) }
+        : null,
     rpcName: null,
     rpcParams: {},
     single: !!body.single,
     maybeSingle: !!body.maybeSingle,
+    // Jointures restreintes à l'organisation du client (le super admin voit tout)
+    joinOrgScope: ctx.isPlatformAdmin ? null : ctx.organizationId,
   };
 }
 
@@ -377,6 +432,7 @@ export async function POST(request: NextRequest) {
     spec = buildSpec(await request.json(), ctx);
     if (isCollector(ctx)) await restrictToCollector(spec, ctx);
     if (isPosAccount(ctx)) await restrictToPosAccount(spec, ctx);
+    await assertOwnedReferences(spec, ctx);
   } catch (err) {
     const message = err instanceof ForbiddenError ? err.message : 'Requête invalide';
     return NextResponse.json({ data: null, error: makeError(message) }, { status: 403 });
@@ -444,10 +500,11 @@ export async function POST(request: NextRequest) {
       notifyInBackground(() => notifyAllocationsCreated(organizationId, ctx.userId, inserted));
     }
 
-    if (isPosAccount(ctx) && result.data) {
-      return NextResponse.json({ ...result, data: stripHiddenColumns(result.data) });
+    const safe = result.error ? { ...result, error: clientError(result.error) } : result;
+    if (isPosAccount(ctx) && safe.data) {
+      return NextResponse.json({ ...safe, data: stripHiddenColumns(safe.data) });
     }
-    return NextResponse.json(result);
+    return NextResponse.json(safe);
   } catch (err) {
     console.error('API db error:', err);
     await recordSystemError('api', `${spec.action} ${spec.tableName} : ${err instanceof Error ? err.message : String(err)}`, {

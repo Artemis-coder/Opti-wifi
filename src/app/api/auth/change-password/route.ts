@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { AUTH_COOKIE_NAME, verifyToken, getUserById, hashPassword, signToken } from '@/lib/neon/auth';
+import { AUTH_COOKIE_NAME, getUserFromToken, getUserById, hashPassword, markPasswordChanged, signToken } from '@/lib/neon/auth';
 import { getPlatformUser } from '@/lib/neon/server';
 import { query } from '@/lib/neon/db';
 import { MUST_CHANGE_PASSWORD_KEY, setAuthCookie, validatePasswordStrength } from '@/lib/password-change';
@@ -12,7 +12,8 @@ import { sendPasswordChangedEmail } from '@/lib/email';
 //   session restée ouverte ne permette pas de prendre le contrôle du compte.
 export async function POST(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const payload = token ? verifyToken(token) : null;
+  const sessionUser = await getUserFromToken(token);
+  const payload = sessionUser ? { sub: sessionUser.id } : null;
   if (!payload) {
     return NextResponse.json({ error: 'Session expirée. Reconnectez-vous.' }, { status: 401 });
   }
@@ -67,6 +68,9 @@ export async function POST(request: NextRequest) {
         WHERE id = $2`,
       [passwordHash, payload.sub, MUST_CHANGE_PASSWORD_KEY],
     );
+
+    // Les autres sessions (autres appareils, session volée) sont révoquées
+    await markPasswordChanged(payload.sub);
 
     // Nouveau jeton sans le marqueur, pour que le proxy laisse passer
     const user = await getUserById(payload.sub);

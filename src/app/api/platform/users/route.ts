@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { requirePlatformAdmin } from '@/lib/neon/server';
 import { query } from '@/lib/neon/db';
-import { hashPassword } from '@/lib/neon/auth';
+import { hashPassword, markPasswordChanged } from '@/lib/neon/auth';
 import { rejectTestEmailInProduction } from '@/lib/test-accounts';
 import { notifyInBackground, notifyUsers } from '@/lib/notifications';
 
@@ -296,6 +296,7 @@ export async function PATCH(request: NextRequest) {
             WHERE id = $2`,
           [passwordHash, userId]
         );
+        await markPasswordChanged(userId);
 
         notifyInBackground(() =>
           notifyUsers([userId], {

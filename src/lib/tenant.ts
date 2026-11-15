@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 import { READ_ONLY_MESSAGE } from '@/lib/read-only';
 
 export { READ_ONLY_MESSAGE };
-import { verifyToken, getUserById, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
+import { getUserFromToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
 import { getPlatformUser } from '@/lib/neon/server';
 
 export interface SessionContext {
@@ -49,10 +49,7 @@ export async function getSessionContext(token?: string | null): Promise<SessionC
   const value = token ?? (await cookies()).get(AUTH_COOKIE_NAME)?.value;
   if (!value) return null;
 
-  const payload = verifyToken(value);
-  if (!payload) return null;
-
-  const user = await getUserById(payload.sub);
+  const user = await getUserFromToken(value);
   if (!user) return null;
 
   const platformUser = await getPlatformUser(user.id);
