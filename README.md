@@ -5,16 +5,17 @@
 <h1 align="center">OptiSpace — Gestion des Tickets & Encaissements Wi-Fi</h1>
 
 <p align="center">
-  <strong>Plateforme SaaS multi-tenant de gestion des points de vente, allocations de tickets et encaissements pour les réseaux Wi-Fi communautaires.</strong>
+  <strong>Plateforme SaaS multi-tenant de gestion des points de vente, allocations de tickets et encaissements pour les réseaux Wi-Fi communautaires — pilotée au quotidien depuis Telegram, avec des agents Claude qui surveillent, corrigent et développent sous la validation du propriétaire.</strong>
 </p>
 
 <p align="center">
   <a href="https://www.optiwifi.site">🌐 Production</a> •
-  <a href="#fonctionnalités">📋 Fonctionnalités</a> •
-  <a href="#démarrage-rapide">🚀 Démarrage</a> •
-  <a href="#architecture">🏗️ Architecture</a> •
-  <a href="#api-routes">📡 API</a> •
-  <a href="#déploiement">☁️ Déploiement</a>
+  <a href="#-fonctionnalités">📋 Fonctionnalités</a> •
+  <a href="#-bot-telegram-du-super-admin">💬 Bot Telegram</a> •
+  <a href="#-agents-claude--automatisations">🤖 Agents</a> •
+  <a href="#-architecture">🏗️ Architecture</a> •
+  <a href="#-démarrage-rapide">🚀 Démarrage</a> •
+  <a href="#-déploiement">☁️ Déploiement</a>
 </p>
 
 <p align="center">
@@ -23,542 +24,333 @@
 
 ---
 
-## Stack Technique
+## Sommaire
+
+1. [Stack technique](#-stack-technique)
+2. [Fonctionnalités](#-fonctionnalités)
+3. [Bot Telegram du super admin](#-bot-telegram-du-super-admin)
+4. [Agents Claude & automatisations](#-agents-claude--automatisations)
+5. [Sécurité](#-sécurité)
+6. [Architecture](#-architecture)
+7. [API](#-api)
+8. [Démarrage rapide](#-démarrage-rapide)
+9. [Déploiement](#-déploiement)
+10. [Règles métier](#-règles-métier)
+11. [Historique des versions](#-historique-des-versions)
+
+---
+
+## 🧰 Stack technique
 
 | Catégorie | Technologies |
-|-----------|-------------|
+|---|---|
 | **Framework** | Next.js 16 (App Router), React 19, TypeScript 5 |
-| **Styling** | Tailwind CSS 4, Design System Material 3 personnalisé |
-| **Base de données** | Neon (PostgreSQL serverless) — migré depuis Supabase |
-| **Auth** | JWT maison (cookie `neon-auth-token`, bcrypt) vérifié par le proxy Next.js (`src/proxy.ts`) |
-| **State Management** | Zustand (auth, spaces, platform) |
-| **Formulaires** | React Hook Form + Zod |
-| **Graphiques** | Recharts |
-| **UI Components** | Lucide React (icônes), Sonner (toasts) |
-| **Email** | Nodemailer (SMTP Gmail) |
-| **Déploiement** | Vercel — `main` → production, `develop` → Preview (`dev.optiwifi.site`) |
-| **Monnaie** | FCFA (XOF) — marché Afrique francophone |
+| **Interface** | Tailwind CSS 4, design system Material 3 personnalisé, Lucide, Sonner, Recharts |
+| **Base de données** | Neon (PostgreSQL serverless) — branches `production` et `vercel-dev` isolées |
+| **Authentification** | JWT maison en cookie (bcrypt), vérifié par le proxy Next.js (`src/proxy.ts`) |
+| **État & formulaires** | Zustand, React Hook Form + Zod |
+| **Notifications** | Cloche temps réel, Web Push (VAPID), e-mail (Nodemailer), Telegram |
+| **IA** | Claude (Anthropic) — assistant du bot et agents Claude Code dans le cloud ; relais open source (Groq, OpenRouter, Together) |
+| **Voix** | Transcription Whisper (Groq), synthèse vocale ElevenLabs |
+| **Hébergement** | Vercel — `main` → production, `develop` → préproduction |
+| **Monnaie** | FCFA (XOF) — Afrique francophone |
 
 ---
 
-## Fonctionnalités
+## ✨ Fonctionnalités
 
-### 🏪 Points de Vente (POS)
-- CRUD complet avec attribution de collecteur
-- Vue détaillée par POS : 5 KPIs (alloués, vendus, restants, CA, commissions)
-- Historique des allocations et collectes par POS
-- Activation / Suspension d'un POS
-- **🗑️ Remise à zéro** — Vidage complet des données d'un POS (allocations + collectes + items) avec modale de confirmation destructive (double validation par saisie de `VIDER`)
+### Espace client
 
-### 🎫 Types de Tickets
-- Création de tarifs Wi-Fi (nom, durée en heures, prix FCFA)
-- Activation / Désactivation des types de tickets
-- Liaison optionnelle à un espace Wi-Fi
+| Module | Ce qu'il permet |
+|---|---|
+| 🏪 **Points de vente** | CRUD, collecteur attribué, 5 KPIs par point de vente, historique, suspension, remise à zéro (double validation) |
+| 🎫 **Types de tickets** | Tarifs Wi-Fi (durée, prix FCFA), activation, rattachement à un espace |
+| 📦 **Allocations** | Stocks par point de vente, suivi alloué / vendu / restant, traçabilité complète |
+| 🔄 **Échange de tickets** | Assistant dédié, retour d'invendus contre nouveaux tickets à valeur équivalente, transaction atomique |
+| 💰 **Collectes** | Assistant en 5 étapes, calcul du montant attendu, détection d'écarts, commissions des collecteurs |
+| 🌐 **Espaces Wi-Fi** | Multi-sites, tableau de bord par espace, rattachement verrouillé |
+| 📊 **Tableau de bord & rapports** | KPIs globaux, tendances, rapports consolidés, export PDF, masquage des montants |
+| 👤 **Équipe** | Rôles administrateur, collecteur et compte « point de vente », accès partagé par copie / WhatsApp / e-mail |
+| 💳 **Abonnement** | Forfait, quotas, demande de renouvellement validée par le super admin, réabonnement par Wave (QR code), factures PDF, rappels J-10 / J-5 / J-2, consultation seule à l'expiration |
+| 🔔 **Notifications** | Cloche, push même site fermé, le téléphone du point de vente sonne à chaque allocation ou collecte |
+| 📴 **Mode hors ligne** | Copie locale des données, saisie sans réseau, synchronisation au retour |
+| 📱 **Mobile-first** | Barre de navigation en bas, tableaux en cartes, zones de tap ≥ 44 px, guide de démarrage interactif |
+| 🔐 **Compte** | Connexions & appareils, mot de passe temporaire à changer, téléchargement des données et suppression de compte (RGPD) |
 
-### 📦 Allocations de Tickets
-- Attribution de stocks de tickets par POS
-- Suivi temps réel : alloué / vendu / restant
-- Historique complet avec traçabilité (qui a alloué, quand)
+### Back-office super admin (`/platform`)
 
-### 🔄 Échange de Tickets
-- Assistant multi-étapes dédié (`/allocations/exchange`)
-- Retour de tickets invendus et réception de nouveaux
-- Vérification d'équivalence de valeur FCFA
-- Fonction SQL transactionnelle atomique (`perform_ticket_exchange`)
-- Badges visuels : `Rendu (Échange)` / `Reçu (Échange)` / `Allocation`
-
-### 💰 Collectes & Encaissements
-- Assistant en 5 étapes :
-  1. Sélection du POS
-  2. Saisie des quantités vendues (filtré par allocations du POS)
-  3. Calcul automatique du montant attendu
-  4. Saisie du montant réellement encaissé
-  5. Validation finale avec détection d'écarts
-- Gestion des commissions collecteurs
-- Règle métier : la quantité vendue ne peut pas dépasser le stock disponible
-
-### 🌐 Espaces Wi-Fi (Multi-sites)
-- Gestion de zones/quartiers/sites distincts
-- Rattachement des POS aux espaces
-- Dashboard analytique par espace : 6 KPIs dédiés
-- Verrouillage de l'attribution (pas de changement d'espace une fois rattaché)
-
-### 📊 Dashboard Principal
-- KPIs globaux : tickets alloués, vendus, CA total, écarts
-- Raccourcis d'actions rapides
-- Collectes récentes en un coup d'œil
-- Graphiques de tendances (Recharts)
-
-### 📈 Rapports & Exports
-- Rapports consolidés multi-POS
-- Export des données
-
-### 👤 Gestion Utilisateurs
-- Rôles : `administrateur` et `collecteur`
-- RBAC — contrôle d'accès sur chaque page et API
-- Création de comptes avec attribution de rôle
-
-### ⚙️ Paramètres
-- Configuration du profil, informations de l'organisation et rôle
-
-### 💳 Abonnement & Licences
-- Forfait actuel, date de fin et jours restants
-- Utilisation du forfait : points de vente, membres, espaces (barres de quota)
-- Demande de renouvellement ou de changement de forfait, **validée par le super admin**
-- Quotas du forfait appliqués (membres, encaissements, allocations)
-- Accès bloqué si l'inscription est en attente, refusée, l'espace désactivé ou la licence expirée (appliqué côté serveur)
-- Forfait Découverte (essai) utilisable une seule fois par organisation
-- Rappels automatiques à J-10, J-5 et J-2 avant l'expiration, puis après
-- **Réabonnement par Wave** : « Me réabonner » → forfait → QR code « Payez avec Wave », numéro à copier, justificatif envoyé sur WhatsApp, « J'ai payé »
-- **Factures de licence** émises à chaque activation payante, historique « Paiements et factures », téléchargement en PDF
-
-### 👑 Back-office Super Admin (`/platform`)
-- **Tableau de bord « À traiter »** : inscriptions à valider, demandes de licence, licences qui expirent, KPIs cliquables
-- **Inscriptions** : valider ou refuser les comptes créés
-- **Licences** : activer un forfait pour une durée (1 à 24 mois), prolonger, approuver / refuser les demandes
-- **Clients** : fiche détaillée ; suspendre, réactiver ou supprimer un espace client (accès coupé immédiatement, données conservées)
-- **Utilisateurs** : créer des administrateurs, changer un rôle, réinitialiser un mot de passe, désactiver ou supprimer un compte (révocation immédiate)
-- **Statistiques** : inscriptions, abonnements par type, revenus, revenu mensuel récurrent, répartition des licences en cours
-- **Moyens de paiement** : QR code, numéro, lien WhatsApp, logo et couleur de l'opérateur
-- **Factures et transactions** avec chiffres clés (montants, renouvellements, par moyen de paiement)
-- **Support** : tickets des clients, réponses, ouverture d'un ticket pour un client
-- **Journal d'audit** lisible (avant → après), santé du bot Telegram
-- **Forfaits**, abonnements, expirations, paramètres de la plateforme
-
-### 🔔 Notifications
-- Cloche dans l'application (client et super admin), mise à jour instantanée
-- Notifications push du navigateur, reçues même site fermé
-- Telegram pour le super admin (inscriptions, demandes de licence)
-- Paramètres → Canaux de notification : activer le push et s'envoyer un test
-
-### 🤖 Assistant Telegram du super admin
-- Claude par défaut, relais automatique sur des modèles open source (Groq, OpenRouter, Together)
-- Répond sur les vraies données : clients, licences, demandes, encaissements, statut technique
-- Agit sur demande (approuver une licence, suspendre un espace…) après confirmation par bouton
-- Boutons du menu utilisables même sans IA
-
-### 📴 Mode Offline (Résilience Réseau)
-- Détection réseau temps réel (`useOnlineStatus`)
-- Indicateur visuel de connectivité dans la sidebar
-- File d'attente d'actions hors-ligne avec sync automatique
-
-### 🔐 Sécurité
-- **Isolation multi-tenant côté serveur** : chaque client ne voit et ne modifie que les données de son organisation (`/api/db` + `src/lib/tenant.ts`)
-- Page de connexion unique : redirection selon le rôle (super admin / client)
-- **Mot de passe temporaire à changer** à la première connexion (`/change-password`)
-- Proxy Next.js (`src/proxy.ts`) pour les routes protégées, en-têtes HTTP de sécurité
-- Requêtes SQL paramétrées, identifiants validés, journal d'audit des actions super admin
-- Pas de secrets hardcodés (`.env.local`, `.vercelignore`)
-
-### 📱 Mobile-First
-- Navigation bottom bar fixe sur mobile avec backdrop blur
-- Sidebar en tiroir (bottom sheet) pleine largeur
-- Zones de tap conformes (≥ 44×44px)
-- Safe area insets (iPhone notch / home bar)
-- Body scroll lock quand le tiroir est ouvert
-- Toggle de visibilité mot de passe sur tous les formulaires
-- Tableaux transformés en cartes sous 768 px (`ResponsiveTable`), barre de navigation en bas dans le back-office
-- Calendrier, listes et confirmations intégrés au site (`DateField`, `CustomSelect`, `confirmAction`) au lieu des fenêtres natives du téléphone
+- **« À traiter »** : inscriptions à valider, demandes de licence, licences qui expirent.
+- **Clients & licences** : activer, prolonger, suspendre, réactiver, supprimer un espace (accès coupé immédiatement, données conservées).
+- **Utilisateurs** : comptes, rôles, réinitialisation de mot de passe, révocation immédiate.
+- **Statistiques** : inscriptions, revenus, revenu mensuel récurrent, répartition des licences.
+- **Paiements & factures**, moyens de paiement (QR code, opérateur, WhatsApp), **support** par tickets.
+- **État du système** : base, API, notifications, serveur, Vercel, tâches planifiées, **sécurité** — avec historique et alertes au changement d'état.
+- **Journal d'audit** lisible (avant → après).
 
 ---
 
-## Architecture
+## 💬 Bot Telegram du super admin
 
-### Structure du Projet
+Le bot est privé : il ne répond qu'au compte du propriétaire (toute autre personne est signalée comme tentative d'intrusion). Il comprend l'**écrit et les notes vocales**, et **répond aussi en vocal** quand on lui parle (résumé de 20 à 30 secondes).
+
+```
+/menu
+├── 🤖 IA — Claude Code
+│   ├── ✍️ Nouvelle demande     (écrite ou dictée)
+│   ├── ⏳ En cours
+│   ├── ✅ À valider
+│   ├── 🗂️ Historique
+│   └── 🚀 Mise en production
+└── 📊 Business OptiSpace
+    ├── Vue d'ensemble · Demandes en attente · Clients
+    ├── Licences à renouveler · Encaissements · Statut technique
+    ├── 🌅 Rapport du jour · 📈 Bilan de la semaine
+    ├── 🛡️ Sécurité        (récap 24 h / 7 jours, incidents, réglages sensibles)
+    └── 🩺 Santé de l'application
+```
+
+### 📊 Business OptiSpace
+L'assistant (Claude, avec relais open source) répond sur les **vraies données** : clients, licences, encaissements, sécurité. Il peut agir — approuver une licence, suspendre un espace… — **toujours après un bouton de confirmation**.
+
+### 🤖 IA — Claude Code : développer depuis Telegram
+
+```
+Vous ──► demande ──► Claude (cloud) ──► 📋 plan ──► ✅ vous validez
+                                                        │
+          🚀 vous mettez en production ◄── ✅ vous intégrez ◄── 🛠️ Claude développe (branche + PR)
+                        │
+                        └──► 🏷️ release créée automatiquement
+```
+
+1. **Demande** — vous décrivez un besoin ; une routine Claude Code se réveille dans le cloud d'Anthropic.
+2. **Plan** — ce qui a été compris, ce qui change pour les utilisateurs, étapes, fichiers, base de données, risques, ampleur → *Valider / Modifier / Abandonner*.
+3. **Développement** — sur une branche dédiée, vérifié (types, lint, build) ; l'application ouvre la PR vers `develop` et envoie le récapitulatif → *Intégrer / Corriger / Abandonner*.
+4. **Mise en production** — la liste de ce qui part est affichée, puis confirmée ; Claude rédige les notes de version et la release est publiée.
+
+> Le contenu des demandes reste privé dans la base (le dépôt est public) : Claude le lit par une API protégée. **L'agent ne peut ni fusionner, ni pousser sur `develop` ou `main`, ni mettre en production** : seuls les boutons du propriétaire le peuvent.
+
+---
+
+## 🤖 Agents Claude & automatisations
+
+### Agents Claude Code (cloud Anthropic, Opus)
+
+Ils tournent sans dépendre d'un ordinateur allumé, sans connecteurs, dans des environnements dont l'accès réseau est limité au site OptiSpace. Leurs correctifs passent **tous** par le circuit de validation ci-dessus.
+
+| Agent | Quand | Rôle |
+|---|---|---|
+| 🛡️ **Sécurité** | toutes les heures | Analyse chaque incident d'intrusion, vérifie dans le code que l'attaque est bloquée, corrige si besoin. Rapport : détection, gravité, résultat, solution et pourquoi |
+| 🛠️ **Développement** | à la demande (Telegram) | Plans et développements du menu IA, notes de version |
+| 📦 **Audit des dépendances** | le lundi | `npm audit`, correctif sans changement de version majeure |
+| 🔍 **Revue de sécurité** | le vendredi | Relit les modifications de la semaine selon la checklist de sécurité |
+| 🔧 **Diagnostic technique** | chaque jour | Lit l'état du système ; silencieux si tout va bien, sinon cause et correctif |
+
+Un même rapport n'est envoyé qu'une fois par 24 heures, pour ne jamais répéter une alerte.
+
+### Tâches planifiées de l'application (Vercel Cron)
+
+| Tâche | Quand | Ce qu'elle fait |
+|---|---|---|
+| `licence-reminders` | chaque jour | Rappels de licence aux clients (J-10, J-5, J-2, expiration, fin d'essai) |
+| `health-check` | chaque jour | Contrôle de tous les composants, alerte au changement d'état |
+| `business-reports` | chaque matin | 🌅 Rapport du matin + 💸 anomalies d'encaissement ; le lundi, 📉 clients à risque + 📊 bilan de la semaine |
+
+Les rapports business sont calculés en base, sans IA.
+
+---
+
+## 🔐 Sécurité
+
+- **Isolation multi-tenant côté serveur** : chaque client ne voit et ne modifie que les données de son organisation (`/api/db` + `src/lib/tenant.ts`), références vérifiées à l'écriture.
+- **Authentification** : verrouillage après échecs répétés, limitation des requêtes, sessions révoquées au changement de mot de passe, algorithme JWT épinglé, pas d'énumération des comptes.
+- **Détection d'intrusion** : force brute, requêtes trafiquées, jeton falsifié, CSRF, scans de fichiers sensibles, accès au back-office sans droits, webhooks et crons sans secret, inconnu sur le bot. Chaque tentative ouvre un **incident** signalé sur Telegram ([`docs/securite/ALERTES_SECURITE.md`](docs/securite/ALERTES_SECURITE.md)).
+- **Agents à privilèges minimaux** : jetons dédiés comparés en temps constant, injectés par un proxy réseau (jamais visibles par l'agent), branches `claude/…` uniquement, aucun accès à la base.
+- **Bonnes pratiques** : requêtes SQL paramétrées, CSP, en-têtes de sécurité, erreurs techniques masquées, aucun secret dans le code.
+- **Isolation des environnements** : `src/lib/env-guard.ts` bloque toute connexion à la base de production depuis le local ou une préproduction.
+
+Règles complètes : [`AGENTS.md`](./AGENTS.md) · checklist réutilisable : [`docs/CHECK_SECURITE.md`](docs/CHECK_SECURITE.md) · dernier test d'intrusion : [`docs/securite/RAPPORT_PENTEST_2026-11-15.md`](docs/securite/RAPPORT_PENTEST_2026-11-15.md).
+
+---
+
+## 🏗️ Architecture
+
+### Structure du projet
 
 ```
 src/
 ├── app/
-│   ├── (auth)/
-│   │   ├── login/               # Connexion unique / inscription / récupération
-│   │   └── change-password/     # Choix du mot de passe après un mot de passe temporaire
-│   ├── (dashboard)/
-│   │   ├── allocations/         # Gestion & historique des allocations
-│   │   │   ├── exchange/        # Module d'échange de tickets
-│   │   │   └── new/             # Nouvelle allocation
-│   │   ├── collections/         # Assistant de collecte en 5 étapes
-│   │   │   └── new/             # Nouvelle collecte
-│   │   ├── dashboard/           # Dashboard principal avec KPIs
-│   │   ├── pos/                 # Liste & détail des points de vente
-│   │   │   └── [id]/            # Détail POS + remise à zéro
-│   │   ├── reports/             # Rapports & exports
-│   │   ├── settings/            # Paramètres utilisateur
-│   │   ├── subscription/        # Abonnement, utilisation et demandes de licence
-│   │   ├── spaces/              # Espaces Wi-Fi & dashboard par espace
-│   │   │   └── [id]/            # Détail espace Wi-Fi
-│   │   ├── tickets/             # Types de tickets
-│   │   ├── users/               # Gestion utilisateurs (admin)
-│   │   └── layout.tsx           # Layout dashboard (sidebar + header + bottom nav)
-│   ├── api/
-│   │   ├── allocations/exchange/ # API échange de tickets
-│   │   ├── auth/                # Login, register, change-password, session
-│   │   ├── db/                  # Passerelle de données (isolée par organisation)
-│   │   ├── platform/            # APIs admin plateforme
-│   │   ├── pos/[id]/reset/      # API remise à zéro POS
-│   │   └── users/               # Gestion utilisateurs
-│   ├── forgot-password/         # Page mot de passe oublié
-│   ├── platform/                # Back-office super-admin
-│   │   ├── audit-logs/          # Journaux d'audit
-│   │   ├── clients/             # Gestion clients multi-tenant
-│   │   ├── dashboard/           # Dashboard « À traiter » + KPIs
-│   │   ├── registrations/       # Inscriptions à valider
-│   │   ├── license-requests/    # Demandes de licence
-│   │   ├── invoices/            # Facturation
-│   │   ├── payments/            # Paiements
-│   │   ├── plans/               # Plans d'abonnement
-│   │   ├── reports/             # Rapports plateforme
-│   │   ├── subscriptions/       # Abonnements & expirations
-│   │   ├── users/               # Utilisateurs de la plateforme
-│   │   ├── settings/            # Paramètres de la plateforme
-│   │   └── support/             # Support client
-│   └── reset-password/          # Réinitialisation mot de passe
-├── components/
-│   ├── layout/
-│   │   ├── BottomNav.tsx        # Navigation mobile fixe
-│   │   ├── Header.tsx           # Header sticky avec hamburger
-│   │   └── Sidebar.tsx          # Sidebar desktop + tiroir mobile
-│   ├── offline/                 # Composants mode hors-ligne
-│   ├── platform/                # Composants back-office
-│   └── ui/
-│       ├── Badge.tsx            # Badges de statut
-│       ├── Button.tsx           # Boutons (primary, secondary, ghost, danger)
-│       ├── Card.tsx             # Conteneur carte
-│       ├── Input.tsx            # Champs de formulaire (avec rightElement)
-│       ├── Modal.tsx            # Modale standard
-│       ├── PosSummary.tsx       # Résumé POS réutilisable
-│       └── SpaceSummary.tsx     # Résumé espace réutilisable
-├── hooks/
-│   ├── useOfflineMutation.ts    # Mutations avec queue hors-ligne
-│   └── useOnlineStatus.ts       # Détection réseau temps réel
-├── lib/
-│   ├── design-system.ts         # Tokens design system
-│   ├── email.ts                 # Service email (Nodemailer)
-│   ├── neon/                    # Client Neon DB (browser, server, edge)
-│   ├── offline/                 # Queue & sync hors-ligne
-│   ├── stores/
-│   │   ├── authStore.ts         # Store Zustand auth
-│   │   ├── platformAuthStore.ts # Store auth super-admin
-│   │   └── spaceStore.ts        # Store espace sélectionné
-│   ├── password-change.ts       # Règle de mot de passe, marqueur « à changer »
-│   ├── quotas.ts                # Quotas du forfait
-│   ├── tenant.ts                # Contexte de session et isolation par organisation
-│   ├── supabase/                # Alias historiques vers les clients Neon
-│   └── utils/
-│       ├── cn.ts                # Utility class merging (clsx + tailwind-merge)
-│       └── format.ts            # Formatage FCFA, dates FR
-├── styles/                      # Styles globaux
-└── types/
-    └── database.ts              # Types TypeScript de toutes les tables
+│   ├── (auth)/                 # Connexion unique, inscription, mot de passe
+│   ├── (dashboard)/            # Espace client : POS, allocations, collectes, espaces,
+│   │                           #   tickets, rapports, équipe, abonnement, paramètres
+│   ├── platform/               # Back-office super admin
+│   └── api/
+│       ├── auth/ db/ users/    # Authentification, passerelle de données isolée, équipe
+│       ├── platform/           # APIs du back-office
+│       ├── security/incidents/ # Incidents de sécurité (super admin, agent de sécurité)
+│       ├── dev/                # API des agents Claude (demandes, rapports, santé, releases)
+│       ├── telegram/           # Webhook du bot
+│       └── cron/               # Tâches planifiées
+├── components/                 # Layout, UI, back-office, hors ligne
+├── hooks/                      # Réseau, mutations hors ligne
+└── lib/
+    ├── neon/                   # Accès base, authentification
+    ├── bot/                    # Assistant Telegram (outils, voix, vues sans IA)
+    ├── telegram-*.ts           # Menus Sécurité, Santé, IA — Claude Code
+    ├── security-events.ts      # Détection d'intrusion et incidents
+    ├── business-reports.ts     # Rapports business
+    ├── dev-requests.ts         # Demandes confiées à Claude Code
+    ├── github.ts               # PR et releases du dépôt
+    ├── system-health.ts        # État du système
+    └── tenant.ts quotas.ts …   # Isolation, quotas, règles métier
+supabase/                       # Schéma Neon et migrations idempotentes (nom hérité)
+docs/                           # Procédures, environnements, sécurité
 ```
 
-### Base de Données
+### Base de données (principales tables)
 
 ```
-┌──────────────┐     ┌───────────────────┐     ┌──────────────────┐
-│ organizations│────▷│    profiles        │────▷│  points_of_sale  │
-│              │     │ (users)           │     │                  │
-└──────────────┘     └───────────────────┘     └────────┬─────────┘
-                                                         │
-        ┌──────────────┐                                │
-        │ wifi_spaces  │◁───────────────────────────────┤
-        └──────────────┘                                │
-                                                         │
-        ┌──────────────────┐     ┌───────────────────────┘
-        │  ticket_types    │     │
-        └───────┬──────────┘     │
-                │                │
-        ┌───────▽────────────────▽──┐
-        │  ticket_allocations       │
-        │  (type: allocation |      │
-        │   exchange_return |       │
-        │   exchange_receive)       │
-        └───────────────────────────┘
-                                    
-        ┌────────────────┐     ┌─────────────────────┐
-        │  collections   │────▷│  collection_items    │
-        │  (par POS)     │     │  (par ticket type)   │
-        └────────────────┘     └─────────────────────┘
+organizations ──▷ profiles (users) ──▷ points_of_sale ──▷ wifi_spaces
+                                            │
+ticket_types ──▷ ticket_allocations ◁───────┤   (allocation | échange rendu | échange reçu)
+                                            │
+                 collections ──▷ collection_items
 
-        ┌────────────────────┐     ┌──────────────┐
-        │  subscriptions     │────▷│  payments     │
-        └───────┬────────────┘     └──────────────┘
-                │
-        ┌───────▽────────────┐     ┌──────────────────┐
-        │ subscription_plans │◁────│ license_requests │
-        └────────────────────┘     └──────────────────┘
+subscriptions ──▷ payments · invoices        subscription_plans ◁── license_requests
 
-        ┌────────────────┐     ┌─────────────────────┐
-        │ platform_users │────▷│ platform_audit_logs │   (+ platform_settings)
-        └────────────────┘     └─────────────────────┘
+platform_users ──▷ platform_audit_logs · platform_settings
+notifications · push_subscriptions · support_tickets
+security_events ──▷ security_incidents       system_health_checks · system_cron_runs
+dev_requests · agent_reports                 conversation_sessions · conversation_messages
 ```
 
-### Rôles & Permissions
+### Rôles & permissions
 
-| Fonctionnalité | Administrateur | Collecteur |
-|---|:---:|:---:|
-| Dashboard | ✅ | ✅ |
-| Points de vente | ✅ CRUD | 👁️ Lecture |
-| Allocations | ✅ Créer/Gérer | 👁️ Lecture |
-| Échange de tickets | ✅ | ✅ |
-| Collectes | ✅ | ✅ Créer |
-| Rapports & Exports | ✅ | ❌ |
-| Gestion Utilisateurs | ✅ | ❌ |
-| Espaces Wi-Fi | ✅ CRUD | ❌ |
-| Types de tickets | ✅ CRUD | ❌ |
-| Paramètres | ✅ | ✅ (limité) |
-| Vider un POS | ✅ | ❌ |
-| Abonnement & demandes de licence | ✅ | ❌ |
+| Fonctionnalité | Administrateur | Collecteur | Point de vente |
+|---|:---:|:---:|:---:|
+| Tableau de bord | ✅ | ✅ | ✅ (son point de vente) |
+| Points de vente | ✅ CRUD | 👁️ | 👁️ le sien |
+| Allocations | ✅ | 👁️ | 👁️ les siennes |
+| Échanges & collectes | ✅ | ✅ | 👁️ |
+| Rapports, équipe, espaces, types de tickets | ✅ | ❌ | ❌ |
+| Abonnement & licences | ✅ | ❌ | ❌ |
 
-Le **super admin** (table `platform_users`) gère toutes les organisations depuis `/platform` ; il n'a pas d'accès au contenu métier d'un client via l'espace client.
+Le **super admin** gère toutes les organisations depuis `/platform` et le bot Telegram ; il n'accède pas au contenu métier d'un client via l'espace client.
 
 ---
 
-## API Routes
+## 📡 API
 
-| Méthode | Route | Description | Rôle requis |
-|---------|-------|-------------|-------------|
-| `POST` | `/api/auth/login` | Connexion (indique si le mot de passe doit être changé) | Public |
-| `POST` | `/api/auth/register` | Inscription (organisation en attente de validation) | Public |
-| `POST` | `/api/auth/change-password` | Choisir son mot de passe | Connecté |
-| `POST` | `/api/db` | Passerelle de données, filtrée par organisation | Connecté |
-| `GET` | `/api/collections/[id]`, `/api/allocations/[id]` | Détail encaissement / allocation | Même organisation |
-| `POST` | `/api/collections`, `/api/ticket-allocations` | Création avec contrôle de quota | Admin / Collecteur |
-| `POST` | `/api/allocations/exchange` | Échange de tickets | Admin / Collecteur |
-| `DELETE` | `/api/pos/[id]/reset` | Vider toutes les données d'un POS | Admin |
-| `POST` | `/api/users/create` | Ajouter un membre (mot de passe à changer) | Admin |
-| `DELETE` | `/api/users/[id]` | Supprimer un membre (désactivation) | Admin |
-| `GET/POST` | `/api/subscriptions/renew` | État et demande de renouvellement | Admin |
-| `POST` | `/api/platform/licenses` | Activer une licence | Super Admin |
-| `GET/PATCH` | `/api/platform/license-requests` | Demandes de licence | Super Admin |
-| `GET/POST/PATCH` | `/api/platform/users` | Comptes, rôles, réinitialisation | Super Admin |
-| `GET/PATCH` | `/api/platform/settings` | Paramètres de la plateforme | Super Admin |
-| `PATCH` | `/api/platform/clients/action` | Valider, suspendre, réactiver, supprimer une organisation | Super Admin |
-| `POST` | `/api/platform/notifications/test` | Tester cloche, push et Telegram | Super Admin |
-| `POST` | `/api/platform/assistant/test` | Tester l'assistant du bot | Super Admin |
-| `GET/PATCH` | `/api/notifications` | Notifications de l'utilisateur, marquer comme lues | Connecté |
-| `POST/DELETE` | `/api/notifications/push` | Abonnement push du navigateur | Connecté |
-| `GET` | `/api/cron/licence-reminders` | Rappels de licence (quotidien, 8 h UTC) | `CRON_SECRET` |
-| `POST` | `/api/telegram/ai-webhook-v2` | Webhook du bot Telegram | Secret Telegram |
-| `GET` | `/api/payment-methods` | Moyens de paiement actifs (réabonnement) | Connecté |
-| `GET` | `/api/invoices`, `/api/invoices/[id]` | Factures de l'organisation | Admin (ou super admin) |
-| `GET/POST` | `/api/support`, `/api/support/[id]` | Tickets de l'organisation, réponses | Connecté |
-| `GET/POST/PATCH/DELETE` | `/api/platform/payment-methods` | Moyens de paiement | Super Admin |
-| `GET/POST/PATCH` | `/api/platform/support`, `/api/platform/support/[id]` | Tickets, réponses, statut | Super Admin |
-| `GET/POST` | `/api/platform/bot-health` | Santé du bot (statuts seulement), réenregistrer le webhook | Super Admin |
-| `GET/PATCH` | `/api/platform/*` | Autres APIs back-office | Super Admin |
+| Méthode | Route | Rôle |
+|---|---|---|
+| `POST` | `/api/auth/login`, `/api/auth/register`, `/api/auth/change-password` | Public / connecté |
+| `POST` | `/api/db` — passerelle de données filtrée par organisation | Connecté |
+| `POST` | `/api/collections`, `/api/ticket-allocations`, `/api/allocations/exchange` | Admin / collecteur |
+| `DELETE` | `/api/pos/[id]/reset` | Admin |
+| `GET/POST` | `/api/subscriptions/renew`, `/api/invoices`, `/api/support` | Admin |
+| `GET/PATCH/…` | `/api/platform/*` — back-office | Super admin |
+| `GET/PATCH` | `/api/security/incidents` | Super admin, agent de sécurité |
+| `GET/POST` | `/api/dev/requests/[id]`, `/api/dev/requests/[id]/report`, `/api/dev/agent-report`, `/api/dev/health`, `/api/dev/release` | Agents Claude (jeton dédié) |
+| `POST` | `/api/telegram/ai-webhook-v2` | Secret Telegram |
+| `GET` | `/api/cron/licence-reminders`, `/api/cron/health-check`, `/api/cron/business-reports` | Secret des crons |
 
 ---
 
-## Démarrage Rapide
+## 🚀 Démarrage rapide
 
-### Prérequis
-
-- **Node.js** ≥ 20
-- **npm** ≥ 9
-- Accès à la branche Neon **de développement** (`vercel-dev`)
-
-### Installation
+**Prérequis :** Node.js ≥ 20, npm ≥ 9, accès à la branche Neon **de développement**.
 
 ```bash
-# 1. Cloner le dépôt
 git clone https://github.com/Artemis-coder/Opti-wifi.git
 cd Opti-wifi
-
-# 2. Installer les dépendances
 npm install
-
-# 3. Configurer les variables d'environnement
-cp .env.example .env.local
-# Remplir les valeurs dans .env.local (voir ci-dessous)
-
-# 4. Lancer le serveur de développement
-npm run dev
+cp .env.example .env.local   # puis compléter les valeurs de DÉVELOPPEMENT
+npm run dev                  # http://localhost:3000
 ```
 
-Ouvrir [http://localhost:3000](http://localhost:3000).
+### Variables d'environnement
 
-### Variables d'Environnement
+Les valeurs ne sont **jamais** dans le dépôt : `.env.local` en local, variables Vercel pour la préproduction et la production (voir [`docs/ENVIRONMENT_SETUP.md`](docs/ENVIRONMENT_SETUP.md)).
 
-Créer un fichier `.env.local` à la racine :
+| Groupe | Variables |
+|---|---|
+| Base de données | `DATABASE_URL`, `DATABASE_URL_UNPOOLED` — branche de **développement** uniquement en local |
+| Authentification & crons | `JWT_SECRET`, `CRON_SECRET` |
+| Site | `NEXT_PUBLIC_SITE_URL` |
+| E-mail | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` |
+| Notifications push | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` |
+| Bot Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` |
+| IA & voix | `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `TOGETHER_API_KEY`, `ELEVENLABS_API_KEY` |
+| Agents Claude (production) | `SECURITY_AGENT_TOKEN`, `DEV_AGENT_TOKEN`, `CLAUDE_DEV_ROUTINE_URL`, `CLAUDE_DEV_ROUTINE_TOKEN`, `GITHUB_TOKEN` |
 
-```bash
-# ── Base de données (Neon — branche de DÉVELOPPEMENT uniquement) ──
-DATABASE_URL=postgresql://<user>:<password>@ep-crimson-shape-xxx-pooler.../neondb?sslmode=require
-DATABASE_URL_UNPOOLED=postgresql://<user>:<password>@ep-crimson-shape-xxx.../neondb?sslmode=require
+> ⚠️ Ne jamais committer `.env.local` ni aucun fichier contenant des valeurs réelles.
 
-# ── Authentification ────────────────────────────────
-JWT_SECRET=<secret aléatoire de 32+ caractères>
-CRON_SECRET=<secret pour /api/cron/health-check>
-
-# ── Email (SMTP) ────────────────────────────────────
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=votre@email.com
-SMTP_PASS=votre-app-password
-SMTP_SECURE=false
-
-# ── Site URL ────────────────────────────────────────
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-
-# ── Notifications push (clés VAPID de DÉVELOPPEMENT) ──
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=<clé publique>
-VAPID_PRIVATE_KEY=<clé privée>
-VAPID_SUBJECT=mailto:support@optiwifi.site
-
-# ── Bot Telegram et assistant (optionnel en local) ──
-TELEGRAM_BOT_TOKEN=<jeton du bot>
-TELEGRAM_CHAT_ID=<chat du super admin>
-TELEGRAM_WEBHOOK_SECRET=<secret des webhooks>
-ANTHROPIC_API_KEY=<clé API Anthropic>
-GROQ_API_KEY=<relais open source>
-```
-
-> Telegram n'est envoyé qu'en production (sauf `TELEGRAM_NOTIFY_ENABLED=true`).
-> Liste complète et environnements : [`RELEASE_NOTES_v1.3.0.md`](./RELEASE_NOTES_v1.3.0.md#️-configuration).
-
-> ⚠️ **Ne jamais committer `.env.local`** — Ce fichier est exclu par `.gitignore`.
-> Le garde-fou `src/lib/env-guard.ts` bloque toute connexion à la base de production depuis le local ou une Preview.
-> Détails : [`docs/ENVIRONMENT_SETUP.md`](docs/ENVIRONMENT_SETUP.md).
-
-### Base de Données
-
-Exécuter le schéma initial dans le SQL Editor Neon ou Supabase :
+### Scripts
 
 ```bash
-# Schéma complet (toutes les tables + enums + index)
-supabase/neon_schema.sql
-
-# Migrations incrémentales (idempotentes), à tester d'abord sur la base dev
-supabase/migrations/*.sql
-```
-
----
-
-## Scripts Disponibles
-
-```bash
-npm run dev          # Serveur de développement Next.js
+npm run dev          # Serveur de développement
 npm run build        # Build de production
-npm run start        # Serveur de production
-npm run lint         # Linting ESLint
-
+npm run lint         # ESLint
 npx tsc --noEmit     # Vérification TypeScript (0 erreur requise)
-
-npm run backup       # ⚠️ obsolète (API Supabase) — voir « Backup & Restauration »
-npm run backup:list  # Lister les backups disponibles
-npm run backup:restore=<file>  # Restaurer depuis un backup
-npm run backup:clean # Nettoyer les anciens backups
 ```
+
+Schéma et migrations : `supabase/neon_schema.sql` puis `supabase/migrations/*.sql` (idempotentes, testées d'abord sur la base de développement).
 
 ---
 
-## Backup & Restauration
-
-> ⚠️ Depuis la migration vers Neon, `scripts/backup.js` (API Supabase) ne sauvegarde plus la vraie base.
-> En attendant sa réécriture, faire une sauvegarde Neon directe en lecture seule (export JSON de toutes les tables
-> dans `scripts/backups/`, dossier ignoré par Git) — voir [`docs/PROCEDURE_DEPLOIEMENT.md`](docs/PROCEDURE_DEPLOIEMENT.md).
-
-### Backup manuel (ancien script)
-
-```bash
-bash scripts/backup.sh              # Créer un backup daté (JSON)
-bash scripts/backup.sh --list       # Lister les backups
-bash scripts/backup.sh --restore=<filename>  # Restaurer
-bash scripts/backup.sh --clean=7    # Supprimer les backups > 7 jours
-```
-
-### Backup automatique (cron)
-
-```bash
-# Installer le cron pour un backup quotidien à 2h du matin
-echo "0 2 * * * $(pwd)/scripts/cron_backup.sh" | crontab -
-```
-
----
-
-## Déploiement
+## ☁️ Déploiement
 
 > 📌 Procédure complète et obligatoire : [`docs/PROCEDURE_DEPLOIEMENT.md`](docs/PROCEDURE_DEPLOIEMENT.md)
 
-| Branche | Environnement | URL | Base Neon |
-|---|---|---|---|
-| `develop` | Preview (automatique à chaque push) | https://dev.optiwifi.site | `vercel-dev` |
-| `main` | Production (à la fusion d'une PR) | https://www.optiwifi.site | `production` |
+| Branche | Environnement | Déclenchement |
+|---|---|---|
+| `develop` | Préproduction — https://dev.optiwifi.site | automatique à chaque push |
+| `main` | Production — https://www.optiwifi.site | fusion d'une PR `develop → main` validée par le propriétaire |
 
-### Cycle de travail
+**Cycle :** travail sur `develop` → `tsc` + lint + build → push (préproduction) → PR vers `main` → fusion par le propriétaire → vérification de la production → resynchronisation de `develop` → **release GitHub** (notes `RELEASE_NOTES_vX.Y.Z.md`).
 
-```bash
-# 1. Travailler sur develop, à jour
-git switch develop && git pull --ff-only origin develop
-
-# 2. Vérifier avant chaque push
-npx tsc --noEmit && npm run build
-
-# 3. Pousser → Preview automatique sur dev.optiwifi.site
-git push origin develop
-
-# 4. Mise en production : sauvegarde + migrations, puis PR develop → main validée par le propriétaire
-gh pr create --base main --head develop
-```
-
-**Interdits :** push forcé sur `develop` / `main`, `git reset --hard` sur une branche poussée, `vercel --prod`, commit direct sur `main`, données de test en production.
-En cas de problème : *Instant Rollback* Vercel ou `git revert`, jamais de push forcé.
-
-### Vérification post-déploiement
-
-- [ ] Page de connexion accessible (`/login`), super admin → `/platform`, client → `/dashboard`
-- [ ] `/api/cron/health-check` répond
-- [ ] Dashboard se charge sans spinner infini
-- [ ] Création d'un POS fonctionne
-- [ ] Assistant de collecte en 5 étapes fonctionne
-- [ ] Échange de tickets fonctionne
-- [ ] Navigation mobile fixe en bas de l'écran
+**Interdits :** commit direct sur `main`, push forcé, `git reset --hard` sur une branche poussée, `vercel --prod`, données de test en production. En cas de problème : *Instant Rollback* Vercel ou `git revert`.
 
 ---
 
-## Règles Métier
+## 📏 Règles métier
 
 | Règle | Description |
-|-------|------------|
-| **Stock limité** | Un POS ne peut encaisser que les tickets qui lui ont été alloués |
-| **Quantité plafonnée** | La quantité vendue ne peut pas dépasser le stock disponible (alloué − vendu) |
-| **Collecte liée** | Chaque collecte est liée à un POS et un collecteur |
-| **Échange équivalent** | Un échange doit avoir une valeur FCFA équivalente (retours = réceptions) |
-| **Espace verrouillé** | Un POS rattaché à un espace Wi-Fi ne peut pas être déplacé |
-| **Licence validée** | Un client ne prolonge pas sa licence lui-même : il envoie une demande que le super admin approuve |
+|---|---|
+| **Stock limité** | Un point de vente n'encaisse que les tickets qui lui ont été alloués |
+| **Quantité plafonnée** | La quantité vendue ne dépasse pas le stock disponible (alloué − vendu) |
+| **Échange équivalent** | Un échange a une valeur FCFA équivalente (retours = réceptions) |
+| **Espace verrouillé** | Un point de vente rattaché à un espace Wi-Fi ne peut pas être déplacé |
+| **Licence validée** | Un client ne prolonge pas sa licence lui-même : le super admin approuve sa demande |
 | **Une demande à la fois** | Une seule demande de licence en attente par organisation |
 | **Isolation** | Un utilisateur n'accède qu'aux données de son organisation |
-| **Mot de passe personnel** | Un mot de passe temporaire doit être changé à la première connexion |
-| **Admin seul** | Seul un administrateur peut vider les données d'un POS, gérer les utilisateurs et les espaces |
+| **Validation humaine** | Aucun correctif ni développement d'un agent n'est intégré ou mis en production sans le propriétaire |
 
 ---
 
-## Sécurité
+## 📜 Historique des versions
 
-Consulter [`AGENTS.md`](./AGENTS.md) pour les règles de sécurité complètes :
-
-- 🔒 **Secret scanning** obligatoire avant chaque commit
-- 🛡️ **SQL injection** — Requêtes paramétrées uniquement, identifiants validés
-- 🏢 **Multi-tenant** — Filtre d'organisation imposé côté serveur
-- 🚫 **XSS** — Pas de `dangerouslySetInnerHTML` avec données utilisateur
-- 🔐 **Auth** — Vérification côté serveur sur chaque API protégée
-- 📋 **Pre-commit checklist** — Voir `AGENTS.md` pour la liste complète
-
----
-
-## Release Notes
-
-- [**v1.9.0**](./RELEASE_NOTES_v1.9.0.md) — Corriger ou supprimer une collecte / allocation (direct pour l'administrateur, validation pour le collecteur) avec historique complet, téléchargement des données et suppression de compte validée par le super admin (RGPD), colonne Téléphone des clients, mode nuit lisible, chiffres clés uniformisés, build sans avertissements
-- [**v1.8.0**](./RELEASE_NOTES_v1.8.0.md) — Guide de démarrage interactif pour les nouveaux espaces : bienvenue, projecteurs « cliquez ici » sur le menu, les boutons et les formulaires, carte de progression et bandeaux d'étape (zone → point de vente → types de tickets → allocation → collecte), adapté au mobile
-- [**v1.7.0**](./RELEASE_NOTES_v1.7.0.md) — État du système dans le back-office (base, API, notifications, serveur, hébergement Vercel, tâches planifiées) avec historique et alertes au changement d'état, invitation à activer les notifications pour tous sur téléphone et ordinateur (guide d'installation sur iPhone), masquage de tous les montants depuis l'œil des cartes de chiffres clés
-- [**v1.6.1**](./RELEASE_NOTES_v1.6.1.md) — Mode hors ligne complet : copie locale de toutes les données de l'espace, tous les écrans consultables sans réseau, ajouts et modifications hors ligne (espaces, points de vente, types de tickets, allocations, collectes) synchronisés au retour du réseau avec les nouveautés de la base
-- [**v1.6.0**](./RELEASE_NOTES_v1.6.0.md) — Mode hors ligne (consultation sans réseau, collectes synchronisées au retour du réseau), rapports retravaillés avec export PDF, accès de l'équipe par copie / WhatsApp / e-mail, réinitialisation du mot de passe sécurisée, limite du forfait signalée, types de tickets en jours, badge du forfait, revenus sur les factures payées
-- [**v1.5.0**](./RELEASE_NOTES_v1.5.0.md) — Essai gratuit automatique à la première souscription seulement, réabonnement par moyen de paiement filtrable par pays, téléphone avec pays à l'inscription, bandeau du compte, espace collecteur cloisonné, nombre de collecteurs par forfait, Top 3 des pays, abonnements retravaillés, site vitrine, bot Telegram configurable, mesure d'audience PostHog
-- [**v1.4.0**](./RELEASE_NOTES_v1.4.0.md) — Réabonnement et paiement par Wave (QR code, justificatif WhatsApp), factures de licence en PDF, statistiques et KPI du back-office, support par tickets, rappels J-10 / J-5 / J-2, bot Telegram fiabilisé et sécurisé
-- [**v1.3.0**](./RELEASE_NOTES_v1.3.0.md) — Suspension et suppression avec révocation immédiate, essai unique et licence expirée appliquée côté serveur, notifications (cloche, push, Telegram), assistant Telegram sur Claude avec relais open source, back-office mobile first, fenêtres natives du téléphone remplacées
-- [**v1.2.0**](./RELEASE_NOTES_v1.2.0.md) — Back-office Super Admin (inscriptions, licences, demandes), isolation des données par client, connexion unique, mot de passe temporaire à changer, correctifs de sécurité
-- [**v1.1.0**](./RELEASE_NOTES_v1.1.0.md) — Échanges de tickets, Multi-Espaces Wi-Fi, Mode Offline, Refonte Mobile, Sécurité RLS
-- [**v1.0.0**](./RELEASE_NOTES_v1.0.0.md) — Lancement initial : POS, Allocations, Collectes, Dashboard
+| Version | Contenu |
+|---|---|
+| [**v1.17.0**](./RELEASE_NOTES_v1.17.0.md) | Routines Claude d'audit des dépendances, de revue de sécurité et de diagnostic technique |
+| [**v1.16.0**](./RELEASE_NOTES_v1.16.0.md) | Rapports business automatiques : rapport du matin, anomalies d'encaissement, clients à risque, bilan de la semaine |
+| [**v1.15.0**](./RELEASE_NOTES_v1.15.0.md) | Bot en deux univers (IA / Business) et développement par Claude Code validé depuis Telegram |
+| [**v1.14.1**](./RELEASE_NOTES_v1.14.1.md) | Nouvelle voix du bot |
+| [**v1.14.0**](./RELEASE_NOTES_v1.14.0.md) | Correctifs du test d'intrusion, détection d'intrusion, agent de sécurité dans le cloud, menu Sécurité, bot vocal |
+| [**v1.13.0**](./RELEASE_NOTES_v1.13.0.md) | Notifications en temps réel : le téléphone du point de vente sonne |
+| [**v1.12.1**](./RELEASE_NOTES_v1.12.1.md) | Corrections de sécurité (rapport Herald) |
+| [**v1.12.0**](./RELEASE_NOTES_v1.12.0.md) | Compte « point de vente » |
+| [**v1.11.0**](./RELEASE_NOTES_v1.11.0.md) | Connexions & appareils, conditions d'utilisation dans l'espace |
+| [**v1.10.0**](./RELEASE_NOTES_v1.10.0.md) | Consultation seule à l'expiration, protection anti-capture |
+| [**v1.9.0**](./RELEASE_NOTES_v1.9.0.md) | Corrections tracées, suppression de compte (RGPD), mode nuit lisible |
+| [**v1.8.0**](./RELEASE_NOTES_v1.8.0.md) | Guide de démarrage interactif |
+| [**v1.7.0**](./RELEASE_NOTES_v1.7.0.md) | État du système, notifications pour tous, masquage des montants |
+| [**v1.6.1**](./RELEASE_NOTES_v1.6.1.md) · [**v1.6.0**](./RELEASE_NOTES_v1.6.0.md) | Mode hors ligne complet, rapports avec export PDF |
+| [**v1.5.0**](./RELEASE_NOTES_v1.5.0.md) | Essai gratuit, réabonnement par pays, espace collecteur cloisonné, site vitrine |
+| [**v1.4.0**](./RELEASE_NOTES_v1.4.0.md) | Réabonnement Wave, factures PDF, support, rappels de licence |
+| [**v1.3.0**](./RELEASE_NOTES_v1.3.0.md) | Suspension et suppression, notifications, assistant Telegram sur Claude |
+| [**v1.2.0**](./RELEASE_NOTES_v1.2.0.md) | Back-office super admin, isolation des données par client |
+| [**v1.1.0**](./RELEASE_NOTES_v1.1.0.md) | Échanges de tickets, multi-espaces, mode hors ligne, refonte mobile |
+| [**v1.0.0**](./RELEASE_NOTES_v1.0.0.md) | Lancement : points de vente, allocations, collectes, tableau de bord |
 
 ---
 
