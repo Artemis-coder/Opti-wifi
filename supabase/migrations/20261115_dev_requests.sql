@@ -18,4 +18,13 @@ CREATE TABLE IF NOT EXISTS dev_requests (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Anti-doublon des rapports des routines planifiées (un même rapport au plus une fois par 24 h).
+-- Aussi créée à la demande par src/app/api/dev/agent-report/route.ts.
+CREATE TABLE IF NOT EXISTS agent_reports (
+  source TEXT NOT NULL,
+  title TEXT NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (source, title)
+);
+
 COMMIT;

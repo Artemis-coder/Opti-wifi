@@ -81,6 +81,17 @@ export async function createDevRequest(request: string): Promise<DevRequest> {
   return rows[0] as DevRequest;
 }
 
+/** Correctif proposé de lui-même par une routine (audit, revue, diagnostic) : demande directement « à valider ». */
+export async function createAgentProposal(args: { title: string; report: string; branch: string; commit: string }): Promise<DevRequest> {
+  await ensureDevTables();
+  const { rows } = await query(
+    `INSERT INTO dev_requests (title, request, status, plan, summary, branch, commit_sha)
+     VALUES ($1, $2, 'review', $3, $3, $4, $5) RETURNING *`,
+    [args.title.slice(0, 90), `Proposé par une routine Claude : ${args.title}`.slice(0, 8000), args.report.slice(0, 12000), args.branch, args.commit],
+  );
+  return rows[0] as DevRequest;
+}
+
 export async function getDevRequest(id: number): Promise<DevRequest | null> {
   if (!Number.isInteger(id) || id < 1) return null;
   await ensureDevTables();
