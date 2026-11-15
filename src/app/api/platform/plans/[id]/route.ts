@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/neon/admin';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { normalizePlanFeatures } from '@/lib/plan-features';
+import { cancelPendingPaymentsForPlan } from '@/lib/saspay/payments';
 
 function getServiceClient() {
   return createAdminClient();
@@ -122,6 +123,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     new_data: plan,
     ip_address: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
   });
+
+  // Prix, devise, durée ou statut changés : les sessions SasPay ouvertes pour ce forfait sont annulées
+  const priceChanged =
+    Number(oldPlan?.price) !== Number(plan?.price) ||
+    oldPlan?.currency !== plan?.currency ||
+    oldPlan?.billing_period !== plan?.billing_period ||
+    (oldPlan?.status === 'active' && plan?.status !== 'active');
+  if (priceChanged) {
+    await cancelPendingPaymentsForPlan(id).catch((err) => console.error('Plan update: pending payments cancel error:', err));
+  }
 
   return NextResponse.json({ success: true, data: plan });
 }

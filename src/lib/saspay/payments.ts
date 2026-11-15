@@ -117,6 +117,9 @@ export async function startOnlinePayment(input: {
   }
   const currency = String(plan.currency || 'XOF').toUpperCase();
   if (!/^[A-Z]{3}$/.test(currency)) throw new OnlinePaymentError('Devise du forfait invalide', 400);
+  // Prix et durée lus à chaque fois dans subscription_plans : un forfait modifié s'applique au paiement suivant
+  const months = PERIOD_MONTHS[plan.billing_period] || 1;
+  const amount = Number(plan.price).toFixed(2);
 
   // Paiement déjà en cours : on le resynchronise, puis on le reprend (même forfait, récent) ou on l'annule
   const existing = await query(`SELECT * FROM online_payments WHERE organization_id = $1 AND status = 'pending'`, [
@@ -129,10 +132,16 @@ export async function startOnlinePayment(input: {
     }
     if (current.status === 'pending') {
       const recent = Date.now() - new Date(current.created_at).getTime() < RESUME_WITHIN_MS;
-      if (recent && current.plan_id === input.planId && current.checkout_url) {
+      // Reprise seulement si rien n'a changé (même forfait, même prix, même durée) : sinon nouvelle session
+      const samePrice =
+        current.plan_id === input.planId &&
+        Number(current.amount).toFixed(2) === amount &&
+        current.currency === currency &&
+        current.duration_months === months;
+      if (recent && samePrice && current.checkout_url) {
         return { id: current.id, checkoutUrl: current.checkout_url, resumed: true };
       }
-      await abandonPayment(current, 'Remplacé par un nouveau paiement');
+      await abandonPayment(current, samePrice ? 'Remplacé par un nouveau paiement' : 'Prix ou forfait modifié : nouvelle session créée');
       const after = await loadPayment(current.id);
       if (after?.status === 'pending' || after?.status === 'succeeded') {
         throw new OnlinePaymentError('Un paiement est en cours de confirmation. Réessayez dans quelques instants.', 409);
@@ -140,8 +149,6 @@ export async function startOnlinePayment(input: {
     }
   }
 
-  const months = PERIOD_MONTHS[plan.billing_period] || 1;
-  const amount = Number(plan.price).toFixed(2);
   let id: string;
   try {
     const ins = await query(
@@ -392,6 +399,25 @@ async function flagIssue(row: OnlinePaymentRow, reason: string): Promise<void> {
   notifyInBackground(() =>
     notifySuperAdmins({ type: 'payment.issue', title: 'Paiement en ligne à vérifier', body: reason, link: '/platform/payments', ring: true })
   );
+}
+
+/**
+ * Forfait modifié (prix, devise, durée) ou désactivé : les sessions SasPay encore ouvertes pour ce
+ * forfait sont annulées, pour qu'aucun client ne paie l'ancien prix depuis un onglet resté ouvert.
+ * Un paiement déjà confirmé entre-temps est conservé (abandonPayment resynchronise sur 409).
+ */
+export async function cancelPendingPaymentsForPlan(planId: string): Promise<number> {
+  const { rows } = await query(`SELECT * FROM online_payments WHERE plan_id = $1 AND status = 'pending'`, [planId]);
+  let cancelled = 0;
+  for (const row of rows as OnlinePaymentRow[]) {
+    try {
+      await abandonPayment(row, 'Forfait modifié : session annulée');
+      if ((await loadPayment(row.id))?.status === 'cancelled') cancelled++;
+    } catch (err) {
+      console.error('Cancel pending payment error:', err);
+    }
+  }
+  return cancelled;
 }
 
 /** Synchronise les paiements en attente récents (webhook non rattaché, cron de rattrapage). */
