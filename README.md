@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.16.0</strong> — <a href="./RELEASE_NOTES_v1.16.0.md">notes de version</a>
+  <strong>Version actuelle : v1.17.0</strong> — <a href="./RELEASE_NOTES_v1.17.0.md">notes de version</a>
 </p>
 
 ---
