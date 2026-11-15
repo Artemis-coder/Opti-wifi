@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils/cn';
 import { trackClient } from '@/lib/analytics/client';
 import { EVENTS } from '@/lib/analytics/events';
 import type { Collection, CollectionItem, PointOfSale } from '@/types/database';
+import { printDocument } from '@/lib/utils/print';
 
 // ── Périodes ────────────────────────────────────────────────────────────────
 
@@ -327,14 +328,7 @@ export default function ReportsPage() {
   // PDF : le navigateur imprime le seul rapport (ReportDocument) ; « Enregistrer en PDF »
   // propose le nom du fichier via le titre de la page
   const exportPdf = () => {
-    const previousTitle = document.title;
-    document.title = `rapport_activite_${fileSuffix}`;
-    const restore = () => {
-      document.title = previousTitle;
-      window.removeEventListener('afterprint', restore);
-    };
-    window.addEventListener('afterprint', restore);
-    window.print();
+    printDocument(`rapport_activite_${fileSuffix}`);
     trackClient(EVENTS.reportExported, { report: 'activity', format: 'pdf' });
   };
 

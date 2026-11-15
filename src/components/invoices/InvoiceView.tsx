@@ -6,6 +6,7 @@ import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { InvoiceDocument, type InvoiceIssuer } from '@/components/invoices/InvoiceDocument';
 import type { InvoiceDetail } from '@/lib/invoices';
+import { printDocument } from '@/lib/utils/print';
 
 /** Page facture : chargement, retour, téléchargement en PDF (impression du navigateur). */
 export function InvoiceView({ id, backHref, backLabel }: { id: string; backHref: string; backLabel: string }) {
@@ -44,7 +45,7 @@ export function InvoiceView({ id, backHref, backLabel }: { id: string; backHref:
           <ArrowLeft className="w-4 h-4" /> {backLabel}
         </Link>
         {state && state !== 'error' && (
-          <Button icon={Download} onClick={() => window.print()} className="w-full sm:w-auto font-semibold">
+          <Button icon={Download} onClick={() => printDocument()} className="w-full sm:w-auto font-semibold">
             Télécharger en PDF
           </Button>
         )}
