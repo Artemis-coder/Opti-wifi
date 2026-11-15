@@ -58,10 +58,10 @@ function getClient(): Anthropic {
 
 export const BUSINESS_BUTTON = '📊 Business OptiSpace';
 
-/** Accueil : deux univers, l'IA de développement (Claude Code) et le suivi du business. */
+/** Accueil : trois univers — IA de développement (Claude Code), business, paiement en ligne. */
 export const HOME_MENU = {
   reply_markup: {
-    keyboard: [[{ text: '🤖 IA — Claude Code' }], [{ text: BUSINESS_BUTTON }], [{ text: '❓ Aide' }]],
+    keyboard: [[{ text: '🤖 IA — Claude Code' }], [{ text: BUSINESS_BUTTON }], [{ text: '💳 Paiement en ligne' }], [{ text: '❓ Aide' }]],
     resize_keyboard: true,
     is_persistent: true,
     input_field_placeholder: 'Choisissez un menu ou posez une question…',
@@ -770,4 +770,6 @@ Les actions (approuver, refuser, activer, suspendre…) demandent toujours votre
 
 <b>📊 Business OptiSpace</b> : clients, licences, encaissements, « 🛡️ Sécurité » et « 🩺 Santé de l'application ».
 
-Commandes : /menu · /ia · /securite · /sante · /effacer (oublier la conversation) · /aide`;
+<b>💳 Paiement en ligne</b> : statut de SasPay (connexion, dernier paiement, 24 h) et bascule en un bouton entre paiement en ligne et paiement manuel.
+
+Commandes : /menu · /ia · /paiement · /securite · /sante · /effacer (oublier la conversation) · /aide`;
