@@ -312,24 +312,24 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
             label="Inscriptions"
             icon={UserPlus}
             accent="indigo"
-            value={formatNumber(stats?.totals.registrations ?? 0)}
-            sub={rangeLabel}
+            value={formatNumber(stats?.alltime.registrations ?? 0)}
+            sub={`Comptes clients au total · ${formatNumber(stats?.totals.registrations ?? 0)} sur ${rangeLabel}`}
             delta={stats && <Delta current={stats.totals.registrations} previous={stats.previous.registrations} />}
           />
           <StatsTile
             label="Licences vendues"
             icon={KeyRound}
             accent="amber"
-            value={formatNumber(stats?.totals.paid_licenses ?? 0)}
-            sub={`+ ${stats?.totals.trials ?? 0} essai${(stats?.totals.trials ?? 0) > 1 ? 's' : ''}`}
+            value={formatNumber(stats?.alltime.paid_licenses ?? 0)}
+            sub={`Payées et facturées · ${formatNumber(stats?.totals.paid_licenses ?? 0)} sur ${rangeLabel} · ${stats?.alltime.trials ?? 0} essai${(stats?.alltime.trials ?? 0) > 1 ? 's' : ''} gratuit${(stats?.alltime.trials ?? 0) > 1 ? 's' : ''} en plus`}
             delta={stats && <Delta current={stats.totals.paid_licenses} previous={stats.previous.paid_licenses} />}
           />
           <StatsTile
             label="Revenus encaissés"
             icon={Banknote}
             accent="emerald"
-            value={formatCurrencyFCFA(stats?.totals.revenue ?? 0)}
-            sub={`Factures payées, ${rangeLabel}`}
+            value={formatCurrencyFCFA(stats?.alltime.revenue ?? 0)}
+            sub={`En ligne + manuel, au total · ${formatCurrencyFCFA(stats?.totals.revenue ?? 0)} sur ${rangeLabel}`}
             delta={stats && <Delta current={stats.totals.revenue} previous={stats.previous.revenue} />}
           />
           <StatsTile

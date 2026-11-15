@@ -20,6 +20,7 @@ import { normalizeWhatsappUrl, whatsappFromNumber } from '@/lib/whatsapp';
 import { AddButton } from '@/components/ui/AddButton';
 import { CountryMultiSelect } from '@/components/ui/CountryMultiSelect';
 import { countryFlag, countryName } from '@/lib/countries';
+import { PaymentModeSwitch } from '@/components/platform/PaymentModeSwitch';
 
 interface PaymentMethod extends PublicPaymentMethod {
   is_active: boolean;
@@ -316,6 +317,8 @@ export default function PaymentMethodsPage() {
         </div>
         <AddButton what="un moyen de paiement" onClick={() => openModal()} />
       </div>
+
+      <PaymentModeSwitch />
 
       {loading ? (
         <div className="py-16 flex justify-center text-slate-400">

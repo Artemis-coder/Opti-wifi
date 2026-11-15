@@ -11,6 +11,10 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/saspay-reconcile",
+      "schedule": "30 7 * * *"
+    },
+    {
       "path": "/api/cron/business-reports",
       "schedule": "0 7 * * *"
     }

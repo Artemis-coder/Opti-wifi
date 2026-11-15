@@ -3,10 +3,13 @@ import { query } from '@/lib/neon/db';
 /**
  * Statistiques du back-office (super admin).
  *
- * Revenus : il n'y a pas de table de paiements alimentée (le client paie hors application,
- * le super admin active la licence). Le revenu d'une licence = prix du forfait × nombre de
- * périodes couvertes (durée de la licence / durée de la période du forfait), essai exclu.
- * Le prix utilisé est le prix ACTUEL du forfait (l'historique des prix n'est pas conservé).
+ * Une seule source par indicateur, la même que les autres pages du back-office :
+ * - Revenus encaissés = paiements réussis (table payments : paiement en ligne SasPay ET paiement
+ *   manuel validé), comme « Total encaissé » de Transactions ;
+ * - Licences vendues = factures payées (une facture par licence payée), comme la page Factures ;
+ *   les licences activées sans paiement (essais, licences antérieures à la facturation) n'en sont pas ;
+ * - Inscriptions = comptes clients (organisations) créés.
+ * Chaque indicateur donne le total depuis le début (`alltime`) et le chiffre de la période.
  */
 
 export type StatsRange = '7d' | '30d' | '90d' | '6m' | '1y';
@@ -39,6 +42,8 @@ export interface PlatformStats {
   currency: string;
   series: StatsBucket[];
   totals: { registrations: number; paid_licenses: number; trials: number; revenue: number };
+  /** Depuis le début, toutes périodes confondues */
+  alltime: { registrations: number; paid_licenses: number; trials: number; revenue: number };
   previous: { registrations: number; paid_licenses: number; trials: number; revenue: number };
   mrr: number;
   active_licenses: number;
@@ -74,11 +79,16 @@ const LICENSES_CTE = `
       FROM paid
   )`;
 
-// Revenus : factures payées, datées au paiement (montant figé à l'émission, prix de l'époque).
-// Les licences antérieures à la facturation (v1.4.0) n'ont pas de facture et ne comptent pas.
+// Revenus : paiements réussis (en ligne et manuels), datés au paiement.
+// Licences vendues : factures payées (une par licence payée), datées au paiement.
 const INVOICES_CTE = `
   paid_invoices AS (
-    SELECT COALESCE(i.paid_at, i.issued_at) AS paid_at, i.amount
+    SELECT COALESCE(p.paid_at, p.created_at) AS paid_at, p.amount
+      FROM payments p
+     WHERE p.status = 'successful'
+  ),
+  sold AS (
+    SELECT COALESCE(i.paid_at, i.issued_at) AS sold_at
       FROM invoices i
      WHERE i.status = 'paid'
   )`;
@@ -141,7 +151,7 @@ export async function getPlatformStats(range: StatsRange): Promise<PlatformStats
     ${INVOICES_CTE}
     SELECT
       (SELECT COUNT(*) FROM organizations, bounds WHERE created_at >= start_at AND created_at < end_at)::int AS registrations,
-      (SELECT COUNT(*) FROM typed, bounds WHERE kind <> 'trial' AND created_at >= start_at AND created_at < end_at)::int AS paid_licenses,
+      (SELECT COUNT(*) FROM sold, bounds WHERE sold_at >= start_at AND sold_at < end_at)::int AS paid_licenses,
       (SELECT COUNT(*) FROM typed, bounds WHERE kind = 'trial' AND created_at >= start_at AND created_at < end_at)::int AS trials,
       (SELECT COALESCE(SUM(amount), 0) FROM paid_invoices, bounds WHERE paid_at >= start_at AND paid_at < end_at)::float AS revenue`;
 
@@ -165,13 +175,29 @@ export async function getPlatformStats(range: StatsRange): Promise<PlatformStats
      GROUP BY p.id, p.name, p.price
      ORDER BY count DESC, p.price DESC`;
 
+  // Licences vendues sur la période en cours + totaux depuis le début
+  const totalsSql = `
+    WITH bounds AS (
+      SELECT date_trunc($1, NOW()) - ($2::int - 1) * $3::interval AS start_at
+    ),
+    ${LICENSES_CTE},
+    ${INVOICES_CTE}
+    SELECT
+      (SELECT COUNT(*) FROM sold, bounds WHERE sold_at >= start_at)::int AS period_sold,
+      (SELECT COUNT(*) FROM organizations)::int AS registrations,
+      (SELECT COUNT(*) FROM sold)::int AS paid_licenses,
+      (SELECT COUNT(*) FROM lic WHERE is_trial)::int AS trials,
+      (SELECT COALESCE(SUM(amount), 0) FROM paid_invoices)::float AS revenue`;
+
   const params = [unit, count, step];
-  const [seriesRes, prevRes, activeRes, currencyRes] = await Promise.all([
+  const [seriesRes, prevRes, activeRes, currencyRes, totalsRes] = await Promise.all([
     query(seriesSql, params),
     query(previousSql, params),
     query(activeSql),
     query(`SELECT value FROM platform_settings WHERE key = 'platform_currency'`),
+    query(totalsSql, params),
   ]);
+  const all = totalsRes.rows[0] || {};
 
   const series: StatsBucket[] = seriesRes.rows.map((r) => ({
     bucket: new Date(r.bucket).toISOString(),
@@ -200,9 +226,15 @@ export async function getPlatformStats(range: StatsRange): Promise<PlatformStats
     series,
     totals: {
       registrations: sum('registrations'),
-      paid_licenses: sum('new') + sum('renewal') + sum('upgrade'),
+      paid_licenses: Number(all.period_sold || 0),
       trials: sum('trial'),
       revenue: sum('revenue'),
+    },
+    alltime: {
+      registrations: Number(all.registrations || 0),
+      paid_licenses: Number(all.paid_licenses || 0),
+      trials: Number(all.trials || 0),
+      revenue: Number(all.revenue || 0),
     },
     previous: {
       registrations: Number(prev.registrations || 0),

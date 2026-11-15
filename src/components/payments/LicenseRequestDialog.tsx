@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, RotateCcw, Send, Wallet } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, CreditCard, Loader2, RotateCcw, Send, ShieldCheck, Wallet, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -86,6 +86,10 @@ function RequestFlow({
   const [accountCountry, setAccountCountry] = useState<string | null>(null);
   const [reference, setReference] = useState('');
   const [sending, setSending] = useState(false);
+  // Paiement en ligne SasPay (Mobile Money / carte, licence activée dès la confirmation)
+  // null : pas encore connu (évite d'afficher un instant le choix manuel)
+  const [onlineEnabled, setOnlineEnabled] = useState<boolean | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const isFree = Number(plan.price) <= 0;
 
@@ -105,13 +109,48 @@ function RequestFlow({
     };
   }, [isFree]);
 
+  useEffect(() => {
+    if (isFree) return;
+    let cancelled = false;
+    fetch('/api/payments/saspay/checkout')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => !cancelled && setOnlineEnabled(json?.data?.enabled === true))
+      .catch(() => !cancelled && setOnlineEnabled(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [isFree]);
+
+  const payOnline = async () => {
+    setRedirecting(true);
+    try {
+      const res = await fetch('/api/payments/saspay/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: plan.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      const url = json?.data?.checkoutUrl;
+      if (!res.ok || typeof url !== 'string' || !url.startsWith('https://')) {
+        toast.error(json.error || 'Le paiement en ligne est momentanément indisponible');
+        setRedirecting(false);
+        return;
+      }
+      // Page de paiement SasPay : le client y choisit son opérateur ou sa carte
+      window.location.href = url;
+    } catch {
+      toast.error('Le paiement en ligne est momentanément indisponible');
+      setRedirecting(false);
+    }
+  };
+
   const method = methods?.find((m) => m.id === methodId) || null;
   // Moyens affichés : tous, ou ceux du pays choisi (liste de pays vide = disponible partout)
   const available = (methods || []).filter(
     (m) => country === ALL_COUNTRIES || !m.countries?.length || m.countries.includes(country)
   );
   // Aucun moyen configuré : directement l'écran d'envoi de la demande
-  const screen = step === 'methods' && methods !== null && methods.length === 0 ? 'pay' : step;
+  const screen = step === 'methods' && methods !== null && methods.length === 0 && onlineEnabled === false ? 'pay' : step;
   const countryOptions = [
     { value: ALL_COUNTRIES, label: '🌍  Tous les pays' },
     ...COUNTRIES.filter((c, i, all) => all.findIndex((x) => x.code === c.code) === i)
@@ -212,8 +251,14 @@ function RequestFlow({
               {!sending && <Send className="w-4 h-4" />} Envoyer la demande
             </Button>
           ) : (
-            <Button type="button" onClick={() => setStep('methods')} className="gap-2">
-              <RotateCcw className="w-4 h-4" /> {renewal ? 'Me réabonner' : 'Continuer vers le paiement'}
+            <Button
+              type="button"
+              onClick={onlineEnabled === true ? payOnline : () => setStep('methods')}
+              isLoading={redirecting}
+              className="gap-2"
+            >
+              {!redirecting && (onlineEnabled === true ? <ArrowRight className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />)}{' '}
+              {onlineEnabled === true ? 'Passer au paiement' : renewal ? 'Me réabonner' : 'Continuer vers le paiement'}
             </Button>
           )}
         </div>
@@ -222,74 +267,100 @@ function RequestFlow({
   }
 
   // ── Écran 2 : le choix du moyen de paiement ─────────────────────────
+  if (screen === 'methods' && onlineEnabled === null) {
+    return (
+      <div className="py-10 flex justify-center text-slate-400">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
+  }
+  if (screen === 'methods' && onlineEnabled) {
+    // Paiement en ligne SasPay : le client choisit son opérateur ou sa carte sur la page SasPay
+    return (
+      <div className="space-y-5 text-left">
+        {!renewal && <BackButton label={`Forfait ${plan.name}`} onClick={() => setStep('package')} />}
+        <PlanSummary plan={plan} months={months} />
+        <OnlinePayButton redirecting={redirecting} onClick={payOnline} />
+        <div className="flex justify-end">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Annuler
+          </Button>
+        </div>
+      </div>
+    );
+  }
   if (screen === 'methods') {
     return (
       <div className="space-y-5 text-left">
         {!renewal && <BackButton label={`Forfait ${plan.name}`} onClick={() => setStep('package')} />}
         <PlanSummary plan={plan} months={months} />
-        <div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-brand-600" /> Choisissez votre moyen de paiement
-          </h3>
-          <p className="text-xs text-slate-500 mt-1">
-            Choisissez le moyen qui vous convient (filtrez par pays si besoin) : vous scannerez ensuite le QR code ou
-            copierez le numéro.
-          </p>
-        </div>
-        <CustomSelect
-          label="Filtrer par pays"
-          value={country}
-          onChange={setCountry}
-          options={countryOptions}
-          searchable
-          searchPlaceholder="Rechercher un pays…"
-          title="Pays de paiement"
-        />
-        {methods === null ? (
-          <div className="py-10 flex justify-center text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin" />
-          </div>
-        ) : available.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-5 text-center space-y-3">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Aucun moyen de paiement en ligne n&apos;est encore disponible
-              {country ? ` pour ${countryName(country)}` : ''}. Envoyez votre
-              demande : l&apos;équipe OptiWifi vous contactera pour le paiement.
-            </p>
-            <Button type="button" onClick={send} isLoading={sending} className="gap-2">
-              {!sending && <Send className="w-4 h-4" />} Envoyer la demande
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {available.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => {
-                  setMethodId(m.id);
-                  setStep('pay');
-                }}
-                className="group rounded-2xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
-                style={{ background: m.brand_color || DEFAULT_BRAND_COLOR }}
-              >
-                <span className="w-14 h-14 shrink-0 rounded-xl bg-white/95 flex items-center justify-center overflow-hidden">
-                  {m.brand_logo ? (
-                    // Data URL stockée en base : next/image n'apporte rien ici
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.brand_logo} alt="" className="w-11 h-11 object-contain" />
-                  ) : (
-                    <Wallet className="w-6 h-6 text-slate-500" />
-                  )}
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-lg font-extrabold leading-tight drop-shadow-sm">{m.name}</span>
-                  <span className="block text-xs text-white/90">Payer avec {m.name}</span>
-                </span>
-                <ArrowRight className="w-5 h-5 shrink-0 transition group-hover:translate-x-0.5" />
-              </button>
-            ))}
-          </div>
+        {methods !== null && methods.length === 0 ? null : (
+          <>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-brand-600" /> Choisissez votre moyen de paiement
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Choisissez le moyen qui vous convient (filtrez par pays si besoin) : vous scannerez ensuite le QR code ou
+                copierez le numéro.
+              </p>
+            </div>
+            <CustomSelect
+              label="Filtrer par pays"
+              value={country}
+              onChange={setCountry}
+              options={countryOptions}
+              searchable
+              searchPlaceholder="Rechercher un pays…"
+              title="Pays de paiement"
+            />
+            {methods === null ? (
+              <div className="py-10 flex justify-center text-slate-400">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : available.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-5 text-center space-y-3">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Aucun moyen de paiement en ligne n&apos;est encore disponible
+                  {country ? ` pour ${countryName(country)}` : ''}. Envoyez votre
+                  demande : l&apos;équipe OptiWifi vous contactera pour le paiement.
+                </p>
+                <Button type="button" onClick={send} isLoading={sending} className="gap-2">
+                  {!sending && <Send className="w-4 h-4" />} Envoyer la demande
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {available.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setMethodId(m.id);
+                      setStep('pay');
+                    }}
+                    className="group rounded-2xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+                    style={{ background: m.brand_color || DEFAULT_BRAND_COLOR }}
+                  >
+                    <span className="w-14 h-14 shrink-0 rounded-xl bg-white/95 flex items-center justify-center overflow-hidden">
+                      {m.brand_logo ? (
+                        // Data URL stockée en base : next/image n'apporte rien ici
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={m.brand_logo} alt="" className="w-11 h-11 object-contain" />
+                      ) : (
+                        <Wallet className="w-6 h-6 text-slate-500" />
+                      )}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-lg font-extrabold leading-tight drop-shadow-sm">{m.name}</span>
+                      <span className="block text-xs text-white/90">Payer avec {m.name}</span>
+                    </span>
+                    <ArrowRight className="w-5 h-5 shrink-0 transition group-hover:translate-x-0.5" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
         <div className="flex justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -376,6 +447,41 @@ function RequestFlow({
           {method ? "J'ai payé" : 'Envoyer la demande'}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/** Paiement en ligne SasPay : redirige vers la page de paiement hébergée. */
+function OnlinePayButton({ redirecting, onClick }: { redirecting: boolean; onClick: () => void }) {
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={redirecting}
+        className="group w-full rounded-2xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition bg-gradient-to-r from-brand-600 to-emerald-600 hover:shadow-md hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+      >
+        <span className="w-14 h-14 shrink-0 rounded-xl bg-white/95 flex items-center justify-center">
+          {redirecting ? (
+            <Loader2 className="w-6 h-6 text-brand-600 animate-spin" />
+          ) : (
+            <CreditCard className="w-6 h-6 text-brand-600" />
+          )}
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-lg font-extrabold leading-tight drop-shadow-sm">Passer au paiement</span>
+          <span className="block text-xs text-white/90">Mobile Money ou carte bancaire · activation immédiate</span>
+        </span>
+        <ArrowRight className="w-5 h-5 shrink-0 transition group-hover:translate-x-0.5" />
+      </button>
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+        <span className="inline-flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Paiement sécurisé par SasPay
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Zap className="w-3.5 h-3.5 text-amber-500" /> Licence activée dès la confirmation
+        </span>
+      </p>
     </div>
   );
 }

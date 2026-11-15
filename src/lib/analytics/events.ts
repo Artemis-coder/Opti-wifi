@@ -21,6 +21,8 @@ export const EVENTS = {
   licenseRequested: 'license_requested',
   licenseRequestRejected: 'license_request_rejected',
   licenseActivated: 'license_activated',
+  onlinePaymentStarted: 'online_payment_started',
+  onlinePaymentSucceeded: 'online_payment_succeeded',
 } as const;
 
 export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS];

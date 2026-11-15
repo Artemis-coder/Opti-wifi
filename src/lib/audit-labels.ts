@@ -23,6 +23,8 @@ export const AUDIT_ACTIONS: Record<string, { label: string; tone: AuditTone }> =
   payment_method_created: { label: 'Moyen de paiement ajouté', tone: 'success' },
   payment_method_updated: { label: 'Moyen de paiement modifié', tone: 'info' },
   payment_method_deleted: { label: 'Moyen de paiement supprimé', tone: 'danger' },
+  payment_mode_changed: { label: 'Mode de paiement changé', tone: 'info' },
+  online_payment_cancelled: { label: 'Paiement en ligne annulé', tone: 'warning' },
   'platform_settings.update': { label: 'Paramètre modifié', tone: 'info' },
   'site_content.update': { label: 'Site vitrine modifié', tone: 'info' },
   'telegram_config.update': { label: 'Bot Telegram configuré', tone: 'info' },

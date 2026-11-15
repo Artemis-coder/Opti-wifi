@@ -20,11 +20,13 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { Payment, PaymentStatus } from '@/types/platform';
+import { PaymentStatus } from '@/types/platform';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { DateField } from '@/components/ui/DateField';
 import { KpiTiles } from '@/components/platform/KpiTiles';
 import type { PaymentStats } from '@/lib/billing-stats';
+import { OnlinePaymentsSection } from '@/components/platform/OnlinePaymentsSection';
+import { PaymentChannelSwitch, type PaymentChannel } from '@/components/platform/PaymentChannelSwitch';
 
 const STATUS_CONFIG: Record<PaymentStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending: { label: 'En attente', color: 'warning' },
@@ -53,40 +55,46 @@ interface PaymentRecord {
 export default function PlatformPaymentsPage() {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [stats, setStats] = useState<PaymentStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  // Vue : paiements en ligne (SasPay) ou manuels ; par défaut, le mode actif pour les clients
+  const [channel, setChannel] = useState<PaymentChannel | null>(null);
+
+  // Chargement à chaque changement de filtre ; « loading » = la liste affichée ne correspond pas encore aux filtres
+  const filterKey = JSON.stringify([statusFilter, search, startDate, endDate]);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const loading = loadedKey !== filterKey;
 
   useEffect(() => {
-    loadPayments();
-  }, [statusFilter, search, startDate, endDate]);
-
-  async function loadPayments() {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        status: statusFilter,
-        search,
-        start_date: startDate,
-        end_date: endDate,
+    let cancelled = false;
+    const params = new URLSearchParams({ status: statusFilter, search, start_date: startDate, end_date: endDate });
+    fetch(`/api/platform/payments?${params}`)
+      .then(async (res) => ({ ok: res.ok, result: await res.json().catch(() => ({})) }))
+      .then(({ ok, result }) => {
+        if (cancelled) return;
+        if (ok) {
+          // Liste « paiement manuel » : sans les paiements SasPay (affichés dans l'onglet en ligne)
+          setPayments(
+            ((result.data || []) as PaymentRecord[]).filter((p) => !(p.payment_method || '').startsWith('SasPay'))
+          );
+          if (result.stats) setStats(result.stats);
+        } else {
+          toast.error(result.error || 'Impossible de charger les paiements.');
+        }
+      })
+      .catch((err) => {
+        console.error('Chargement des paiements :', err);
+        if (!cancelled) toast.error('Impossible de charger les paiements. Vérifiez votre connexion.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(filterKey);
       });
-      const res = await fetch(`/api/platform/payments?${params}`);
-      const result = await res.json();
-      if (res.ok) {
-        setPayments(result.data || []);
-        if (result.stats) setStats(result.stats);
-      } else {
-        toast.error(result.error || 'Impossible de charger les paiements.');
-      }
-    } catch (err) {
-      console.error('Chargement des paiements :', err);
-      toast.error('Impossible de charger les paiements. Vérifiez votre connexion.');
-    } finally {
-      setLoading(false);
-    }
-  }
+    return () => {
+      cancelled = true;
+    };
+  }, [statusFilter, search, startDate, endDate, filterKey]);
 
   const statusFilters = [
     { value: 'all', label: 'Tous', icon: Filter },
@@ -181,6 +189,12 @@ export default function PlatformPaymentsPage() {
         </Card>
       )}
 
+      <PaymentChannelSwitch view={channel} onChange={setChannel} />
+
+      {channel === 'online' && <OnlinePaymentsSection />}
+
+      {channel === 'manual' && (
+      <>
       {/* Filters */}
       <Card className="p-4">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -273,6 +287,8 @@ export default function PlatformPaymentsPage() {
             </table>
           </ResponsiveTable>
         </Card>
+      )}
+      </>
       )}
     </div>
   );

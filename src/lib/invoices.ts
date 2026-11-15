@@ -19,6 +19,9 @@ export async function issueLicenseInvoice(input: {
   subscriptionId: string;
   durationMonths: number;
   requestId?: string | null;
+  /** Paiement en ligne : moyen et référence connus sans demande de licence. */
+  paymentMethod?: string | null;
+  paymentReference?: string | null;
 }): Promise<IssuedInvoice | null> {
   const { rows } = await query(
     `WITH lic AS (
@@ -49,7 +52,8 @@ export async function issueLicenseInvoice(input: {
        INSERT INTO payments (organization_id, subscription_id, plan_id, amount, currency, payment_method,
                              transaction_reference, status, paid_at)
        SELECT lic.organization_id, lic.subscription_id, lic.plan_id, ROUND(lic.unit_price * $2::int), lic.currency,
-              (SELECT method_name FROM req), (SELECT payment_reference FROM req), 'successful', NOW()
+              COALESCE($4::text, (SELECT method_name FROM req)), COALESCE($5::text, (SELECT payment_reference FROM req)),
+              'successful', NOW()
          FROM lic WHERE lic.billable
        RETURNING id, amount, currency, payment_method, transaction_reference
      )
@@ -62,7 +66,13 @@ export async function issueLicenseInvoice(input: {
             $2::int, lic.start_date, lic.end_date, pay.payment_method, pay.transaction_reference, org.billed_to
        FROM lic, pay, org
      RETURNING id, invoice_number, amount, currency`,
-    [input.subscriptionId, input.durationMonths, input.requestId || null]
+    [
+      input.subscriptionId,
+      input.durationMonths,
+      input.requestId || null,
+      input.paymentMethod?.slice(0, 50) || null,
+      input.paymentReference?.slice(0, 100) || null,
+    ]
   );
   const r = rows[0];
   return r ? { id: r.id, invoice_number: r.invoice_number, amount: Number(r.amount), currency: r.currency } : null;
