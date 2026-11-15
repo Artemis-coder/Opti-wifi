@@ -40,7 +40,6 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/telegram/test',
   '/api/telegram/vercel',
   '/api/cron/health-check',
-  '/api/ai/validation',
   '/api/ai/notify',
 ];
 

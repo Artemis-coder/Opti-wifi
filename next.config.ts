@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
 
+  // Ne pas annoncer « X-Powered-By: Next.js » (information utile à un attaquant)
+  poweredByHeader: false,
+
   // Requis par le relais PostHog (/ingest/... avec barre oblique finale)
   skipTrailingSlashRedirect: true,
   async rewrites() {
@@ -40,6 +43,12 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+          },
+          // CSP minimale sans risque de casser les scripts (Next, PostHog) : interdit l'intégration
+          // de la page ailleurs, les <base> détournés, les plugins et l'envoi de formulaires hors site.
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
           },
           // Force HTTPS (HSTS) — actif en production via Vercel
           {

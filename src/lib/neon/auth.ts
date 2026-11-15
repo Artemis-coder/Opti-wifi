@@ -54,13 +54,50 @@ export function signToken(user: NeonUser): string {
   );
 }
 
-export function verifyToken(token: string): { sub: string; email: string; role: string; organization_id?: string | null } | null {
+export function verifyToken(token: string): { sub: string; email: string; role: string; organization_id?: string | null; iat?: number } | null {
   try {
-    return jwt.verify(token, JWT_SECRET_Typed) as any;
+    return jwt.verify(token, JWT_SECRET_Typed, { algorithms: ['HS256'] }) as any;
   } catch {
     return null;
   }
 }
+
+/** Clé d'app_metadata : date (ms) du dernier changement de mot de passe. */
+export const PASSWORD_CHANGED_AT_KEY = 'password_changed_at';
+
+/**
+ * Session émise avant le dernier changement de mot de passe : refusée. Un mot de passe changé
+ * (ou réinitialisé après un vol de compte) déconnecte donc toutes les autres sessions.
+ */
+export function isTokenRevoked(user: Pick<NeonUser, 'app_metadata'>, issuedAt: number | undefined): boolean {
+  const changedAt = Number(user.app_metadata?.[PASSWORD_CHANGED_AT_KEY]);
+  if (!changedAt || typeof issuedAt !== 'number') return false;
+  return issuedAt * 1000 < changedAt;
+}
+
+/** Enregistre le changement de mot de passe (à la seconde, comme le champ iat des jetons). */
+export async function markPasswordChanged(userId: string): Promise<void> {
+  await query(
+    `UPDATE users SET app_metadata = COALESCE(app_metadata, '{}'::jsonb) || jsonb_build_object($2::text, $3::bigint) WHERE id = $1`,
+    [userId, PASSWORD_CHANGED_AT_KEY, Math.floor(Date.now() / 1000) * 1000],
+  );
+}
+
+/** Jeton → utilisateur actif, ou null (signature, expiration, compte bloqué, session révoquée). */
+export async function getUserFromToken(token: string | null | undefined): Promise<NeonUser | null> {
+  if (!token) return null;
+  const payload = verifyToken(token);
+  if (!payload?.sub) return null;
+  const user = await getUserById(payload.sub);
+  if (!user || isTokenRevoked(user, payload.iat)) return null;
+  return user;
+}
+
+// --- Protection contre les essais de mots de passe en série ---
+const MAX_FAILED_LOGINS = 10;
+const LOCK_MINUTES = 15;
+// Hash factice : une adresse inconnue coûte le même temps qu'une vraie (pas d'énumération des comptes)
+const DUMMY_HASH = '$2b$10$hio5M2wOVt32nnLUNx6IN.hWt6mHTU/bw4wrq/rZr3hbSnTzV3Xq.';
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10);
@@ -176,11 +213,23 @@ export async function authenticate(email: string, password: string): Promise<Neo
     [email.toLowerCase()]
   );
 
+  if (typeof password !== 'string' || password.length > 256) return null;
+
   if (!result.rows || result.rows.length === 0) {
+    // Même travail qu'un compte existant (bcrypt + une écriture) : pas d'énumération par le temps
+    await comparePassword(password, DUMMY_HASH);
+    await query('SELECT 1');
     return null;
   }
 
   const row = result.rows[0];
+
+  // Compte verrouillé après trop d'échecs : même réponse qu'un mauvais mot de passe
+  const lockedUntil = Number(row.app_metadata?.login_locked_until);
+  if (lockedUntil && lockedUntil > Date.now()) {
+    await comparePassword(password, DUMMY_HASH);
+    return null;
+  }
 
   if (row.banned_until && new Date(row.banned_until) > new Date()) {
     return null;
@@ -192,10 +241,23 @@ export async function authenticate(email: string, password: string): Promise<Neo
 
   const valid = await comparePassword(password, row.password_hash);
   if (!valid) {
+    // Incrément atomique (essais lancés en parallèle comptés un par un) ; au seuil, verrouillage
+    await query(
+      `UPDATE users u SET app_metadata = COALESCE(u.app_metadata, '{}'::jsonb) || (
+         CASE WHEN COALESCE((u.app_metadata->>'failed_logins')::int, 0) + 1 >= $2
+              THEN jsonb_build_object('failed_logins', 0, 'login_locked_until', $3::bigint)
+              ELSE jsonb_build_object('failed_logins', COALESCE((u.app_metadata->>'failed_logins')::int, 0) + 1)
+         END)
+       WHERE u.id = $1`,
+      [row.id, MAX_FAILED_LOGINS, Date.now() + LOCK_MINUTES * 60_000],
+    );
     return null;
   }
 
-  await query('UPDATE users SET last_sign_in_at = NOW() WHERE id = $1', [row.id]);
+  await query(
+    `UPDATE users SET last_sign_in_at = NOW(), app_metadata = COALESCE(app_metadata, '{}'::jsonb) - 'failed_logins' - 'login_locked_until' WHERE id = $1`,
+    [row.id],
+  );
 
   return {
     id: row.id,
@@ -217,18 +279,8 @@ export async function authenticate(email: string, password: string): Promise<Neo
 export async function getSessionFromCookies(): Promise<NeonSession | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  const payload = verifyToken(token);
-  if (!payload) {
-    return null;
-  }
-
-  const user = await getUserById(payload.sub);
-  if (!user) {
+  const user = await getUserFromToken(token);
+  if (!token || !user) {
     return null;
   }
 
@@ -256,17 +308,7 @@ export function clearAuthCookie(response: NextResponse): void {
 }
 
 export async function getCurrentUserFromRequest(request: NextRequest): Promise<NeonUser | null> {
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) {
-    return null;
-  }
-
-  const payload = verifyToken(token);
-  if (!payload) {
-    return null;
-  }
-
-  return getUserById(payload.sub);
+  return getUserFromToken(request.cookies.get(AUTH_COOKIE_NAME)?.value);
 }
 
 export async function listAuthUsers(): Promise<Array<{
@@ -283,10 +325,7 @@ export async function listAuthUsers(): Promise<Array<{
 
 export async function setUserBan(userId: string, banned: boolean, duration: string = '1h'): Promise<void> {
   if (banned) {
-    await query(
-      `UPDATE users SET banned_until = NOW() + INTERVAL '${duration.replace(/'/g, '')}' WHERE id = $1`,
-      [userId]
-    );
+    await query(`UPDATE users SET banned_until = NOW() + $2::interval WHERE id = $1`, [userId, duration]);
   } else {
     await query(`UPDATE users SET banned_until = NULL WHERE id = $1`, [userId]);
   }

@@ -119,7 +119,7 @@ Le projet intègre un module de garde-fou (`src/lib/env-guard.ts`) activé au c�
 - **Si l'application tourne en Production** (`VERCEL_ENV === 'production'`) et qu'une base de dev est configurée, la connexion est également bloquée pour prévenir toute incohérence.
 
 ### Route de vérification `/api/debug-db` :
-En vous authentifiant et en appelant `/api/debug-db`, l'application retourne un diagnostic sécurisé :
+En vous authentifiant **en super admin** et en appelant `/api/debug-db`, l'application retourne un diagnostic sécurisé :
 ```json
 {
   "ok": true,

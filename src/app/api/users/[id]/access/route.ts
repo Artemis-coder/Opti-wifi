@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
-import { hashPassword } from '@/lib/neon/auth';
+import { hashPassword, markPasswordChanged } from '@/lib/neon/auth';
 import { getSessionContext, rejectIfReadOnly } from '@/lib/tenant';
 import { setMustChangePassword } from '@/lib/password-change';
 import { appUrl, createPasswordToken, generateTemporaryPassword } from '@/lib/password-tokens';
@@ -92,6 +92,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const temporaryPassword = generateTemporaryPassword();
     await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [await hashPassword(temporaryPassword), id]);
     await setMustChangePassword(id, true);
+    await markPasswordChanged(id);
     let emailSent = false;
     if (sendByEmail && isEmailConfigured()) {
       const sent = await sendInvitationEmail({ ...base, temporaryPassword });

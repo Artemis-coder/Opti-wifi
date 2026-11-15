@@ -1,30 +1,20 @@
 import { NextResponse } from 'next/server';
-import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
+import { requirePlatformAdmin } from '@/lib/neon/server';
 import { getOpenRouterClient } from '@/lib/openrouter';
 
 /**
  * Endpoint de test LLM (OpenRouter) — admin only, dev/preview uniquement.
  */
-export async function GET(request: Request) {
+export async function GET() {
   // Désactiver complètement en production
   if (process.env.VERCEL_ENV === 'production') {
     return NextResponse.json({ error: 'Endpoint non disponible.' }, { status: 404 });
   }
 
-  // Requiert authentification
-  const cookieHeader = request.headers.get('cookie');
-  const token = cookieHeader
-    ?.split(';')
-    .find(c => c.trim().startsWith(AUTH_COOKIE_NAME + '='))
-    ?.split('=')[1];
-
-  if (!token || !verifyToken(token)) {
-    return NextResponse.json({ ok: false, error: 'Non authentifié.' }, { status: 401 });
-  }
-
-  const payload = verifyToken(token);
-  if (payload?.role !== 'administrateur') {
-    return NextResponse.json({ ok: false, error: 'Accès réservé aux administrateurs.' }, { status: 403 });
+  // Réservé au super admin (consomme des crédits d'IA)
+  const admin = await requirePlatformAdmin();
+  if ('error' in admin) {
+    return NextResponse.json({ ok: false, error: admin.error }, { status: admin.status });
   }
 
   try {

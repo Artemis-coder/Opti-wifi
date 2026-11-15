@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
-import { hashPassword } from '@/lib/neon/auth';
+import { hashPassword, markPasswordChanged } from '@/lib/neon/auth';
 import { setMustChangePassword, validatePasswordStrength } from '@/lib/password-change';
+import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
 import { verifyPasswordToken } from '@/lib/password-tokens';
 import { sendPasswordChangedEmail } from '@/lib/email';
 
@@ -9,6 +10,8 @@ import { sendPasswordChangedEmail } from '@/lib/email';
 // Le jeton est dédié à cet usage (jamais un jeton de session) et devient invalide
 // dès que le mot de passe change.
 export async function POST(request: NextRequest) {
+  const wait = rateLimit(`set-password:ip:${clientIp(request)}`, 10, 10 * 60_000);
+  if (wait) return tooManyRequests(wait);
   try {
     const body = await request.json().catch(() => ({}));
     const { token, password } = body as { token?: string; password?: string };
@@ -31,6 +34,7 @@ export async function POST(request: NextRequest) {
     await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [passwordHash, link.userId]);
     // Mot de passe choisi par l'utilisateur lui-même : plus besoin de le changer à la connexion
     await setMustChangePassword(link.userId, false);
+    await markPasswordChanged(link.userId);
 
     sendPasswordChangedEmail(link.email).catch((err) => console.error('Password changed email error:', err));
 

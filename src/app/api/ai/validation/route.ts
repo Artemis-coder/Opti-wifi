@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
+import { requirePlatformAdmin } from '@/lib/neon/server';
 
 interface PendingValidation {
   id: string;
@@ -61,17 +61,16 @@ export function clearOldValidations(maxAgeMs = 24 * 60 * 60 * 1000) {
   }
 }
 
-/** Vérifie l'authentification et renvoie le payload JWT ou null. */
-function requireAuth(request: NextRequest) {
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) return null;
-  return verifyToken(token);
+/** Validations du bot de développement : super admin uniquement (avant : tout compte connecté). */
+async function requireAuth() {
+  const admin = await requirePlatformAdmin();
+  return 'error' in admin ? null : admin;
 }
 
 export async function GET(request: NextRequest) {
-  const payload = requireAuth(request);
+  const payload = await requireAuth();
   if (!payload) {
-    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+    return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -90,9 +89,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const payload = requireAuth(request);
+  const payload = await requireAuth();
   if (!payload) {
-    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+    return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
   }
 
   try {

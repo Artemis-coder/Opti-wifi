@@ -99,6 +99,19 @@ export interface QuerySpec {
   rpcParams: Record<string, any>;
   single: boolean;
   maybeSingle: boolean;
+  /**
+   * Organisation à laquelle chaque table jointe (alias:table(...)) est restreinte. Posé par le
+   * serveur (/api/db) pour un client : sans ce filtre, une ligne de son organisation pointant
+   * vers l'identifiant d'une autre organisation renverrait les données de celle-ci.
+   */
+  joinOrgScope?: string | null;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Entier positif ou nul (limit, range) : jamais concaténé tel quel dans le SQL. */
+function safeInt(value: unknown): number | null {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null;
 }
 
 function parseNestedSelects(selectStr: string): { mainColumns: string; nested: NestedSelect[] } {
@@ -140,6 +153,7 @@ export class TableBuilder {
   private _rpcParams: Record<string, any> = {};
   private _single = false;
   private _maybeSingle = false;
+  private _joinOrgScope: string | null = null;
   private _isBrowser: boolean;
 
   constructor(tableName: string, isBrowser = false) {
@@ -164,6 +178,7 @@ export class TableBuilder {
     builder._rpcParams = spec.rpcParams;
     builder._single = spec.single;
     builder._maybeSingle = spec.maybeSingle;
+    builder._joinOrgScope = spec.joinOrgScope ?? null;
     return builder;
   }
 
@@ -420,6 +435,18 @@ export class TableBuilder {
     return result;
   }
 
+  /** LIMIT / OFFSET à partir d'entiers validés (une valeur non entière est ignorée). */
+  private limitClause(): string {
+    if (this._range) {
+      const start = safeInt(this._range.start);
+      const end = safeInt(this._range.end);
+      if (start !== null && end !== null && end >= start) return ` LIMIT ${end - start + 1} OFFSET ${start}`;
+      return '';
+    }
+    const limit = safeInt(this._limit);
+    return limit ? ` LIMIT ${limit}` : '';
+  }
+
   private buildWhereClause(params: any[], startIdx: number): { clause: string; params: any[]; nextIdx: number } {
     const orFilters = this._filters.filter(f => f.logic === 'or');
     const andFilters = this._filters.filter(f => f.logic === 'and');
@@ -509,12 +536,7 @@ export class TableBuilder {
       sql += ` ORDER BY "${ord.column}" ${ord.ascending ? 'ASC' : 'DESC'}`;
     }
 
-    if (this._limit) sql += ` LIMIT ${this._limit}`;
-    if (this._range) {
-      const offset = this._range.start;
-      const limit = this._range.end - this._range.start + 1;
-      sql += ` LIMIT ${limit} OFFSET ${offset}`;
-    }
+    sql += this.limitClause();
 
     const result = await query(sql, whereBuild.params);
     const rows = result.rows || [];
@@ -551,6 +573,21 @@ export class TableBuilder {
         onClause = `"${this.tableName}"."id" = "${n.alias}"."${fk.column}"`;
       } else {
         onClause = `"${this.tableName}"."${n.alias}_id" = "${n.alias}"."id"`;
+      }
+      // Jointure qui suit une référence portée par la ligne lue (pos_id, space_id…) : la ligne
+      // visée doit être de la même organisation. Les listes enfants (articles d'une collecte…)
+      // pointent vers la ligne lue, déjà filtrée : elles ne sont pas concernées.
+      if (this._joinOrgScope !== null && !(fk && !fk.onParent)) {
+        if (!UUID_RE.test(this._joinOrgScope)) throw new Error('Organisation invalide');
+        const org = `'${this._joinOrgScope}'::uuid`;
+        const cols = n.table === 'organizations' ? [] : await getTableColumns(n.table);
+        if (n.table === 'organizations') {
+          onClause += ` AND "${n.alias}"."id" = ${org}`;
+        } else if (cols.includes('organization_id') && cols.includes('organisation_id')) {
+          onClause += ` AND COALESCE("${n.alias}"."organization_id", "${n.alias}"."organisation_id") = ${org}`;
+        } else if (cols.includes('organization_id')) {
+          onClause += ` AND "${n.alias}"."organization_id" = ${org}`;
+        }
       }
       joinClauses.push(`${joinType} JOIN "${n.table}" AS "${n.alias}" ON ${onClause}`);
       nestedInfos.push({
@@ -610,11 +647,8 @@ export class TableBuilder {
       if (n.columns.length > 0) {
         cols = n.columns;
       } else {
-        const colRes = await query(
-          `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 ORDER BY ordinal_position`,
-          [n.table]
-        );
-        cols = (colRes.rows || []).map(r => r.column_name);
+        // Colonnes mises en cache (avant : une requête information_schema par jointure et par appel)
+        cols = await getTableColumns(n.table);
       }
       const aliasMap: Record<string, string> = {};
       nestedAliasMap[n.alias] = aliasMap;
@@ -643,12 +677,7 @@ export class TableBuilder {
     for (const ord of this._order) {
       sql += ` ORDER BY "${this.tableName}"."${ord.column}" ${ord.ascending ? 'ASC' : 'DESC'}`;
     }
-    if (this._limit) sql += ` LIMIT ${this._limit}`;
-    if (this._range) {
-      const offset = this._range.start;
-      const limit = this._range.end - this._range.start + 1;
-      sql += ` LIMIT ${limit} OFFSET ${offset}`;
-    }
+    sql += this.limitClause();
 
     let count: number | undefined;
     if (hasCount) {
