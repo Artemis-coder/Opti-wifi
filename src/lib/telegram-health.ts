@@ -3,7 +3,7 @@
 // (base, API, notifications, serveur, Vercel, tâches planifiées, sécurité) et suivi des
 // incidents de sécurité (détails, résolu, fausse alerte).
 // ============================================================
-import { runSystemHealth, type SystemHealth, type SystemStatus } from '@/lib/system-health';
+import { checkSecurity, runSystemHealth, type SystemHealth, type SystemStatus } from '@/lib/system-health';
 import { escapeTelegramHtml, sendTelegramMessage } from '@/lib/telegram';
 import {
   formatIncidentTelegram,
@@ -27,6 +27,26 @@ export const HEALTH_MENU = {
     keyboard: [
       [{ text: BTN_FULL }, { text: BTN_SECURITY }],
       [{ text: BTN_INCIDENTS }],
+      [{ text: '🔙 Menu Principal' }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  },
+};
+
+// Menu « 🛡️ Sécurité » : récapitulatif et outils de suivi des intrusions
+export const SECURITY_BUTTON = '🛡️ Sécurité';
+const SEC_RECAP = '📊 Récap sécurité';
+const SEC_WEEK = '📅 Bilan 7 jours';
+const SEC_HANDLED = '🗂️ Incidents traités';
+const SEC_SETTINGS = '🔐 Réglages sensibles';
+
+export const SECURITY_MENU = {
+  reply_markup: {
+    keyboard: [
+      [{ text: SEC_RECAP }, { text: BTN_INCIDENTS }],
+      [{ text: SEC_WEEK }, { text: SEC_HANDLED }],
+      [{ text: SEC_SETTINGS }, { text: HEALTH_BUTTON }],
       [{ text: '🔙 Menu Principal' }],
     ],
     resize_keyboard: true,
@@ -64,9 +84,10 @@ export function formatHealth(health: SystemHealth): string {
   return lines.join('\n');
 }
 
-async function securityView(): Promise<string> {
-  const s = await securitySummary(24);
-  const lines = ['🛡️ <b>Sécurité — dernières 24 h</b>', ''];
+async function securityView(hours = 24): Promise<string> {
+  const s = await securitySummary(hours);
+  const period = hours === 24 ? 'dernières 24 h' : `${Math.round(hours / 24)} derniers jours`;
+  const lines = [`🛡️ <b>Sécurité — ${period}</b>`, ''];
   if (s.events === 0) {
     lines.push('✅ Aucune tentative d’intrusion détectée.');
   } else {
@@ -93,13 +114,58 @@ export async function handleHealthButton(text: string, chatId: string): Promise<
     await send(chatId, await securityView());
     return true;
   }
+  return false;
+}
+
+/** Incidents déjà traités (résolus ou fausses alertes), avec l'analyse de l'agent. */
+async function handledView(): Promise<string> {
+  const done = await listIncidents({ status: ['resolved', 'ignored'], limit: 50 });
+  const recent = done.sort((a, b) => +new Date(b.last_seen) - +new Date(a.last_seen)).slice(0, 8);
+  if (recent.length === 0) return '🗂️ <b>Incidents traités</b>\n\nAucun incident traité pour l’instant.';
+  const lines = [`🗂️ <b>${recent.length} derniers incidents traités</b>`, ''];
+  for (const i of recent) {
+    const when = new Date(i.last_seen).toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan', dateStyle: 'short', timeStyle: 'short' });
+    lines.push(`${i.status === 'resolved' ? '✅' : '🙈'} <b>${e(i.title)}</b> · ${when} · ${e(i.ip || 'source inconnue')}${i.country ? ` (${e(i.country)})` : ''}`);
+    lines.push(`   ${INCIDENT_STATUS_LABEL[i.status]}${i.handled_by ? ` par ${e(i.handled_by)}` : ''}${i.resolution ? ` — ${e(i.resolution.slice(0, 160))}` : ''}`);
+  }
+  return lines.join('\n');
+}
+
+/** Réglages sensibles et état de l'agent de sécurité (même contrôle que l'État du système). */
+async function settingsView(): Promise<string> {
+  const c = await checkSecurity();
+  const lines = ['🔐 <b>Réglages de sécurité</b>', ''];
+  for (const k of c.checks) lines.push(`${DOT[k.status]} <b>${e(k.label)}</b> : ${e(k.message)}`);
+  lines.push('', `<i>Détail sur ${SITE}/platform/system</i>`);
+  return lines.join('\n');
+}
+
+/** Menu « 🛡️ Sécurité » et ses boutons. Renvoie true si le texte a été traité. */
+export async function handleSecurityButton(text: string, chatId: string): Promise<boolean> {
+  const sendSec = (msg: string, markup: Record<string, unknown> = SECURITY_MENU.reply_markup) => send(chatId, msg, markup);
+  if (text === SECURITY_BUTTON || text === SEC_RECAP || text === '/securite' || text === '/sécurité') {
+    await sendSec(await securityView(24));
+    return true;
+  }
+  if (text === SEC_WEEK) {
+    await sendSec(await securityView(24 * 7));
+    return true;
+  }
+  if (text === SEC_HANDLED) {
+    await sendSec(await handledView());
+    return true;
+  }
+  if (text === SEC_SETTINGS) {
+    await sendSec(await settingsView());
+    return true;
+  }
   if (text === BTN_INCIDENTS) {
     const incidents = await listIncidents({ limit: 5 });
     if (incidents.length === 0) {
-      await send(chatId, '📋 <b>Incidents de sécurité</b>\n\n✅ Aucun incident ouvert.');
+      await sendSec('📋 <b>Incidents de sécurité</b>\n\n✅ Aucun incident ouvert.');
       return true;
     }
-    await send(chatId, `📋 <b>${incidents.length} incident(s) ouvert(s)</b> (les plus graves d’abord)`);
+    await sendSec(`📋 <b>${incidents.length} incident(s) ouvert(s)</b> (les plus graves d’abord)`);
     for (const i of incidents) await send(chatId, formatIncidentTelegram(i), incidentKeyboard(i));
     return true;
   }

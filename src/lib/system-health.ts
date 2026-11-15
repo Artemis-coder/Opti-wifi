@@ -426,7 +426,7 @@ async function checkVercel(): Promise<SystemComponent> {
 }
 
 /** Sécurité : tentatives d'intrusion des dernières 24 h, incidents ouverts, réglages sensibles. */
-async function checkSecurity(): Promise<SystemComponent> {
+export async function checkSecurity(): Promise<SystemComponent> {
   const [summary, open] = await Promise.all([securitySummary(24), listIncidents({ limit: 5 })]);
   const checks: SystemCheck[] = [];
 

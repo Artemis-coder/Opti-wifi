@@ -60,6 +60,7 @@ export const ADMIN_MENU = {
       [{ text: '📊 Vue d’ensemble' }, { text: '🧾 Demandes en attente' }],
       [{ text: '🏢 Clients' }, { text: '⏳ Licences à renouveler' }],
       [{ text: '💰 Encaissements du mois' }, { text: '🖥️ Statut technique' }],
+      [{ text: '🛡️ Sécurité' }, { text: '🩺 Santé de l\'application' }],
       [{ text: '❓ Aide' }],
     ],
     resize_keyboard: true,
@@ -700,4 +701,6 @@ export const HELP_TEXT = `🤖 <b>Assistant OptiSpace</b>
 
 Les actions (approuver, refuser, activer, suspendre…) demandent toujours votre confirmation par un bouton.
 
-Commandes : /menu · /effacer (oublier la conversation) · /aide`;
+Boutons « 🛡️ Sécurité » (récap des intrusions, incidents, réglages) et « 🩺 Santé de l'application » (bilan de tous les composants).
+
+Commandes : /menu · /securite · /sante · /effacer (oublier la conversation) · /aide`;
