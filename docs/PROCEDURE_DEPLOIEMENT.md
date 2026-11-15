@@ -97,6 +97,14 @@ git push origin develop           # jamais --force
    - `https://www.optiwifi.site/api/cron/health-check` ;
    - connexion super admin → `/platform/dashboard` ; connexion client → `/dashboard`, avec uniquement ses propres données ;
    - navigation privée ou `Cmd+Shift+R` pour éviter l'ancienne version en cache du navigateur.
+7. **Créer la release GitHub** (obligatoire après **chaque** mise en production validée) : elle fige l'état de la production avant de continuer.
+   - Version : `vX.Y.Z` (Y = nouveautés, Z = corrections seules), à la suite de `gh release list`.
+   - Notes dans `RELEASE_NOTES_vX.Y.Z.md` (même format que les précédentes : changements, base de données, variables, points connus, vérifications) et lien « Version actuelle » du `README.md` mis à jour, commités sur `develop`.
+   ```bash
+   gh release create vX.Y.Z --target "$(git rev-parse origin/main)" \
+     --title "vX.Y.Z — …" --notes-file RELEASE_NOTES_vX.Y.Z.md --latest
+   ```
+   Plusieurs PR fusionnées le même jour peuvent être regroupées dans une seule release, créée sur le dernier commit de `main`.
 
 ## 5. En cas de problème en production : revenir en arrière sans rien perdre
 
