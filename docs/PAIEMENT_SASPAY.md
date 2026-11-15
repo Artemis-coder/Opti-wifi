@@ -387,7 +387,15 @@ Comme la skill le demande, ce qui n'a pas encore pu être vérifié est indiqué
 | Parcours complet contre un faux SasPay (paiement, webhook signé, idempotence, échec) | ✅ vérifié en local |
 | Signature webhook (valide, corps modifié, trop ancien, absent) | ✅ vérifié |
 | Secret webhook chargé sur dev.optiwifi.site | ✅ vérifié (401 sans signature) |
-| Clé `sk_test_` acceptée par SasPay | ⏳ non vérifié — clé Preview actuelle = `sk_live_` (refusée par le garde-fou) |
-| Webhook réel reçu de SasPay (signature OK) | ⏳ non vérifié — pas de bouton `webhook.test` dans le tableau de bord ; sera vérifié au 1er paiement de test |
-| Paiement de test réel en Sandbox | ⏳ non vérifié |
+| Clé `sk_test_` acceptée par SasPay | ✅ vérifié sur dev (64 réseaux) |
+| Webhook réel reçu de SasPay (signature OK) | ✅ vérifié (transaction.created / failed / success) |
+| Paiement réel sur dev (MTN, 200 F) | ✅ 15/11/2026 : licence activée en 1 s, une seule fois, facture OPT-2026-00007 |
 | Premier paiement réel (production, petit montant) | ⏳ non vérifié |
+
+### Points appris lors des tests réels (15/11/2026)
+
+- **Montant minimum SasPay : 200 XOF** par paiement (en dessous : refus, message clair au client).
+- Une clé « Sandbox » a envoyé une **vraie demande** sur un vrai numéro MTN : à confirmer avec le support SasPay.
+- Après un échec, SasPay passe la session en `FAILED` (non annulable) : géré, un nouveau paiement démarre.
+- Transactions (back-office) : switch **Paiement en ligne / Paiement manuel** sous les indicateurs, avec le
+  mode actif et la liste propre à chaque type.

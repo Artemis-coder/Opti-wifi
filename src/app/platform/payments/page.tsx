@@ -26,6 +26,7 @@ import { DateField } from '@/components/ui/DateField';
 import { KpiTiles } from '@/components/platform/KpiTiles';
 import type { PaymentStats } from '@/lib/billing-stats';
 import { OnlinePaymentsSection } from '@/components/platform/OnlinePaymentsSection';
+import { PaymentChannelSwitch, type PaymentChannel } from '@/components/platform/PaymentChannelSwitch';
 
 const STATUS_CONFIG: Record<PaymentStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending: { label: 'En attente', color: 'warning' },
@@ -59,6 +60,8 @@ export default function PlatformPaymentsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  // Vue : paiements en ligne (SasPay) ou manuels ; par défaut, le mode actif pour les clients
+  const [channel, setChannel] = useState<PaymentChannel | null>(null);
 
   useEffect(() => {
     loadPayments();
@@ -76,7 +79,10 @@ export default function PlatformPaymentsPage() {
       const res = await fetch(`/api/platform/payments?${params}`);
       const result = await res.json();
       if (res.ok) {
-        setPayments(result.data || []);
+        // Liste « paiement manuel » : sans les paiements SasPay (affichés dans l'onglet en ligne)
+        setPayments(
+          ((result.data || []) as PaymentRecord[]).filter((p) => !(p.payment_method || '').startsWith('SasPay'))
+        );
         if (result.stats) setStats(result.stats);
       } else {
         toast.error(result.error || 'Impossible de charger les paiements.');
@@ -182,8 +188,12 @@ export default function PlatformPaymentsPage() {
         </Card>
       )}
 
-      <OnlinePaymentsSection />
+      <PaymentChannelSwitch view={channel} onChange={setChannel} />
 
+      {channel === 'online' && <OnlinePaymentsSection />}
+
+      {channel === 'manual' && (
+      <>
       {/* Filters */}
       <Card className="p-4">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -276,6 +286,8 @@ export default function PlatformPaymentsPage() {
             </table>
           </ResponsiveTable>
         </Card>
+      )}
+      </>
       )}
     </div>
   );
