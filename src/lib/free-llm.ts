@@ -277,27 +277,28 @@ class FreeLLMClient {
   }
   
   async transcribeAudio(audioBuffer: Buffer, language?: string, model?: string): Promise<string> {
-    // Try OpenRouter first for transcription
-    if (OPENROUTER_API_KEY) {
+    // Groq (Whisper, gratuit) d'abord, OpenRouter en relais
+    if (GROQ_API_KEY) {
       try {
-        return await this.transcribeAudioOpenRouter(audioBuffer, language, model || 'openai/whisper-large-v3');
+        return await this.transcribeAudioGroq(audioBuffer, language);
       } catch (e) {
-        console.warn('OpenRouter transcription failed, trying Groq:', e);
+        if (!OPENROUTER_API_KEY) throw e;
+        console.warn('Groq transcription failed, trying OpenRouter:', e);
       }
     }
-    
-    // Groq has Whisper transcription
-    if (GROQ_API_KEY) {
-      return await this.transcribeAudioGroq(audioBuffer, language);
+
+    if (OPENROUTER_API_KEY) {
+      return await this.transcribeAudioOpenRouter(audioBuffer, language, model || 'openai/whisper-large-v3');
     }
-    
+
     throw new Error('No transcription provider available');
   }
   
   private async transcribeAudioOpenRouter(audioBuffer: Buffer, language?: string, model?: string): Promise<string> {
     const formData = new FormData();
-    const audioBlob = new Blob([audioBuffer as unknown as BlobPart], { type: 'audio/ogg; codecs=opus' });
-    formData.append('file', audioBlob, 'voice.oga');
+    // Les notes vocales Telegram sont en OGG/Opus ; l'extension .oga est refusée par Groq
+    const audioBlob = new Blob([audioBuffer as unknown as BlobPart], { type: 'audio/ogg' });
+    formData.append('file', audioBlob, 'voice.ogg');
     formData.append('model', model || 'openai/whisper-large-v3');
     if (language) formData.append('language', language);
     formData.append('response_format', 'json');
@@ -321,8 +322,9 @@ class FreeLLMClient {
   
   private async transcribeAudioGroq(audioBuffer: Buffer, language?: string): Promise<string> {
     const formData = new FormData();
-    const audioBlob = new Blob([audioBuffer as unknown as BlobPart], { type: 'audio/ogg; codecs=opus' });
-    formData.append('file', audioBlob, 'voice.oga');
+    // Les notes vocales Telegram sont en OGG/Opus ; l'extension .oga est refusée par Groq
+    const audioBlob = new Blob([audioBuffer as unknown as BlobPart], { type: 'audio/ogg' });
+    formData.append('file', audioBlob, 'voice.ogg');
     formData.append('model', 'whisper-large-v3');
     if (language) formData.append('language', language);
     formData.append('response_format', 'json');
