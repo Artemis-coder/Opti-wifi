@@ -87,7 +87,8 @@ function RequestFlow({
   const [reference, setReference] = useState('');
   const [sending, setSending] = useState(false);
   // Paiement en ligne SasPay (Mobile Money / carte, licence activée dès la confirmation)
-  const [onlineEnabled, setOnlineEnabled] = useState(false);
+  // null : pas encore connu (évite d'afficher un instant le choix manuel)
+  const [onlineEnabled, setOnlineEnabled] = useState<boolean | null>(null);
   const [redirecting, setRedirecting] = useState(false);
 
   const isFree = Number(plan.price) <= 0;
@@ -114,7 +115,7 @@ function RequestFlow({
     fetch('/api/payments/saspay/checkout')
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => !cancelled && setOnlineEnabled(json?.data?.enabled === true))
-      .catch(() => {});
+      .catch(() => !cancelled && setOnlineEnabled(false));
     return () => {
       cancelled = true;
     };
@@ -149,7 +150,7 @@ function RequestFlow({
     (m) => country === ALL_COUNTRIES || !m.countries?.length || m.countries.includes(country)
   );
   // Aucun moyen configuré : directement l'écran d'envoi de la demande
-  const screen = step === 'methods' && methods !== null && methods.length === 0 && !onlineEnabled ? 'pay' : step;
+  const screen = step === 'methods' && methods !== null && methods.length === 0 && onlineEnabled === false ? 'pay' : step;
   const countryOptions = [
     { value: ALL_COUNTRIES, label: '🌍  Tous les pays' },
     ...COUNTRIES.filter((c, i, all) => all.findIndex((x) => x.code === c.code) === i)
@@ -250,8 +251,14 @@ function RequestFlow({
               {!sending && <Send className="w-4 h-4" />} Envoyer la demande
             </Button>
           ) : (
-            <Button type="button" onClick={() => setStep('methods')} className="gap-2">
-              <RotateCcw className="w-4 h-4" /> {renewal ? 'Me réabonner' : 'Continuer vers le paiement'}
+            <Button
+              type="button"
+              onClick={onlineEnabled === true ? payOnline : () => setStep('methods')}
+              isLoading={redirecting}
+              className="gap-2"
+            >
+              {!redirecting && (onlineEnabled === true ? <ArrowRight className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />)}{' '}
+              {onlineEnabled === true ? 'Passer au paiement' : renewal ? 'Me réabonner' : 'Continuer vers le paiement'}
             </Button>
           )}
         </div>
@@ -260,20 +267,33 @@ function RequestFlow({
   }
 
   // ── Écran 2 : le choix du moyen de paiement ─────────────────────────
+  if (screen === 'methods' && onlineEnabled === null) {
+    return (
+      <div className="py-10 flex justify-center text-slate-400">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
+  }
+  if (screen === 'methods' && onlineEnabled) {
+    // Paiement en ligne SasPay : le client choisit son opérateur ou sa carte sur la page SasPay
+    return (
+      <div className="space-y-5 text-left">
+        {!renewal && <BackButton label={`Forfait ${plan.name}`} onClick={() => setStep('package')} />}
+        <PlanSummary plan={plan} months={months} />
+        <OnlinePayButton redirecting={redirecting} onClick={payOnline} />
+        <div className="flex justify-end">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Annuler
+          </Button>
+        </div>
+      </div>
+    );
+  }
   if (screen === 'methods') {
     return (
       <div className="space-y-5 text-left">
         {!renewal && <BackButton label={`Forfait ${plan.name}`} onClick={() => setStep('package')} />}
         <PlanSummary plan={plan} months={months} />
-        {onlineEnabled && (
-          <OnlinePayButton price={plan.price} redirecting={redirecting} onClick={payOnline} />
-        )}
-        {onlineEnabled && methods !== null && methods.length > 0 && (
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /> ou payez manuellement
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-          </div>
-        )}
         {methods !== null && methods.length === 0 ? null : (
           <>
             <div>
@@ -432,7 +452,7 @@ function RequestFlow({
 }
 
 /** Paiement en ligne SasPay : redirige vers la page de paiement hébergée. */
-function OnlinePayButton({ price, redirecting, onClick }: { price: number; redirecting: boolean; onClick: () => void }) {
+function OnlinePayButton({ redirecting, onClick }: { redirecting: boolean; onClick: () => void }) {
   return (
     <div className="space-y-2">
       <button
@@ -449,9 +469,7 @@ function OnlinePayButton({ price, redirecting, onClick }: { price: number; redir
           )}
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-lg font-extrabold leading-tight drop-shadow-sm">
-            Payer en ligne {formatCurrencyFCFA(price)}
-          </span>
+          <span className="block text-lg font-extrabold leading-tight drop-shadow-sm">Passer au paiement</span>
           <span className="block text-xs text-white/90">Mobile Money ou carte bancaire · activation immédiate</span>
         </span>
         <ArrowRight className="w-5 h-5 shrink-0 transition group-hover:translate-x-0.5" />
