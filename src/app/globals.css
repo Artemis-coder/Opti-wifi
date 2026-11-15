@@ -459,7 +459,8 @@
 }
 
 /* Protection anti-copie de l'espace client (components/security/ConfidentialityGuard.tsx) :
-   pas de sélection de texte hors des champs, impression remplacée par une page noire « Contenu confidentiel ». */
+   pas de sélection de texte hors des champs, impression remplacée par une page noire « Contenu confidentiel »
+   (sauf documents autorisés : factures et rapports, via lib/utils/print.ts). */
 html.confidential body {
   -webkit-user-select: none;
   user-select: none;
@@ -476,17 +477,21 @@ html.confidential :is(input, textarea, select, [contenteditable='true']) {
 html[data-confidential-mask] [data-confidential-overlay] {
   display: flex;
 }
+/* Sauf impression autorisée (bouton « Télécharger en PDF » : lib/utils/print.ts → data-print-allowed). */
 @media print {
-  html.confidential,
-  html.confidential body {
+  html.confidential:not([data-print-allowed]),
+  html.confidential:not([data-print-allowed]) body {
     background: #000 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  html.confidential body * {
+  html.confidential:not([data-print-allowed]) body * {
     visibility: hidden !important;
   }
-  html.confidential body::before {
+  html[data-print-allowed] [data-confidential-overlay] {
+    display: none !important;
+  }
+  html.confidential:not([data-print-allowed]) body::before {
     content: 'Contenu confidentiel — OptiSpace. La reproduction de l’interface et des données est interdite.';
     visibility: visible;
     position: fixed;

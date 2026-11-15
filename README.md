@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.17.1</strong> — <a href="./RELEASE_NOTES_v1.17.1.md">notes de version</a>
+  <strong>Version actuelle : v1.18.0</strong> — <a href="./RELEASE_NOTES_v1.18.0.md">notes de version</a>
 </p>
 
 ---
@@ -331,6 +331,7 @@ Schéma et migrations : `supabase/neon_schema.sql` puis `supabase/migrations/*.s
 
 | Version | Contenu |
 |---|---|
+| [**v1.18.0**](./RELEASE_NOTES_v1.18.0.md) | Paiement en ligne des licences (SasPay), switch en ligne / manuel, KPI alignés |
 | [**v1.17.1**](./RELEASE_NOTES_v1.17.1.md) | README restructuré |
 | [**v1.17.0**](./RELEASE_NOTES_v1.17.0.md) | Routines Claude d'audit des dépendances, de revue de sécurité et de diagnostic technique |
 | [**v1.16.0**](./RELEASE_NOTES_v1.16.0.md) | Rapports business automatiques : rapport du matin, anomalies d'encaissement, clients à risque, bilan de la semaine |
