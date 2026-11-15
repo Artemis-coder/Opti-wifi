@@ -223,7 +223,8 @@ async function handleClaudeMessage(message: any, chatId: string, session: any) {
     return;
   }
 
-  await runAssistant(chatId, MENU_PROMPTS[text] || text, { fallbackView: MENU_VIEWS[text] });
+  // Question posée en note vocale : réponse écrite + note vocale (si ElevenLabs est configuré)
+  await runAssistant(chatId, MENU_PROMPTS[text] || text, { fallbackView: MENU_VIEWS[text], voice: Boolean(message.voice) });
 }
 
 async function handleTextMessage(text: string, chatId: string, userName: string, session: any) {
