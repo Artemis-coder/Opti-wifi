@@ -1,6 +1,6 @@
 import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
 import { reportSecurityEvent } from '@/lib/security-events';
-import { handleHealthButton, handleSecurityCallback, HEALTH_BUTTON, HEALTH_MENU } from '@/lib/telegram-health';
+import { handleHealthButton, handleSecurityButton, handleSecurityCallback, HEALTH_BUTTON, HEALTH_MENU } from '@/lib/telegram-health';
 /**
  * Advanced AI Telegram Webhook with OpenRouter LLM + Function Calling
  * Supports: Free models (DeepSeek, Llama, Mistral, etc.), Voice transcription, Menus, Memory
@@ -215,6 +215,13 @@ async function handleClaudeMessage(message: any, chatId: string, session: any) {
     await sendBotMessage(chatId, '🧹 Conversation effacée : je repars de zéro.');
     return;
   }
+  // Menus Sécurité et Santé : réponses directes, sans passer par l'IA
+  if (await handleSecurityButton(text, chatId)) return;
+  if (await handleHealthButton(text, chatId)) return;
+  if (text === '🔙 Menu Principal') {
+    await sendBotMessage(chatId, '🏠 <b>Menu principal</b>');
+    return;
+  }
 
   await runAssistant(chatId, MENU_PROMPTS[text] || text, { fallbackView: MENU_VIEWS[text] });
 }
@@ -360,7 +367,7 @@ async function handleToolCalls(toolCalls: any[], chatId: string, messages: any[]
 
 async function handleMenuButton(text: string, chatId: string, userName: string, session: any): Promise<boolean> {
   // Santé de l'application (bilan complet, sécurité, incidents)
-  if (await handleHealthButton(text, chatId)) {
+  if (await handleSecurityButton(text, chatId) || await handleHealthButton(text, chatId)) {
     if (text === HEALTH_BUTTON) await updateSessionContext(chatId, 'health');
     return true;
   }
