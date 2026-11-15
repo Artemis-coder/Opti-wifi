@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
 import { notifyOrganizationAdmins } from '@/lib/notifications';
+import { reportSecurityEvent } from '@/lib/security-events';
 import {
   EXPIRY_REMINDER_DAYS,
   expiringMessage,
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return NextResponse.json({ error: 'Endpoint non configuré.' }, { status: 503 });
   if (request.headers.get('authorization') !== `Bearer ${secret}`) {
+    reportSecurityEvent({ type: 'webhook_bad_secret', request, detail: 'Cron appelé sans le bon secret' });
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 

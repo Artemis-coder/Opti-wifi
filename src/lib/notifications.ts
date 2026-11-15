@@ -37,6 +37,7 @@ export type NotificationType =
   | 'account.deletion_requested'
   | 'account.deletion_rejected'
   | 'system.recovered'
+  | 'security.alert'
   // Activité des espaces (allocations, collectes, échanges, corrections…)
   | 'pos.tickets_received'
   | 'pos.collection_recorded'
@@ -182,10 +183,11 @@ const TELEGRAM_EMOJI: Partial<Record<NotificationType, string>> = {
   'system.alert': '🚨',
   'account.deletion_requested': '🗑️',
   'system.recovered': '✅',
+  'security.alert': '🛡️',
 };
 
 /** Telegram : en production, ou ailleurs si TELEGRAM_NOTIFY_ENABLED=true. */
-function telegramNotificationsEnabled(): boolean {
+export function telegramNotificationsEnabled(): boolean {
   return process.env.VERCEL_ENV === 'production' || process.env.TELEGRAM_NOTIFY_ENABLED === 'true';
 }
 

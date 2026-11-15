@@ -8,6 +8,7 @@ import { getAssignedPosIds, getVisibleCollectionIds, getVisiblePosIds, NO_MATCH_
 import { query } from '@/lib/neon/db';
 import { findPosAccountsByPhone } from '@/lib/pos-account-phone';
 import { recordSystemError } from '@/lib/system-errors';
+import { reportSecurityEvent } from '@/lib/security-events';
 
 // Passerelle générique utilisée par le client navigateur (lib/supabase/client).
 // Règles imposées côté serveur :
@@ -248,6 +249,19 @@ async function assertOwnedReferences(spec: QuerySpec, ctx: SessionContext): Prom
   }
 }
 
+/**
+ * Refus qui trahissent une manipulation de l'API : l'interface ne produit jamais ces requêtes
+ * (table, jointure, colonne, référence…). Les refus « normaux » (lecture seule, organisation
+ * suspendue, compte point de vente) ne sont pas signalés.
+ */
+function securitySignal(message: string): 'db_tampering' | 'db_forbidden' | null {
+  if (/non autorisée$|invalides?$|^Référence invalide|^Filtre|^Opérateur|^Sélection/.test(message) && !/^Action non autorisée/.test(message)) {
+    return 'db_tampering';
+  }
+  if (/^Action non autorisée|^Action réservée|^Accès non autorisé|ne vous est pas attribué|^Collecte introuvable/.test(message)) return 'db_forbidden';
+  return null;
+}
+
 /** Message renvoyé au navigateur : jamais le texte brut de la base (tables, colonnes, contraintes). */
 function clientError(error: { message: string; code?: string }) {
   if (/duplicate key|déjà/i.test(error.message)) return makeError('Cet élément existe déjà.', '23505');
@@ -435,6 +449,8 @@ export async function POST(request: NextRequest) {
     await assertOwnedReferences(spec, ctx);
   } catch (err) {
     const message = err instanceof ForbiddenError ? err.message : 'Requête invalide';
+    const signal = securitySignal(message);
+    if (signal) reportSecurityEvent({ type: signal, request, userId: ctx.userId, detail: message });
     return NextResponse.json({ data: null, error: makeError(message) }, { status: 403 });
   }
 

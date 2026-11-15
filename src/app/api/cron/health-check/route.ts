@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAndRecord } from '@/lib/system-health';
 import { recordCronRun } from '@/lib/system-errors';
+import { reportSecurityEvent } from '@/lib/security-events';
 
 export const maxDuration = 30;
 
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
 
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${CRON_SECRET}`) {
+    reportSecurityEvent({ type: 'webhook_bad_secret', request, detail: 'Cron appelé sans le bon secret' });
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 

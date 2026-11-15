@@ -10,6 +10,7 @@ import { checkTelegram, WEBHOOK_PATH } from '@/lib/bot-health';
 import { hydrateTelegramEnv } from '@/lib/integration-secrets';
 import { isEmailConfigured, verifyEmailTransport } from '@/lib/email';
 import { notifySuperAdmins } from '@/lib/notifications';
+import { listIncidents, purgeSecurityEvents, securitySummary, SECURITY_EVENTS, SEVERITY_LABEL } from '@/lib/security-events';
 
 export { recordCronRun, recordSystemError } from '@/lib/system-errors';
 
@@ -22,7 +23,7 @@ export interface SystemCheck {
 }
 
 export interface SystemComponent {
-  id: 'database' | 'api' | 'notifications' | 'server' | 'vercel' | 'crons';
+  id: 'database' | 'api' | 'notifications' | 'server' | 'vercel' | 'crons' | 'security';
   label: string;
   status: SystemStatus;
   summary: string;
@@ -424,6 +425,63 @@ async function checkVercel(): Promise<SystemComponent> {
   };
 }
 
+/** Sécurité : tentatives d'intrusion des dernières 24 h, incidents ouverts, réglages sensibles. */
+async function checkSecurity(): Promise<SystemComponent> {
+  const [summary, open] = await Promise.all([securitySummary(24), listIncidents({ limit: 5 })]);
+  const checks: SystemCheck[] = [];
+
+  for (const i of open) {
+    checks.push({
+      label: `${i.title} (${SEVERITY_LABEL[i.severity]})`,
+      status: i.severity === 3 ? 'error' : 'warning',
+      message: `${i.event_count} tentative(s) depuis ${i.ip || 'source inconnue'}${i.user_email || i.identifier ? ` · ${i.user_email || i.identifier}` : ''} — ${i.status === 'in_progress' ? 'en cours d’analyse' : 'à traiter'}`,
+    });
+  }
+  if (open.length === 0) checks.push({ label: 'Incidents', status: 'ok', message: 'Aucun incident de sécurité ouvert' });
+
+  const top = summary.byType.slice(0, 3).map((t) => `${SECURITY_EVENTS[t.type]?.title ?? t.type} (${t.n})`).join(', ');
+  checks.push({
+    label: 'Signaux des dernières 24 h',
+    status: 'ok',
+    message: summary.events === 0 ? 'Aucune tentative suspecte' : `${summary.events} signal(aux) bloqué(s) depuis ${summary.sources} source(s) : ${top}`,
+  });
+
+  const secret = process.env.JWT_SECRET || '';
+  checks.push({
+    label: 'Secret des sessions',
+    status: secret.length >= 32 ? 'ok' : 'error',
+    message: secret.length >= 32 ? 'Assez long' : 'Trop court (moins de 32 caractères) : à remplacer',
+  });
+  checks.push({
+    label: 'Secret des crons et du bot',
+    status: process.env.CRON_SECRET && process.env.TELEGRAM_WEBHOOK_SECRET ? 'ok' : 'warning',
+    message: process.env.CRON_SECRET && process.env.TELEGRAM_WEBHOOK_SECRET ? 'Configurés' : 'CRON_SECRET ou TELEGRAM_WEBHOOK_SECRET manquant',
+  });
+  checks.push({
+    label: 'Agent de sécurité',
+    status: process.env.SECURITY_AGENT_TOKEN ? 'ok' : 'warning',
+    message: process.env.SECURITY_AGENT_TOKEN ? 'Accès configuré' : 'SECURITY_AGENT_TOKEN absent : l’agent ne peut pas relever les incidents',
+  });
+
+  const status = worst(checks.map((c) => c.status));
+  return {
+    id: 'security',
+    label: 'Sécurité',
+    status,
+    summary:
+      summary.open_incidents > 0
+        ? `${summary.open_incidents} incident(s) ouvert(s)${summary.open_high ? `, dont ${summary.open_high} grave(s)` : ''}`
+        : summary.events > 0
+          ? `${summary.events} tentative(s) bloquée(s) en 24 h`
+          : 'Aucune tentative d’intrusion',
+    metrics: [
+      { label: 'Signaux 24 h', value: String(summary.events) },
+      { label: 'Incidents ouverts', value: String(summary.open_incidents) },
+    ],
+    checks,
+  };
+}
+
 async function checkCrons(): Promise<SystemComponent> {
   const { rows } = await query('SELECT name, last_run_at, ok, message FROM system_cron_runs');
   const byName = new Map(rows.map((r) => [r.name as string, r]));
@@ -464,6 +522,7 @@ export async function runSystemHealth(siteOrigin: string): Promise<SystemHealth>
     safe('server', 'Serveur', checkServer),
     safe('vercel', 'Vercel (hébergement)', checkVercel),
     safe('crons', 'Tâches planifiées', checkCrons),
+    safe('security', 'Sécurité', checkSecurity),
   ]);
 
   let recent_errors: SystemErrorRow[] = [];
@@ -524,6 +583,7 @@ export async function storeHealth(
   // Conservation : 30 jours
   await query(`DELETE FROM system_health_checks WHERE checked_at < NOW() - interval '30 days'`);
   await query(`DELETE FROM system_errors WHERE occurred_at < NOW() - interval '30 days'`);
+  await purgeSecurityEvents().catch(() => {});
 
   const changed = health.components
     .filter((c) => (before.get(c.id) ?? 'ok') !== c.status)
@@ -558,7 +618,9 @@ const MANUAL_STORE_EVERY_MS = 5 * 60 * 1000;
  */
 export async function checkAndRecord(siteOrigin: string, source: 'cron' | 'manual'): Promise<SystemHealth> {
   const health = await runSystemHealth(siteOrigin);
-  const { changed } = await storeHealth(health, source, source === 'manual' ? MANUAL_STORE_EVERY_MS : 0);
+  const { changed: all } = await storeHealth(health, source, source === 'manual' ? MANUAL_STORE_EVERY_MS : 0);
+  // La sécurité a ses propres alertes (une par incident, lib/security-events) : pas de doublon ici
+  const changed = all.filter((c) => c.component.id !== 'security');
   const broken = changed.filter((c) => c.component.status !== 'ok');
   const recovered = changed.filter((c) => c.component.status === 'ok');
   if (broken.length > 0) {

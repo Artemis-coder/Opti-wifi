@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { reportSecurityEvent } from '@/lib/security-events';
 import { appUrl, createPasswordToken } from '@/lib/password-tokens';
 
 // « Mot de passe oublié » : envoie un lien de réinitialisation (valable 1 h, usage unique).
@@ -17,7 +18,10 @@ export async function POST(request: NextRequest) {
     // Anti-spam : 5 demandes / 10 min par IP, 3 / heure pour une même adresse
     const wait =
       rateLimit(`reset:ip:${clientIp(request)}`, 5, 10 * 60_000) || rateLimit(`reset:email:${email}`, 3, 60 * 60_000);
-    if (wait) return tooManyRequests(wait);
+    if (wait) {
+      reportSecurityEvent({ type: 'reset_flood', request, identifier: email });
+      return tooManyRequests(wait);
+    }
 
     const result = await query(
       `SELECT u.id, u.email, p.nom

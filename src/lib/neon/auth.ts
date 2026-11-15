@@ -203,7 +203,7 @@ export async function getUserById(id: string): Promise<NeonUser | null> {
   };
 }
 
-export async function authenticate(email: string, password: string): Promise<NeonUser | null> {
+export async function authenticate(email: string, password: string, request?: Request): Promise<NeonUser | null> {
   const result = await query(
     `SELECT u.id, u.email, u.password_hash, u.email_confirmed, u.banned_until, u.user_metadata, u.app_metadata, u.created_at, u.updated_at,
             p.nom, p.role, p.pos_id, p.telephone, p.devise, p.organization_id, p.is_active, p.deleted_at
@@ -228,6 +228,9 @@ export async function authenticate(email: string, password: string): Promise<Neo
   const lockedUntil = Number(row.app_metadata?.login_locked_until);
   if (lockedUntil && lockedUntil > Date.now()) {
     await comparePassword(password, DUMMY_HASH);
+    // Essais qui continuent sur un compte verrouillé : l'attaque est toujours en cours
+    const { reportSecurityEvent } = await import('@/lib/security-events');
+    reportSecurityEvent({ type: 'account_locked', request, userId: row.id, identifier: email, detail: 'Essai pendant le verrouillage' });
     return null;
   }
 
@@ -242,15 +245,20 @@ export async function authenticate(email: string, password: string): Promise<Neo
   const valid = await comparePassword(password, row.password_hash);
   if (!valid) {
     // Incrément atomique (essais lancés en parallèle comptés un par un) ; au seuil, verrouillage
-    await query(
+    const res = await query(
       `UPDATE users u SET app_metadata = COALESCE(u.app_metadata, '{}'::jsonb) || (
          CASE WHEN COALESCE((u.app_metadata->>'failed_logins')::int, 0) + 1 >= $2
               THEN jsonb_build_object('failed_logins', 0, 'login_locked_until', $3::bigint)
               ELSE jsonb_build_object('failed_logins', COALESCE((u.app_metadata->>'failed_logins')::int, 0) + 1)
          END)
-       WHERE u.id = $1`,
+       WHERE u.id = $1
+       RETURNING (u.app_metadata->>'login_locked_until')::bigint > 0 AS locked`,
       [row.id, MAX_FAILED_LOGINS, Date.now() + LOCK_MINUTES * 60_000],
     );
+    if (res.rows[0]?.locked) {
+      const { reportSecurityEvent } = await import('@/lib/security-events');
+      reportSecurityEvent({ type: 'account_locked', request, userId: row.id, identifier: email, detail: `${MAX_FAILED_LOGINS} mauvais mots de passe` });
+    }
     return null;
   }
 
