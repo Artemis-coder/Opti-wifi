@@ -1,6 +1,6 @@
 // Faux serveur SasPay pour tester l'intégration en local (aucun appel réel).
 // Endpoints imités : POST /checkout-sessions/, GET /checkout-sessions/:id/status/, POST …/cancel/,
-// GET /payments/:id/verify/, GET /transactions/:id/.
+// GET /payments/:id/verify/, GET /transactions/:id/, GET /pricing/my-rates/.
 // Pilotage du test : POST /mock/pay/:sessionId?result=SUCCESS|FAILED
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -42,6 +42,12 @@ http.createServer(async (req, res) => {
   if ((m = p.match(/^\/(payments|transactions)\/([^/]+)\/(verify\/)?$/))) {
     const t = txs.get(m[2]);
     return t ? send(res, 200, t) : send(res, 404, { message: 'Paiement introuvable', code: 'not_found' });
+  }
+  if (req.method === 'GET' && p === '/pricing/my-rates/') {
+    return send(res, 200, [
+      { country_code: 'BJ', country_name: 'Bénin', currency: 'XOF', network_code: 'mtn_bj', network_name: 'MTN MoMo Benin', payin: { available: true, otp_required: false } },
+      { country_code: 'CI', country_name: "Côte d'Ivoire", currency: 'XOF', network_code: 'orange_ci', network_name: 'Orange Money CI', payin: { available: true, otp_required: true } },
+    ]);
   }
   if ((m = p.match(/^\/mock\/pay\/([^/]+)$/))) {
     const s = sessions.get(m[1]);

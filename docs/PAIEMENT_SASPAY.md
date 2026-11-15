@@ -369,3 +369,25 @@ que le tableau de bord, depuis son propre terminal (identifiants saisis localeme
 ```bash
 node scripts/saspay/create-sandbox-key.mjs
 ```
+
+---
+
+## 13. Intégration IA SasPay et état des vérifications
+
+- Règles officielles (https://docs.saspay.me/ai/agents-md) ajoutées à `AGENTS.md`, section « Intégration de l'API SasPay ».
+- Skill officielle installée : `.claude/skills/saspay-integration/SKILL.md` (copie du 16/11/2026).
+- « Commande de vérification de configuration » demandée par la skill : bouton **Tester la connexion
+  SasPay** (back-office → Moyens de paiement), qui appelle `GET /pricing/my-rates/` avec la clé de
+  l'environnement courant (les variables Vercel sensibles ne sont pas lisibles depuis un poste).
+
+Comme la skill le demande, ce qui n'a pas encore pu être vérifié est indiqué ici :
+
+| Vérification | État |
+|---|---|
+| Parcours complet contre un faux SasPay (paiement, webhook signé, idempotence, échec) | ✅ vérifié en local |
+| Signature webhook (valide, corps modifié, trop ancien, absent) | ✅ vérifié |
+| Secret webhook chargé sur dev.optiwifi.site | ✅ vérifié (401 sans signature) |
+| Clé `sk_test_` acceptée par SasPay | ⏳ non vérifié — clé Preview actuelle = `sk_live_` (refusée par le garde-fou) |
+| Webhook réel reçu de SasPay (signature OK) | ⏳ non vérifié — pas de bouton `webhook.test` dans le tableau de bord ; sera vérifié au 1er paiement de test |
+| Paiement de test réel en Sandbox | ⏳ non vérifié |
+| Premier paiement réel (production, petit montant) | ⏳ non vérifié |

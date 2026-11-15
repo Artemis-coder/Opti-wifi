@@ -183,3 +183,27 @@ export function verifyPayment(transactionId: string): Promise<VerifiedTransactio
 export function getTransaction(transactionId: string): Promise<VerifiedTransaction> {
   return saspayRequest<VerifiedTransaction>('GET', `/transactions/${encodeURIComponent(transactionId)}/`);
 }
+
+// ── Vérification de configuration ────────────────────────────────────────────
+
+export interface MyRate {
+  country_code: string;
+  network_code: string;
+  network_name: string;
+  currency: string;
+  payin?: { available: boolean; otp_required?: boolean } | null;
+}
+
+/**
+ * Teste la clé en conditions réelles : GET /pricing/my-rates/ (authentifié, lecture seule, sans
+ * effet). Renvoie les réseaux d'encaissement ouverts au compte.
+ */
+export async function checkSaspayConnection(): Promise<{ networks: { country: string; code: string; name: string; otp: boolean }[] }> {
+  const data = await saspayRequest<MyRate[] | { results?: MyRate[] }>('GET', '/pricing/my-rates/');
+  const rates = Array.isArray(data) ? data : data?.results || [];
+  return {
+    networks: rates
+      .filter((r) => r.payin?.available)
+      .map((r) => ({ country: r.country_code, code: r.network_code, name: r.network_name, otp: Boolean(r.payin?.otp_required) })),
+  };
+}

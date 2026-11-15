@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { AlertTriangle, CheckCircle2, CreditCard, Loader2, QrCode } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, CreditCard, Loader2, PlugZap, QrCode, XCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 
@@ -42,6 +42,26 @@ const OPTIONS: { value: Mode; title: string; text: string; icon: typeof CreditCa
 export function PaymentModeSwitch() {
   const [state, setState] = useState<ModeState | null>(null);
   const [saving, setSaving] = useState<Mode | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [check, setCheck] = useState<{
+    ok: boolean;
+    message: string | null;
+    webhook_secret?: boolean;
+    networks?: { country: string; code: string; name: string; otp: boolean }[];
+  } | null>(null);
+
+  const testConnection = async () => {
+    setChecking(true);
+    try {
+      const res = await fetch('/api/platform/saspay-check', { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+      setCheck(res.ok ? json.data : { ok: false, message: json.error || 'Test impossible' });
+    } catch {
+      setCheck({ ok: false, message: 'Test impossible' });
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const apply = useCallback((r: { ok: boolean; data?: ModeState; error?: string }) => {
     if (r.ok && r.data) setState(r.data);
@@ -139,6 +159,36 @@ export function PaymentModeSwitch() {
               </span>
             </p>
           )}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => void testConnection()}
+              disabled={checking}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
+            >
+              {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlugZap className="w-3.5 h-3.5" />} Tester la connexion
+              SasPay
+            </button>
+            {check && (
+              <div
+                className={`rounded-lg p-3 text-xs space-y-1 ${
+                  check.ok
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
+                    : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300'
+                }`}
+              >
+                <p className="flex items-center gap-1.5 font-semibold">
+                  {check.ok ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />} {check.message}
+                </p>
+                {check.ok && check.webhook_secret === false && <p>⚠️ Secret du webhook absent (SASPAY_WEBHOOK_SECRET).</p>}
+                {check.ok && check.networks && check.networks.length > 0 && (
+                  <p className="text-slate-600 dark:text-slate-400">
+                    {check.networks.map((n) => `${n.name} (${n.country})${n.otp ? ' · OTP' : ''}`).join(' · ')}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
           <p className="text-xs text-slate-500">
             Actuellement proposé aux clients :{' '}
             <strong className="text-slate-700 dark:text-slate-300">
