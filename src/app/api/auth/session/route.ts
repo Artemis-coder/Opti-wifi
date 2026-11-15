@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { AUTH_COOKIE_NAME, verifyToken, getUserById, clearAuthCookie } from '@/lib/neon/auth';
+import { AUTH_COOKIE_NAME, verifyToken, getUserFromToken, clearAuthCookie } from '@/lib/neon/auth';
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
@@ -13,9 +13,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ user: null });
   }
 
-  const user = await getUserById(payload.sub);
+  const user = await getUserFromToken(token);
   if (!user) {
-    // Compte suspendu, supprimé ou banni : la session est révoquée, on efface le cookie
+    // Compte suspendu, supprimé ou banni, ou mot de passe changé depuis : session révoquée, cookie effacé
     const response = NextResponse.json({ user: null });
     clearAuthCookie(response);
     return response;

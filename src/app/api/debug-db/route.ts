@@ -1,47 +1,23 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
-import { verifyToken, AUTH_COOKIE_NAME } from '@/lib/neon/auth';
+import { requirePlatformAdmin } from '@/lib/neon/server';
 import { getEnvironmentSummary, validateDatabaseConnection } from '@/lib/env-guard';
 
-export async function GET(request: Request) {
+// Diagnostic d'isolation (quelle base, quel environnement) : super admin uniquement.
+// Ne renvoie plus la liste des tables ni de données, seulement le résumé masqué de l'environnement.
+export async function GET() {
+  const admin = await requirePlatformAdmin();
+  if ('error' in admin) {
+    return NextResponse.json({ ok: false, error: admin.error }, { status: admin.status });
+  }
   try {
-    // Require authentication
-    const cookieHeader = request.headers.get('cookie');
-    const token = cookieHeader
-      ?.split(';')
-      .find(c => c.trim().startsWith(AUTH_COOKIE_NAME + '='))
-      ?.split('=')[1];
-
-    if (!token || !verifyToken(token)) {
-      return NextResponse.json({ ok: false, error: 'Non authentifié' }, { status: 401 });
-    }
-
     const databaseUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
     if (!databaseUrl) {
-      return NextResponse.json({ ok: false, error: 'DATABASE_URL not configured' }, { status: 500 });
+      return NextResponse.json({ ok: false, error: 'DATABASE_URL non configurée' }, { status: 500 });
     }
-
     validateDatabaseConnection(databaseUrl);
-    const sql = neon(databaseUrl);
-
-    // Check schema (limited - no host exposure)
-    const schema = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'conversation_sessions'`;
-
-    // Check all tables
-    const tables = await sql`SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema = 'public'`;
-
-    // Test query
-    const result = await sql.query('SELECT * FROM conversation_sessions WHERE chat_id = $1', ['test123']);
-
-    return NextResponse.json({
-      ok: true,
-      environment: getEnvironmentSummary(databaseUrl),
-      schema: schema,
-      tables: tables,
-      queryResult: result
-    });
+    return NextResponse.json({ ok: true, environment: getEnvironmentSummary(databaseUrl) });
   } catch (error) {
     console.error('Debug DB error:', error);
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'Configuration de base invalide' }, { status: 500 });
   }
 }

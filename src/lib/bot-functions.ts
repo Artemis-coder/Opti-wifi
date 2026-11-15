@@ -360,7 +360,7 @@ export const FUNCTION_DEFINITIONS = [
 
 // Function executor - maps function names to actual implementations
 export async function executeFunction(name: string, args: any, chatId: string): Promise<any> {
-  const { query } = await import('./neon/db');
+  const { query, getSql } = await import('./neon/db');
   const { sendTelegramMessage } = await import('./telegram');
   const { sendMessageWithKeyboard, createConfirmationInlineKeyboard, createValidationInlineKeyboard } = await import('./telegram-menus');
   const { addMessage } = await import('./conversation-memory');
@@ -466,11 +466,19 @@ export async function executeFunction(name: string, args: any, chatId: string): 
     }
 
     case 'run_sql': {
-      if (!args.query.trim().toUpperCase().startsWith('SELECT')) {
-        return { error: 'Seules les requêtes SELECT sont autorisées pour des raisons de sécurité' };
+      // Requête écrite par le modèle (qui peut lire du texte saisi par des clients : injection de
+      // consignes possible). Exécutée dans une transaction en LECTURE SEULE, et jamais sur les
+      // comptes / secrets (hash de mots de passe, jetons) : ces données partiraient chez le fournisseur d'IA.
+      const text = String(args.query || '').trim();
+      if (!/^select\b/i.test(text) || text.includes(';')) {
+        return { error: 'Seule une requête SELECT unique est autorisée' };
       }
-      const result = await query(args.query);
-      return result;
+      if (/\b(users|password_hash|push_subscriptions|platform_settings|integration_secrets|pg_\w+|dblink|lo_\w+|set_config|current_setting)\b/i.test(text)) {
+        return { error: 'Tables ou fonctions sensibles interdites pour le bot' };
+      }
+      const sql = getSql();
+      const [rows] = await sql.transaction([sql.query(text)], { readOnly: true });
+      return { rows: (rows as unknown[]).slice(0, 200), rowCount: (rows as unknown[]).length };
     }
 
     case 'check_slow_queries': {
@@ -607,17 +615,17 @@ export async function executeFunction(name: string, args: any, chatId: string): 
 
     case 'analyze_table': {
       const tableName = args.tableName;
-      if (!tableName) return { error: 'tableName requis' };
-      
-      const result = await query(`ANALYZE ${tableName}`);
+      if (typeof tableName !== 'string' || !/^[a-z_][a-z0-9_]*$/i.test(tableName)) return { error: 'tableName invalide' };
+
+      const result = await query(`ANALYZE "${tableName}"`);
       return { success: true, message: `Table ${tableName} analysée` };
     }
 
     case 'vacuum_table': {
       const tableName = args.tableName;
-      if (!tableName) return { error: 'tableName requis' };
-      
-      const result = await query(`VACUUM ANALYZE ${tableName}`);
+      if (typeof tableName !== 'string' || !/^[a-z_][a-z0-9_]*$/i.test(tableName)) return { error: 'tableName invalide' };
+
+      const result = await query(`VACUUM ANALYZE "${tableName}"`);
       return { success: true, message: `Table ${tableName} vacuumée` };
     }
 

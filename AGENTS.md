@@ -29,6 +29,8 @@ Avant toute intervention, **tout assistant de développement (agent IA ou humain
 
 These rules are mandatory for every code change, commit, and push in this repository.
 
+Full pentest procedure and checklist (reusable on every project): [`docs/CHECK_SECURITE.md`](docs/CHECK_SECURITE.md). Latest report: [`docs/securite/RAPPORT_PENTEST_2026-11-15.md`](docs/securite/RAPPORT_PENTEST_2026-11-15.md).
+
 ## 1. Secret Scanning (BLOCKING)
 
 Before any commit, scan all modified and new files for:
