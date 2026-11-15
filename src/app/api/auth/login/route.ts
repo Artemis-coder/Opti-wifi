@@ -6,6 +6,7 @@ import { EVENTS } from '@/lib/analytics/events';
 import { countryFromRequest, rememberOrganizationCountry } from '@/lib/geo';
 import { recordLogin } from '@/lib/login-history';
 import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { reportSecurityEvent } from '@/lib/security-events';
 import { looksLikePhone, resolvePosAccountLogin } from '@/lib/pos-account-phone';
 
 export async function POST(request: NextRequest) {
@@ -14,6 +15,10 @@ export async function POST(request: NextRequest) {
     const { email, password } = body;
 
     if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+      // Objet ou tableau à la place d'un texte : outil d'attaque, pas l'interface
+      if ((email && typeof email !== 'string') || (password && typeof password !== 'string')) {
+        reportSecurityEvent({ type: 'malformed_auth', request, detail: `email: ${typeof email}, password: ${typeof password}` });
+      }
       return NextResponse.json({ error: 'Identifiant et mot de passe requis.' }, { status: 400 });
     }
 
@@ -21,7 +26,10 @@ export async function POST(request: NextRequest) {
     const wait =
       rateLimit(`login:ip:${clientIp(request)}`, 20, 60_000) ||
       rateLimit(`login:id:${email.trim().toLowerCase()}`, 30, 15 * 60_000);
-    if (wait) return tooManyRequests(wait);
+    if (wait) {
+      reportSecurityEvent({ type: 'login_rate_limited', request, identifier: email });
+      return tooManyRequests(wait);
+    }
 
     if (email.length > 254) {
       return NextResponse.json({ error: 'Identifiant et mot de passe requis.' }, { status: 400 });
@@ -29,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Un point de vente se connecte avec son numéro de téléphone
     const loginEmail = looksLikePhone(email) ? await resolvePosAccountLogin(email) : email;
-    const user = loginEmail ? await authenticate(loginEmail, password) : null;
+    const user = loginEmail ? await authenticate(loginEmail, password, request) : null;
 
     if (!user) {
       // Message générique intentionnel — ne pas distinguer "email inconnu" de "mauvais mot de passe"

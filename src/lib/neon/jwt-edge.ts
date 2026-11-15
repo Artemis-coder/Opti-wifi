@@ -15,14 +15,17 @@ export interface JwtPayload {
   exp?: number;
 }
 
+export type TokenState = 'valid' | 'expired' | 'invalid';
+
 /**
- * Verify a JWT using WebCrypto API (Edge Runtime and Node.js compatible).
- * Zero external dependencies.
+ * Vérifie un JWT avec WebCrypto (sans dépendance) et dit pourquoi il est refusé :
+ * « expired » est normal (session expirée), « invalid » (signature fausse, jeton mal formé)
+ * trahit une tentative de falsification.
  */
-export async function verifyNeonToken(token: string): Promise<JwtPayload | null> {
+export async function inspectNeonToken(token: string): Promise<{ state: TokenState; payload: JwtPayload | null }> {
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
+    if (parts.length !== 3) return { state: 'invalid', payload: null };
     const [headerB64, payloadB64, sigB64] = parts;
 
     const enc = new TextEncoder();
@@ -40,18 +43,23 @@ export async function verifyNeonToken(token: string): Promise<JwtPayload | null>
     const rawSig = Uint8Array.from(atob(pad), (c) => c.charCodeAt(0));
 
     const isValid = await crypto.subtle.verify('HMAC', key, rawSig, data);
-    if (!isValid) return null;
+    if (!isValid) return { state: 'invalid', payload: null };
 
     const payloadJson: JwtPayload = JSON.parse(
       atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'))
     );
 
     if (payloadJson.exp && payloadJson.exp * 1000 < Date.now()) {
-      return null;
+      return { state: 'expired', payload: null };
     }
 
-    return payloadJson;
+    return { state: 'valid', payload: payloadJson };
   } catch {
-    return null;
+    return { state: 'invalid', payload: null };
   }
+}
+
+/** Jeton valide → contenu, sinon null. */
+export async function verifyNeonToken(token: string): Promise<JwtPayload | null> {
+  return (await inspectNeonToken(token)).payload;
 }

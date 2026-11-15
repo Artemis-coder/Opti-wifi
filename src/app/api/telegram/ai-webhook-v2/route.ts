@@ -1,4 +1,6 @@
 import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
+import { reportSecurityEvent } from '@/lib/security-events';
+import { handleHealthButton, handleSecurityCallback, HEALTH_BUTTON, HEALTH_MENU } from '@/lib/telegram-health';
 /**
  * Advanced AI Telegram Webhook with OpenRouter LLM + Function Calling
  * Supports: Free models (DeepSeek, Llama, Mistral, etc.), Voice transcription, Menus, Memory
@@ -120,6 +122,11 @@ async function handleMessage(message: any) {
   const authorizedChatId = process.env.TELEGRAM_CHAT_ID;
 
   if (chatId !== authorizedChatId) {
+    reportSecurityEvent({
+      type: 'bot_stranger',
+      identifier: `telegram:${chatId}`,
+      detail: `${message.from?.username ? '@' + message.from.username + ' ' : ''}${userName} : ${String(message.text || '').slice(0, 200)}`,
+    });
     await sendTelegramMessage({ chat_id: chatId, text: '❌ Non autorisé. Ce bot est privé.' });
     return;
   }
@@ -352,6 +359,12 @@ async function handleToolCalls(toolCalls: any[], chatId: string, messages: any[]
 }
 
 async function handleMenuButton(text: string, chatId: string, userName: string, session: any): Promise<boolean> {
+  // Santé de l'application (bilan complet, sécurité, incidents)
+  if (await handleHealthButton(text, chatId)) {
+    if (text === HEALTH_BUTTON) await updateSessionContext(chatId, 'health');
+    return true;
+  }
+
   // Main Menu Buttons
   if (text === '📊 Statut Projet') {
     await updateSessionContext(chatId, 'project');
@@ -1183,6 +1196,13 @@ async function handleCommand(text: string, chatId: string, userName: string, ses
       await sendMessageWithKeyboard(chatId, '💡 <b>Nouveau Projet - Idées & Planification</b>', NEW_PROJECT_MENU);
       break;
 
+    case '/sante':
+    case '/santé':
+    case '/health':
+      await updateSessionContext(chatId, 'health');
+      await handleHealthButton('/sante', chatId);
+      break;
+
     case '/securite':
     case '/security':
       await updateSessionContext(chatId, 'security');
@@ -1224,6 +1244,7 @@ async function handleCommand(text: string, chatId: string, userName: string, ses
         `• <code>/tâches</code> - Gestion tâches\n` +
         `• <code>/notifications</code> - Alertes & validations\n` +
         `• <code>/utilisateurs</code> - Users & espaces\n` +
+        `• <code>/sante</code> - Santé de l'application (bilan, sécurité, incidents)\n` +
         `• <code>/securite</code> - Sécurité & Audit\n` +
         `• <code>/nouveau</code> - Nouveau projet\n\n` +
         `<b>Configuration :</b>\n` +
@@ -1277,6 +1298,12 @@ async function handleCallbackQuery(callbackQuery: any) {
       body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }),
     }).catch(() => {});
     await sendBotMessage(chatId, await handleActionCallback(chatId, params[0], params[1] || ''));
+    return;
+  }
+
+  // Boutons sous une alerte de sécurité
+  if (action === 'sec') {
+    await handleSecurityCallback(params[0], params[1] || '', chatId);
     return;
   }
 
@@ -1373,6 +1400,7 @@ function getContextualMenu(context: string) {
     notifications: NOTIFICATIONS_MENU,
     users: USERS_MENU,
     new_project: NEW_PROJECT_MENU,
+    health: HEALTH_MENU,
   };
   return menus[context] || MAIN_MENU;
 }

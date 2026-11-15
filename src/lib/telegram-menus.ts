@@ -9,6 +9,7 @@ import { sendTelegramMessage } from './telegram';
 export const MAIN_MENU = {
   reply_markup: {
     keyboard: [
+      [{ text: '🩺 Santé de l\'application' }],
       [{ text: '📊 Statut Projet' }, { text: '🚀 Déployer' }],
       [{ text: '🗄️ Base de Données' }, { text: '🔔 Notifications' }],
       [{ text: '📝 Tâches' }, { text: '👥 Utilisateurs' }],

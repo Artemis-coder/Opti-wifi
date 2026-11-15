@@ -13,6 +13,7 @@ import {
   Loader2,
   RefreshCw,
   Server,
+  ShieldAlert,
   XCircle,
   Zap,
   type LucideIcon,
@@ -31,6 +32,7 @@ const ICONS: Record<SystemComponent['id'], LucideIcon> = {
   server: Server,
   vercel: Cloud,
   crons: Clock,
+  security: ShieldAlert,
 };
 
 const STATUS: Record<SystemStatus, { label: string; dot: string; pill: string; bar: string; icon: LucideIcon }> = {
