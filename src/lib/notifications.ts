@@ -18,6 +18,8 @@ export type NotificationType =
   | 'license_request.new'
   | 'license_request.rejected'
   | 'license.activated'
+  | 'payment.received'
+  | 'payment.issue'
   | 'license.expiring'
   | 'license.expired'
   | 'organization.suspended'
@@ -177,6 +179,8 @@ export async function getOrganizationAdminIds(organizationId: string, excludeUse
 const TELEGRAM_EMOJI: Partial<Record<NotificationType, string>> = {
   'registration.new': '🆕',
   'license_request.new': '🧾',
+  'payment.received': '💰',
+  'payment.issue': '⚠️',
   'support.new': '🛟',
   'support.reply': '💬',
   'system.test': '✅',

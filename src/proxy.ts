@@ -42,6 +42,8 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/telegram/vercel',
   '/api/cron/health-check',
   '/api/ai/notify',
+  // Webhook SasPay : authentifié par signature HMAC (src/lib/saspay/webhook.ts)
+  '/api/webhooks/saspay',
 ];
 
 // Fichiers et outils que les robots d'attaque cherchent : jamais présents ici. Réponse 404 et signalement.

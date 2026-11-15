@@ -25,6 +25,7 @@ import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { DateField } from '@/components/ui/DateField';
 import { KpiTiles } from '@/components/platform/KpiTiles';
 import type { PaymentStats } from '@/lib/billing-stats';
+import { OnlinePaymentsSection } from '@/components/platform/OnlinePaymentsSection';
 
 const STATUS_CONFIG: Record<PaymentStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   pending: { label: 'En attente', color: 'warning' },
@@ -180,6 +181,8 @@ export default function PlatformPaymentsPage() {
           </ul>
         </Card>
       )}
+
+      <OnlinePaymentsSection />
 
       {/* Filters */}
       <Card className="p-4">

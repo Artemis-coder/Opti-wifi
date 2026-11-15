@@ -37,7 +37,11 @@ export interface ActivateLicenseInput {
   durationDays?: number | null;
   requestId?: string | null;
   note?: string | null;
-  platformUserId: string;
+  /** null : activation automatique par le système (paiement en ligne confirmé). */
+  platformUserId: string | null;
+  /** Paiement en ligne : moyen et référence reportés sur la facture. */
+  paymentMethod?: string | null;
+  paymentReference?: string | null;
   /** false : pas de notification au client (l'appelant envoie la sienne) */
   notify?: boolean;
 }
@@ -151,6 +155,8 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
         end_date: sub.end_date,
         request_id: requestId || null,
         note: adminNote,
+        source: platformUserId ? 'admin' : 'online_payment',
+        payment_reference: input.paymentReference || null,
       }),
     ]
   );
@@ -159,7 +165,13 @@ export async function activateLicense(input: ActivateLicenseInput): Promise<Acti
   // n'annule pas l'activation (la licence est déjà en place) : il est journalisé.
   let invoice: IssuedInvoice | null = null;
   try {
-    invoice = await issueLicenseInvoice({ subscriptionId: sub.id, durationMonths: months, requestId: requestId || null });
+    invoice = await issueLicenseInvoice({
+      subscriptionId: sub.id,
+      durationMonths: months,
+      requestId: requestId || null,
+      paymentMethod: input.paymentMethod,
+      paymentReference: input.paymentReference,
+    });
   } catch (err) {
     console.error('License invoice error:', err);
   }
