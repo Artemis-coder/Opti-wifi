@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
   server: 'Serveur',
   vercel: 'Vercel',
   crons: 'Tâches planifiées',
+  security: 'Sécurité',
 };
 const DOT: Record<SystemStatus, string> = { ok: 'bg-emerald-500', warning: 'bg-amber-500', error: 'bg-red-500' };
 

@@ -3,6 +3,7 @@
 // ============================================================
 import { createHmac, timingSafeEqual } from 'crypto';
 import { requirePlatformAdmin } from '@/lib/supabase/platform';
+import { reportSecurityEvent } from '@/lib/security-events';
 
 function safeEqual(a: string, b: string): boolean {
   const ba = Buffer.from(a);
@@ -21,7 +22,9 @@ export function isTelegramWebhookAuthorized(request: Request): boolean {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
   if (!secret || !process.env.TELEGRAM_BOT_TOKEN?.trim()) return false;
   const header = request.headers.get('x-telegram-bot-api-secret-token') || '';
-  return safeEqual(header, secret);
+  const ok = safeEqual(header, secret);
+  if (!ok) reportSecurityEvent({ type: 'webhook_bad_secret', request, detail: 'Webhook Telegram sans le bon secret' });
+  return ok;
 }
 
 /** Le bot peut-il fonctionner sur ce déploiement (jeton + secret du webhook) ? */
@@ -35,7 +38,11 @@ export async function isInternalOrSuperAdmin(request: Request): Promise<boolean>
   const auth = request.headers.get('authorization') || '';
   if (secret && safeEqual(auth, `Bearer ${secret}`)) return true;
   const admin = await requirePlatformAdmin();
-  return !('error' in admin);
+  if ('error' in admin) {
+    reportSecurityEvent({ type: 'webhook_bad_secret', request, detail: 'Route interne Telegram appelée sans secret ni session super admin' });
+    return false;
+  }
+  return true;
 }
 
 /** Webhook Vercel : signature HMAC-SHA1 du corps (en-tête x-vercel-signature). */

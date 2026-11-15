@@ -8,12 +8,16 @@ import { rememberOrganizationCountry } from '@/lib/geo';
 import { findCountry, formatInternationalPhone, isValidNationalNumber } from '@/lib/countries';
 import { TERMS_VERSION } from '@/lib/terms';
 import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { reportSecurityEvent } from '@/lib/security-events';
 
 // Route POST pour créer un compte et une organisation avec le statut "pending_approval"
 export async function POST(request: Request) {
   // Création de comptes en masse : 5 inscriptions par heure et par IP
   const wait = rateLimit(`register:ip:${clientIp(request)}`, 5, 60 * 60_000);
-  if (wait) return tooManyRequests(wait);
+  if (wait) {
+    reportSecurityEvent({ type: 'register_flood', request });
+    return tooManyRequests(wait);
+  }
   try {
     const body = await request.json();
     const { email, password, nom, orgName, country: countryCode, phone: nationalPhone, acceptTerms } = body;

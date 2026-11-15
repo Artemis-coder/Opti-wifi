@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { AUTH_COOKIE_NAME, verifyNeonToken } from '@/lib/neon/jwt-edge';
+import { AUTH_COOKIE_NAME, inspectNeonToken } from '@/lib/neon/jwt-edge';
+import type { SecurityEventInput } from '@/lib/security-events';
 
 const PROTECTED_CLIENT_ROUTES = [
   '/dashboard',
@@ -43,6 +44,15 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/ai/notify',
 ];
 
+// Fichiers et outils que les robots d'attaque cherchent : jamais présents ici. Réponse 404 et signalement.
+const SCAN_PATTERN =
+  /(^|\/)\.(env|git|svn|hg|aws|ssh|htaccess|htpasswd|ds_store|npmrc|docker)(\/|$|\.|[a-z_-])|\/wp-(admin|login|content|includes|config)|xmlrpc\.php|phpmyadmin|\/pma\/|\.php\d?$|\/cgi-bin\/|\/vendor\/phpunit|\/actuator(\/|$)|\/server-status|\/config\.(json|ya?ml)$|\/(backup|dump|database)\.(sql|zip|tar|gz)$|\/etc\/passwd|\.\.\/|%2e%2e/i;
+
+/** Signalement en arrière-plan (module chargé seulement quand il y a quelque chose à signaler). */
+function report(input: SecurityEventInput) {
+  void import('@/lib/security-events').then(({ reportSecurityEvent }) => reportSecurityEvent(input)).catch(() => {});
+}
+
 function isCSRFExempt(pathname: string): boolean {
   return CSRF_EXEMPT_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'));
 }
@@ -56,33 +66,55 @@ function checkCSRF(request: NextRequest): boolean {
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
 
-  if (origin) {
-    const originUrl = new URL(origin);
-    const host = request.headers.get('host');
-    if (originUrl.host !== host) {
+  const host = request.headers.get('host');
+  // Origine illisible (ex. « null » d'une iframe isolée) : refusée au lieu de faire planter le proxy
+  const sameHost = (value: string) => {
+    try {
+      return new URL(value).host === host;
+    } catch {
       return false;
     }
-  }
-
-  if (referer) {
-    const refererUrl = new URL(referer);
-    const host = request.headers.get('host');
-    if (refererUrl.host !== host) {
-      return false;
-    }
-  }
+  };
+  if (origin && !sameHost(origin)) return false;
+  if (referer && !sameHost(referer)) return false;
 
   return true;
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Scan de fichiers sensibles (.env, .git, wp-admin…) : 404 et alerte
+  if (SCAN_PATTERN.test(pathname) || SCAN_PATTERN.test(request.nextUrl.search)) {
+    report({ type: 'path_scan', request, detail: `${request.method} ${pathname}${request.nextUrl.search}`.slice(0, 300) });
+    return new NextResponse('Not found', { status: 404 });
+  }
+
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const user = token ? await verifyNeonToken(token) : null;
+  const inspected = token ? await inspectNeonToken(token) : null;
+  const user = inspected?.payload ?? null;
+  // Signature fausse ou jeton mal formé (une session simplement expirée n'est pas signalée)
+  if (inspected?.state === 'invalid') {
+    report({ type: 'forged_token', request, detail: `Cookie de session à la signature invalide sur ${pathname}` });
+  }
+
+  // Compte connecté qui n'est pas super admin et appelle les API du back-office
+  if (
+    pathname.startsWith('/api/platform/') && user &&
+    user.role !== 'super_admin' && user.app_metadata?.role !== 'super_admin'
+  ) {
+    report({ type: 'admin_probe', request, userId: user.sub, identifier: user.email, detail: `${request.method} ${pathname}` });
+  }
 
   // CSRF protection for state-changing requests
   if (!isCSRFExempt(pathname)) {
     if (!checkCSRF(request)) {
+      report({
+        type: 'csrf_blocked',
+        request,
+        userId: user?.sub ?? null,
+        detail: `Origine : ${request.headers.get('origin') || request.headers.get('referer') || 'inconnue'}`,
+      });
       return NextResponse.json(
         { error: 'CSRF validation failed' },
         { status: 403 }
