@@ -20,6 +20,8 @@ http.createServer(async (req, res) => {
   let m;
   if (req.method === 'POST' && p === '/checkout-sessions/') {
     const b = JSON.parse(body || '{}');
+    // Montant minimum (comme SasPay) : erreur de validation par champ
+    if (Number(b.amount) < 100) return send(res, 400, { amount: ['Le montant minimum est de 100 XOF.'] });
     const id = randomUUID();
     const s = { id, slug: id.slice(0, 8), checkout_url: `https://pay.saspay.me/checkout/${id}`, amount: b.amount, currency: b.currency, status: 'PENDING', transaction: null, expires_at: null, metadata: b.metadata, return_url: b.return_url };
     sessions.set(id, s);

@@ -52,7 +52,9 @@ export class SaspayError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly code: string | null = null
+    public readonly code: string | null = null,
+    /** Erreur de validation SasPay : messages par champ (ex. { amount: ['…'] }) */
+    public readonly fields: Record<string, string[]> | null = null
   ) {
     super(message);
     this.name = 'SaspayError';
@@ -95,13 +97,23 @@ async function saspayRequest<T>(
   if (!res.ok || !json || json.success === false) {
     const err = json?.error;
     const code = err && typeof (err as { code?: unknown }).code === 'string' ? (err as { code: string }).code : null;
+    // Erreur de validation : { champ: ['message', …] } (directement ou dans `error`)
+    const raw = (err ?? json) as Record<string, unknown> | null;
+    const fields =
+      raw && typeof raw.message !== 'string'
+        ? Object.fromEntries(
+            Object.entries(raw)
+              .filter(([k, v]) => !['success', 'code', 'error', 'data'].includes(k) && (Array.isArray(v) || typeof v === 'string'))
+              .map(([k, v]) => [k, (Array.isArray(v) ? v : [v]).map(String)])
+          )
+        : null;
     const message =
       err && typeof (err as { message?: unknown }).message === 'string'
         ? (err as { message: string }).message
-        : err
-          ? `Requête refusée : ${Object.keys(err).join(', ')}`
+        : fields && Object.keys(fields).length
+          ? `Requête refusée : ${Object.entries(fields).map(([k, v]) => `${k} (${v.join(' ; ')})`).join(', ')}`
           : `Réponse SasPay inattendue (HTTP ${res.status})`;
-    throw new SaspayError(message, res.status, code);
+    throw new SaspayError(message, res.status, code, fields && Object.keys(fields).length ? fields : null);
   }
   return json.data as T;
 }

@@ -68,6 +68,10 @@ async function loadPayment(id: string): Promise<OnlinePaymentRow | null> {
 /** Message d'erreur SasPay présentable au client (jamais le détail technique). */
 function publicMessage(err: unknown): string {
   if (err instanceof SaspayError) {
+    // Montant refusé (souvent sous le minimum accepté par SasPay) : message explicite, pas « réessayez »
+    if (err.fields?.amount) {
+      return `Montant refusé par le paiement en ligne : ${err.fields.amount.join(' ')} Contactez le support ou payez manuellement.`;
+    }
     if (err.status === 422) return "Ce moyen de paiement n'est pas disponible pour le moment. Réessayez ou payez manuellement.";
     if (err.status === 429) return 'Trop de tentatives, réessayez dans une minute.';
   }
