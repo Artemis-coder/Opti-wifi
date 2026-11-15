@@ -347,3 +347,25 @@ node scripts/saspay/mock-server.mjs 4599
 3. Faire un vrai paiement de test, vérifier dans Transactions → « Paiements en ligne (SasPay) ».
 4. **Production** (accord explicite) : `npm run backup`, migration sur Neon prod, variables
    Production avec la clé `sk_live_…`, webhook de prod vers `https://www.optiwifi.site/api/webhooks/saspay`.
+
+---
+
+## 12. Interrupteur SasPay / paiement manuel (super admin)
+
+Back-office → **Moyens de paiement** → « Mode de paiement des licences » :
+- **Paiement en ligne (SasPay)** : le client ne voit qu'un bouton « Passer au paiement » ;
+- **Paiement manuel** : QR code, numéro, justificatif WhatsApp, validation par l'admin.
+
+Réglage stocké dans `platform_settings.payment_mode` (une valeur par base : dev et production
+indépendants, sans redéploiement). Si SasPay est choisi mais indisponible (clé absente, clé live hors
+production…), les clients voient automatiquement le paiement manuel et l'écran l'indique.
+Les paiements SasPay déjà en cours continuent d'être vérifiés quel que soit le mode.
+
+### Obtenir une clé de test (Sandbox)
+
+Si le tableau de bord SasPay ne propose pas de clé « Sandbox / Test », la créer avec le même appel
+que le tableau de bord, depuis son propre terminal (identifiants saisis localement, jamais stockés) :
+
+```bash
+node scripts/saspay/create-sandbox-key.mjs
+```

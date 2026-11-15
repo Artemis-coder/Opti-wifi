@@ -31,6 +31,7 @@ interface OnlinePayment {
 
 interface Config {
   enabled: boolean;
+  mode: 'saspay' | 'manual';
   environment: 'SANDBOX' | 'LIVE' | null;
   problem: string | null;
   has_webhook_secret: boolean;
@@ -117,7 +118,9 @@ export function OnlinePaymentsSection() {
 
       {config && (
         <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
-          {config.enabled ? (
+          {config.mode === 'manual' ? (
+            <p>⏸️ Mode « paiement manuel » choisi (page Moyens de paiement) : SasPay n&apos;est pas proposé aux clients.</p>
+          ) : config.enabled ? (
             <p>✅ Paiement en ligne proposé aux clients.</p>
           ) : (
             <p className="text-amber-700 dark:text-amber-400">⚠️ Paiement en ligne non proposé : {config.problem}</p>

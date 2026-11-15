@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSessionContext, POS_ACCOUNT_ROLE } from '@/lib/tenant';
 import { UUID_RE } from '@/lib/platform-actions';
-import { getSaspayConfig } from '@/lib/saspay/client';
+import { isOnlinePaymentOffered } from '@/lib/saspay/mode';
 import { OnlinePaymentError, startOnlinePayment } from '@/lib/saspay/payments';
 import { siteOrigin } from '@/lib/saspay/site-origin';
 import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
@@ -16,13 +16,16 @@ function canPay(ctx: NonNullable<Awaited<ReturnType<typeof getSessionContext>>>)
 export async function GET() {
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  return NextResponse.json({ data: { enabled: getSaspayConfig().enabled && canPay(ctx) } });
+  return NextResponse.json({ data: { enabled: canPay(ctx) && (await isOnlinePaymentOffered()) } });
 }
 
 export async function POST(request: Request) {
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   if (!canPay(ctx)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 });
+  if (!(await isOnlinePaymentOffered())) {
+    return NextResponse.json({ error: "Le paiement en ligne n'est pas disponible pour le moment." }, { status: 503 });
+  }
 
   const wait = rateLimit(`saspay-checkout:${ctx.userId}`, 10, 10 * 60_000) || rateLimit(`saspay-checkout:ip:${clientIp(request)}`, 20, 10 * 60_000);
   if (wait) return tooManyRequests(wait);

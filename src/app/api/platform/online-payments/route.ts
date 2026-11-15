@@ -4,6 +4,7 @@ import { query } from '@/lib/neon/db';
 import { UUID_RE } from '@/lib/platform-actions';
 import { getSaspayConfig } from '@/lib/saspay/client';
 import { syncOnlinePayment } from '@/lib/saspay/payments';
+import { getPaymentMode } from '@/lib/saspay/mode';
 
 // Paiements en ligne SasPay (back-office) : état de la configuration, liste, revérification.
 
@@ -26,10 +27,12 @@ export async function GET() {
       query(`SELECT event_type, signature_ok, received_at FROM saspay_webhook_events ORDER BY received_at DESC LIMIT 1`),
     ]);
     const config = getSaspayConfig();
+    const mode = await getPaymentMode();
     return NextResponse.json({
       data: list.rows,
       config: {
         enabled: config.enabled,
+        mode,
         environment: config.environment,
         problem: config.problem,
         has_webhook_secret: config.hasWebhookSecret,
