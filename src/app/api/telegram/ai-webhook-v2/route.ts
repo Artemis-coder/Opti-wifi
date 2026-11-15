@@ -2,6 +2,7 @@ import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
 import { reportSecurityEvent } from '@/lib/security-events';
 import { handleHealthButton, handleSecurityButton, handleSecurityCallback, HEALTH_BUTTON, HEALTH_MENU } from '@/lib/telegram-health';
 import { handleDevButton, handleDevCallback, handleDevContext } from '@/lib/telegram-dev';
+import { handlePaymentButton, handlePaymentCallback } from '@/lib/telegram-payment';
 import { collectionAnomalies, morningReport, riskClients, weeklyReport } from '@/lib/business-reports';
 /**
  * Advanced AI Telegram Webhook with OpenRouter LLM + Function Calling
@@ -228,7 +229,8 @@ async function handleClaudeMessage(message: any, chatId: string, session: any) {
     await sendBotMessage(chatId, '🧹 Conversation effacée : je repars de zéro.');
     return;
   }
-  // Menus Sécurité et Santé : réponses directes, sans passer par l'IA
+  // Menus Paiement, Sécurité et Santé : réponses directes, sans passer par l'IA
+  if (await handlePaymentButton(text, chatId)) return;
   if (await handleSecurityButton(text, chatId)) return;
   if (await handleHealthButton(text, chatId)) return;
   if (text === '🔙 Menu Principal') {
@@ -1328,6 +1330,17 @@ async function handleCallbackQuery(callbackQuery: any) {
       body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }),
     }).catch(() => {});
     await sendBotMessage(chatId, await handleActionCallback(chatId, params[0], params[1] || ''));
+    return;
+  }
+
+  // Statut du paiement en ligne : bascule SasPay / manuel, actualisation
+  if (action === 'pay') {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }),
+    }).catch(() => {});
+    await handlePaymentCallback(params[0] || 'refresh', chatId);
     return;
   }
 
