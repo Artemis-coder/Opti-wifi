@@ -56,6 +56,19 @@ function getClient(): Anthropic {
 
 // ── Clavier principal (boutons sous la zone de saisie) ───────────────────────
 
+export const BUSINESS_BUTTON = '📊 Business OptiSpace';
+
+/** Accueil : deux univers, l'IA de développement (Claude Code) et le suivi du business. */
+export const HOME_MENU = {
+  reply_markup: {
+    keyboard: [[{ text: '🤖 IA — Claude Code' }], [{ text: BUSINESS_BUTTON }], [{ text: '❓ Aide' }]],
+    resize_keyboard: true,
+    is_persistent: true,
+    input_field_placeholder: 'Choisissez un menu ou posez une question…',
+  },
+};
+
+/** Menu Business (clavier par défaut des réponses de l'assistant). */
 export const ADMIN_MENU = {
   reply_markup: {
     keyboard: [
@@ -63,7 +76,7 @@ export const ADMIN_MENU = {
       [{ text: '🏢 Clients' }, { text: '⏳ Licences à renouveler' }],
       [{ text: '💰 Encaissements du mois' }, { text: '🖥️ Statut technique' }],
       [{ text: '🛡️ Sécurité' }, { text: '🩺 Santé de l\'application' }],
-      [{ text: '❓ Aide' }],
+      [{ text: '🔙 Menu Principal' }],
     ],
     resize_keyboard: true,
     is_persistent: true,
@@ -752,6 +765,8 @@ export const HELP_TEXT = `🤖 <b>Assistant OptiSpace</b>
 
 Les actions (approuver, refuser, activer, suspendre…) demandent toujours votre confirmation par un bouton.
 
-Boutons « 🛡️ Sécurité » (récap des intrusions, incidents, réglages) et « 🩺 Santé de l'application » (bilan de tous les composants).
+<b>🤖 IA — Claude Code</b> : confiez une fonctionnalité ou une correction à Claude. Il propose un plan, développe après votre accord et vous soumet le résultat ; vous validez l'intégration et la mise en production.
 
-Commandes : /menu · /securite · /sante · /effacer (oublier la conversation) · /aide`;
+<b>📊 Business OptiSpace</b> : clients, licences, encaissements, « 🛡️ Sécurité » et « 🩺 Santé de l'application ».
+
+Commandes : /menu · /ia · /securite · /sante · /effacer (oublier la conversation) · /aide`;

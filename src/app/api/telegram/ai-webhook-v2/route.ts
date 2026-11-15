@@ -1,6 +1,7 @@
 import { isTelegramWebhookAuthorized } from '@/lib/telegram-auth';
 import { reportSecurityEvent } from '@/lib/security-events';
 import { handleHealthButton, handleSecurityButton, handleSecurityCallback, HEALTH_BUTTON, HEALTH_MENU } from '@/lib/telegram-health';
+import { handleDevButton, handleDevCallback, handleDevContext } from '@/lib/telegram-dev';
 /**
  * Advanced AI Telegram Webhook with OpenRouter LLM + Function Calling
  * Supports: Free models (DeepSeek, Llama, Mistral, etc.), Voice transcription, Menus, Memory
@@ -47,6 +48,8 @@ import { executeFunction } from '@/lib/bot-functions';
 import { PROJECT_KNOWLEDGE, BOT_CAPABILITIES } from '@/lib/bot-knowledge';
 import {
   ADMIN_MENU,
+  BUSINESS_BUTTON,
+  HOME_MENU,
   HELP_TEXT,
   MENU_PROMPTS,
   handleActionCallback,
@@ -201,11 +204,19 @@ async function handleClaudeMessage(message: any, chatId: string, session: any) {
   }
   if (!text) return;
 
+  // Saisie d'une demande ou d'une remarque pour Claude Code (menu IA), écrite ou dictée
+  if (await handleDevContext(text, chatId, session?.context)) return;
+
   const command = text.split(/\s+/)[0].toLowerCase().replace(/@.*$/, '');
   if (['/start', '/menu'].includes(command)) {
-    await sendBotMessage(chatId, `👋 Bonjour ! Que voulez-vous savoir ou faire ?\n\n${HELP_TEXT}`);
+    await sendBotMessage(chatId, `👋 Bonjour ! Que voulez-vous savoir ou faire ?\n\n${HELP_TEXT}`, HOME_MENU.reply_markup);
     return;
   }
+  if (text === BUSINESS_BUTTON) {
+    await sendBotMessage(chatId, '📊 <b>Business OptiSpace</b>\nChoisissez une rubrique ou posez votre question, par écrit ou en vocal.');
+    return;
+  }
+  if (await handleDevButton(text, chatId)) return;
   if (['/aide', '/help', '❓ aide'].includes(command) || text === '❓ Aide') {
     await sendBotMessage(chatId, HELP_TEXT);
     return;
@@ -219,7 +230,7 @@ async function handleClaudeMessage(message: any, chatId: string, session: any) {
   if (await handleSecurityButton(text, chatId)) return;
   if (await handleHealthButton(text, chatId)) return;
   if (text === '🔙 Menu Principal') {
-    await sendBotMessage(chatId, '🏠 <b>Menu principal</b>');
+    await sendBotMessage(chatId, '🏠 <b>Menu principal</b>', HOME_MENU.reply_markup);
     return;
   }
 
@@ -1312,6 +1323,17 @@ async function handleCallbackQuery(callbackQuery: any) {
   // Boutons sous une alerte de sécurité
   if (action === 'sec') {
     await handleSecurityCallback(params[0], params[1] || '', chatId);
+    return;
+  }
+
+  // Boutons des demandes confiées à Claude Code (plan, intégration, mise en production)
+  if (action === 'dev') {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }),
+    }).catch(() => {});
+    await handleDevCallback(params[0], params[1] || '', chatId);
     return;
   }
 
