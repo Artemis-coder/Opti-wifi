@@ -45,6 +45,9 @@
     --muted: oklch(0.77 0.012 286);
     --border: oklch(0.36 0.006 286);
     --separator: oklch(0.31 0.006 286);
+    /* HeroUI retire l'ombre des surfaces en sombre : les cartes (et les KPI posés sur une
+       carte) se fondaient dans le fond. Un trait intérieur de 1 px les délimite. */
+    --surface-shadow: inset 0 0 0 1px oklch(0.32 0.006 286);
   }
 }
 
@@ -97,6 +100,14 @@
      un bouton placé dans une grille remplit sa case. */
   .grid > .button {
     width: 100%;
+    min-width: 0;
+    /* demi-largeur sur mobile : le libellé passe à la ligne plutôt que de déborder */
+    height: auto;
+    min-height: calc(var(--spacing) * 10);
+    padding-block: calc(var(--spacing) * 2);
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
   }
 
   /* Espacements : padding des cartes identique partout (16 px mobile, 20 px bureau) */

@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Avatar, Button, Dropdown, Label, SearchField, Separator } from '@heroui/react';
-import { LogOut, Menu, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
+import { Avatar, Dropdown, Label, SearchField, Separator } from '@heroui/react';
+import { LogOut, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { getPlatformPageTitle } from '@/components/platform/PlatformSidebar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
@@ -42,7 +42,7 @@ function ConnectionIndicator() {
 }
 
 /** En-tête du back-office : titre de page, recherche client, notifications, compte. */
-export function PlatformHeader({ onOpenMobileMenu }: { onOpenMobileMenu?: () => void }) {
+export function PlatformHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { platformUser, logout } = usePlatformAuthStore();
@@ -65,12 +65,6 @@ export function PlatformHeader({ onOpenMobileMenu }: { onOpenMobileMenu?: () => 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-separator bg-background/85 px-4 backdrop-blur-md sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
-        {/* Mobile : bouton Menu du modèle HeroUI « Navigation Drawer » */}
-        {onOpenMobileMenu && (
-          <Button isIconOnly variant="secondary" size="sm" aria-label="Ouvrir le menu" className="shrink-0 lg:hidden" onPress={onOpenMobileMenu}>
-            <Menu className="size-4" />
-          </Button>
-        )}
         <h1 className="truncate text-base font-semibold text-foreground lg:text-lg">{getPlatformPageTitle(pathname)}</h1>
       </div>
 

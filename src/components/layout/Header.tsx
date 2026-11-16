@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Button, Dropdown, Label, Separator } from '@heroui/react';
-import { LogOut, Menu, Settings } from 'lucide-react';
+import { Dropdown, Label, Separator } from '@heroui/react';
+import { LogOut, Settings } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { createClient } from '@/lib/supabase/client';
@@ -64,7 +64,7 @@ function resolveTitle(pathname: string, isCollector: boolean, isPosAccount = fal
   return 'OptiSpace';
 }
 
-export function Header({ title, onOpenMobileMenu }: HeaderProps) {
+export function Header({ title }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
@@ -90,12 +90,6 @@ export function Header({ title, onOpenMobileMenu }: HeaderProps) {
     <header className="safe-top sticky top-0 z-30 border-b border-separator bg-background/85 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          {/* Mobile : bouton Menu du modèle HeroUI « Navigation Drawer » */}
-          {onOpenMobileMenu && (
-            <Button isIconOnly variant="secondary" size="sm" aria-label="Ouvrir le menu" className="shrink-0 lg:hidden" onPress={onOpenMobileMenu}>
-              <Menu className="size-4" />
-            </Button>
-          )}
           <h1 className="min-w-0 truncate text-base font-semibold text-foreground lg:text-lg">{heading}</h1>
         </div>
 

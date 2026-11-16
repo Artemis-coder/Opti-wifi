@@ -47,7 +47,7 @@
 
   html {
     /* Android WebView: prevent rubber-band revealing white behind the app */
-    background-color: #1b3f2b;
+    background-color: var(--background);
     -webkit-tap-highlight-color: transparent;
     /* Native date/time pickers (input[type=date]) draw their own widget.
        Without an explicit color-scheme the browser keeps the light theme,

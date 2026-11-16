@@ -299,7 +299,7 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
             autoComplete="current-password"
           />
 
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-1">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end pt-1">
             <Button type="button" variant="ghost" onClick={closeModal}>
               Annuler
             </Button>

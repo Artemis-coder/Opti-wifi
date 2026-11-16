@@ -119,7 +119,7 @@ function PaymentReturn() {
           {data.license_end_date ? ` jusqu'au ${new Date(data.license_end_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}` : ''}.
           {data.reference ? ` Référence du paiement : ${data.reference}.` : ''}
         </p>
-        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-center">
           {data.invoice_id && (
             <Link href={`/subscription/invoices/${data.invoice_id}`} className={buttonClassName({ variant: 'outline', size: 'md' })}>Voir la facture</Link>
           )}

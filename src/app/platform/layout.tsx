@@ -66,7 +66,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       <PlatformSidebar isMobileOpen={isMobileOpen} onCloseMobile={() => setIsMobileOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <PlatformHeader onOpenMobileMenu={() => setIsMobileOpen(true)} />
+        <PlatformHeader />
 
         <main className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-24 lg:pb-6">
           <AmountsPrivacyBoundary>{children}</AmountsPrivacyBoundary>

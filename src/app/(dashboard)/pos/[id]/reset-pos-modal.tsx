@@ -130,7 +130,7 @@ export function ResetPosModal({
         )}
 
         {/* Modal Actions conforming to Design System */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-3 border-t border-separator">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end pt-3 border-t border-separator">
           <Button
             type="button"
             variant="outline"

@@ -276,7 +276,7 @@ export function TelegramBotConfigCard() {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 pt-1 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row pt-1 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
         <Button icon={Save} onClick={() => save(false)} isLoading={saving} className="w-full sm:w-auto font-semibold">
           Enregistrer et brancher le webhook
         </Button>

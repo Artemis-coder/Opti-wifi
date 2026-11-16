@@ -261,7 +261,7 @@ export default function DeletionRequestsPage() {
               autoComplete="off"
             />
             <Input label="Note (facultatif)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. : demande vérifiée par téléphone" />
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
               <Button variant="ghost" onClick={closeModals}>
                 Annuler
               </Button>
@@ -281,7 +281,7 @@ export default function DeletionRequestsPage() {
               L’espace « {rejecting.organization_name} » est conservé. Le client reçoit le motif par notification et par e-mail.
             </p>
             <Input label="Motif du refus" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. : facture impayée à régler avant la suppression" />
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
               <Button variant="ghost" onClick={closeModals}>
                 Annuler
               </Button>

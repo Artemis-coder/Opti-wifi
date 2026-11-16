@@ -69,7 +69,7 @@ export function StatTile({ label, value, icon: Icon, accent = 'slate', alert, hi
       </div>
       <div
         className={cn(
-          'min-w-0 text-2xl font-semibold tabular-nums tracking-tight',
+          'min-w-0 text-2xl font-bold tabular-nums tracking-tight',
           !fits && 'break-words',
           alert ? 'text-danger' : 'text-foreground'
         )}

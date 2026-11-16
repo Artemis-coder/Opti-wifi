@@ -370,7 +370,7 @@ export default function ReportsPage() {
             Vos encaissements sur la période choisie, en synthèse ou en détail, exportables pour Excel.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
           <Button size="sm" icon={FileText} onClick={exportPdf} disabled={loading || filtered.length === 0}>
             Exporter en PDF
           </Button>

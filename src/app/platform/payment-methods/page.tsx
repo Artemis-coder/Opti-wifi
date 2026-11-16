@@ -554,7 +554,7 @@ export default function PaymentMethodsPage() {
             />
           </div>
 
-          <div className="md:col-span-2 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row md:col-span-2 sm:justify-end">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
               Annuler
             </Button>

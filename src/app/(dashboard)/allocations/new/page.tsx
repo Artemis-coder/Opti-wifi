@@ -268,7 +268,7 @@ const addLine = () => {
                 onChange={(e) => setNotes(e.target.value)}
               />
 
-              <div className="pt-2 flex flex-col-reverse sm:flex-row gap-2.5 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button type="button" variant="ghost" onClick={() => router.back()}>Annuler</Button>
                 <Button type="submit" variant="secondary" className="px-6 font-semibold" isLoading={submitting}>
                   Valider l&apos;Allocation

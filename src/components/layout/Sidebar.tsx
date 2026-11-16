@@ -266,7 +266,7 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
         </div>
       </aside>
 
-      {/* Mobile : tiroir depuis la gauche (bouton Menu de la barre du bas ou de l'en-tête) */}
+      {/* Mobile : tiroir HeroUI depuis le bas (comme le back-office), avec poignée */}
       <Drawer.Backdrop
         isOpen={isMobileOpen}
         onOpenChange={(open) => {
@@ -274,12 +274,11 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
         }}
         className="lg:hidden"
       >
-        <Drawer.Content placement="left">
-          <Drawer.Dialog>
+        <Drawer.Content placement="bottom">
+          <Drawer.Dialog aria-label="Menu de navigation" className="max-h-[88vh]">
+            <Drawer.Handle />
             <Drawer.CloseTrigger aria-label="Fermer le menu" />
-            <Drawer.Header>
-              <Drawer.Heading>Menu</Drawer.Heading>
-            </Drawer.Header>
+            <Drawer.Header>{brand}</Drawer.Header>
             <Drawer.Body className="space-y-4">
               {account}
               {nav(onCloseMobile)}

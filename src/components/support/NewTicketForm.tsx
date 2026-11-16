@@ -100,7 +100,7 @@ export function NewTicketForm({ endpoint, clients, onCreated, onCancel }: NewTic
           className="textarea textarea--primary w-full"
         />
       </div>
-      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end pt-1">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Annuler
         </Button>

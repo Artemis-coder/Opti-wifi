@@ -209,7 +209,7 @@ export default function ChangeRequestsPage() {
                 )}
 
                 {r.status === 'pending' && canReview && (
-                  <div className="flex flex-col sm:flex-row gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                     <WriteButton
                       icon={Check}
                       isLoading={busy === r.id}
@@ -249,7 +249,7 @@ export default function ChangeRequestsPage() {
               La saisie reste inchangée. Le collecteur reçoit votre motif.
             </p>
             <Input label="Motif du refus" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. : le montant compté était bien de 150" />
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
               <Button variant="ghost" onClick={() => setRejecting(null)}>
                 Annuler
               </Button>

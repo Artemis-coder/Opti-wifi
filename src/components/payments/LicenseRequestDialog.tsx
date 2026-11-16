@@ -242,7 +242,7 @@ function RequestFlow({
           )}
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
             Annuler
           </Button>

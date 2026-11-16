@@ -180,7 +180,7 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
         </ScrollShadow>
       </aside>
 
-      {/* Mobile : modèle HeroUI « Navigation Drawer » (tiroir depuis la gauche) */}
+      {/* Mobile : tiroir HeroUI depuis le bas (placement par défaut), avec poignée */}
       <Drawer.Backdrop
         isOpen={isMobileOpen}
         onOpenChange={(open) => {
@@ -188,11 +188,12 @@ export function PlatformSidebar({ isMobileOpen = false, onCloseMobile }: Sidebar
         }}
         className="lg:hidden"
       >
-        <Drawer.Content placement="left">
-          <Drawer.Dialog>
+        <Drawer.Content placement="bottom">
+          <Drawer.Dialog aria-label="Menu du back-office" className="max-h-[88vh]">
+            <Drawer.Handle />
             <Drawer.CloseTrigger aria-label="Fermer le menu" />
             <Drawer.Header>
-              <Drawer.Heading>Menu</Drawer.Heading>
+              <Brand />
             </Drawer.Header>
             <Drawer.Body>
               <NavList pathname={pathname} onNavigate={onCloseMobile} />

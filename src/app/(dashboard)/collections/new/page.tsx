@@ -1127,7 +1127,7 @@ export default function NewCollectionWizard() {
               </div>
 
               {/* Final Actions */}
-              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-border [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row pt-4 border-t border-border [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button
                   type="button"
                   variant="ghost"

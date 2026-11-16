@@ -171,15 +171,15 @@ export function RecordChangeActions({
       )}
 
       {!pending && !readOnly && (isAdmin || role === 'collecteur') && (
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
           <Button variant="outline" icon={Pencil} onClick={openEdit} className="font-semibold">
             {isAdmin ? 'Modifier' : 'Demander une correction'}
           </Button>
           <Button
-            variant="outline"
+            variant="danger-soft"
             icon={Trash2}
             onClick={() => (isAdmin ? deleteNow() : (setReason(''), setMode('delete')))}
-            className="font-semibold text-danger border-danger/30 hover:bg-danger-soft"
+            className="font-semibold"
           >
             {isAdmin ? 'Supprimer' : 'Demander la suppression'}
           </Button>
@@ -215,7 +215,7 @@ export function RecordChangeActions({
               placeholder="Ex. : j'ai saisi 150 au lieu de 200"
             />
           )}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
             <Button variant="ghost" onClick={() => setMode(null)}>
               Annuler
             </Button>
@@ -239,7 +239,7 @@ export function RecordChangeActions({
             L’administrateur de l’espace recevra votre demande et décidera de supprimer {WHAT[type]}.
           </p>
           <Input label="Pourquoi la supprimer ?" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. : saisie en double" />
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
             <Button variant="ghost" onClick={() => setMode(null)}>
               Annuler
             </Button>
