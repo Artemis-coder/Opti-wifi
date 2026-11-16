@@ -201,7 +201,7 @@ export function LicenseActivationModal({
                   size="sm"
                   variant={trialDays === d ? 'primary' : 'outline'}
                   onClick={() => setDays(d)}
-                >
+              >
                   {d} jour{d > 1 ? 's' : ''}
                 </Button>
               ))}
@@ -221,7 +221,7 @@ export function LicenseActivationModal({
                   size="sm"
                   variant={months === d ? 'primary' : 'outline'}
                   onClick={() => setMonths(d)}
-                >
+              >
                   {d} mois
                 </Button>
               ))}
@@ -261,7 +261,7 @@ export function LicenseActivationModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
             Annuler
           </Button>
           <Button type="button" onClick={handleSubmit} isLoading={submitting} disabled={!planId}>

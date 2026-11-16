@@ -311,7 +311,7 @@ export default function ExchangePage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/allocations" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'gap-2' })}>
+        <Link href="/allocations" className={buttonClassName({ variant: 'ghost', size: 'sm'})}>
             <ArrowLeft className="w-4 h-4" /> Retour
           </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
@@ -394,7 +394,7 @@ export default function ExchangePage() {
               </div>
 
               <div className="pt-4 flex justify-end">
-                <Button type="button" onClick={() => setStep(2)} className="gap-2">
+                <Button type="button" onClick={() => setStep(2)}>
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -492,14 +492,13 @@ export default function ExchangePage() {
               )}
 
               <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                <Button type="button" variant="ghost" onClick={() => setStep(1)} className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setStep(1)}>
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
                 <Button
                   type="button"
                   onClick={() => setStep(3)}
                   disabled={totalReturnedValue === 0}
-                  className="gap-2"
                 >
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -527,7 +526,7 @@ export default function ExchangePage() {
 
               {receives.length === 0 ? (
                 <div className="text-center py-6 space-y-3">
-                  <Button onClick={addReceiveLine} variant="secondary" className="gap-2 font-semibold">
+                  <Button onClick={addReceiveLine} variant="secondary">
                     <Plus className="w-4 h-4" /> Ajouter un type de ticket
                   </Button>
                 </div>
@@ -568,7 +567,7 @@ export default function ExchangePage() {
                                 type="button"
                                 onClick={() => updateReceive(index, 'quantite', suggestedQty)}
                                 className="text-xs text-warning-soft-foreground hover:text-warning-soft-foreground font-medium underline"
-                              >
+                >
                                 Suggestion: {suggestedQty}
                               </button>
                             )}
@@ -586,8 +585,8 @@ export default function ExchangePage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeReceiveLine(index)}
-                          className="text-danger hover:text-danger mt-1"
-                        >
+                          className="mt-1"
+                >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       )}
@@ -597,11 +596,11 @@ export default function ExchangePage() {
               )}
 
               <div className="flex pt-2 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                <Button type="button" size="sm" variant="ghost" onClick={addReceiveLine} className="gap-1 text-xs">
+                <Button type="button" size="sm" variant="ghost" onClick={addReceiveLine}>
                   <Plus className="w-4 h-4" /> Ajouter un type
                 </Button>
                 {receives.some((r) => r.ticketTypeId) && (
-                  <Button type="button" size="sm" variant="ghost" onClick={handleAutoFillAll} className="text-xs">
+                  <Button type="button" size="sm" variant="ghost" onClick={handleAutoFillAll}>
                     Auto-calculer
                   </Button>
                 )}
@@ -627,14 +626,13 @@ export default function ExchangePage() {
               )}
 
               <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                <Button type="button" variant="ghost" onClick={() => setStep(2)} className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setStep(2)}>
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
                 <Button
                   type="button"
                   onClick={() => setStep(4)}
                   disabled={!isExchangeBalanced}
-                  className="gap-2"
                 >
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -736,13 +734,12 @@ export default function ExchangePage() {
               </div>
 
               <div className="pt-4 flex gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                <Button type="button" variant="ghost" onClick={() => setStep(3)} className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setStep(3)}>
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
                 <Button
                   type="submit"
-                  variant="secondary"
-                  className="px-8 font-semibold gap-2"
+                  variant="primary"
                   isLoading={submitting}
                   disabled={!isExchangeBalanced}
                 >

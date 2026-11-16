@@ -339,64 +339,62 @@ interface CreateFormState {
                         {currentPlatformUser?.auth_user_id === u.id ? (
                           <span className="text-xs text-muted self-center mr-1">Vous</span>
                         ) : u.deleted_at || u.is_banned || !u.is_active ? (
-                          <Button
+                          <Button isIconOnly
                             variant="ghost"
                             size="sm"
-                            className="p-1 h-7 text-success-soft-foreground hover:text-success-soft-foreground"
+                            className="text-success-soft-foreground hover:text-success-soft-foreground"
                             onClick={() => handleAction(u.id, 'activate', 'réactiver')}
                             disabled={actionLoading === u.id}
                             title="Réactiver (rétablir l'accès)"
-                          >
+                      >
                             {actionLoading === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
                           </Button>
                         ) : (
                           <>
-                            <Button
+                            <Button isIconOnly
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-danger hover:text-danger"
                               onClick={() => handleAction(u.id, 'deactivate', 'suspendre')}
                               disabled={actionLoading === u.id}
                               title="Suspendre (couper l'accès)"
-                            >
+                      >
                               {actionLoading === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
                             </Button>
-                            <Button
-                              variant="ghost"
+                            <Button isIconOnly
+                              variant="danger-soft"
                               size="sm"
-                              className="p-1 h-7 text-danger hover:text-danger"
                               onClick={() => handleAction(u.id, 'delete', 'supprimer')}
                               disabled={actionLoading === u.id}
                               title="Supprimer (couper l'accès, historique conservé)"
-                            >
+                      >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </>
                         )}
-                        <Button
+                        <Button isIconOnly
                           variant="ghost"
                           size="sm"
-                          className="p-1 h-7 text-muted hover:text-foreground"
+                          className="text-muted hover:text-foreground"
                           onClick={() => handleAction(u.id, 'reset_password', 'réinitialiser le mot de passe')}
                           disabled={actionLoading === u.id}
                           title="Réinitialiser le mot de passe"
-                        >
+                      >
                           <KeyRound className="w-3.5 h-3.5" />
                         </Button>
                         {u.organization_id && (
-                          <Link href={`/platform/clients/${u.organization_id}`} title="Voir l'organisation" aria-label="Voir l'organisation" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'p-1 h-7 text-accent hover:text-accent' })}>
+                          <Link href={`/platform/clients/${u.organization_id}`} title="Voir l'organisation" aria-label="Voir l'organisation" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'text-accent hover:text-accent', isIconOnly: true})}>
                               <Building2 className="w-3.5 h-3.5" />
                             </Link>
                         )}
                         {currentPlatformUser?.auth_user_id !== u.id && (
-                        <Button
+                        <Button isIconOnly
                           variant="ghost"
                           size="sm"
-                          className="p-1 h-7 text-warning-soft-foreground hover:text-warning-soft-foreground"
+                          className="text-warning-soft-foreground hover:text-warning-soft-foreground"
                           onClick={() => openChangeRole(u)}
                           disabled={actionLoading === u.id || savingRole}
                           title="Changer le rôle / l'organisation"
-                        >
+                      >
                           <UserPlus className="w-3.5 h-3.5" />
                         </Button>
                         )}

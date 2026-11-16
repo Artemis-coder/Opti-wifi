@@ -163,12 +163,12 @@ const addLine = () => {
           </p>
           {!isCollector && <div className="flex gap-3 pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
             {posList.length === 0 && (
-              <Link href="/pos" className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'gap-2 font-semibold' })}>
+              <Link href="/pos" className={buttonClassName({ variant: 'secondary', size: 'sm'})}>
                   <Plus className="w-4 h-4" /> Créer un POS
                 </Link>
             )}
             {ticketTypes.length === 0 && (
-              <Link href="/tickets" className={buttonClassName({ variant: 'primary', size: 'sm', className: 'gap-2 font-semibold' })}>
+              <Link href="/tickets" className={buttonClassName({ variant: 'primary', size: 'sm'})}>
                   <Plus className="w-4 h-4" /> Créer un Ticket
                 </Link>
             )}
@@ -210,7 +210,7 @@ const addLine = () => {
                    <label className="block text-xs font-semibold text-foreground">
                      Tickets à Allouer
                    </label>
-                  <Button type="button" size="sm" variant="ghost" onClick={addLine} className="gap-1 text-xs">
+                  <Button type="button" size="sm" variant="ghost" onClick={addLine}>
                     <Plus className="w-4 h-4" /> Ajouter un type
                   </Button>
                 </div>
@@ -252,7 +252,7 @@ const addLine = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeLine(index)}
-                        className="text-danger hover:text-danger mt-1"
+                        className="mt-1"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -269,8 +269,8 @@ const addLine = () => {
               />
 
               <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                <Button type="button" variant="ghost" onClick={() => router.back()}>Annuler</Button>
-                <Button type="submit" variant="secondary" className="px-6 font-semibold" isLoading={submitting}>
+                <Button type="button" variant="outline" onClick={() => router.back()}>Annuler</Button>
+                <Button type="submit" variant="primary" isLoading={submitting}>
                   Valider l&apos;Allocation
                 </Button>
               </div>

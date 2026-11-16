@@ -215,8 +215,8 @@ export default function ChangeRequestsPage() {
                       isLoading={busy === r.id}
                       disabled={!!busy}
                       onClick={() => decide(r, 'approve')}
-                      className={cn('font-semibold', r.action === 'delete' && 'bg-danger hover:bg-danger-hover')}
-                    >
+                      variant={r.action === 'delete' ? 'danger' : 'primary'}
+            >
                       {r.action === 'delete' ? 'Valider la suppression' : 'Valider la correction'}
                     </WriteButton>
                     <WriteButton variant="outline" icon={X} disabled={!!busy} onClick={() => (setNote(''), setRejecting(r))}>
@@ -250,10 +250,10 @@ export default function ChangeRequestsPage() {
             </p>
             <Input label="Motif du refus" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. : le montant compté était bien de 150" />
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
-              <Button variant="ghost" onClick={() => setRejecting(null)}>
+              <Button variant="outline" onClick={() => setRejecting(null)}>
                 Annuler
               </Button>
-              <Button isLoading={busy === rejecting.id} disabled={!note.trim() || !!busy} onClick={() => decide(rejecting, 'reject')} className="font-semibold">
+              <Button isLoading={busy === rejecting.id} disabled={!note.trim() || !!busy} onClick={() => decide(rejecting, 'reject')}>
                 Refuser
               </Button>
             </div>

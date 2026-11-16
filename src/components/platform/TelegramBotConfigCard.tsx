@@ -204,7 +204,7 @@ export function TelegramBotConfigCard() {
               onClick={() => setShowToken((v) => !v)}
               aria-label={showToken ? 'Masquer le jeton' : 'Afficher le jeton'}
               className="w-10 h-10 flex items-center justify-center text-muted hover:text-foreground"
-            >
+        >
               {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           }
@@ -239,7 +239,7 @@ export function TelegramBotConfigCard() {
                   ? 'bg-accent-soft text-accent'
                   : 'border-border text-foreground hover:border-border'
               )}
-            >
+        >
               {o.label}
             </button>
           ))}
@@ -277,7 +277,7 @@ export function TelegramBotConfigCard() {
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row pt-1 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-        <Button icon={Save} onClick={() => save(false)} isLoading={saving} className="w-full sm:w-auto font-semibold">
+        <Button icon={Save} onClick={() => save(false)} isLoading={saving} className="w-full sm:w-auto">
           Enregistrer et brancher le webhook
         </Button>
         {state.canConnect && src('TELEGRAM_BOT_TOKEN')?.configured && secretConfigured && (

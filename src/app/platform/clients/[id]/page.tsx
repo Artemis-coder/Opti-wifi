@@ -229,7 +229,7 @@ export default function ClientDetailPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="space-y-3">
-        <Link href="/platform/clients" className={buttonClassName({ variant: 'ghost', size: 'sm', className: '-ml-3' })}>
+        <Link href="/platform/clients" className={buttonClassName({ variant: 'ghost', size: 'sm', className: '-ml-3'})}>
           <ArrowLeft className="size-4" /> Retour aux clients
         </Link>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -299,7 +299,7 @@ export default function ClientDetailPage() {
         isOpen={confirmModalOpen.open}
         onClose={() => setConfirmModalOpen({ open: false, action: '', label: '' })}
         title="Confirmation d&apos;action"
-      >
+              >
         <p className="text-sm text-foreground">
           Voulez-vous vraiment <strong>{confirmModalOpen.label}</strong> ce compte client ?
           {(confirmModalOpen.action === 'suspend' || confirmModalOpen.action === 'archive') && (
@@ -313,9 +313,9 @@ export default function ClientDetailPage() {
           Cette action affectera immédiatement l&apos;accès du client à la plateforme.
         </p>
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="ghost"
+          <Button type="button" variant="outline"
             onClick={() => setConfirmModalOpen({ open: false, action: '', label: '' })}
-          >
+              >
             Annuler
           </Button>
           <Button
@@ -323,7 +323,7 @@ export default function ClientDetailPage() {
             variant={confirmModalOpen.action === 'suspend' ? 'danger' : 'secondary'}
             onClick={executeAction}
             isLoading={actionLoading}
-          >
+              >
             Confirmer
           </Button>
         </div>
@@ -466,7 +466,7 @@ export default function ClientDetailPage() {
                 )}
               </p>
               {!trial.used && org.status !== 'pending_approval' && (
-                <Button size="sm" className="gap-2" onClick={() => setLicenseModalOpen(true)}>
+                <Button size="sm" onClick={() => setLicenseModalOpen(true)}>
                   <Gift className="w-4 h-4" />
                   Démarrer l&apos;essai
                 </Button>
@@ -574,7 +574,7 @@ export default function ClientDetailPage() {
               <Users className="w-5 h-5 text-accent" />
               <h2 className="text-base font-semibold text-foreground">Utilisateurs ({data.users.length})</h2>
             </div>
-            <Link href={`/platform/users?org=${org.id}`} className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'text-xs' })}>Voir tout</Link>
+            <Link href={`/platform/users?org=${org.id}`} className={buttonClassName({ variant: 'ghost', size: 'sm'})}>Voir tout</Link>
           </div>
           {data.users.length === 0 ? (
             <p className="text-xs text-muted text-center py-6">Aucun utilisateur.</p>

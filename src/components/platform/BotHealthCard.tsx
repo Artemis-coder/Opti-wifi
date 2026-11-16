@@ -79,7 +79,7 @@ export function BotHealthCard() {
       )}
 
       <div className="flex flex-col sm:flex-row gap-2">
-        <Button icon={Stethoscope} onClick={run} isLoading={running} className="w-full sm:w-auto font-semibold">
+        <Button icon={Stethoscope} onClick={run} isLoading={running} className="w-full sm:w-auto">
           {checks ? 'Relancer le diagnostic' : 'Lancer le diagnostic'}
         </Button>
       </div>

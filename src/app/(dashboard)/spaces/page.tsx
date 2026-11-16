@@ -307,7 +307,7 @@ export default function WifiSpacesPage() {
                         {space.statut}
                       </Badge>
                       {isAdmin && (
-                        <Button
+                        <Button isIconOnly
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
@@ -316,9 +316,9 @@ export default function WifiSpacesPage() {
                             handleToggleStatus(space);
                           }}
                           disabled={togglingId === space.id}
-                          className="p-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
                           title={space.statut === 'actif' ? 'Désactiver' : 'Activer'}
-                        >
+                      >
                           {togglingId === space.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : space.statut === 'actif' ? (
@@ -396,7 +396,7 @@ export default function WifiSpacesPage() {
                   />
                 </div>
                 <div className="flex gap-3 pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                  <Button type="button" variant="ghost" onClick={handleCloseModal}>
+                  <Button type="button" variant="outline" onClick={handleCloseModal}>
                     Annuler
                   </Button>
                   <Button type="submit" variant="secondary" isLoading={submitting}>

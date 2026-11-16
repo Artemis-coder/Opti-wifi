@@ -206,10 +206,10 @@ export default function DeletionRequestsPage() {
                       <a
                         href={`/api/platform/deletion-requests/${r.id}/export`}
                         className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-surface-secondary"
-                      >
+            >
                         <Download className="w-4 h-4" /> Télécharger les données
                       </a>
-                      <Button variant="danger" icon={Trash2} onClick={() => setApproving(r)} className="font-semibold">
+                      <Button variant="danger" icon={Trash2} onClick={() => setApproving(r)}>
                         Supprimer définitivement
                       </Button>
                       <Button variant="ghost" icon={XCircle} onClick={() => setRejecting(r)}>
@@ -262,10 +262,10 @@ export default function DeletionRequestsPage() {
             />
             <Input label="Note (facultatif)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. : demande vérifiée par téléphone" />
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
-              <Button variant="ghost" onClick={closeModals}>
+              <Button variant="outline" onClick={closeModals}>
                 Annuler
               </Button>
-              <Button variant="danger" icon={Trash2} isLoading={busy} disabled={!nameOk || busy} onClick={() => decide(approving, 'approve')} className="font-semibold">
+              <Button variant="danger" icon={Trash2} isLoading={busy} disabled={!nameOk || busy} onClick={() => decide(approving, 'approve')}>
                 Supprimer définitivement
               </Button>
             </div>
@@ -282,10 +282,10 @@ export default function DeletionRequestsPage() {
             </p>
             <Input label="Motif du refus" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. : facture impayée à régler avant la suppression" />
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
-              <Button variant="ghost" onClick={closeModals}>
+              <Button variant="outline" onClick={closeModals}>
                 Annuler
               </Button>
-              <Button isLoading={busy} disabled={!note.trim() || busy} onClick={() => decide(rejecting, 'reject')} className="font-semibold">
+              <Button isLoading={busy} disabled={!note.trim() || busy} onClick={() => decide(rejecting, 'reject')}>
                 Refuser la demande
               </Button>
             </div>

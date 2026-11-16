@@ -280,7 +280,7 @@ function PosDetailContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2.5 min-w-0">
-          <Link href="/pos" aria-label="Retour aux points de vente" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'shrink-0 px-2.5' })}>
+          <Link href="/pos" aria-label="Retour aux points de vente" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'shrink-0'})}>
             <ArrowLeft className="size-4" /> <span className="hidden xs:inline">Retour</span>
           </Link>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2 min-w-0 truncate">
@@ -291,10 +291,10 @@ function PosDetailContent() {
         <div className="flex items-center gap-2 self-stretch sm:self-auto">
           {isAdmin && (
             <WriteButton
-              variant="outline"
+              variant="danger-soft"
               size="sm"
               onClick={() => setIsResetModalOpen(true)}
-              className="flex-1 sm:flex-initial text-danger border-danger/30 hover:bg-danger-soft hover:text-danger"
+              className="flex-1 sm:flex-initial"
               title="Vider les données de ce POS"
             >
               <Trash2 className="w-4 h-4 shrink-0" />
@@ -313,8 +313,8 @@ function PosDetailContent() {
             pos.statut === 'actif' && (
               <Link
                 href={`/collections/new?pos=${pos.id}`}
-                className={buttonClassName({ size: 'sm', className: 'flex-1 sm:flex-initial' })}
-              >
+                className={buttonClassName({ size: 'sm', className: 'flex-1 sm:flex-initial'})}
+            >
                 <Receipt className="w-4 h-4 shrink-0" /> <span>Collecter</span>
               </Link>
             )
@@ -345,7 +345,7 @@ function PosDetailContent() {
                     ? 'bg-foreground text-background border-border'
                     : 'bg-surface text-muted border-border hover:border-border',
                 )}
-              >
+            >
                 <Icon className="w-4 h-4" /> {t.label}
                 {t.value === 'acces' && posAccount && (
                   <span className={cn('w-2 h-2 rounded-full', posAccount.is_active === false ? 'bg-muted' : 'bg-success')} />
@@ -483,7 +483,7 @@ function PosDetailContent() {
             <p className="text-xs text-muted max-w-sm mx-auto">
               Aucun ticket n&apos;a été alloué à ce point de vente.
             </p>
-            <Link href={`/allocations/new?pos=${pos.id}`} className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'gap-2 font-semibold' })}>
+            <Link href={`/allocations/new?pos=${pos.id}`} className={buttonClassName({ variant: 'secondary', size: 'sm'})}>
                 <Package className="w-4 h-4" /> Allouer des Tickets
               </Link>
           </div>
@@ -565,7 +565,7 @@ function PosDetailContent() {
                 <div
                   key={`mobile-summary-${s.ticketType.id}`}
                   className="p-3.5 rounded-2xl bg-surface-secondary/80 space-y-3 shadow-xs"
-                >
+            >
                   {/* Header: Ticket Name + Price + Conforme badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -733,7 +733,7 @@ function PosDetailContent() {
                   <div
                     key={`mobile-alloc-${a.id}`}
                     className="p-3.5 rounded-2xl bg-surface-secondary/80 space-y-2.5 shadow-xs"
-                  >
+            >
                     {/* Top: Ticket Name + Type Badge */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -745,7 +745,7 @@ function PosDetailContent() {
                               ? 'bg-accent-soft text-accent '
                               : 'bg-success-soft text-success-soft-foreground '
                           }`}
-                        >
+            >
                           <Ticket className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
@@ -761,7 +761,7 @@ function PosDetailContent() {
                       <Badge
                         variant={isExchangeReturn ? 'warning' : isExchangeReceive ? 'info' : 'success'}
                         className="text-xs px-2 py-0.5 shrink-0"
-                      >
+            >
                         {isExchangeReturn ? 'Retour' : isExchangeReceive ? 'Échange' : 'Allocation'}
                       </Badge>
                     </div>
@@ -883,7 +883,7 @@ function PosDetailContent() {
                 <div
                   key={`mobile-col-${c.id}`}
                   className="p-3.5 rounded-2xl bg-surface-secondary/80 space-y-2.5 shadow-xs"
-                >
+            >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 text-xs text-muted">
                       <Clock className="w-3.5 h-3.5 text-muted" />

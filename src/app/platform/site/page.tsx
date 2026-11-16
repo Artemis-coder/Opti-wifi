@@ -155,7 +155,7 @@ function SiteContentEditor() {
           >
             <ExternalLink className="w-4 h-4" /> Voir le site
           </a>
-          <Button onClick={save} variant="secondary" className="gap-2 font-semibold flex-1 sm:flex-none" isLoading={saving} disabled={!dirty}>
+          <Button onClick={save} variant="secondary" className="flex-1 sm:flex-none" isLoading={saving} disabled={!dirty}>
             <Save className="w-4 h-4" /> Enregistrer
           </Button>
         </div>
@@ -178,7 +178,7 @@ function SiteContentEditor() {
                   ? 'bg-foreground text-background border-border '
                   : 'bg-surface text-muted border-border hover:border-border'
               }`}
-            >
+          >
               <Icon className="w-4 h-4" /> {t.label}
               {changed && <span className="w-2 h-2 rounded-full bg-warning" aria-label="modifié, non enregistré" />}
             </button>
@@ -256,7 +256,7 @@ function SiteContentEditor() {
           icon={Tags}
           title="Tarifs"
           hint="Les forfaits, leurs prix et leurs limites viennent directement de Licences → Forfaits : une seule saisie pour l'outil et le site."
-        >
+          >
           <Input label="Titre" value={draft.pricing.title} onChange={(e) => set('pricing', { ...draft.pricing, title: e.target.value })} />
           <TextArea label="Sous-titre" value={draft.pricing.subtitle} onChange={(v) => set('pricing', { ...draft.pricing, subtitle: v })} />
           <CustomSelect
@@ -320,7 +320,6 @@ function SiteContentEditor() {
           </div>
           <Button
             variant="outline"
-            className="gap-2"
             disabled={draft.faq.items.length >= 20}
             onClick={() => set('faq', { items: [...draft.faq.items, { q: '', a: '' }] })}
           >
@@ -404,7 +403,7 @@ function LegalEditor({ kind, doc, onChange }: { kind: 'cgu' | 'cgv'; doc: SiteLe
       icon={kind === 'cgu' ? FileText : Scale}
       title={meta.title}
       hint={`Publiées sur ${SITE_URL}${meta.path} et dans le PDF téléchargeable, moins d'une minute après l'enregistrement.`}
-    >
+          >
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl bg-surface-secondary px-4 py-3 text-xs text-muted">
         <span>
           Dernière mise à jour publiée : <strong>{updated}</strong> (mise à jour automatiquement à l&apos;enregistrement)
@@ -458,10 +457,9 @@ function LegalEditor({ kind, doc, onChange }: { kind: 'cgu' | 'cgv'; doc: SiteLe
 
       <Button
         variant="outline"
-        className="gap-2"
         disabled={sections.length >= 40}
         onClick={() => setSections([...sections, { title: `${sections.length + 1}. Nouvelle section`, body: '' }])}
-      >
+          >
         <Plus className="w-4 h-4" /> Ajouter une section
       </Button>
     </Section>
@@ -519,7 +517,7 @@ function IconButton({
       className={`grid h-9 w-9 place-items-center rounded-xl transition disabled:opacity-30 ${
         danger ? 'text-danger hover:bg-danger-soft ' : 'text-muted hover:bg-default '
       }`}
-    >
+          >
       <Icon className="w-4 h-4" />
     </button>
   );

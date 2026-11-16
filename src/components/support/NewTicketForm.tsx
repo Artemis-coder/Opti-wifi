@@ -101,10 +101,10 @@ export function NewTicketForm({ endpoint, clients, onCreated, onCancel }: NewTic
         />
       </div>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end pt-1">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit" icon={Send} isLoading={sending} className="font-semibold">
+        <Button type="submit" icon={Send} isLoading={sending}>
           {forSupport ? 'Ouvrir le ticket' : 'Envoyer au support'}
         </Button>
       </div>

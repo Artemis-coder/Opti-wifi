@@ -97,7 +97,7 @@ export function NotificationChannelsTest() {
         )}
       </div>
 
-      <Button onClick={runTest} isLoading={testing} className="gap-2">
+      <Button onClick={runTest} isLoading={testing}>
         <Send className="w-4 h-4" /> Envoyer une notification de test
       </Button>
 
@@ -125,7 +125,7 @@ export function NotificationChannelsTest() {
       )}
 
       <div className="pt-4 border-t border-border space-y-3">
-        <Button variant="outline" onClick={testAssistant} isLoading={asking} className="gap-2">
+        <Button variant="outline" onClick={testAssistant} isLoading={asking}>
           <Bot className="w-4 h-4" /> Tester l&apos;assistant Claude du bot
         </Button>
         {assistant && (

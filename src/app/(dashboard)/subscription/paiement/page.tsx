@@ -137,7 +137,7 @@ function PaymentReturn() {
           votre licence s&apos;activera dès la confirmation, même si vous la fermez.
         </p>
         <div className="flex flex-col sm:flex-row gap-2 justify-center">
-          <Button variant="outline" onClick={check} isLoading={checking} className="gap-2">
+          <Button variant="outline" onClick={check} isLoading={checking}>
             {!checking && <RefreshCw className="w-4 h-4" />} Vérifier maintenant
           </Button>
           {data.checkout_url && (

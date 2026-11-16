@@ -105,11 +105,11 @@ function ImageField({
       <div className="flex items-center gap-3">
         {preview}
         <div className="flex flex-col gap-2">
-          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => ref.current?.click()}>
+          <Button type="button" variant="outline" size="sm" onClick={() => ref.current?.click()}>
             <ImagePlus className="w-4 h-4" /> {value ? 'Changer' : 'Importer'}
           </Button>
           {value && (
-            <Button type="button" variant="ghost" size="sm" className="gap-1.5" onClick={onClear}>
+            <Button type="button" variant="ghost" size="sm" onClick={onClear}>
               <X className="w-4 h-4" /> Retirer
             </Button>
           )}
@@ -386,20 +386,19 @@ export default function PaymentMethodsPage() {
                       aria-label="Descendre"
                       disabled={i === methods.length - 1 || !!busyId}
                       onClick={() => move(i, 1)}
-                    >
+                        >
                       <ArrowDown className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1.5"
                       disabled={busyId === m.id}
                       onClick={() => patch(m.id, { is_active: !m.is_active }, m.is_active ? 'Masqué aux clients' : 'Affiché aux clients')}
-                    >
+                        >
                       {m.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       {m.is_active ? 'Masquer' : 'Afficher'}
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openModal(m)}>
+                    <Button variant="outline" size="sm" onClick={() => openModal(m)}>
                       <Pencil className="w-4 h-4" /> Modifier
                     </Button>
                     <Button variant="ghost" size="sm" aria-label={`Supprimer ${m.name}`} disabled={busyId === m.id} onClick={() => remove(m)}>
@@ -418,7 +417,7 @@ export default function PaymentMethodsPage() {
         onClose={() => setModalOpen(false)}
         title={editing ? 'Modifier le moyen de paiement' : 'Nouveau moyen de paiement'}
         className="md:max-w-4xl"
-      >
+                        >
         <form onSubmit={save} className="grid gap-3 sm:gap-4 md:grid-cols-[1fr_20rem]">
           <div className="space-y-4">
             <ImageField
@@ -505,7 +504,7 @@ export default function PaymentMethodsPage() {
               <label
                 htmlFor="pm-description"
                 className="block text-xs sm:text-xs font-semibold text-muted"
-              >
+                        >
                 Instructions (facultatif)
               </label>
               <textarea
@@ -555,7 +554,7 @@ export default function PaymentMethodsPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row md:col-span-2 sm:justify-end">
-            <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Annuler
             </Button>
             <Button type="submit" isLoading={saving}>

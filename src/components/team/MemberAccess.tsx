@@ -86,17 +86,16 @@ export function AccessCard({ member, access, emailSent }: { member: Member; acce
         <Button
           type="button"
           variant="outline"
-          className="h-11 font-semibold"
           onClick={() => navigator.clipboard.writeText(text).then(() => toast.success('Accès copiés : collez-les dans un message.'))}
-        >
-          <Copy className="w-4 h-4 mr-1.5" /> Copier tous les accès
+      >
+          <Copy className="w-4 h-4" /> Copier tous les accès
         </Button>
         <a
           href={whatsapp}
           target="_blank"
           rel="noopener noreferrer"
           className="h-11 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-[#128C7E] hover:bg-[#0e7268]"
-        >
+      >
           <MessageCircle className="w-4 h-4" /> Envoyer sur WhatsApp
         </a>
       </div>
@@ -148,17 +147,16 @@ export function InviteLinkCard({ member, link, emailSent }: { member: Member; li
         <Button
           type="button"
           variant="outline"
-          className="h-11 font-semibold"
           onClick={() => navigator.clipboard.writeText(text).then(() => toast.success('Message copié : collez-le dans une conversation.'))}
-        >
-          <Copy className="w-4 h-4 mr-1.5" /> Copier le message
+      >
+          <Copy className="w-4 h-4" /> Copier le message
         </Button>
         <a
           href={`https://wa.me/${phone}?text=${encodeURIComponent(text)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="h-11 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-[#128C7E] hover:bg-[#0e7268]"
-        >
+      >
           <MessageCircle className="w-4 h-4" /> Envoyer sur WhatsApp
         </a>
       </div>
@@ -236,7 +234,7 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
             ? `Nouveaux accès de ${member?.nom}`
             : `Accès de ${member?.nom ?? ''}`
       }
-    >
+      >
       {member && result ? (
         <div className="space-y-4">
           {result.kind === 'link' ? (
@@ -270,7 +268,7 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
                 L&apos;envoyer aussi par e-mail
               </label>
               )}
-              <Button variant="outline" className="w-full h-10 font-semibold" isLoading={busy === 'invite_link'} disabled={!!busy} onClick={() => run('invite_link')}>
+              <Button variant="outline" className="w-full" isLoading={busy === 'invite_link'} disabled={!!busy} onClick={() => run('invite_link')}>
                 Créer le lien
               </Button>
             </div>
@@ -289,7 +287,7 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
                 Les envoyer aussi par e-mail
               </label>
               )}
-              <Button className="w-full h-10 font-semibold" isLoading={busy === 'temporary_password'} disabled={!!busy} onClick={() => run('temporary_password')}>
+              <Button className="w-full" isLoading={busy === 'temporary_password'} disabled={!!busy} onClick={() => run('temporary_password')}>
                 Générer et afficher les accès
               </Button>
             </div>

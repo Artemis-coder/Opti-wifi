@@ -319,14 +319,14 @@ export default function PlatformPlansPage() {
               )}
 
               <div className="flex gap-2 pt-2 border-t border-border">
-                <Button variant="ghost" size="sm" className="flex-1 gap-1" onClick={() => handleToggleStatus(plan)}>
+                <Button variant="ghost" size="sm" className="flex-1" onClick={() => handleToggleStatus(plan)}>
                   {plan.status === 'active' ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
                   {plan.status === 'active' ? 'Désactiver' : 'Activer'}
                 </Button>
-                <Button variant="ghost" size="sm" className="p-1 h-8 w-8" onClick={() => handleOpenModal(plan)}>
+                <Button isIconOnly variant="ghost" size="sm" onClick={() => handleOpenModal(plan)}>
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="p-1 h-8 w-8 text-danger hover:text-danger" onClick={() => handleDelete(plan)}>
+                <Button isIconOnly variant="danger-soft" size="sm" onClick={() => handleDelete(plan)}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -466,7 +466,7 @@ export default function PlatformPlansPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={handleCloseModal} disabled={submitting}>
+            <Button type="button" variant="outline" onClick={handleCloseModal} disabled={submitting}>
               Annuler
             </Button>
             <Button type="submit" variant="secondary" isLoading={submitting}>

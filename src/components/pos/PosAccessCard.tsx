@@ -196,25 +196,23 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
             <WriteButton
               variant="outline"
               size="sm"
-              className="h-10 font-semibold"
               onClick={() => setManageOpen(true)}
               disabled={account.is_active === false}
-            >
-              <KeyRound className="w-4 h-4 mr-1.5" /> Gérer l’accès
+              >
+              <KeyRound className="w-4 h-4" /> Gérer l’accès
             </WriteButton>
             <WriteButton
-              variant="outline"
+              variant="danger-soft"
               size="sm"
-              className="h-10 font-semibold text-danger border-danger/30 hover:bg-danger-soft"
               onClick={remove}
-            >
-              <Trash2 className="w-4 h-4 mr-1.5" /> Retirer
+              >
+              <Trash2 className="w-4 h-4" /> Retirer
             </WriteButton>
           </div>
           <Link
             href="/users?filtre=points-de-vente"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
-          >
+              >
             <Users className="w-3.5 h-3.5" /> Voir tous les accès dans Utilisateurs &amp; équipe
           </Link>
         </div>
@@ -228,13 +226,13 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
           <Link
             href="/subscription"
             className="inline-flex items-center gap-1 text-sm font-semibold text-warning-soft-foreground hover:underline whitespace-nowrap"
-          >
+              >
             Voir les forfaits <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       ) : (
-        <WriteButton size="sm" className="h-10 font-semibold" onClick={() => setIsOpen(true)} disabled={!limits}>
-          <UserPlus className="w-4 h-4 mr-1.5" /> Créer un accès
+        <WriteButton size="sm" onClick={() => setIsOpen(true)} disabled={!limits}>
+          <UserPlus className="w-4 h-4" /> Créer un accès
         </WriteButton>
       )}
 
@@ -283,7 +281,7 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
           </label>
           )}
           <div className="flex gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Annuler
             </Button>
             <Button type="submit" disabled={submitting}>

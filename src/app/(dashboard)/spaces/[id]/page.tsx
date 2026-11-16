@@ -283,7 +283,7 @@ export default function SpaceDashboardPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       {/* En-tête de page */}
       <div className="space-y-3">
-        <Link href="/spaces" className={buttonClassName({ variant: 'ghost', size: 'sm', className: '-ml-3' })}>
+        <Link href="/spaces" className={buttonClassName({ variant: 'ghost', size: 'sm', className: '-ml-3'})}>
           <ArrowLeft className="size-4" /> Retour aux espaces
         </Link>
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -325,7 +325,7 @@ export default function SpaceDashboardPage() {
                variant="ghost"
                size="sm"
                onClick={() => setManagePosSpaceId(spaceId)}
-               className="gap-1 text-xs font-semibold text-accent"
+               className="text-accent"
              >
                <Link2 className="w-3.5 h-3.5" />
                Gérer les POS
@@ -405,7 +405,7 @@ export default function SpaceDashboardPage() {
               <Link
                 href="/allocations/new"
                 className="flex items-center justify-between p-3 rounded-xl bg-accent-soft hover:scale-[1.01] transition"
-              >
+             >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-accent text-accent-foreground">
                     <ArrowLeftRight className="w-5 h-5" />
@@ -422,7 +422,7 @@ export default function SpaceDashboardPage() {
             <Link
               href="/collections/new"
               className="flex items-center justify-between p-3 rounded-xl bg-warning-soft hover:scale-[1.01] transition"
-            >
+             >
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-warning text-foreground">
                   <Receipt className="w-5 h-5" />
@@ -438,7 +438,7 @@ export default function SpaceDashboardPage() {
             <Link
               href="/pos"
               className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:scale-[1.01] transition"
-            >
+             >
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-accent text-accent-foreground">
                   <Store className="w-5 h-5" />
@@ -454,7 +454,7 @@ export default function SpaceDashboardPage() {
             <Link
               href="/tickets"
               className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:scale-[1.01] transition"
-            >
+             >
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-success text-success-foreground">
                   <Ticket className="w-5 h-5" />
@@ -478,7 +478,7 @@ export default function SpaceDashboardPage() {
             <Link
               href="/collections"
               className="text-xs font-semibold text-warning-soft-foreground hover:text-warning-soft-foreground"
-            >
+             >
               Voir tout →
             </Link>
           </div>
@@ -551,7 +551,7 @@ export default function SpaceDashboardPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setManagePosSpaceId(null)}
-                >
+             >
                   ✕
                 </Button>
               </div>
@@ -571,7 +571,7 @@ export default function SpaceDashboardPage() {
                       <div
                         key={p.id}
                         className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl"
-                      >
+             >
                         <div className="flex items-center gap-3 min-w-0">
                           <Store className="w-4 h-4 text-success-soft-foreground shrink-0" />
                           <div className="min-w-0">
@@ -587,8 +587,7 @@ export default function SpaceDashboardPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleUnlinkPos(p.id)}
-                          className="gap-1 text-xs text-danger hover:text-danger"
-                        >
+             >
                           <Unlink className="w-3.5 h-3.5" /> Détacher
                         </Button>
                       </div>
@@ -612,7 +611,7 @@ export default function SpaceDashboardPage() {
                       <div
                         key={p.id}
                         className="flex items-center justify-between p-3 bg-surface rounded-xl border border-border"
-                      >
+             >
                         <div className="flex items-center gap-3 min-w-0">
                           <Store className="w-4 h-4 text-accent shrink-0" />
                           <div className="min-w-0">
@@ -628,8 +627,7 @@ export default function SpaceDashboardPage() {
                           variant="secondary"
                           size="sm"
                           onClick={() => handleLinkPos(p.id)}
-                          className="gap-1 text-xs py-1 px-2 h-7"
-                        >
+             >
                           <Link2 className="w-3 h-3" /> Rattacher
                         </Button>
                       </div>
@@ -640,9 +638,9 @@ export default function SpaceDashboardPage() {
 
               <div className="flex justify-end pt-4">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => setManagePosSpaceId(null)}
-                >
+             >
                   Fermer
                 </Button>
               </div>
@@ -691,7 +689,7 @@ export default function SpaceDashboardPage() {
                   }
                 }}
                 className="space-y-4"
-              >
+             >
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-foreground">
                     Nom de l'espace *
@@ -742,12 +740,12 @@ export default function SpaceDashboardPage() {
                 <div className="flex gap-3 pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     onClick={() => setIsEditModalOpen(false)}
-                  >
+             >
                     Annuler
                   </Button>
-                  <Button type="submit" variant="secondary">
+                  <Button type="submit" variant="primary">
                     Mettre à jour
                   </Button>
                 </div>

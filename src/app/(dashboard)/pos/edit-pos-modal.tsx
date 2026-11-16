@@ -207,7 +207,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Annuler
           </Button>
           <Button type="submit" isLoading={isSubmitting}>

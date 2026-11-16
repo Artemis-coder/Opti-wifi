@@ -169,10 +169,10 @@ export default function PlatformExpiringSubscriptionsPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <Button
                             size="sm"
-                            className="text-xs h-8 whitespace-nowrap"
+                            className="whitespace-nowrap"
                             icon={KeyRound}
                             onClick={() => setExtending(sub)}
-                          >
+                        >
                             Prolonger
                           </Button>
                           <Link
@@ -180,7 +180,7 @@ export default function PlatformExpiringSubscriptionsPage() {
                             title="Voir le client"
                             aria-label="Voir le client"
                             className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-border hover:bg-default"
-                          >
+                        >
                             <ExternalLink className="w-4 h-4 text-muted" />
                           </Link>
                         </div>

@@ -209,24 +209,22 @@ export default function PlatformRegistrationsPage() {
                             <>
                               <Button
                                 size="sm"
-                                className="h-7 text-xs"
                                 onClick={() => handleApprove(r)}
                                 isLoading={busyId === r.id}
                               >
-                                <CheckCircle className="w-3.5 h-3.5 mr-1" /> Valider
+                                <CheckCircle className="w-3.5 h-3.5" /> Valider
                               </Button>
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="h-7 text-xs text-danger"
+                                variant="danger-soft"
                                 onClick={() => setRejecting(r)}
                                 disabled={busyId === r.id}
                               >
-                                <XCircle className="w-3.5 h-3.5 mr-1" /> Refuser
+                                <XCircle className="w-3.5 h-3.5" /> Refuser
                               </Button>
                             </>
                           )}
-                          <Link href={`/platform/clients/${r.id}`} title="Voir la fiche" aria-label="Voir la fiche" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'h-7 text-xs' })}>
+                          <Link href={`/platform/clients/${r.id}`} title="Voir la fiche" aria-label="Voir la fiche" className={buttonClassName({ variant: 'ghost', size: 'sm', isIconOnly: true })}>
                               <Eye className="w-3.5 h-3.5" />
                             </Link>
                         </div>
@@ -254,7 +252,7 @@ export default function PlatformRegistrationsPage() {
             className="textarea textarea--primary w-full"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setRejecting(null)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setRejecting(null)}>Annuler</Button>
             <Button variant="danger" onClick={handleReject} isLoading={busyId === rejecting?.id}>
               Refuser l&apos;inscription
             </Button>

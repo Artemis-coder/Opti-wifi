@@ -156,19 +156,14 @@ export default function TicketTypesPage() {
 
               {/* Actions bien visibles, avec libellé */}
               <div className="grid grid-cols-2 gap-2">
-                <WriteButton variant="outline" size="sm" className="h-10 font-semibold" onClick={() => setEditingTicket(t)}>
-                  <Edit className="w-4 h-4 mr-1.5" />
+                <WriteButton variant="outline" size="sm" onClick={() => setEditingTicket(t)}>
+                  <Edit className="w-4 h-4" />
                   Modifier
                 </WriteButton>
                 <WriteButton
                   variant="outline"
                   size="sm"
                   onClick={() => handleToggleActif(t)}
-                  className={
-                    t.actif
-                      ? 'h-10 font-semibold text-warning-soft-foreground border-warning/30 hover:bg-warning-soft'
-                      : 'h-10 font-semibold text-success-soft-foreground border-success/30 hover:bg-success-soft'
-                  }
                 >
                   {t.actif ? <PauseCircle className="w-4 h-4 mr-1.5" /> : <PlayCircle className="w-4 h-4 mr-1.5" />}
                   {t.actif ? 'Désactiver' : 'Activer'}
@@ -192,7 +187,7 @@ export default function TicketTypesPage() {
           />
           <Input label="Prix Vente (FCFA)" type="number" placeholder="500" value={prix} onChange={(e) => setPrix(e.target.value)} required />
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Annuler</Button>
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Annuler</Button>
             <Button type="submit" isLoading={creating}>Enregistrer Ticket</Button>
           </div>
         </form>

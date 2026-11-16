@@ -186,13 +186,13 @@ export default function LicenseRequestsPage() {
                     <td className="px-4 py-3">
                       {tab === 'pending' ? (
                         <div className="flex gap-1.5 justify-end">
-                          <Button size="sm" className="h-7 text-xs" onClick={() => setApproving(r)}>
-                            <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approuver
+                          <Button size="sm" onClick={() => setApproving(r)}>
+                            <CheckCircle className="w-3.5 h-3.5" /> Approuver
                           </Button>
-                          <Button size="sm" variant="outline" className="h-7 text-xs text-danger" onClick={() => setRejecting(r)}>
-                            <XCircle className="w-3.5 h-3.5 mr-1" /> Refuser
+                          <Button size="sm" variant="danger-soft" onClick={() => setRejecting(r)}>
+                            <XCircle className="w-3.5 h-3.5" /> Refuser
                           </Button>
-                          <Link href={`/platform/clients/${r.organization_id}`} title="Voir la fiche" aria-label="Voir la fiche" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'h-7 text-xs' })}>
+                          <Link href={`/platform/clients/${r.organization_id}`} title="Voir la fiche" aria-label="Voir la fiche" className={buttonClassName({ variant: 'ghost', size: 'sm', isIconOnly: true })}>
                               <Eye className="w-3.5 h-3.5" />
                             </Link>
                         </div>
@@ -236,7 +236,7 @@ export default function LicenseRequestsPage() {
             className="textarea textarea--primary w-full"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setRejecting(null)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setRejecting(null)}>Annuler</Button>
             <Button variant="danger" onClick={handleReject} isLoading={submitting}>Refuser la demande</Button>
           </div>
         </div>

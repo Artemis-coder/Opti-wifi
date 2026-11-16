@@ -90,7 +90,7 @@ function WelcomeModal({ name, state, onDismiss }: { name?: string | null; state:
         </p>
 
         <div className="px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] grid grid-cols-1 gap-2">
-          <button type="button" onClick={onDismiss} className={buttonClassName({ className: 'h-12 font-semibold w-full' })}>
+          <button type="button" onClick={onDismiss} className={buttonClassName({ className: 'w-full'})}>
             C’est parti, montrez-moi <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -300,7 +300,7 @@ export function OnboardingCard() {
           <p className="font-semibold text-foreground">{current.title}</p>
           <p className="text-sm text-muted">{current.description}</p>
         </div>
-        <Link href={stepHref(current)} data-tour="guide:start" className={buttonClassName({ className: 'shrink-0 font-semibold' })}>
+        <Link href={stepHref(current)} data-tour="guide:start" className={buttonClassName({ className: 'shrink-0'})}>
           {current.action} <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
@@ -378,7 +378,7 @@ export function OnboardingBanner() {
           <p className="font-semibold text-success-soft-foreground">Étape {number} terminée : {step.title.toLowerCase()}</p>
           <p className="text-sm text-success-soft-foreground">Prochaine étape : {current.title.toLowerCase()}.</p>
         </div>
-        <Link href={stepHref(current)} data-tour="guide:next" className={buttonClassName({ size: 'sm', className: 'shrink-0' })}>
+        <Link href={stepHref(current)} data-tour="guide:next" className={buttonClassName({ size: 'sm', className: 'shrink-0'})}>
           {current.action} <ArrowRight className="w-4 h-4" />
         </Link>
       </>
@@ -391,7 +391,7 @@ export function OnboardingBanner() {
           <p className="font-semibold text-warning-soft-foreground">Avant cette étape : {current.title.toLowerCase()}</p>
           <p className="text-sm text-warning-soft-foreground">{current.description}</p>
         </div>
-        <Link href={stepHref(current)} className={buttonClassName({ size: 'sm', variant: 'outline', className: 'shrink-0' })}>
+        <Link href={stepHref(current)} className={buttonClassName({ size: 'sm', variant: 'outline', className: 'shrink-0'})}>
           {current.action}
         </Link>
       </>
@@ -411,7 +411,7 @@ export function OnboardingBanner() {
           )}
         </div>
         {!step.opensForm && pathname !== step.path && (
-          <Link href={step.path} className={buttonClassName({ size: 'sm', className: 'shrink-0' })}>
+          <Link href={step.path} className={buttonClassName({ size: 'sm', className: 'shrink-0'})}>
             {step.action}
           </Link>
         )}
@@ -419,7 +419,7 @@ export function OnboardingBanner() {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new Event(GUIDE_OPEN_EVENT))}
-            className={buttonClassName({ size: 'sm', className: 'shrink-0' })}
+            className={buttonClassName({ size: 'sm', className: 'shrink-0'})}
           >
             {step.action}
           </button>

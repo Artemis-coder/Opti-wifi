@@ -184,7 +184,7 @@ export default function AllocationsPage() {
         {/* Action Buttons */}
         {!isPosAccount && (
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Link href="/allocations/exchange" className={buttonClassName({ variant: 'outline', size: 'sm', className: 'flex-1 sm:flex-initial' })}>
+          <Link href="/allocations/exchange" className={buttonClassName({ variant: 'outline', size: 'sm', className: 'flex-1 sm:flex-initial'})}>
             <Repeat className="size-4" />
             <span>Échange de tickets</span>
           </Link>

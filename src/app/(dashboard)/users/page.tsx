@@ -415,7 +415,7 @@ function UsersContent() {
                         <Link
                           href={`/pos/${u.pos_id}?tab=acces`}
                           className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
-                        >
+            >
                           <Store className="w-3 h-3" /> {posNames[u.pos_id] || 'Point de vente'}
                         </Link>
                       )}
@@ -428,7 +428,7 @@ function UsersContent() {
                     <Badge
                       variant={u.role === 'administrateur' ? 'warning' : u.role === 'point_de_vente' ? 'success' : 'info'}
                       className="whitespace-nowrap"
-                    >
+            >
                       {u.role === 'point_de_vente' ? 'point de vente' : u.role}
                     </Badge>
                   </div>
@@ -440,7 +440,7 @@ function UsersContent() {
                       'flex items-center gap-1.5 text-xs',
                       status[u.id].pending_password ? 'font-semibold text-warning-soft-foreground' : 'text-muted'
                     )}
-                  >
+            >
                     {status[u.id].pending_password ? <Clock className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5 text-success-soft-foreground" />}
                     {status[u.id].pending_password
                       ? 'Accès pas encore utilisés'
@@ -453,21 +453,19 @@ function UsersContent() {
                   <WriteButton
                     variant="outline"
                     size="sm"
-                    className="h-10 font-semibold"
                     onClick={() => setAccessMember(u)}
                     disabled={u.is_active === false}
-                  >
-                    <KeyRound className="w-4 h-4 mr-1.5" />
+            >
+                    <KeyRound className="w-4 h-4" />
                     Accès
                   </WriteButton>
                   <WriteButton
-                    variant="outline"
+                    variant="danger-soft"
                     size="sm"
-                    className="h-10 font-semibold text-danger border-danger/30 hover:bg-danger-soft"
                     onClick={() => setDeleteTarget(u)}
                     disabled={u.is_active === false}
-                  >
-                    <Trash2 className="w-4 h-4 mr-1.5" />
+            >
+                    <Trash2 className="w-4 h-4" />
                     Retirer
                   </WriteButton>
                 </div>
@@ -598,14 +596,14 @@ function UsersContent() {
                     setLimitKind('collectors');
                   }}
                   className="font-semibold text-warning-soft-foreground hover:underline"
-                >
+            >
                   Voir les forfaits
                 </button>
               </div>
             </div>
           )}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Annuler</Button>
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Annuler</Button>
             <Button
               type="submit"
               disabled={
@@ -651,12 +649,12 @@ function UsersContent() {
           Toutes les collectes et allocations historiques conserveront les noms d’utilisateur d’origine, mais cet utilisateur ne pourra plus se connecter ni être affecté à de nouvelles tâches.
         </p>
         <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>Annuler</Button>
+          <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>Annuler</Button>
           <Button
             onClick={() => handleDeleteUser(deleteTarget!)}
             variant="danger"
             disabled={isSubmitting}
-          >
+            >
             Supprimer
           </Button>
         </div>

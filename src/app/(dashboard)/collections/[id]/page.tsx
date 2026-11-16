@@ -135,7 +135,7 @@ export default function CollectionDetailPage() {
         <p className="text-xs text-muted">
           Cet encaissement n&apos;existe pas ou vous n&apos;y avez pas accès.
         </p>
-        <Button variant="secondary" onClick={() => router.push('/collections')} className="gap-2">
+        <Button variant="secondary" onClick={() => router.push('/collections')}>
           <ArrowLeft className="w-4 h-4" /> Retour à la liste
         </Button>
       </Card>
@@ -384,7 +384,7 @@ export default function CollectionDetailPage() {
                 <div
                   key={`mob-${item.id}`}
                   className="p-3 rounded-xl border border-border bg-surface space-y-2"
-                >
+          >
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
                       <Package className="w-3.5 h-3.5" />

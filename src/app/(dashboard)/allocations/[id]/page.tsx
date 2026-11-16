@@ -141,7 +141,7 @@ export default function AllocationDetailPage() {
         <p className="text-xs text-muted">
           Cette opération d&apos;allocation n&apos;existe pas ou vous n&apos;y avez pas accès.
         </p>
-        <Button variant="secondary" onClick={() => router.push('/allocations')} className="gap-2">
+        <Button variant="secondary" onClick={() => router.push('/allocations')}>
           <ArrowLeft className="w-4 h-4" /> Retour aux allocations
         </Button>
       </Card>
@@ -347,7 +347,7 @@ export default function AllocationDetailPage() {
                           ? 'bg-warning-soft font-semibold'
                           : 'hover:bg-surface-secondary '
                       }`}
-                    >
+          >
                       <td className="px-4 py-3">
                         <Badge variant={opIsReturn ? 'danger' : 'success'}>
                           {opIsReturn ? 'Rendu' : 'Reçu'}
@@ -361,7 +361,7 @@ export default function AllocationDetailPage() {
                         className={`px-4 py-3 text-right font-semibold ${
                           opIsReturn ? 'text-danger ' : 'text-success-soft-foreground '
                         }`}
-                      >
+          >
                         {opIsReturn ? `-${op.quantite}` : `+${op.quantite}`}
                       </td>
                       <td className="px-4 py-3 text-right text-muted">

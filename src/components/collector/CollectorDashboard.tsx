@@ -90,10 +90,10 @@ export function CollectorDashboard() {
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <Link href="/allocations/new" className={buttonClassName({ variant: 'outline', className: 'flex-1 sm:flex-initial' })}>
+          <Link href="/allocations/new" className={buttonClassName({ variant: 'outline', className: 'flex-1 sm:flex-initial'})}>
             <Ticket className="w-4 h-4" /> Attribuer des tickets
           </Link>
-          <Link href="/collections/new" className={buttonClassName({ className: 'flex-1 sm:flex-initial' })}>
+          <Link href="/collections/new" className={buttonClassName({ className: 'flex-1 sm:flex-initial'})}>
             <Receipt className="w-4 h-4" /> Nouvelle collecte
           </Link>
         </div>
@@ -211,13 +211,13 @@ export function CollectorDashboard() {
                       <span className="flex gap-2 shrink-0 w-full sm:w-auto">
                         <Link
                           href={`/allocations/new?pos=${p.id}`}
-                          className={buttonClassName({ size: 'sm', variant: 'outline', className: 'flex-1 sm:flex-initial' })}
+                          className={buttonClassName({ size: 'sm', variant: 'outline', className: 'flex-1 sm:flex-initial'})}
                         >
                           <Ticket className="w-4 h-4" /> Tickets
                         </Link>
                         <Link
                           href={`/collections/new?pos=${p.id}`}
-                          className={buttonClassName({ size: 'sm', className: 'flex-1 sm:flex-initial' })}
+                          className={buttonClassName({ size: 'sm', className: 'flex-1 sm:flex-initial'})}
                         >
                           <Receipt className="w-4 h-4" /> Collecter
                         </Link>

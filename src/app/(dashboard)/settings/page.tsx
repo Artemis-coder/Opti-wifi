@@ -339,7 +339,7 @@ function SettingsContent() {
                   ? 'bg-foreground text-background border-border'
                   : 'bg-surface text-muted border-border hover:border-border',
               )}
-            >
+        >
               <Icon className="w-4 h-4" /> {t.label}
             </button>
           );
@@ -371,7 +371,7 @@ function SettingsContent() {
                 />
               </div>
               <div className="flex justify-end">
-                <Button type="submit" icon={Save} variant="secondary" className="w-full sm:w-auto font-semibold" isLoading={saving}>
+                <Button type="submit" icon={Save} variant="primary" className="w-full sm:w-auto" isLoading={saving}>
                   Enregistrer
                 </Button>
               </div>
@@ -474,7 +474,7 @@ function SettingsContent() {
               />
               <p className="text-xs text-muted">8 caractères minimum.</p>
               <div className="flex justify-end">
-                <Button type="submit" icon={Save} variant="secondary" className="w-full sm:w-auto font-semibold" isLoading={changingPassword}>
+                <Button type="submit" icon={Save} variant="secondary" className="w-full sm:w-auto" isLoading={changingPassword}>
                   Changer le mot de passe
                 </Button>
               </div>
@@ -527,12 +527,12 @@ function SettingsContent() {
             {pushState === 'subscribed' ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <Badge variant="success">Activées</Badge>
-                <Button variant="outline" size="sm" icon={BellRing} onClick={testRing} isLoading={testingRing} className="font-semibold">
+                <Button variant="outline" size="sm" icon={BellRing} onClick={testRing} isLoading={testingRing}>
                   Tester la sonnerie
                 </Button>
               </div>
             ) : pushState === 'default' ? (
-              <Button icon={BellRing} onClick={enablePush} isLoading={enablingPush} className="w-full sm:w-auto font-semibold">
+              <Button icon={BellRing} onClick={enablePush} isLoading={enablingPush} className="w-full sm:w-auto">
                 Activer
               </Button>
             ) : null}

@@ -139,7 +139,7 @@ function PlatformSettingsContent() {
           <p className="text-xs text-muted">Configurez les paramètres globaux de la plateforme SaaS.</p>
         </div>
         {tab !== 'bot' && (
-          <Button onClick={handleSave} variant="secondary" className="gap-2 font-semibold w-full sm:w-auto" isLoading={saving}>
+          <Button onClick={handleSave} variant="secondary" className="w-full sm:w-auto" isLoading={saving}>
             <Save className="w-4 h-4" /> Enregistrer
           </Button>
         )}
@@ -237,7 +237,7 @@ function PlatformSettingsContent() {
                 isSelected={!!editedValues.allow_registration}
                 onChange={(v) => updateValue('allow_registration', v)}
                 className="shrink-0"
-              >
+            >
                 <Switch.Control>
                   <Switch.Thumb />
                 </Switch.Control>
@@ -285,7 +285,7 @@ function PlatformSettingsContent() {
                 isSelected={!!editedValues.auto_renew_default}
                 onChange={(v) => updateValue('auto_renew_default', v)}
                 className="shrink-0"
-              >
+            >
                 <Switch.Control>
                   <Switch.Thumb />
                 </Switch.Control>
@@ -315,7 +315,7 @@ function PlatformSettingsContent() {
                 <div>
                   <p
                     className={`text-sm font-semibold ${maintenanceMode ? 'text-danger ' : 'text-foreground '}`}
-                  >
+            >
                     {maintenanceMode ? 'Maintenance activée' : 'Maintenance désactivée'}
                   </p>
                   <p className="text-xs text-muted">
@@ -416,7 +416,7 @@ function PlatformSettingsContent() {
 
       {tab !== 'bot' && (
         <div className="flex justify-end pt-4">
-          <Button onClick={handleSave} variant="secondary" className="gap-2 font-semibold" isLoading={saving}>
+          <Button onClick={handleSave} variant="secondary" isLoading={saving}>
             <Save className="w-4 h-4" /> Enregistrer les modifications
           </Button>
         </div>

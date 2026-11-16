@@ -172,14 +172,13 @@ export function RecordChangeActions({
 
       {!pending && !readOnly && (isAdmin || role === 'collecteur') && (
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
-          <Button variant="outline" icon={Pencil} onClick={openEdit} className="font-semibold">
+          <Button variant="outline" icon={Pencil} onClick={openEdit}>
             {isAdmin ? 'Modifier' : 'Demander une correction'}
           </Button>
           <Button
             variant="danger-soft"
             icon={Trash2}
             onClick={() => (isAdmin ? deleteNow() : (setReason(''), setMode('delete')))}
-            className="font-semibold"
           >
             {isAdmin ? 'Supprimer' : 'Demander la suppression'}
           </Button>
@@ -216,7 +215,7 @@ export function RecordChangeActions({
             />
           )}
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
-            <Button variant="ghost" onClick={() => setMode(null)}>
+            <Button variant="outline" onClick={() => setMode(null)}>
               Annuler
             </Button>
             <Button
@@ -224,8 +223,7 @@ export function RecordChangeActions({
               isLoading={busy}
               disabled={busy || (!isAdmin && !reason.trim())}
               onClick={() => submit('edit')}
-              className="font-semibold"
-            >
+          >
               {isAdmin ? 'Enregistrer' : 'Envoyer la demande'}
             </Button>
           </div>
@@ -240,10 +238,10 @@ export function RecordChangeActions({
           </p>
           <Input label="Pourquoi la supprimer ?" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. : saisie en double" />
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
-            <Button variant="ghost" onClick={() => setMode(null)}>
+            <Button variant="outline" onClick={() => setMode(null)}>
               Annuler
             </Button>
-            <Button variant="danger" icon={Send} isLoading={busy} disabled={busy || !reason.trim()} onClick={() => submit('delete')} className="font-semibold">
+            <Button variant="danger" icon={Send} isLoading={busy} disabled={busy || !reason.trim()} onClick={() => submit('delete')}>
               Envoyer la demande
             </Button>
           </div>

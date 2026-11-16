@@ -140,7 +140,7 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
               </li>
             </ol>
             <div className="mt-5">
-              <Button className="w-full h-12 font-semibold" onClick={later}>
+              <Button className="w-full" onClick={later}>
                 J’ai compris
               </Button>
             </div>
@@ -149,10 +149,10 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
           <>
             <p className="mt-2 text-xs text-muted">Votre appareil va vous demander l’autorisation : choisissez « Autoriser ».</p>
             <div className="mt-5 grid grid-cols-1 gap-2">
-              <Button className="h-12 font-semibold" icon={Bell} isLoading={busy} onClick={activate}>
+              <Button icon={Bell} isLoading={busy} onClick={activate}>
                 Activer les notifications
               </Button>
-              <Button variant="ghost" className="h-11" onClick={later} disabled={busy}>
+              <Button variant="ghost" onClick={later} disabled={busy}>
                 Plus tard
               </Button>
             </div>

@@ -202,7 +202,6 @@ export default function PlatformNotificationsPage() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 text-xs"
               onClick={() => setDismissed(new Set(alerts.map((a: PlatformAlert) => a.id)))}
             >
               Tout marquer comme lu
@@ -211,10 +210,9 @@ export default function PlatformNotificationsPage() {
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 font-semibold"
             onClick={buildAlerts}
             isLoading={loading}
-          >
+            >
             <RefreshCw className="w-4 h-4" />
             Actualiser
           </Button>
@@ -251,7 +249,7 @@ export default function PlatformNotificationsPage() {
                   'border-l-4 flex items-start gap-4 transition-all duration-200',
                   cfg.bg
                 )}
-              >
+            >
                 <div className={cn('p-2 rounded-xl bg-white/60 shrink-0', cfg.iconColor)}>
                   <TypeIcon className="w-5 h-5" />
                 </div>
@@ -276,7 +274,7 @@ export default function PlatformNotificationsPage() {
                       onClick={() => dismissAlert(alert.id)}
                       className="shrink-0 p-1 rounded-xl text-muted hover:text-muted hover:bg-white/50 transition"
                       aria-label="Ignorer la notification"
-                    >
+            >
                       <XCircle className="w-4 h-4" />
                     </button>
                   </div>
@@ -284,7 +282,7 @@ export default function PlatformNotificationsPage() {
                     <a
                       href={alert.link}
                       className="inline-block mt-3 text-xs font-semibold text-accent hover:underline"
-                    >
+            >
                       Voir les détails →
                     </a>
                   )}

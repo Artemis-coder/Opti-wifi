@@ -581,7 +581,7 @@ export default function NewCollectionWizard() {
                       : 'Aucun point de vente n’a été trouvé pour cet espace Wi-Fi. Veuillez d’abord en créer un.'}
                   </p>
                   {!isCollector && (
-                    <Link href="/pos" className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'font-semibold' })}>
+                    <Link href="/pos" className={buttonClassName({ variant: 'secondary', size: 'sm'})}>
                         Gérer les Points de Vente
                       </Link>
                   )}
@@ -620,7 +620,7 @@ export default function NewCollectionWizard() {
                 <Button
                   onClick={goToStep2}
                   disabled={!posId || posList.length === 0}
-                  className="w-full sm:w-auto gap-2 font-semibold"
+                  className="w-full sm:w-auto"
                 >
                   Continuer vers les Tickets <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -663,7 +663,7 @@ export default function NewCollectionWizard() {
                   <p className="text-xs text-muted max-w-sm mx-auto">
                     Aucun ticket n&apos;est actuellement alloué à ce point de vente (ou tous les tickets ont déjà été collectés). Vous ne pouvez pas initier de collecte sans stock préalable.
                   </p>
-                  <Link href="/allocations/new" className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'gap-2 font-semibold' })}>
+                  <Link href="/allocations/new" className={buttonClassName({ variant: 'secondary', size: 'sm'})}>
                       <Package className="w-4 h-4" /> Allouer du Stock
                     </Link>
                 </div>
@@ -680,14 +680,14 @@ export default function NewCollectionWizard() {
                         type="button"
                         onClick={setAllSold}
                         className="px-2.5 py-1 bg-surface border border-border rounded-xl text-foreground font-semibold hover:border-success hover:text-success-soft-foreground transition"
-                      >
+                >
                         Tous vendus (0)
                       </button>
                       <button
                         type="button"
                         onClick={setNoneSold}
                         className="px-2.5 py-1 bg-surface border border-border rounded-xl text-foreground font-semibold hover:border-accent hover:text-accent transition"
-                      >
+                >
                         Aucun vendu
                       </button>
                     </div>
@@ -711,7 +711,7 @@ export default function NewCollectionWizard() {
                             ? 'bg-danger-soft '
                             : 'bg-surface-secondary '
                         }`}
-                      >
+                >
                         <div className="space-y-1">
                           <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                             {t.nom}
@@ -775,13 +775,12 @@ export default function NewCollectionWizard() {
               )}
 
               <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                <Button variant="ghost" onClick={() => setStep(1)} className="gap-2">
+                <Button variant="outline" onClick={() => setStep(1)}>
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
                 <Button
                   onClick={goToStep3}
                   disabled={availableTickets.length === 0}
-                  className="gap-2 font-semibold"
                 >
                   Valider le Comptage <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -869,10 +868,10 @@ export default function NewCollectionWizard() {
               )}
 
               <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                <Button variant="ghost" onClick={() => setStep(2)} className="gap-2">
+                <Button variant="ghost" onClick={() => setStep(2)}>
                   <ArrowLeft className="w-4 h-4" /> Modifier le comptage
                 </Button>
-                <Button onClick={goToStep4} className="gap-2 font-semibold">
+                <Button onClick={goToStep4}>
                   Confirmer et Passer à la Caisse <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -996,10 +995,10 @@ export default function NewCollectionWizard() {
               )}
 
               <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
-                <Button variant="ghost" onClick={() => setStep(3)} className="gap-2">
+                <Button variant="outline" onClick={() => setStep(3)}>
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
-                <Button onClick={goToStep5} className="gap-2 font-semibold">
+                <Button onClick={goToStep5}>
                   Vérifier l&apos;Écart & Bilan <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -1066,7 +1065,7 @@ export default function NewCollectionWizard() {
                     ? 'bg-danger-soft text-danger '
                     : 'bg-warning-soft text-warning-soft-foreground '
                 }`}
-              >
+                >
                 <div>
                   <p className="text-xs font-semibold text-foreground">
                     Écart de Caisse Constaté
@@ -1132,14 +1131,14 @@ export default function NewCollectionWizard() {
                   type="button"
                   variant="ghost"
                   onClick={() => setStep(4)}
-                  className="gap-2 w-full sm:w-auto"
+                  className="w-full sm:w-auto"
                 >
                   <ArrowLeft className="w-4 h-4" /> Modifier les Montants
                 </Button>
                 <Button
                   type="submit"
-                  variant="secondary"
-                  className="w-full sm:w-auto px-8 font-semibold gap-2"
+                  variant="primary"
+                  className="w-full sm:w-auto"
                   isLoading={submitting}
                 >
                   <Check className="w-4 h-4 stroke-[3]" />

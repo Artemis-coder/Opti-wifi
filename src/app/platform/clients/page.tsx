@@ -315,7 +315,7 @@ function PlatformClientsContent() {
                             href={`tel:${client.phone.replace(/\s/g, '')}`}
                             className="font-semibold text-foreground hover:text-accent tabular-nums"
                             title="Appeler"
-                          >
+              >
                             {client.phone}
                           </a>
                         ) : (
@@ -349,52 +349,50 @@ function PlatformClientsContent() {
                             <Button
                               variant="primary"
                               size="sm"
-                              className="h-7 px-2.5 text-xs bg-success hover:bg-success-hover text-success-foreground font-semibold flex items-center gap-1 shadow-xs"
+                              className="bg-success hover:bg-success-hover text-success-foreground flex items-center shadow-xs"
                               onClick={() => handleStatusAction(client.id, 'approve', client.name)}
                               disabled={!!isActionDisabled}
                               title="Valider et approuver ce client"
-                            >
+              >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                               <span>Valider</span>
                             </Button>
                           )}
                           {(client.status === 'suspended' || client.status === 'cancelled' || client.status === 'archived') && (
-                            <Button
+                            <Button isIconOnly
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-success-soft-foreground hover:text-success-soft-foreground"
+                              className="text-success-soft-foreground hover:text-success-soft-foreground"
                               onClick={() => handleStatusAction(client.id, 'reactivate', client.name)}
                               disabled={!!isActionDisabled}
                               title="Réactiver l'espace"
-                            >
+              >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                             </Button>
                           )}
                           {client.status !== 'suspended' && client.status !== 'cancelled' && client.status !== 'archived' && client.status !== 'pending_approval' && (
-                            <Button
+                            <Button isIconOnly
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-danger hover:text-danger"
                               onClick={() => handleStatusAction(client.id, 'suspend', client.name)}
                               disabled={!!isActionDisabled}
                               title="Suspendre l'espace"
-                            >
+              >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <PauseCircle className="w-3.5 h-3.5" />}
                             </Button>
                           )}
                           {client.status !== 'archived' && client.status !== 'pending_approval' && (
-                            <Button
+                            <Button isIconOnly
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-danger hover:text-danger"
                               onClick={() => handleStatusAction(client.id, 'archive', client.name)}
                               disabled={!!isActionDisabled}
                               title="Supprimer l'organisation"
-                            >
+              >
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                             </Button>
                           )}
-                          <Link href={`/platform/clients/${client.id}`} className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'p-1 h-7 text-muted hover:text-foreground' })}>
+                          <Link href={`/platform/clients/${client.id}`} className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'text-muted hover:text-foreground', isIconOnly: true})}>
                               <MoreHorizontal className="w-3.5 h-3.5" />
                             </Link>
                         </div>

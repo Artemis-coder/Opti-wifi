@@ -143,7 +143,7 @@ export default function PlatformReportsPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Rapports</h1>
           <p className="text-xs text-muted mt-0.5">Indicateurs commerciaux SaaS et exports de données.</p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2 font-semibold" onClick={fetchKpis} isLoading={loading}>
+        <Button variant="outline" size="sm" onClick={fetchKpis} isLoading={loading}>
           <RefreshCw className="w-4 h-4" />
           Actualiser
         </Button>
@@ -245,10 +245,10 @@ export default function PlatformReportsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="shrink-0 gap-2 font-semibold"
+                className="shrink-0"
                 onClick={() => handleExport(exp.type)}
                 isLoading={downloading === exp.type}
-              >
+            >
                 <Download className="w-4 h-4" />
                 Exporter
               </Button>

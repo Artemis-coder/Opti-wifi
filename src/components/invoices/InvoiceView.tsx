@@ -45,7 +45,7 @@ export function InvoiceView({ id, backHref, backLabel }: { id: string; backHref:
           <ArrowLeft className="w-4 h-4" /> {backLabel}
         </Link>
         {state && state !== 'error' && (
-          <Button icon={Download} onClick={() => printDocument()} className="w-full sm:w-auto font-semibold">
+          <Button icon={Download} onClick={() => printDocument()} className="w-full sm:w-auto">
             Télécharger en PDF
           </Button>
         )}

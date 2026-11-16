@@ -174,7 +174,7 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
             </p>
           </div>
         </div>
-        <Button variant="outline" icon={Download} isLoading={downloading} onClick={download} className="w-full sm:w-auto font-semibold">
+        <Button variant="outline" icon={Download} isLoading={downloading} onClick={download} className="w-full sm:w-auto">
           {downloaded ? 'Télécharger à nouveau' : 'Télécharger mes données'}
         </Button>
       </Card>
@@ -207,7 +207,7 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
               la suppression effectuée. D’ici là, votre espace reste accessible et vous pouvez encore télécharger vos
               données ou annuler la demande.
             </p>
-            <Button variant="outline" icon={XCircle} isLoading={cancelling} onClick={cancelRequest} className="w-full sm:w-auto font-semibold">
+            <Button variant="outline" icon={XCircle} isLoading={cancelling} onClick={cancelRequest} className="w-full sm:w-auto">
               Annuler ma demande
             </Button>
           </div>
@@ -231,7 +231,7 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
                 l’annuler tant qu’elle n’est pas traitée.
               </p>
             </div>
-            <Button variant="danger" icon={Trash2} onClick={() => setOpen(true)} className="w-full sm:w-auto font-semibold">
+            <Button variant="danger" icon={Trash2} onClick={() => setOpen(true)} className="w-full sm:w-auto">
               Supprimer mon compte
             </Button>
           </>
@@ -300,10 +300,10 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
           />
 
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end pt-1">
-            <Button type="button" variant="ghost" onClick={closeModal}>
+            <Button type="button" variant="outline" onClick={closeModal}>
               Annuler
             </Button>
-            <Button type="submit" variant="danger" icon={Trash2} isLoading={sending} disabled={!canSend} className="font-semibold">
+            <Button type="submit" variant="danger" icon={Trash2} isLoading={sending} disabled={!canSend}>
               Envoyer la demande de suppression
             </Button>
           </div>

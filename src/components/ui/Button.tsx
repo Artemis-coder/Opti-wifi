@@ -17,6 +17,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   /** Icône avant le libellé (taille et espacement standard du design system) */
   icon?: LucideIcon;
+  /** Bouton carré avec une icône seule (variante HeroUI isIconOnly) : pensez à aria-label */
+  isIconOnly?: boolean;
 }
 
 /**
@@ -25,9 +27,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export function buttonClassName({
   variant = 'primary',
   size = 'md',
+  isIconOnly,
   className,
-}: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
-  return cn(buttonVariants({ variant, size }), className);
+}: { variant?: ButtonVariant; size?: ButtonSize; isIconOnly?: boolean; className?: string } = {}) {
+  return cn(buttonVariants({ variant, size, isIconOnly }), className);
 }
 
 /**
@@ -35,13 +38,13 @@ export function buttonClassName({
  * pour que toutes les pages existantes en profitent sans changement.
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', isLoading, icon: Icon, children, disabled, ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', isLoading, icon: Icon, isIconOnly, children, disabled, ...props }, ref) => {
     return (
       <button
         ref={ref}
         disabled={disabled || isLoading}
         aria-busy={isLoading || undefined}
-        className={buttonClassName({ variant, size, className })}
+        className={buttonClassName({ variant, size, isIconOnly, className })}
         {...props}
       >
         {isLoading ? (

@@ -113,7 +113,7 @@ export function EditTicketModal({ isOpen, onClose, ticket, onSuccess }: EditTick
             className={`relative inline-flex h-6 w-11 items-center rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-focus ${
               actif ? 'bg-success' : 'bg-muted'
             }`}
-          >
+    >
             <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-surface" />
             <span className={`absolute right-1 top-1 h-4 w-4 rounded-full bg-surface transition ${
               actif ? 'opacity-0' : 'opacity-100'
@@ -121,7 +121,7 @@ export function EditTicketModal({ isOpen, onClose, ticket, onSuccess }: EditTick
           </button>
         </div>
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Annuler
           </Button>
           <Button type="submit" isLoading={isSubmitting}>

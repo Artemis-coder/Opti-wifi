@@ -139,7 +139,7 @@ export function TicketThread({ endpoint, viewer, backHref, backLabel, renderCont
                     ? 'bg-accent-soft rounded-br-md'
                     : 'bg-surface border-border rounded-bl-md'
                 )}
-              >
+      >
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-muted">
                   {m.from_support && <Headset className="w-3.5 h-3.5 text-accent" />}
                   {m.from_support ? (viewer === 'client' ? 'Support OptiWifi' : `Support · ${m.author_name || 'OptiWifi'}`) : m.author_name || 'Client'}
@@ -171,7 +171,7 @@ export function TicketThread({ endpoint, viewer, backHref, backLabel, renderCont
             className="textarea textarea--primary w-full"
           />
           <div className="flex justify-end">
-            <Button type="submit" icon={Send} isLoading={sending} disabled={!reply.trim()} className="w-full sm:w-auto font-semibold">
+            <Button type="submit" icon={Send} isLoading={sending} disabled={!reply.trim()} className="w-full sm:w-auto">
               Envoyer
             </Button>
           </div>

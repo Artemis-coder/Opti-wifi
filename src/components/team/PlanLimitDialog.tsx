@@ -150,12 +150,12 @@ export function PlanLimitDialog({
                     <Button
                       size="sm"
                       variant={fits ? 'primary' : 'outline'}
-                      className="w-full h-9 font-semibold"
+                      className="w-full"
                       disabled={!fits}
                       onClick={() => router.push(`/subscription?plan=${p.id}`)}
-                    >
+              >
                       {fits ? 'Passer à ce forfait' : 'Ne suffit pas'}
-                      {fits && <ArrowRight className="w-4 h-4 ml-1.5" />}
+                      {fits && <ArrowRight className="w-4 h-4" />}
                     </Button>
                   )}
                 </div>
@@ -175,7 +175,7 @@ export function PlanLimitDialog({
         )}
 
         <div className="flex justify-end">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Fermer
           </Button>
         </div>

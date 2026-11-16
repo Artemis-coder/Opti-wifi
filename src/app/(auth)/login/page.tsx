@@ -300,7 +300,7 @@ export default function LoginPage() {
                   className="tap-target p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center rounded-lg"
                   aria-label={showLoginPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   tabIndex={-1}
-                >
+            >
                   {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               }
@@ -313,7 +313,7 @@ export default function LoginPage() {
               Mot de passe oublié ?
             </a>
 
-            <Button type="submit" className="w-full h-12 sm:h-11 text-sm font-bold" isLoading={loading}>
+            <Button type="submit" className="w-full" isLoading={loading}>
               Se connecter à mon espace
             </Button>
             {/* Protection anti-copie : l'interface et les données sont confidentielles */}
@@ -347,7 +347,7 @@ export default function LoginPage() {
                   className="tap-target p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center rounded-lg"
                   aria-label={showRecoveryPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   tabIndex={-1}
-                >
+            >
                   {showRecoveryPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               }
@@ -366,13 +366,13 @@ export default function LoginPage() {
                   className="tap-target p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center rounded-lg"
                   aria-label={showRecoveryConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   tabIndex={-1}
-                >
+            >
                   {showRecoveryConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               }
             />
 
-            <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading}>
+            <Button type="submit" variant="primary" className="w-full" isLoading={loading}>
               Mettre à jour le mot de passe
             </Button>
 
@@ -435,7 +435,7 @@ export default function LoginPage() {
                   className="tap-target p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center rounded-lg"
                   aria-label={showRegisterPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   tabIndex={-1}
-                >
+            >
                   {showRegisterPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               }
@@ -458,7 +458,7 @@ export default function LoginPage() {
               </span>
             </label>
 
-            <Button type="submit" variant="secondary" className="w-full h-11 text-sm font-bold" isLoading={loading} disabled={!acceptTerms}>
+            <Button type="submit" variant="primary" className="w-full" isLoading={loading} disabled={!acceptTerms}>
               Créer mon Compte
             </Button>
           </form>

@@ -305,7 +305,7 @@ export default function PlatformSubscriptionsPage() {
                   'min-w-5 px-1 rounded-full text-xs tabular-nums',
                   filter === f.value ? 'bg-foreground/15' : 'bg-default'
                 )}
-              >
+            >
                 {counts[f.value] || 0}
               </span>
             </button>
@@ -361,7 +361,7 @@ export default function PlatformSubscriptionsPage() {
                         <Link
                           href={`/platform/clients/${s.organization_id}`}
                           className="font-semibold text-foreground hover:text-warning-soft-foreground"
-                        >
+            >
                           {s.organization_name}
                         </Link>
                         {s.organization_status === 'suspended' && (
@@ -402,7 +402,7 @@ export default function PlatformSubscriptionsPage() {
                                     ? 'text-warning-soft-foreground'
                                     : 'text-foreground'
                               )}
-                            >
+            >
                               {s.days_left} jour{s.days_left > 1 ? 's' : ''} restant{s.days_left > 1 ? 's' : ''}
                             </span>
                           ) : s.state === 'expired' && s.days_left !== null ? (
@@ -434,11 +434,11 @@ export default function PlatformSubscriptionsPage() {
                           <Button
                             size="sm"
                             variant={live && s.state !== 'expiring' ? 'outline' : 'primary'}
-                            className="text-xs h-8 whitespace-nowrap"
+                            className="whitespace-nowrap"
                             onClick={() => setLicenseFor(s)}
                             disabled={busy}
                             icon={KeyRound}
-                          >
+            >
                             {live ? 'Prolonger' : 'Activer un forfait'}
                           </Button>
                           {canReactivate && (
@@ -461,7 +461,7 @@ export default function PlatformSubscriptionsPage() {
                             title="Voir le client"
                             aria-label="Voir le client"
                             className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-border hover:bg-default"
-                          >
+            >
                             <ExternalLink className="w-4 h-4 text-muted" />
                           </Link>
                         </div>
@@ -512,7 +512,7 @@ function IconAction({
       onClick={onClick}
       disabled={busy}
       className="w-8 h-8 inline-flex items-center justify-center rounded-xl border border-border hover:bg-default disabled:opacity-50"
-    >
+            >
       {busy ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : children}
     </button>
   );

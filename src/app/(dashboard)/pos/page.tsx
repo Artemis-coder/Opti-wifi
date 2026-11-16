@@ -189,14 +189,13 @@ async function loadData() {
                     <WriteButton
                       variant="outline"
                       size="sm"
-                      className="h-10 font-semibold"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setEditingPos(pos);
                       }}
                     >
-                      <Edit className="w-4 h-4 mr-1.5" />
+                      <Edit className="w-4 h-4" />
                       Modifier
                     </WriteButton>
                     <WriteButton
@@ -208,11 +207,6 @@ async function loadData() {
                         e.stopPropagation();
                         handleToggleStatus(pos);
                       }}
-                      className={
-                        pos.statut === 'actif'
-                          ? 'h-10 font-semibold text-warning-soft-foreground border-warning/30 hover:bg-warning-soft'
-                          : 'h-10 font-semibold text-success-soft-foreground border-success/30 hover:bg-success-soft'
-                      }
                     >
                       {togglingId === pos.id ? (
                         <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />

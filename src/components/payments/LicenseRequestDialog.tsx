@@ -243,11 +243,11 @@ function RequestFlow({
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Annuler
           </Button>
           {isFree ? (
-            <Button type="button" onClick={send} isLoading={sending} className="gap-2">
+            <Button type="button" onClick={send} isLoading={sending}>
               {!sending && <Send className="w-4 h-4" />} Envoyer la demande
             </Button>
           ) : (
@@ -255,8 +255,7 @@ function RequestFlow({
               type="button"
               onClick={onlineEnabled === true ? payOnline : () => setStep('methods')}
               isLoading={redirecting}
-              className="gap-2"
-            >
+    >
               {!redirecting && (onlineEnabled === true ? <ArrowRight className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />)}{' '}
               {onlineEnabled === true ? 'Passer au paiement' : renewal ? 'Me réabonner' : 'Continuer vers le paiement'}
             </Button>
@@ -282,7 +281,7 @@ function RequestFlow({
         <PlanSummary plan={plan} months={months} />
         <OnlinePayButton redirecting={redirecting} onClick={payOnline} />
         <div className="flex justify-end">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Annuler
           </Button>
         </div>
@@ -325,7 +324,7 @@ function RequestFlow({
                   {country ? ` pour ${countryName(country)}` : ''}. Envoyez votre
                   demande : l&apos;équipe OptiWifi vous contactera pour le paiement.
                 </p>
-                <Button type="button" onClick={send} isLoading={sending} className="gap-2">
+                <Button type="button" onClick={send} isLoading={sending}>
                   {!sending && <Send className="w-4 h-4" />} Envoyer la demande
                 </Button>
               </div>
@@ -341,7 +340,7 @@ function RequestFlow({
                     }}
                     className="group rounded-xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-focus"
                     style={{ background: m.brand_color || DEFAULT_BRAND_COLOR }}
-                  >
+    >
                     <span className="w-14 h-14 shrink-0 rounded-xl bg-white/95 flex items-center justify-center overflow-hidden">
                       {m.brand_logo ? (
                         // Data URL stockée en base : next/image n'apporte rien ici
@@ -363,7 +362,7 @@ function RequestFlow({
           </>
         )}
         <div className="flex justify-end">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Annuler
           </Button>
         </div>
@@ -439,10 +438,10 @@ function RequestFlow({
       </p>
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose}>
           Fermer
         </Button>
-        <Button type="button" onClick={send} isLoading={sending} className="gap-2">
+        <Button type="button" onClick={send} isLoading={sending}>
           {!sending && <Send className="w-4 h-4" />}
           {method ? "J'ai payé" : 'Envoyer la demande'}
         </Button>
@@ -460,7 +459,7 @@ function OnlinePayButton({ redirecting, onClick }: { redirecting: boolean; onCli
         onClick={onClick}
         disabled={redirecting}
         className="group w-full rounded-xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition bg-gradient-to-r from-brand-600 to-emerald-600 hover:shadow-md hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-focus"
-      >
+    >
         <span className="w-14 h-14 shrink-0 rounded-xl bg-white/95 flex items-center justify-center">
           {redirecting ? (
             <Loader2 className="w-6 h-6 text-accent animate-spin" />
