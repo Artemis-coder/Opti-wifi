@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { cardVariants } from '@heroui/styles';
 import { cn } from '@/lib/utils/cn';
 import { AmountsToggle } from '@/components/privacy/AmountsPrivacy';
 import { FitText } from '@/components/ui/FitText';
@@ -11,23 +12,28 @@ function looksLikeAmount(value: React.ReactNode): boolean {
 
 export type StatAccent = 'amber' | 'indigo' | 'emerald' | 'red' | 'purple' | 'blue' | 'slate';
 
-const ACCENTS: Record<StatAccent, { border: string; icon: string }> = {
-  amber: { border: 'border-l-amber-500', icon: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
-  indigo: { border: 'border-l-indigo-900 dark:border-l-indigo-400', icon: 'bg-indigo-900/10 text-indigo-900 dark:text-indigo-300' },
-  emerald: { border: 'border-l-emerald-500', icon: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
-  red: { border: 'border-l-red-500', icon: 'bg-red-500/10 text-red-600 dark:text-red-400' },
-  purple: { border: 'border-l-purple-500', icon: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
-  blue: { border: 'border-l-blue-500', icon: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-  slate: { border: 'border-l-slate-400', icon: 'bg-slate-500/10 text-slate-600 dark:text-slate-300' },
+/**
+ * Teinte de l'icône. HeroUI réserve les couleurs d'état à leur sens :
+ * amber = attention, emerald = positif, red = problème ; les autres restent neutres
+ * (indigo / blue = accent de marque, purple / slate = neutre).
+ */
+const ICON_TONE: Record<StatAccent, string> = {
+  amber: 'bg-warning-soft text-warning-soft-foreground',
+  emerald: 'bg-success-soft text-success-soft-foreground',
+  red: 'bg-danger-soft text-danger-soft-foreground',
+  indigo: 'bg-accent-soft text-accent-soft-foreground',
+  blue: 'bg-accent-soft text-accent-soft-foreground',
+  purple: 'bg-default text-default-foreground',
+  slate: 'bg-default text-default-foreground',
 };
 
 export interface StatTileProps {
-  /** Libellé en petites capitales (ex. « Tickets vendus ») */
+  /** Libellé (ex. « Tickets vendus ») */
   label: string;
   value: React.ReactNode;
   icon?: React.ElementType;
   accent?: StatAccent;
-  /** Mise en alerte : fond et chiffre rouges (ex. écart de caisse négatif) */
+  /** Mise en alerte : chiffre et icône en rouge (ex. écart de caisse négatif) */
   alert?: boolean;
   /** Ligne sous le chiffre : texte simple… */
   hint?: React.ReactNode;
@@ -41,46 +47,45 @@ export interface StatTileProps {
 }
 
 /**
- * Cadre de chiffre clé du design system (tableau de bord client) : bordure gauche colorée,
- * libellé, icône dans un carré teinté, grand chiffre et ligne d'information.
- * À utiliser pour tous les KPI de l'application.
+ * Chiffre clé du design system (HeroUI Card) : libellé, icône teintée, grand chiffre
+ * et ligne d'information. À utiliser pour tous les KPI de l'application.
  */
 export function StatTile({ label, value, icon: Icon, accent = 'slate', alert, hint, footer, href, className, sensitive }: StatTileProps) {
-  const a = ACCENTS[accent];
   const isAmount = sensitive ?? looksLikeAmount(value);
   // Chiffre ou montant : toujours sur une ligne, réduit si la carte est étroite (jamais de débordement)
   const fits = isAmount || typeof value === 'number' || (typeof value === 'string' && /^[\s\d+\-−.,%•/]+[A-Za-z%]{0,6}$/.test(value.trim()));
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-1 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
+        <div className="flex min-w-0 items-center gap-1">
+          <p className="text-sm text-muted">{label}</p>
           {isAmount && <AmountsToggle size="sm" className="-my-1" />}
         </div>
         {Icon && (
-          <span className={cn('w-8 h-8 shrink-0 rounded-lg flex items-center justify-center', alert ? ACCENTS.red.icon : a.icon)}>
-            <Icon className="w-4 h-4" />
+          <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg', alert ? ICON_TONE.red : ICON_TONE[accent])}>
+            <Icon className="size-4" />
           </span>
         )}
       </div>
       <div
         className={cn(
-          'text-xl sm:text-2xl font-extrabold tabular-nums min-w-0',
+          'min-w-0 text-2xl font-bold tabular-nums tracking-tight',
           !fits && 'break-words',
-          alert ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'
+          alert ? 'text-danger' : 'text-foreground'
         )}
       >
         {fits ? <FitText>{value}</FitText> : value}
       </div>
-      {footer ?? (hint !== undefined && hint !== null && <p className={cn('text-[11px]', alert ? 'text-red-600/80 dark:text-red-400/80' : 'text-slate-400')}>{hint}</p>)}
+      {footer ?? (hint !== undefined && hint !== null && <p className={cn('text-xs', alert ? 'text-danger' : 'text-muted')}>{hint}</p>)}
     </>
   );
   const classes = cn(
+    cardVariants({ variant: 'default' }).base(),
     // min-w-0 : la carte rétrécit avec sa colonne de grille au lieu de s'élargir au texte
-    'block min-w-0 rounded-2xl border border-l-4 p-4 sm:p-5 space-y-2 shadow-xs',
-    alert ? 'border-l-red-500' : a.border,
-    alert ? 'bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-900/50' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
-    href && 'transition hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700',
+    'min-w-0 gap-2',
+    alert && 'ring-1 ring-danger/40',
+    href &&
+      'outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background',
     className
   );
   return href ? (

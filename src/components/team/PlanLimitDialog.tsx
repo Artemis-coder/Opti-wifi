@@ -79,12 +79,12 @@ export function PlanLimitDialog({
   return (
     <Modal isOpen={open} onClose={onClose} title="Limite de votre forfait" className="md:max-w-3xl">
       <div className="space-y-5 text-left">
-        <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/60 p-4">
-          <span className="w-9 h-9 shrink-0 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
+        <div className="flex gap-3 rounded-xl bg-warning-soft p-4">
+          <span className="w-9 h-9 shrink-0 rounded-lg bg-warning-soft text-warning-soft-foreground flex items-center justify-center">
             <Info className="w-5 h-5" />
           </span>
-          <div className="text-sm text-slate-700 dark:text-slate-300 space-y-1">
-            <p className="font-bold text-slate-900 dark:text-white">
+          <div className="text-sm text-foreground space-y-1">
+            <p className="font-semibold text-foreground">
               {kind === 'users'
                 ? "Vous ne pouvez pas ajouter d'autre utilisateur"
                 : 'Vous ne pouvez pas ajouter de collecteur'}
@@ -105,57 +105,57 @@ export function PlanLimitDialog({
               <div
                 key={p.id}
                 className={cn(
-                  'rounded-2xl border p-4 flex flex-col gap-3',
+                  'rounded-xl border p-4 flex flex-col gap-3',
                   current
-                    ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40'
+                    ? 'bg-surface-secondary'
                     : fits
-                      ? 'border-emerald-300 dark:border-emerald-800'
-                      : 'border-slate-200 dark:border-slate-800 opacity-70'
+                      ? 'border-success/30'
+                      : 'border-border opacity-70'
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-bold text-slate-900 dark:text-white">{p.name}</p>
-                    <p className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    <p className="font-semibold text-foreground">{p.name}</p>
+                    <p className="text-sm font-semibold text-foreground">
                       {formatCurrencyFCFA(Number(p.price))}
-                      <span className="text-xs font-medium text-slate-500"> / {PERIOD[p.billing_period] || p.billing_period}</span>
+                      <span className="text-xs font-medium text-muted"> / {PERIOD[p.billing_period] || p.billing_period}</span>
                     </p>
                   </div>
                   {current ? (
-                    <Badge variant="neutral" className="text-[10px]">Votre forfait</Badge>
+                    <Badge variant="neutral" className="text-xs">Votre forfait</Badge>
                   ) : (
-                    fits && <Badge variant="success" className="text-[10px]">Possible</Badge>
+                    fits && <Badge variant="success" className="text-xs">Possible</Badge>
                   )}
                 </div>
-                <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
-                  <li className={cn('flex items-center gap-1.5', kind === 'users' && 'font-semibold text-slate-900 dark:text-white')}>
-                    <Users className="w-3.5 h-3.5 text-slate-400" />
+                <ul className="space-y-1 text-xs text-muted">
+                  <li className={cn('flex items-center gap-1.5', kind === 'users' && 'font-semibold text-foreground')}>
+                    <Users className="w-3.5 h-3.5 text-muted" />
                     {limitLabel(p.max_users, 'utilisateur', 'utilisateurs', 'aucun utilisateur')}
                   </li>
-                  <li className={cn('flex items-center gap-1.5', kind === 'collectors' && 'font-semibold text-slate-900 dark:text-white')}>
-                    <UserCheck className="w-3.5 h-3.5 text-slate-400" />
+                  <li className={cn('flex items-center gap-1.5', kind === 'collectors' && 'font-semibold text-foreground')}>
+                    <UserCheck className="w-3.5 h-3.5 text-muted" />
                     {limitLabel(p.max_collectors, 'collecteur', 'collecteurs', 'sans collecteur')}
                   </li>
                   <li className="flex items-center gap-1.5">
-                    <Store className="w-3.5 h-3.5 text-slate-400" />
+                    <Store className="w-3.5 h-3.5 text-muted" />
                     {limitLabel(p.max_points_of_sale, 'point de vente', 'points de vente', 'aucun point de vente')}
                   </li>
                 </ul>
                 <div className="mt-auto">
                   {current ? (
-                    <p className="h-9 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500">
+                    <p className="h-9 flex items-center justify-center gap-1.5 text-xs font-semibold text-muted">
                       <CheckCircle2 className="w-4 h-4" /> Forfait actuel
                     </p>
                   ) : (
                     <Button
                       size="sm"
                       variant={fits ? 'primary' : 'outline'}
-                      className="w-full h-9 font-semibold"
+                      className="w-full"
                       disabled={!fits}
                       onClick={() => router.push(`/subscription?plan=${p.id}`)}
-                    >
+              >
                       {fits ? 'Passer à ce forfait' : 'Ne suffit pas'}
-                      {fits && <ArrowRight className="w-4 h-4 ml-1.5" />}
+                      {fits && <ArrowRight className="w-4 h-4" />}
                     </Button>
                   )}
                 </div>
@@ -165,9 +165,9 @@ export function PlanLimitDialog({
         </div>
 
         {!limits.plans.some((p) => p.id !== limits.plan?.id && allowsMore(p, kind, limits)) && (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Aucun forfait ne permet davantage pour le moment :{' '}
-            <Link href="/support" className="font-semibold text-amber-700 dark:text-amber-400 hover:underline">
+            <Link href="/support" className="font-semibold text-warning-soft-foreground hover:underline">
               contactez le support
             </Link>{' '}
             pour une offre adaptée.
@@ -175,7 +175,7 @@ export function PlanLimitDialog({
         )}
 
         <div className="flex justify-end">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Fermer
           </Button>
         </div>

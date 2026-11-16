@@ -64,9 +64,9 @@ export function TermsContent() {
     <>
       {TERMS_SECTIONS.map((s) => (
         <section key={s.title} className="space-y-2">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">{s.title}</h2>
+          <h2 className="text-base font-semibold text-foreground">{s.title}</h2>
           {s.body.map((p) => (
-            <p key={p} className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            <p key={p} className="text-sm leading-relaxed text-muted">
               {p}
             </p>
           ))}

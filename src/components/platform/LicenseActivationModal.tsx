@@ -135,8 +135,8 @@ export function LicenseActivationModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Activer une licence">
       <div className="space-y-4">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Client : <span className="font-semibold text-slate-900 dark:text-white">{organizationName}</span>
+        <p className="text-sm text-muted">
+          Client : <span className="font-semibold text-foreground">{organizationName}</span>
         </p>
 
         <CustomSelect
@@ -158,7 +158,7 @@ export function LicenseActivationModal({
 
         {canTrial ? (
           <div>
-            <span className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Type</span>
+            <span className="block text-xs font-semibold text-muted mb-1.5">Type</span>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
@@ -177,14 +177,14 @@ export function LicenseActivationModal({
                 <KeyRound className="w-4 h-4 mr-1.5" /> Licence payante
               </Button>
             </div>
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-muted mt-2">
               Première souscription de ce client : il peut bénéficier d&apos;un essai gratuit, une seule fois.
             </p>
           </div>
         ) : (
           isTrial(plan) &&
           trialAvailable === false && (
-            <p className="text-xs text-slate-500 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2">
+            <p className="text-xs text-muted rounded-xl bg-default px-3 py-2">
               Ce client a déjà eu un abonnement : pas d&apos;essai gratuit, licence payante au tarif du forfait.
             </p>
           )
@@ -192,7 +192,7 @@ export function LicenseActivationModal({
 
         {trial ? (
           <div>
-            <span className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Jours d&apos;essai</span>
+            <span className="block text-xs font-semibold text-muted mb-1.5">Jours d&apos;essai</span>
             <div className="flex flex-wrap gap-2">
               {dayOptions.map((d) => (
                 <Button
@@ -201,18 +201,18 @@ export function LicenseActivationModal({
                   size="sm"
                   variant={trialDays === d ? 'primary' : 'outline'}
                   onClick={() => setDays(d)}
-                >
+              >
                   {d} jour{d > 1 ? 's' : ''}
                 </Button>
               ))}
             </div>
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-muted mt-2">
               Essai gratuit, sans facture. À la fin de l&apos;essai, le client choisit un forfait payant pour continuer.
             </p>
           </div>
         ) : (
           <div>
-            <span className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Durée</span>
+            <span className="block text-xs font-semibold text-muted mb-1.5">Durée</span>
             <div className="flex flex-wrap gap-2">
               {DURATIONS.map((d) => (
                 <Button
@@ -221,7 +221,7 @@ export function LicenseActivationModal({
                   size="sm"
                   variant={months === d ? 'primary' : 'outline'}
                   onClick={() => setMonths(d)}
-                >
+              >
                   {d} mois
                 </Button>
               ))}
@@ -230,7 +230,7 @@ export function LicenseActivationModal({
         )}
 
         <div>
-          <label htmlFor="license-note" className="block text-xs font-semibold text-slate-500 uppercase mb-1.5">
+          <label htmlFor="license-note" className="block text-xs font-semibold text-muted mb-1.5">
             Note (optionnel)
           </label>
           <textarea
@@ -240,28 +240,28 @@ export function LicenseActivationModal({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Ex. paiement Mobile Money reçu le…"
-            className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="textarea textarea--primary w-full"
           />
         </div>
 
-        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-sm text-slate-700 dark:text-slate-300">
+        <div className="rounded-xl bg-success-soft p-3 text-sm text-foreground">
           <p>
             Période : <strong>{formatDateOnlyFR(start.toISOString())}</strong> →{' '}
             <strong>{formatDateOnlyFR(end.toISOString())}</strong>
           </p>
           {plan && !trial && (
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-muted mt-1">
               Tarif du forfait : {formatCurrencyFCFA(Number(plan.price))} /{' '}
               {PERIOD_LABELS[plan.billing_period] || plan.billing_period}
             </p>
           )}
           {start > now && (
-            <p className="text-xs text-slate-500 mt-1">La licence en cours est prolongée à partir de sa date de fin.</p>
+            <p className="text-xs text-muted mt-1">La licence en cours est prolongée à partir de sa date de fin.</p>
           )}
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
             Annuler
           </Button>
           <Button type="button" onClick={handleSubmit} isLoading={submitting} disabled={!planId}>

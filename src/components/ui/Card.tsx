@@ -1,15 +1,14 @@
 import React from 'react';
 import { cn } from '@/lib/utils/cn';
 
+/**
+ * Surface de contenu au style HeroUI (bg-surface + shadow-surface, sans bordure).
+ * Mise en page libre (bloc) pour rester compatible avec les pages existantes ;
+ * pour un nouvel écran, préférer `Card` de `@heroui/react` (Card.Header, Card.Content…).
+ */
 export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn(
-        'bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 transition hover:shadow-md',
-        className
-      )}
-      {...props}
-    >
+    <div className={cn('rounded-2xl bg-surface p-4 sm:p-5 text-surface-foreground shadow-surface', className)} {...props}>
       {children}
     </div>
   );

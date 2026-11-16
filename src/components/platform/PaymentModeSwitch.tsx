@@ -96,11 +96,11 @@ export function PaymentModeSwitch() {
   };
 
   return (
-    <Card className="p-4 space-y-3">
+    <Card className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Mode de paiement des licences</h2>
-          <p className="text-xs text-slate-500">Ce que vos clients voient quand ils paient ou renouvellent leur licence.</p>
+          <h2 className="text-base font-semibold text-foreground">Mode de paiement des licences</h2>
+          <p className="text-xs text-muted">Ce que vos clients voient quand ils paient ou renouvellent leur licence.</p>
         </div>
         {state?.saspay.environment && (
           <Badge variant={state.saspay.environment === 'LIVE' ? 'success' : 'info'} className="text-xs">
@@ -111,7 +111,7 @@ export function PaymentModeSwitch() {
 
       {!state ? (
         <div className="py-4 flex justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
         </div>
       ) : (
         <>
@@ -129,22 +129,22 @@ export function PaymentModeSwitch() {
                   disabled={saving !== null}
                   className={`text-left rounded-xl border-2 p-3 flex gap-3 transition disabled:opacity-60 ${
                     active
-                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      ? ' bg-success-soft '
+                      : ' hover:border-border '
                   }`}
                 >
                   <span
                     className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center ${
-                      active ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                      active ? 'bg-success text-success-foreground' : 'bg-default text-muted'
                     }`}
                   >
                     {saving === o.value ? <Loader2 className="w-5 h-5 animate-spin" /> : <Icon className="w-5 h-5" />}
                   </span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 font-semibold text-sm text-slate-900 dark:text-white">
-                      {o.title} {active && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                    <span className="flex items-center gap-1.5 font-semibold text-sm text-foreground">
+                      {o.title} {active && <CheckCircle2 className="w-4 h-4 text-success-soft-foreground" />}
                     </span>
-                    <span className="block text-xs text-slate-500 mt-0.5">{o.text}</span>
+                    <span className="block text-xs text-muted mt-0.5">{o.text}</span>
                   </span>
                 </button>
               );
@@ -152,7 +152,7 @@ export function PaymentModeSwitch() {
           </div>
 
           {state.mode === 'saspay' && !state.saspay.configured && (
-            <p className="flex gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-800 dark:text-amber-300">
+            <p className="flex gap-2 rounded-xl bg-warning-soft p-3 text-xs text-warning-soft-foreground">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>
                 SasPay est choisi mais indisponible : {state.saspay.problem}. Vos clients voient le paiement manuel en attendant.
@@ -164,17 +164,17 @@ export function PaymentModeSwitch() {
               type="button"
               onClick={() => void testConnection()}
               disabled={checking}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface-secondary disabled:opacity-60"
             >
               {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlugZap className="w-3.5 h-3.5" />} Tester la connexion
               SasPay
             </button>
             {check && (
               <div
-                className={`rounded-lg p-3 text-xs space-y-1 ${
+                className={`rounded-xl p-3 text-xs space-y-1 ${
                   check.ok
-                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
-                    : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300'
+                    ? 'bg-success-soft text-success-soft-foreground '
+                    : 'bg-danger-soft text-danger '
                 }`}
               >
                 <p className="flex items-center gap-1.5 font-semibold">
@@ -182,16 +182,16 @@ export function PaymentModeSwitch() {
                 </p>
                 {check.ok && check.webhook_secret === false && <p>⚠️ Secret du webhook absent (SASPAY_WEBHOOK_SECRET).</p>}
                 {check.ok && check.networks && check.networks.length > 0 && (
-                  <p className="text-slate-600 dark:text-slate-400">
+                  <p className="text-muted">
                     {check.networks.map((n) => `${n.name} (${n.country})${n.otp ? ' · OTP' : ''}`).join(' · ')}
                   </p>
                 )}
               </div>
             )}
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Actuellement proposé aux clients :{' '}
-            <strong className="text-slate-700 dark:text-slate-300">
+            <strong className="text-foreground">
               {state.effective === 'saspay' ? 'paiement en ligne SasPay' : 'paiement manuel'}
             </strong>
           </p>

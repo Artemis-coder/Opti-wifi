@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Users, Mail, Loader2, Trash2, Info, KeyRound, UserCheck, Clock, CheckCircle2, ArrowRight, Store, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
+import { Label, Meter } from '@heroui/react';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Button } from '@/components/ui/Button';
 import { WriteButton } from '@/components/ui/WriteButton';
 import { Badge } from '@/components/ui/Badge';
@@ -253,77 +255,78 @@ function UsersContent() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gestion des Utilisateurs</h1>
-          <p className="text-xs text-slate-500">Profils et rôles d&apos;accès à la plateforme.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Gestion des Utilisateurs</h1>
+          <p className="text-xs text-muted">Profils et rôles d&apos;accès à la plateforme.</p>
         </div>
         <AddButton what="un utilisateur" onClick={openAdd} />
       </div>
 
-      {/* Forfait : places utilisées et disponibles, bien visibles */}
+      {/* Forfait : places utilisées et disponibles (HeroUI Meter) */}
       {limits?.plan && (
-        <Card className="p-4 sm:p-5">
-          <div className="flex flex-col xl:flex-row xl:items-center gap-4">
-            <div className="xl:w-56 shrink-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Votre forfait</p>
-              <p className="text-lg font-extrabold text-slate-900 dark:text-white">{limits.plan.name}</p>
-              <Link href="/subscription" className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline">
-                Changer de forfait <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+        <Card className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted">Votre forfait</p>
+              <Badge variant="info">{limits.plan.name}</Badge>
             </div>
-            {/* Toutes les limites du forfait sur une seule ligne */}
-            <div className={cn('grid grid-cols-1 gap-3 flex-1', limits.pos_accounts ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
-              {[
-                { label: 'Utilisateurs', icon: Users, usage: limits.users },
-                { label: 'Collecteurs', icon: UserCheck, usage: limits.collectors },
-                ...(limits.pos_accounts ? [{ label: 'Accès points de vente', icon: Store, usage: limits.pos_accounts }] : []),
-              ].map(({ label, icon: Icon, usage }) => {
-                const full = isFull(usage);
-                const percent =
-                  usage.limit === null ? 0 : usage.limit === 0 ? 100 : Math.min(100, Math.round((usage.current / usage.limit) * 100));
-                return (
-                  <div
-                    key={label}
-                    className={cn(
-                      'rounded-xl border p-3',
-                      full ? 'border-amber-300 bg-amber-50/70 dark:bg-amber-950/20 dark:border-amber-900/60' : 'border-slate-200 dark:border-slate-800'
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        <Icon className="w-4 h-4 text-slate-400" /> {label}
-                      </span>
-                      <span className="text-xl font-extrabold tabular-nums whitespace-nowrap text-slate-900 dark:text-white">
-                        {usage.current}
-                        <span className="text-sm font-semibold text-slate-400"> / {usage.limit === null ? '∞' : usage.limit}</span>
-                      </span>
-                    </div>
-                    {usage.limit !== null && (
-                      <div className="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                        <div className={cn('h-full rounded-full', full ? 'bg-amber-500' : 'bg-emerald-500')} style={{ width: `${percent}%` }} />
+            <Link href="/subscription" className="link inline-flex items-center gap-1 text-sm">
+              Changer de forfait <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+          <div className={cn('grid grid-cols-1 gap-3 sm:gap-4', limits.pos_accounts ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+            {[
+              { label: 'Utilisateurs', icon: Users, usage: limits.users },
+              { label: 'Collecteurs', icon: UserCheck, usage: limits.collectors },
+              ...(limits.pos_accounts ? [{ label: 'Accès points de vente', icon: Store, usage: limits.pos_accounts }] : []),
+            ].map(({ label, icon: Icon, usage }) => {
+              const full = isFull(usage);
+              const hint =
+                usage.limit === null
+                  ? 'Illimité'
+                  : usage.limit === 0
+                    ? 'Non inclus dans votre forfait'
+                    : full
+                      ? 'Limite atteinte'
+                      : `${usage.limit - usage.current} place${usage.limit - usage.current > 1 ? 's' : ''} disponible${usage.limit - usage.current > 1 ? 's' : ''}`;
+              return (
+                <div key={label} className="flex flex-col gap-2 rounded-xl border border-border p-3">
+                  {usage.limit === null || usage.limit === 0 ? (
+                    <>
+                      <div className="flex items-center justify-between gap-2 text-sm">
+                        <span className="flex items-center gap-1.5 font-medium text-foreground">
+                          <Icon className="size-4 text-muted" /> {label}
+                        </span>
+                        <span className="tabular-nums text-muted">
+                          {usage.current} / {usage.limit === null ? '∞' : 0}
+                        </span>
                       </div>
-                    )}
-                    <p className={cn('mt-1.5 text-xs', full ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-slate-500')}>
-                      {usage.limit === null
-                        ? 'Illimité'
-                        : usage.limit === 0
-                          ? 'Non inclus dans votre forfait'
-                          : full
-                            ? 'Limite atteinte'
-                            : `${usage.limit - usage.current} place${usage.limit - usage.current > 1 ? 's' : ''} disponible${usage.limit - usage.current > 1 ? 's' : ''}`}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+                      {/* Jauge vide : même hauteur que les quotas limités */}
+                      <div aria-hidden className="h-2 rounded-sm bg-default" />
+                    </>
+                  ) : (
+                    <Meter value={usage.current} maxValue={usage.limit} color={full ? 'warning' : 'success'} valueLabel={`${usage.current} / ${usage.limit}`}>
+                      <Label className="flex items-center gap-1.5">
+                        <Icon className="size-4 text-muted" /> {label}
+                      </Label>
+                      <Meter.Output className="tabular-nums" />
+                      <Meter.Track>
+                        <Meter.Fill />
+                      </Meter.Track>
+                    </Meter>
+                  )}
+                  <p className={cn('text-xs', full ? 'font-medium text-warning-soft-foreground' : 'text-muted')}>{hint}</p>
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}
 
       {/* Équipe / accès points de vente : chacun géré séparément */}
-      <div role="tablist" aria-label="Type de comptes" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+      <div role="tablist" aria-label="Type de comptes" className="grid grid-cols-2 gap-2 sm:flex">
         {(
           [
             { value: 'equipe', label: 'Équipe', icon: Users, count: teamMembers.length },
@@ -340,26 +343,26 @@ function UsersContent() {
               aria-selected={active}
               onClick={() => selectFilter(t.value)}
               className={cn(
-                'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition',
+                'inline-flex min-w-0 items-center justify-center gap-2 h-10 px-3 sm:px-4 rounded-xl text-sm font-semibold border transition',
                 active
-                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+                  ? 'bg-foreground text-background border-border'
+                  : 'bg-surface text-muted border-border hover:bg-surface-secondary hover:text-foreground',
               )}
             >
-              <Icon className="w-4 h-4" /> {t.label}
-              <span className={cn('text-xs tabular-nums', active ? 'opacity-80' : 'text-slate-400')}>{t.count}</span>
+              <Icon className="size-4 shrink-0" /> <span className="truncate">{t.label}</span>
+              <span className={cn('text-xs tabular-nums', active ? 'opacity-80' : 'text-muted')}>{t.count}</span>
             </button>
           );
         })}
       </div>
 
       {filter === 'points-de-vente' && (
-        <p className="flex items-start gap-2 text-xs text-slate-500">
+        <p className="flex items-start gap-2 text-xs text-muted">
           <Eye className="w-4 h-4 shrink-0" />
           <span>
             Accès en consultation seule : chaque point de vente voit ses allocations et ses collectes, et se connecte avec
             son numéro de téléphone. Créez un accès avec « Ajouter », ou depuis la fiche du point de vente dans{' '}
-            <Link href="/pos" className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+            <Link href="/pos" className="font-semibold text-accent hover:underline">
               Points de vente
             </Link>{' '}
             (onglet « Accès point de vente »).
@@ -368,53 +371,51 @@ function UsersContent() {
       )}
 
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           Chargement des utilisateurs...
         </div>
       ) : filter === 'points-de-vente' && shownUsers.length === 0 ? (
-        <Card className="p-10 text-center space-y-2">
-          <Store className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun accès point de vente</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+        <Card className="text-center space-y-2 py-8">
+          <Store className="w-8 h-8 mx-auto text-muted" />
+          <h3 className="text-base font-semibold text-foreground">Aucun accès point de vente</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto">
             Créez-en un avec « Ajouter » (type « Point de vente »), ou depuis la fiche du point de vente.
           </p>
           <AddButton what="un accès point de vente" onClick={openAdd} />
         </Card>
       ) : shownUsers.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-blue-900/10 text-blue-900 dark:text-amber-400 flex items-center justify-center mx-auto">
+        <Card className="text-center space-y-3 py-8">
+          <div className="w-14 h-14 rounded-full bg-accent-soft text-accent flex items-center justify-center mx-auto">
             <Users className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun utilisateur trouvé</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <h3 className="text-base font-semibold text-foreground">Aucun utilisateur trouvé</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto">
             Créez des profils pour attribuer des points de vente aux collecteurs de votre équipe.
           </p>
           <AddButton what="un utilisateur" onClick={openAdd} />
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {shownUsers.map((u: Profile) => (
             <Card key={u.id} className="space-y-4">
                 <div className="flex flex-wrap-reverse items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-[12rem] flex-1">
-                    <div className="w-10 h-10 rounded-full bg-brand-900 text-brand-400 font-bold flex items-center justify-center text-sm border border-brand-500/30">
-                      {u.nom ? u.nom.slice(0, 2).toUpperCase() : 'US'}
-                    </div>
+                    <UserAvatar name={u.nom} email={u.email} size="md" danger={u.is_active === false} className="shrink-0" />
                     <div>
-                      <h3 className="font-bold text-sm text-slate-900 dark:text-white">{u.nom}</h3>
-                      <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                      <h3 className="font-semibold text-sm text-foreground">{u.nom}</h3>
+                      <div className="flex items-center gap-1 text-xs text-muted mt-0.5">
                         <Mail className="w-3 h-3" />
                         <span>{isInternalPosAccountEmail(u.email) ? 'Connexion par téléphone' : u.email}</span>
                       </div>
                       {u.telephone && (
-                        <p className="text-xs text-slate-500 mt-0.5">{u.telephone}</p>
+                        <p className="text-xs text-muted mt-0.5">{u.telephone}</p>
                       )}
                       {u.role === 'point_de_vente' && u.pos_id && (
                         <Link
                           href={`/pos/${u.pos_id}?tab=acces`}
-                          className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline"
-                        >
+                          className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+            >
                           <Store className="w-3 h-3" /> {posNames[u.pos_id] || 'Point de vente'}
                         </Link>
                       )}
@@ -427,7 +428,7 @@ function UsersContent() {
                     <Badge
                       variant={u.role === 'administrateur' ? 'warning' : u.role === 'point_de_vente' ? 'success' : 'info'}
                       className="whitespace-nowrap"
-                    >
+            >
                       {u.role === 'point_de_vente' ? 'point de vente' : u.role}
                     </Badge>
                   </div>
@@ -437,10 +438,10 @@ function UsersContent() {
                   <p
                     className={cn(
                       'flex items-center gap-1.5 text-xs',
-                      status[u.id].pending_password ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-slate-500'
+                      status[u.id].pending_password ? 'font-semibold text-warning-soft-foreground' : 'text-muted'
                     )}
-                  >
-                    {status[u.id].pending_password ? <Clock className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+            >
+                    {status[u.id].pending_password ? <Clock className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5 text-success-soft-foreground" />}
                     {status[u.id].pending_password
                       ? 'Accès pas encore utilisés'
                       : status[u.id].last_sign_in_at
@@ -452,21 +453,19 @@ function UsersContent() {
                   <WriteButton
                     variant="outline"
                     size="sm"
-                    className="h-10 font-semibold"
                     onClick={() => setAccessMember(u)}
                     disabled={u.is_active === false}
-                  >
-                    <KeyRound className="w-4 h-4 mr-1.5" />
+            >
+                    <KeyRound className="w-4 h-4" />
                     Accès
                   </WriteButton>
                   <WriteButton
-                    variant="outline"
+                    variant="danger-soft"
                     size="sm"
-                    className="h-10 font-semibold text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/60 dark:hover:bg-red-900/30"
                     onClick={() => setDeleteTarget(u)}
                     disabled={u.is_active === false}
-                  >
-                    <Trash2 className="w-4 h-4 mr-1.5" />
+            >
+                    <Trash2 className="w-4 h-4" />
                     Retirer
                   </WriteButton>
                 </div>
@@ -479,7 +478,7 @@ function UsersContent() {
         <form onSubmit={handleAddUser} className="space-y-4">
           {/* Type de compte d'abord : les champs en dépendent */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Type d&apos;utilisateur</label>
+            <label className="block text-xs font-semibold text-foreground">Type d&apos;utilisateur</label>
             <CustomSelect
               value={role}
               onChange={(v) => chooseRole(v as UserRole)}
@@ -505,21 +504,21 @@ function UsersContent() {
 
           {role === 'point_de_vente' ? (
             posAccountsFull ? (
-              <div className="flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/60 p-3 text-xs text-slate-700 dark:text-slate-300">
-                <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+              <div className="flex gap-2.5 rounded-xl bg-warning-soft p-3 text-xs text-foreground">
+                <Info className="w-4 h-4 shrink-0 text-warning-soft-foreground mt-0.5" />
                 <div className="space-y-1.5">
                   <p>
                     {limits?.pos_accounts?.limit === 0
                       ? `L'accès point de vente n'est pas inclus dans votre forfait ${limits?.plan?.name ?? ''}.`
                       : `Votre forfait ${limits?.plan?.name ?? ''} ne permet pas d'autre accès point de vente.`}
                   </p>
-                  <Link href="/subscription" className="font-bold text-amber-700 dark:text-amber-400 hover:underline">
+                  <Link href="/subscription" className="font-semibold text-warning-soft-foreground hover:underline">
                     Voir les forfaits
                   </Link>
                 </div>
               </div>
             ) : posWithoutAccess.length === 0 ? (
-              <div className="flex gap-2.5 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 p-3 text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex gap-2.5 rounded-xl bg-surface-secondary p-3 text-xs text-muted">
                 <Info className="w-4 h-4 shrink-0 mt-0.5" />
                 <p>
                   {posList.length === 0
@@ -530,7 +529,7 @@ function UsersContent() {
             ) : (
               <>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Point de vente</label>
+                  <label className="block text-xs font-semibold text-foreground">Point de vente</label>
                   <CustomSelect
                     value={selectedPosId}
                     onChange={(v) => choosePos(v)}
@@ -575,7 +574,7 @@ function UsersContent() {
             autoComplete="off"
           />
           {(role !== 'point_de_vente' || email.trim() !== '') && (
-            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
               <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
               Envoyer les accès par e-mail
             </label>
@@ -583,8 +582,8 @@ function UsersContent() {
           </>
           )}
           {role === 'collecteur' && collectorsFull && (
-            <div className="flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/60 p-3 text-xs text-slate-700 dark:text-slate-300">
-              <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+            <div className="flex gap-2.5 rounded-xl bg-warning-soft p-3 text-xs text-foreground">
+              <Info className="w-4 h-4 shrink-0 text-warning-soft-foreground mt-0.5" />
               <div className="space-y-1.5">
                 <p>
                   Votre forfait {limits?.plan?.name} ne permet pas{' '}
@@ -596,15 +595,15 @@ function UsersContent() {
                     setIsModalOpen(false);
                     setLimitKind('collectors');
                   }}
-                  className="font-bold text-amber-700 dark:text-amber-400 hover:underline"
-                >
+                  className="font-semibold text-warning-soft-foreground hover:underline"
+            >
                   Voir les forfaits
                 </button>
               </div>
             </div>
           )}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Annuler</Button>
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Annuler</Button>
             <Button
               type="submit"
               disabled={
@@ -643,19 +642,19 @@ function UsersContent() {
 
       {/* Delete Confirmation Modal */}
       <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Supprimer l'utilisateur">
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-          Êtes-vous sûr de vouloir supprimer <strong className="font-bold text-slate-900 dark:text-white">{deleteTarget?.nom}</strong> de l’équipe ?
+        <p className="text-sm text-muted mb-4">
+          Êtes-vous sûr de vouloir supprimer <strong className="font-semibold text-foreground">{deleteTarget?.nom}</strong> de l’équipe ?
         </p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+        <p className="text-xs text-muted mb-6">
           Toutes les collectes et allocations historiques conserveront les noms d’utilisateur d’origine, mais cet utilisateur ne pourra plus se connecter ni être affecté à de nouvelles tâches.
         </p>
         <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>Annuler</Button>
+          <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>Annuler</Button>
           <Button
             onClick={() => handleDeleteUser(deleteTarget!)}
             variant="danger"
             disabled={isSubmitting}
-          >
+            >
             Supprimer
           </Button>
         </div>

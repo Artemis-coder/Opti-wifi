@@ -29,7 +29,7 @@ function TicketControls({ ticket, reload, endpoint }: { ticket: TicketListItem; 
   };
   return (
     <div
-      className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200 dark:border-slate-800 ${saving ? 'opacity-60 pointer-events-none' : ''}`}
+      className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-border ${saving ? 'opacity-60 pointer-events-none' : ''}`}
     >
       <CustomSelect
         label="Statut"

@@ -15,6 +15,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
 import { AddButton } from '@/components/ui/AddButton';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { useGuideOpenForm } from '@/lib/onboarding';
 
 export default function WifiSpacesPage() {
@@ -190,20 +191,20 @@ export default function WifiSpacesPage() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         Chargement des espaces...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Espaces Wi-Fi</h1>
-          <p className="text-xs text-slate-500">Gérez vos zones géographiques et regroupez vos points de vente.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Espaces Wi-Fi</h1>
+          <p className="text-xs text-muted">Gérez vos zones géographiques et regroupez vos points de vente.</p>
         </div>
         {isAdmin && (
           <AddButton what="un espace Wi-Fi" tour="add:space" onClick={() => handleOpenModal()} />
@@ -211,7 +212,7 @@ export default function WifiSpacesPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <KpiGrid cols={{ base: 2, sm: 3 }}>
         <StatTile
           label="Total Espaces"
           value={totalSpaces}
@@ -233,30 +234,30 @@ export default function WifiSpacesPage() {
           accent="red"
           className="col-span-2 sm:col-span-1"
         />
-      </div>
+      </KpiGrid>
 
       {/* Filter Bar */}
-      <Card className="p-4">
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+      <Card>
+        <div className="relative w-full">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-muted" />
           <input
             type="text"
             placeholder="Rechercher par nom, ville ou adresse..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="input input--primary w-full pl-9 pr-4"
           />
         </div>
       </Card>
 
       {/* Grid Space Cards or Empty State */}
       {filteredSpaces.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+        <Card className="text-center space-y-3 py-8">
+          <div className="w-14 h-14 rounded-full bg-warning-soft text-warning-soft-foreground flex items-center justify-center mx-auto">
             <MapPin className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun espace trouvé</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <h3 className="text-base font-semibold text-foreground">Aucun espace trouvé</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto">
             {spaces.length === 0
               ? 'Créez votre premier espace Wi-Fi pour commencer à organiser vos points de vente.'
               : 'Aucun espace ne correspond à votre recherche.'}
@@ -266,7 +267,7 @@ export default function WifiSpacesPage() {
           )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredSpaces.map((space: WifiSpace) => {
             const linkedPos = allPos.filter((p: PointOfSale) => p.space_id === space.id);
             const unlinkedPos = allPos.filter((p: PointOfSale) => !p.space_id);
@@ -277,14 +278,14 @@ export default function WifiSpacesPage() {
                 <Card className="space-y-3 h-full">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      <div className="p-2.5 rounded-xl bg-warning-soft text-warning-soft-foreground">
                         <MapPin className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-sm text-slate-900 dark:text-white">{space.nom}</h3>
-                        <p className="text-xs text-slate-500 mt-1">{space.description || 'Aucune description'}</p>
+                        <h3 className="font-semibold text-sm text-foreground">{space.nom}</h3>
+                        <p className="text-xs text-muted mt-1">{space.description || 'Aucune description'}</p>
                         {(space.adresse || space.ville) && (
-                          <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                          <div className="flex items-center gap-1 text-xs text-muted mt-1">
                             <MapPin className="w-3 h-3" />
                             <span>
                               {[space.adresse, space.ville].filter(Boolean).join(', ')}
@@ -306,7 +307,7 @@ export default function WifiSpacesPage() {
                         {space.statut}
                       </Badge>
                       {isAdmin && (
-                        <Button
+                        <Button isIconOnly
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
@@ -315,9 +316,9 @@ export default function WifiSpacesPage() {
                             handleToggleStatus(space);
                           }}
                           disabled={togglingId === space.id}
-                          className="p-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
                           title={space.statut === 'actif' ? 'Désactiver' : 'Activer'}
-                        >
+                      >
                           {togglingId === space.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : space.statut === 'actif' ? (
@@ -331,11 +332,11 @@ export default function WifiSpacesPage() {
                   </div>
 
                   {/* Linked POS count */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div className="p-1.5 rounded-lg bg-blue-900/10 text-blue-900 dark:text-blue-400">
+                  <div className="flex items-center gap-2 pt-2 border-t border-separator">
+                    <div className="p-1.5 rounded-xl bg-accent-soft text-accent">
                       <Store className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    <span className="text-xs font-semibold text-muted">
                       {linkedPos.length} point{linkedPos.length > 1 ? 's' : ''} de vente rattaché
                       {linkedPos.length > 1 ? 's' : ''}
                     </span>
@@ -351,7 +352,7 @@ export default function WifiSpacesPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md">
             <div className="p-6 space-y-4">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-foreground">
                 {editingSpace ? "Modifier l'Espace" : 'Créer un Espace Wi-Fi'}
               </h2>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -381,7 +382,7 @@ export default function WifiSpacesPage() {
                   placeholder="ex: Abidjan"
                 />
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-foreground">
                     Statut
                   </label>
                   <CustomSelect
@@ -394,8 +395,8 @@ export default function WifiSpacesPage() {
                     ]}
                   />
                 </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <Button type="button" variant="ghost" onClick={handleCloseModal}>
+                <div className="flex gap-3 pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
+                  <Button type="button" variant="outline" onClick={handleCloseModal}>
                     Annuler
                   </Button>
                   <Button type="submit" variant="secondary" isLoading={submitting}>

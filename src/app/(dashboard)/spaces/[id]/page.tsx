@@ -26,7 +26,7 @@ import {
   Unlink,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { WriteButton } from '@/components/ui/WriteButton';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
@@ -46,6 +46,7 @@ import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 
 export default function SpaceDashboardPage() {
   const params = useParams();
@@ -254,8 +255,8 @@ export default function SpaceDashboardPage() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         Chargement du tableau de bord...
       </div>
     );
@@ -263,72 +264,57 @@ export default function SpaceDashboardPage() {
 
   if (!space) {
     return (
-      <Card className="p-12 text-center space-y-3">
-        <Info className="w-10 h-10 text-slate-400 mx-auto" />
-        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+      <Card className="text-center space-y-3 py-8">
+        <Info className="w-10 h-10 text-muted mx-auto" />
+        <h3 className="text-base font-semibold text-foreground">
           Espace introuvable
         </h3>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           L'espace demandé n'existe pas ou a été supprimé.
         </p>
-        <Link href="/spaces">
-          <Button variant="secondary" size="sm">
+        <Link href="/spaces" className={buttonClassName({ variant: 'secondary', size: 'sm' })}>
             Retour aux espaces
-          </Button>
-        </Link>
+          </Link>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-brand-900 to-brand-700 p-6 rounded-2xl text-white shadow-lg border border-slate-800">
-        <div className="min-w-0">
-          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <Link
-              href="/spaces"
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 -ml-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition"
-            >
-              <ArrowLeft className="w-4 h-4" /> Retour
-            </Link>
-            <div className="flex items-center gap-2 min-w-0">
-              <MapPin className="w-6 h-6 shrink-0 text-brand-400" />
-              <h1 className="text-xl sm:text-2xl font-bold break-words">{space.nom}</h1>
-            </div>
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* En-tête de page */}
+      <div className="space-y-3">
+        <Link href="/spaces" className={buttonClassName({ variant: 'ghost', size: 'sm', className: '-ml-3'})}>
+          <ArrowLeft className="size-4" /> Retour aux espaces
+        </Link>
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <h1 className="flex items-center gap-2 break-words text-2xl font-semibold tracking-tight text-foreground">
+              <MapPin className="size-6 shrink-0 text-muted" />
+              {space.nom}
+            </h1>
+            {space.description && <p className="mt-1 text-sm text-muted">{space.description}</p>}
+            {(space.adresse || space.ville) && (
+              <p className="mt-1 flex items-center gap-1 text-sm text-muted">
+                <MapPin className="size-3.5 shrink-0" />
+                <span>{[space.adresse, space.ville].filter(Boolean).join(', ')}</span>
+              </p>
+            )}
           </div>
-          {space.description && (
-            <p className="text-sm text-slate-300 mt-1">{space.description}</p>
-          )}
-          {(space.adresse || space.ville) && (
-            <div className="flex items-center gap-1 text-sm text-slate-400 mt-1">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>{[space.adresse, space.ville].filter(Boolean).join(', ')}</span>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-2 mt-4 md:mt-0">
           {user?.role === 'administrateur' && (
-            <>
-              <WriteButton
-                onClick={() => setIsEditModalOpen(true)}
-                className="gap-2 font-semibold bg-brand-500 text-brand-on hover:bg-brand-600"
-              >
-                <Edit className="w-4 h-4" /> Modifier
+            <div className="flex flex-wrap gap-2">
+              <WriteButton size="sm" onClick={() => setIsEditModalOpen(true)}>
+                <Edit className="size-4" /> Modifier
               </WriteButton>
-              <WriteButton
-                onClick={handleDeleteSpace}
-                className="gap-2 font-semibold bg-red-600 hover:bg-red-700 text-white"
-              >
-                <Trash2 className="w-4 h-4" /> Supprimer
+              <WriteButton size="sm" variant="danger-soft" onClick={handleDeleteSpace}>
+                <Trash2 className="size-4" /> Supprimer
               </WriteButton>
-            </>
+            </div>
           )}
         </div>
       </div>
 
 {/* Linked POS Summary */}
-       <Card className="p-4">
+       <Card>
          <div className="flex items-center justify-between">
            <PosSummary
              linkedPosCount={linkedPos.length}
@@ -339,7 +325,7 @@ export default function SpaceDashboardPage() {
                variant="ghost"
                size="sm"
                onClick={() => setManagePosSpaceId(spaceId)}
-               className="gap-1 text-xs font-semibold text-blue-600"
+               className="text-accent"
              >
                <Link2 className="w-3.5 h-3.5" />
                Gérer les POS
@@ -349,7 +335,7 @@ export default function SpaceDashboardPage() {
        </Card>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-3 sm:gap-4">
+      <KpiGrid cols={{ base: 2, sm: 3, xl: 6 }}>
         {/* Tickets Alloués */}
         <StatTile
           label="Tickets Alloués"
@@ -404,13 +390,13 @@ export default function SpaceDashboardPage() {
             alert={ecartTotal < 0}
             hint="Écart entre attendu et encaissé"
           />
-       </div>
+       </KpiGrid>
 
       {/* Main Content Grid: Raccourcis & Recent Encaissements */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Left Column: Raccourcis Métier */}
         <div className="lg:col-span-1 space-y-4 max-w-[405px]">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-foreground">
             Raccourcis Métier (Espace)
           </h2>
 
@@ -418,67 +404,67 @@ export default function SpaceDashboardPage() {
             {user?.role === 'administrateur' && (
               <Link
                 href="/allocations/new"
-                className="flex items-center justify-between p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 hover:scale-[1.01] transition"
-              >
+                className="flex items-center justify-between p-3 rounded-xl bg-accent-soft hover:scale-[1.01] transition"
+             >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-600 text-white">
+                  <div className="p-2 rounded-xl bg-accent text-accent-foreground">
                     <ArrowLeftRight className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Allouer des Tickets</p>
-                    <p className="text-xs text-slate-500">Distribuer du stock aux POS</p>
+                    <p className="text-sm font-semibold text-foreground">Allouer des Tickets</p>
+                    <p className="text-xs text-muted">Distribuer du stock aux POS</p>
                   </div>
                 </div>
-                <span className="text-purple-600 font-bold">→</span>
+                <span className="text-accent font-semibold">→</span>
               </Link>
             )}
 
             <Link
               href="/collections/new"
-              className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 hover:scale-[1.01] transition"
-            >
+              className="flex items-center justify-between p-3 rounded-xl bg-warning-soft hover:scale-[1.01] transition"
+             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500 text-slate-950">
+                <div className="p-2 rounded-xl bg-warning text-foreground">
                   <Receipt className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Nouvelle Collecte</p>
-                  <p className="text-xs text-slate-500">Saisir un encaissement de caisse</p>
+                  <p className="text-sm font-semibold text-foreground">Nouvelle Collecte</p>
+                  <p className="text-xs text-muted">Saisir un encaissement de caisse</p>
                 </div>
               </div>
-              <span className="text-amber-600 font-bold">→</span>
+              <span className="text-warning-soft-foreground font-semibold">→</span>
             </Link>
 
             <Link
               href="/pos"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
-            >
+              className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:scale-[1.01] transition"
+             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-900 text-white">
+                <div className="p-2 rounded-xl bg-accent text-accent-foreground">
                   <Store className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Points de Vente</p>
-                  <p className="text-xs text-slate-500">Gérer le réseau de distribution</p>
+                  <p className="text-sm font-semibold text-foreground">Points de Vente</p>
+                  <p className="text-xs text-muted">Gérer le réseau de distribution</p>
                 </div>
               </div>
-              <span className="text-slate-400 font-bold">→</span>
+              <span className="text-muted font-semibold">→</span>
             </Link>
 
             <Link
               href="/tickets"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:scale-[1.01] transition"
-            >
+              className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:scale-[1.01] transition"
+             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-600 text-white">
+                <div className="p-2 rounded-xl bg-success text-success-foreground">
                   <Ticket className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Types de Tickets</p>
-                  <p className="text-xs text-slate-500">Consulter et modifier les tarifs</p>
+                  <p className="text-sm font-semibold text-foreground">Types de Tickets</p>
+                  <p className="text-xs text-muted">Consulter et modifier les tarifs</p>
                 </div>
               </div>
-              <span className="text-slate-400 font-bold">→</span>
+              <span className="text-muted font-semibold">→</span>
             </Link>
           </Card>
         </div>
@@ -486,42 +472,42 @@ export default function SpaceDashboardPage() {
         {/* Right Column: Derniers Encaissements */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-foreground">
               Derniers Encaissements (Espace)
             </h2>
             <Link
               href="/collections"
-              className="text-xs font-semibold text-amber-600 hover:text-amber-700"
-            >
+              className="text-xs font-semibold text-warning-soft-foreground hover:text-warning-soft-foreground"
+             >
               Voir tout →
             </Link>
           </div>
 
           {loading ? (
-            <Card className="p-8 text-center text-slate-500">
-              <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
+            <Card className="text-center text-muted py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-accent mx-auto" />
               <p className="text-xs font-medium mt-2">Chargement des encaissements...</p>
             </Card>
           ) : recentCollections.length === 0 ? (
-            <Card className="p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+            <Card className="text-center space-y-3 py-8">
+              <div className="w-12 h-12 rounded-full bg-default text-muted flex items-center justify-center mx-auto">
                 <Inbox className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun encaissement enregistré</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h3 className="text-base font-semibold text-foreground">Aucun encaissement enregistré</h3>
+              <p className="text-xs text-muted max-w-sm mx-auto">
                 Aucune collecte n'a été effectuée pour les points de vente rattachés à cet espace.
               </p>
-              <Link href="/collections/new" className="inline-block pt-2">
-                <Button variant="secondary" size="sm" className="font-bold gap-2">
-                  <PlusCircle className="w-4 h-4" /> Effectuer une collecte
-                </Button>
-              </Link>
+              <div className="pt-2">
+                <Link href="/collections/new" className={buttonClassName({ variant: 'secondary', size: 'sm' })}>
+                  <PlusCircle className="size-4" /> Effectuer une collecte
+                </Link>
+              </div>
             </Card>
           ) : (
             <Card className="p-0 overflow-hidden">
               <ResponsiveTable>
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                  <thead className="bg-default text-muted font-semibold">
                     <tr>
                       <th className="px-4 py-3">Point de Vente</th>
                       <th className="px-4 py-3">Collecteur</th>
@@ -530,18 +516,18 @@ export default function SpaceDashboardPage() {
                       <th className="px-4 py-3">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                  <tbody className="divide-y divide-separator font-medium">
                     {recentCollections.map((col: Collection) => (
-                      <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{col.pos?.nom || 'POS'}</td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{col.collecteur?.nom || 'Collecteur'}</td>
-                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(col.montant_collecte)}</td>
+                      <tr key={col.id} className="hover:bg-surface-secondary transition">
+                        <td className="px-4 py-3 font-semibold text-foreground">{col.pos?.nom || 'POS'}</td>
+                        <td className="px-4 py-3 text-muted">{col.collecteur?.nom || 'Collecteur'}</td>
+                        <td className="px-4 py-3 font-semibold text-foreground">{formatCurrencyFCFA(col.montant_collecte)}</td>
                         <td className="px-4 py-3">
                           <Badge variant={col.statut === 'validee' ? 'success' : 'warning'}>
                             {col.statut === 'validee' ? 'Validée' : 'Brouillon'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-slate-500">{formatDateFR(col.created_at)}</td>
+                        <td className="px-4 py-3 text-muted">{formatDateFR(col.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -558,25 +544,25 @@ export default function SpaceDashboardPage() {
           <Card className="w-full max-w-3xl max-h-[80vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                <h2 className="text-lg font-semibold text-foreground">
                   Gérer les Points de Vente
                 </h2>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setManagePosSpaceId(null)}
-                >
+             >
                   ✕
                 </Button>
               </div>
 
               {/* Linked POS */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                <h3 className="text-sm font-semibold text-muted">
                   POS liés à cet espace ({linkedPos.length})
                 </h3>
                 {linkedPos.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-4 text-center">
+                  <p className="text-xs text-muted py-4 text-center">
                     Aucun POS n'est rattaché à cet espace.
                   </p>
                 ) : (
@@ -584,15 +570,15 @@ export default function SpaceDashboardPage() {
                     {linkedPos.map((p: PointOfSale) => (
                       <div
                         key={p.id}
-                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800"
-                      >
+                        className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl"
+             >
                         <div className="flex items-center gap-3 min-w-0">
-                          <Store className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <Store className="w-4 h-4 text-success-soft-foreground shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            <p className="text-xs font-semibold text-foreground truncate">
                               {p.nom}
                             </p>
-                            <p className="text-[10px] text-slate-500 truncate">
+                            <p className="text-xs text-muted truncate">
                               {p.ville}
                             </p>
                           </div>
@@ -601,8 +587,7 @@ export default function SpaceDashboardPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleUnlinkPos(p.id)}
-                          className="gap-1 text-xs text-red-600 hover:text-red-700"
-                        >
+             >
                           <Unlink className="w-3.5 h-3.5" /> Détacher
                         </Button>
                       </div>
@@ -613,11 +598,11 @@ export default function SpaceDashboardPage() {
 
               {/* Unlinked POS */}
               <div className="mt-6 space-y-4">
-                <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                <h3 className="text-sm font-semibold text-muted">
                   POS disponibles ({unlinkedPos.length})
                 </h3>
                 {unlinkedPos.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-4 text-center">
+                  <p className="text-xs text-muted py-4 text-center">
                     Tous les POS sont déjà rattachés à un espace.
                   </p>
                 ) : (
@@ -625,15 +610,15 @@ export default function SpaceDashboardPage() {
                     {unlinkedPos.map((p: PointOfSale) => (
                       <div
                         key={p.id}
-                        className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800"
-                      >
+                        className="flex items-center justify-between p-3 bg-surface rounded-xl border border-border"
+             >
                         <div className="flex items-center gap-3 min-w-0">
-                          <Store className="w-4 h-4 text-blue-600 shrink-0" />
+                          <Store className="w-4 h-4 text-accent shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            <p className="text-xs font-semibold text-foreground truncate">
                               {p.nom}
                             </p>
-                            <p className="text-[10px] text-slate-500 truncate">
+                            <p className="text-xs text-muted truncate">
                               {p.ville}
                             </p>
                           </div>
@@ -642,8 +627,7 @@ export default function SpaceDashboardPage() {
                           variant="secondary"
                           size="sm"
                           onClick={() => handleLinkPos(p.id)}
-                          className="gap-1 text-xs py-1 px-2 h-7"
-                        >
+             >
                           <Link2 className="w-3 h-3" /> Rattacher
                         </Button>
                       </div>
@@ -654,9 +638,9 @@ export default function SpaceDashboardPage() {
 
               <div className="flex justify-end pt-4">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => setManagePosSpaceId(null)}
-                >
+             >
                   Fermer
                 </Button>
               </div>
@@ -670,7 +654,7 @@ export default function SpaceDashboardPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md">
             <div className="p-6 space-y-4">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-foreground">
                 Modifier l'espace
               </h2>
               <form
@@ -705,63 +689,63 @@ export default function SpaceDashboardPage() {
                   }
                 }}
                 className="space-y-4"
-              >
+             >
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-foreground">
                     Nom de l'espace *
                   </label>
                   <input
                     name="nom"
                     defaultValue={space.nom}
                     required
-                    className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
+                    className="w-full h-10 px-3 bg-surface border border-border rounded-field text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-foreground">
                     Description
                   </label>
                   <input
                     name="description"
                     defaultValue={space.description || ''}
-                    className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
+                    className="w-full h-10 px-3 bg-surface border border-border rounded-field text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-foreground">
                     Adresse
                   </label>
                   <input
                     name="adresse"
                     defaultValue={space.adresse || ''}
-                    className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
+                    className="w-full h-10 px-3 bg-surface border border-border rounded-field text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-foreground">
                     Ville
                   </label>
                   <input
                     name="ville"
                     defaultValue={space.ville || ''}
-                    className="w-full h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
+                    className="w-full h-10 px-3 bg-surface border border-border rounded-field text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-foreground">
                     Statut
                   </label>
                   <StatusField name="statut" defaultValue={space.statut} />
                 </div>
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex gap-3 pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     onClick={() => setIsEditModalOpen(false)}
-                  >
+             >
                     Annuler
                   </Button>
-                  <Button type="submit" variant="secondary">
+                  <Button type="submit" variant="primary">
                     Mettre à jour
                   </Button>
                 </div>

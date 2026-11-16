@@ -38,7 +38,7 @@ export const DEFAULT_BRAND_COLOR = '#1dc3ff';
 export function PaymentPoster({ method, className }: { method: PublicPaymentMethod; className?: string }) {
   return (
     <div
-      className={cn('rounded-3xl px-5 pt-6 pb-7 sm:px-7 text-white space-y-6 shadow-sm', className)}
+      className={cn('rounded-xl px-5 pt-6 pb-7 sm:px-7 text-white space-y-4 shadow-sm', className)}
       style={{ background: method.brand_color || DEFAULT_BRAND_COLOR }}
     >
       <div className="flex items-center justify-center gap-3">
@@ -47,24 +47,24 @@ export function PaymentPoster({ method, className }: { method: PublicPaymentMeth
           // eslint-disable-next-line @next/next/no-img-element
           <img src={method.brand_logo} alt="" className="h-16 sm:h-20 w-auto shrink-0 object-contain" />
         )}
-        <p className="font-extrabold leading-none tracking-tight drop-shadow-sm">
+        <p className="font-semibold leading-none tracking-tight drop-shadow-sm">
           <span className="block text-2xl">Payez</span>
           <span className="block text-[2.5rem] leading-none whitespace-nowrap">avec {method.name}</span>
         </p>
       </div>
 
-      <div className="mx-auto w-full max-w-[17rem] aspect-square rounded-2xl bg-white p-3 sm:p-4">
+      <div className="mx-auto w-full max-w-[17rem] aspect-square rounded-xl bg-surface p-3 sm:p-4">
         {method.logo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={method.logo} alt={`QR code de paiement ${method.name}`} className="w-full h-full object-contain" />
         ) : (
-          <span className="w-full h-full flex items-center justify-center text-slate-300">
+          <span className="w-full h-full flex items-center justify-center text-muted">
             <QrCode className="w-1/2 h-1/2" />
           </span>
         )}
       </div>
 
-      <p className="flex items-start justify-center gap-2.5 text-xl sm:text-2xl font-extrabold leading-tight drop-shadow-sm">
+      <p className="flex items-start justify-center gap-2.5 text-xl sm:text-2xl font-semibold leading-tight drop-shadow-sm">
         <Camera className="w-6 h-6 mt-0.5 shrink-0" />
         <span>Scanner le QR code pour payer</span>
       </p>
@@ -76,12 +76,12 @@ export function PaymentPoster({ method, className }: { method: PublicPaymentMeth
 export function PaymentQrThumb({ method }: { method: Pick<PublicPaymentMethod, 'logo' | 'name' | 'brand_color'> }) {
   return (
     <span className="w-16 h-16 shrink-0 rounded-xl p-1.5" style={{ background: method.brand_color || DEFAULT_BRAND_COLOR }}>
-      <span className="w-full h-full rounded-lg bg-white p-1 flex items-center justify-center">
+      <span className="w-full h-full rounded-xl bg-surface p-1 flex items-center justify-center">
         {method.logo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={method.logo} alt={`QR code ${method.name}`} className="w-full h-full object-contain" />
         ) : (
-          <QrCode className="w-6 h-6 text-slate-300" />
+          <QrCode className="w-6 h-6 text-muted" />
         )}
       </span>
     </span>
@@ -107,15 +107,15 @@ function useCopy() {
 export function PayNumber({ method }: { method: PublicPaymentMethod }) {
   const { copied, copy } = useCopy();
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border p-3.5">
       <div className="min-w-0">
-        <p className="font-mono text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-wide break-words">{method.account_number}</p>
-        {method.account_name && <p className="text-xs text-slate-500">Au nom de {method.account_name}</p>}
+        <p className="font-mono text-base sm:text-lg font-semibold text-foreground break-words">{method.account_number}</p>
+        {method.account_name && <p className="text-xs text-muted">Au nom de {method.account_name}</p>}
       </div>
       <button
         type="button"
         onClick={() => copy(method.account_number)}
-        className="shrink-0 inline-flex items-center gap-1.5 h-11 px-4 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        className="shrink-0 inline-flex items-center gap-1.5 h-11 px-4 rounded-xl text-sm font-semibold text-foreground bg-default hover:bg-default transition"
       >
         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
         {copied ? 'Copié' : 'Copier'}
@@ -143,14 +143,14 @@ export function WhatsappReceiptButton({ method, message }: { method: PublicPayme
 /** Aperçu du back-office : ce que voit le client. */
 export function PaymentMethodPreview({ method }: { method: PublicPaymentMethod }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <PaymentPoster method={method} />
       <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-slate-500">Ou copiez le numéro {method.name}</p>
+        <p className="text-xs font-semibold text-muted">Ou copiez le numéro {method.name}</p>
         <PayNumber method={method} />
       </div>
       <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-slate-500">Après le paiement</p>
+        <p className="text-xs font-semibold text-muted">Après le paiement</p>
         <WhatsappReceiptButton method={method} message={`Bonjour, voici le justificatif de mon paiement ${method.name} pour mon abonnement OptiWifi.`} />
       </div>
     </div>

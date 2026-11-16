@@ -53,11 +53,11 @@ export default function PlatformSupportPage() {
   const total = STATUS_FILTERS.reduce((a, s) => a + (counts[s] || 0), 0);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-5 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Support</h1>
-          <p className="text-xs text-slate-500">Tickets ouverts par les clients, et par le support pour un client.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Support</h1>
+          <p className="text-xs text-muted">Tickets ouverts par les clients, et par le support pour un client.</p>
         </div>
         <AddButton what="un ticket pour un client" onClick={openForm} />
       </div>
@@ -73,37 +73,37 @@ export default function PlatformSupportPage() {
               onClick={() => setStatus(active ? '' : s)}
               aria-pressed={active}
               className={cn(
-                'text-left rounded-2xl border p-4 transition',
+                'text-left rounded-xl border p-4 transition',
                 active
-                  ? 'border-brand-500 ring-2 ring-brand-500/20 bg-brand-50/60 dark:bg-brand-950/30'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+                  ? 'ring-2 ring-accent/20 bg-accent-soft'
+                  : 'border-border bg-surface hover:border-border'
               )}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{STATUS_PLURALS[s]}</p>
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white tabular-nums">{counts[s] ?? 0}</p>
+              <p className="text-xs font-semibold text-muted">{STATUS_PLURALS[s]}</p>
+              <p className="text-2xl font-semibold text-foreground tabular-nums">{counts[s] ?? 0}</p>
             </button>
           );
         })}
       </div>
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
+      <div className="flex items-center justify-between text-xs text-muted">
         <span>{status ? `Filtre : ${STATUS_INFO[status].label.toLowerCase()}` : `${total} ticket${total > 1 ? 's' : ''} au total`}</span>
         {status && (
-          <button type="button" onClick={() => setStatus('')} className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+          <button type="button" onClick={() => setStatus('')} className="font-semibold text-accent hover:underline">
             Tout afficher
           </button>
         )}
       </div>
 
       {loading ? (
-        <div className="py-16 flex justify-center text-slate-400">
+        <div className="py-10 flex justify-center text-muted">
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       ) : result && result.tickets.length === 0 ? (
-        <Card className="p-10 text-center space-y-3">
-          <LifeBuoy className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun ticket</h3>
-          <p className="text-xs text-slate-500">Les demandes des clients apparaîtront ici.</p>
+        <Card className="text-center space-y-3 py-8">
+          <LifeBuoy className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucun ticket</h3>
+          <p className="text-xs text-muted">Les demandes des clients apparaîtront ici.</p>
         </Card>
       ) : (
         <TicketList tickets={result?.tickets || []} hrefBase="/platform/support" showClient />

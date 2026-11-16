@@ -1,5 +1,6 @@
 'use client';
 
+import { Alert } from '@heroui/react';
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle, Layers, Store, Users, MapPin, Gift, ArrowRight, UserCheck } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -219,83 +220,91 @@ export default function SubscriptionPage() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center text-slate-500">
+      <div className="py-10 flex justify-center items-center text-muted">
         Chargement...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-8">
+    <div className="space-y-5 max-w-6xl mx-auto">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
           <span>Mon Abonnement</span>
         </h1>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="text-xs text-muted mt-0.5">
           Gérez votre abonnement et découvrez nos forfaits
         </p>
       </div>
 
       {pendingRequest && (
-        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/40 rounded-xl flex items-start gap-3">
-          <Hourglass className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Demande en attente de validation</p>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+        <Alert status="accent">
+          <Alert.Indicator>
+            <Hourglass className="size-5" />
+          </Alert.Indicator>
+          <Alert.Content>
+            <Alert.Title>Demande en attente de validation</Alert.Title>
+            <Alert.Description>
               {pendingRequest.plan_name || 'Forfait'} · {pendingRequest.duration_months} mois — envoyée le {formatDateFR(pendingRequest.created_at)}.
               Votre licence sera activée dès validation par l&apos;équipe OptiWifi.
-            </p>
-          </div>
-        </div>
+            </Alert.Description>
+          </Alert.Content>
+        </Alert>
       )}
       {!pendingRequest && lastRequest?.status === 'rejected' && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 rounded-xl flex items-start gap-3">
-          <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-red-800 dark:text-red-200">Votre dernière demande a été refusée</p>
+        <Alert status="danger">
+          <Alert.Indicator>
+            <XCircle className="size-5" />
+          </Alert.Indicator>
+          <Alert.Content>
+            <Alert.Title>Votre dernière demande a été refusée</Alert.Title>
             {lastRequest.admin_note && (
-              <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">Motif : {lastRequest.admin_note}</p>
+              <Alert.Description>Motif : {lastRequest.admin_note}</Alert.Description>
             )}
-          </div>
-        </div>
+          </Alert.Content>
+        </Alert>
       )}
 
       {subscription ? (
-        <Card className={`p-6 space-y-4 ${isExpired ? 'border-red-200 dark:border-red-900/40' : ''}`}>
+        <Card className={`space-y-4 ${isExpired ? 'border-danger/30 ' : ''}`}>
           {isExpired && (
-            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 rounded-xl flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-red-800 dark:text-red-200">
+            <Alert status="danger" className="mb-4">
+              <Alert.Indicator>
+                <AlertTriangle className="size-5" />
+              </Alert.Indicator>
+              <Alert.Content>
+                <Alert.Title>
                   {onTrial ? 'Votre essai gratuit est terminé' : 'Votre abonnement a expiré'}
-                </p>
-                <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
+                </Alert.Title>
+                <Alert.Description>
                   {onTrial
                     ? 'Choisissez un forfait pour retrouver l’accès à votre espace et à vos données.'
                     : 'Votre espace est en consultation seule : vos données restent visibles, mais vous ne pouvez plus rien ajouter ni modifier. Choisissez votre forfait ci-dessous pour renouveler.'}
-                </p>
-              </div>
-            </div>
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
           )}
           {!isExpired && isExpiringSoon && (
-            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/40 rounded-xl flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+            <Alert status="warning" className="mb-4">
+              <Alert.Indicator>
+                <AlertCircle className="size-5" />
+              </Alert.Indicator>
+              <Alert.Content>
+                <Alert.Title>
                   {onTrial ? 'Votre essai gratuit se termine bientôt' : 'Votre abonnement expire bientôt'}
-                </p>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                </Alert.Title>
+                <Alert.Description>
                   Il vous reste {daysRemaining} jour{daysRemaining && daysRemaining > 1 ? 's' : ''} avant expiration.
-                </p>
-              </div>
-            </div>
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
           )}
 
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Mon forfait actuel</h2>
-              <p className="text-sm text-slate-500 mt-1">
+              <h2 className="text-lg font-semibold text-foreground">Mon forfait actuel</h2>
+              <p className="text-sm text-muted mt-1">
                 {subscription.plan?.name || 'Forfait'}
               </p>
             </div>
@@ -306,38 +315,38 @@ export default function SubscriptionPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 pt-4 border-t border-border">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-brand-500/10 flex items-center justify-center">
-                <Package className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+              <div className="w-10 h-10 rounded-lg bg-accent-soft flex items-center justify-center">
+                <Package className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <p className="text-xs text-slate-500">Prix</p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                <p className="text-xs text-muted">Prix</p>
+                <p className="text-sm font-semibold text-foreground">
                   {subscription.plan ? formatCurrencyFCFA(subscription.plan.price) : '-'}
-                  {subscription.plan && <span className="text-xs text-slate-500 ml-1">/ {getBillingPeriodLabel(subscription.plan.billing_period)}</span>}
+                  {subscription.plan && <span className="text-xs text-muted ml-1">/ {getBillingPeriodLabel(subscription.plan.billing_period)}</span>}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-lg bg-success-soft flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-success-soft-foreground" />
               </div>
               <div>
-                <p className="text-xs text-slate-500">Date de début</p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                <p className="text-xs text-muted">Date de début</p>
+                <p className="text-sm font-semibold text-foreground">
                   {formatDateFR(subscription.start_date)}
                 </p>
               </div>
             </div>
             {subscription.end_date && (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <div className="w-10 h-10 rounded-lg bg-warning-soft flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-warning-soft-foreground" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Date d&apos;expiration</p>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <p className="text-xs text-muted">Date d&apos;expiration</p>
+                  <p className="text-sm font-semibold text-foreground">
                     {formatDateFR(subscription.end_date)}
                   </p>
                 </div>
@@ -345,24 +354,24 @@ export default function SubscriptionPage() {
             )}
             {daysRemaining !== null && daysRemaining > 0 && !isExpired && (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="w-10 h-10 rounded-lg bg-accent-soft flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Jours restants</p>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <p className="text-xs text-muted">Jours restants</p>
+                  <p className="text-sm font-semibold text-foreground">
                     {daysRemaining} jour{daysRemaining > 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
             )}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="w-10 h-10 rounded-lg bg-accent-soft flex items-center justify-center">
+                <Package className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <p className="text-xs text-slate-500">{onTrial ? "Durée de l'essai" : 'Durée du forfait'}</p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                <p className="text-xs text-muted">{onTrial ? "Durée de l'essai" : 'Durée du forfait'}</p>
+                <p className="text-sm font-semibold text-foreground">
                   {trialLengthDays
                     ? `${trialLengthDays} jour${trialLengthDays > 1 ? 's' : ''}`
                     : subscription.plan
@@ -374,8 +383,8 @@ export default function SubscriptionPage() {
           </div>
 
           {subscription.plan && !pendingRequest && onTrial && (
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+            <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+              <p className="text-sm text-muted">
                 {isExpired ? 'Votre essai gratuit est terminé' : `Votre essai gratuit se termine le ${subscription.end_date ? formatDateFR(subscription.end_date) : '—'}`}
                 {basePlan ? (
                   <>
@@ -395,7 +404,7 @@ export default function SubscriptionPage() {
             </div>
           )}
           {subscription.plan && !pendingRequest && !onTrial && (
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+            <div className="pt-4 border-t border-border flex justify-end">
               <Button
                 variant={isExpired ? 'danger' : 'primary'}
                 size="sm"
@@ -408,18 +417,18 @@ export default function SubscriptionPage() {
           )}
         </Card>
       ) : (
-        <Card className="p-6 text-center">
-          <p className="text-slate-500">Aucune licence active. Choisissez un forfait ci-dessous pour en faire la demande.</p>
+        <Card className="text-center">
+          <p className="text-muted">Aucune licence active. Choisissez un forfait ci-dessous pour en faire la demande.</p>
         </Card>
       )}
 
       {subscription?.plan && (
-        <Card className="p-6">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-brand-500" />
+        <Card>
+          <h2 className="text-sm font-semibold text-muted mb-4 flex items-center gap-2">
+            <Layers className="w-4 h-4 text-accent" />
             Utilisation de votre forfait
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
               { label: 'Points de vente', icon: Store, count: usage.posCount, limit: planLimit(subscription.plan.max_points_of_sale) },
               { label: "Membres d'équipe", icon: Users, count: usage.usersCount, limit: planLimit(subscription.plan.max_users) },
@@ -430,29 +439,29 @@ export default function SubscriptionPage() {
               const percent =
                 q.limit === null ? 0 : q.limit === 0 ? (q.count > 0 ? 100 : 0) : Math.min(100, Math.round((q.count / q.limit) * 100));
               return (
-                <div key={q.label} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                <div key={q.label} className="p-4 rounded-xl border border-border space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <Icon className="w-3.5 h-3.5 text-brand-500" /> {q.label}
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5 text-accent" /> {q.label}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">
+                    <span className="font-semibold text-foreground">
                       {q.count} / {q.limit ?? 'Illimité'}
                     </span>
                   </div>
                   {q.limit !== null ? (
                     <>
-                      <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                      <div className="w-full h-2 rounded-full bg-default overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
-                            percent >= 90 ? 'bg-red-500' : percent >= 70 ? 'bg-amber-500' : 'bg-brand-500'
+                            percent >= 90 ? 'bg-danger' : percent >= 70 ? 'bg-warning' : 'bg-accent'
                           }`}
                           style={{ width: `${percent}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-slate-400">{percent}% du quota utilisé</p>
+                      <p className="text-xs text-muted">{percent}% du quota utilisé</p>
                     </>
                   ) : (
-                    <p className="text-[10px] text-slate-400">Sans limite sur ce forfait</p>
+                    <p className="text-xs text-muted">Sans limite sur ce forfait</p>
                   )}
                 </div>
               );
@@ -464,47 +473,38 @@ export default function SubscriptionPage() {
       <InvoiceList />
 
       <div>
-        <h2 id="forfaits" className="text-lg font-bold text-slate-900 dark:text-white mb-4 scroll-mt-24">Tous les forfaits disponibles</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 id="forfaits" className="text-lg font-semibold text-foreground mb-4 scroll-mt-24">Tous les forfaits disponibles</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {allPlans.map((plan) => (
-            <Card 
-              key={plan.id} 
-              className={`p-6 flex flex-col gap-4 relative ${
-                subscription?.plan_id === plan.id 
-                  ? 'ring-2 ring-brand-500 border-brand-500' 
-                  : ''
-              }`}
-            >
-              {subscription?.plan_id === plan.id && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge variant="success">Votre forfait</Badge>
-                </div>
-              )}
+            <Card key={plan.id} className={`flex flex-col gap-4 ${subscription?.plan_id === plan.id ? 'ring-1 ring-accent/40' : ''}`}>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{plan.name}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
+                  {subscription?.plan_id === plan.id && <Badge variant="success">Votre forfait</Badge>}
+                </div>
                 <div className="mt-2 flex flex-wrap items-baseline gap-x-1">
-                  <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                  <span className="text-2xl font-semibold tabular-nums text-foreground">
                     {formatCurrencyFCFA(plan.price)}
                   </span>
-                  <span className="text-sm text-slate-500">/ {getBillingPeriodLabel(plan.billing_period)}</span>
+                  <span className="text-sm text-muted">/ {getBillingPeriodLabel(plan.billing_period)}</span>
                 </div>
               </div>
-              <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="space-y-2 pt-4 border-t border-border">
                 {plan.max_users && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <CheckCircle2 className="w-4 h-4 text-success-soft-foreground" />
                     <span>Jusqu&apos;à {plan.max_users} utilisateurs</span>
                   </div>
                 )}
                 {plan.max_points_of_sale && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <CheckCircle2 className="w-4 h-4 text-success-soft-foreground" />
                     <span>Jusqu&apos;à {plan.max_points_of_sale} points de vente</span>
                   </div>
                 )}
                 {plan.max_collectors !== null && plan.max_collectors !== undefined && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <CheckCircle2 className="w-4 h-4 text-success-soft-foreground" />
                     <span>
                       {plan.max_collectors < 0
                         ? 'Collecteurs illimités'
@@ -515,13 +515,13 @@ export default function SubscriptionPage() {
                   </div>
                 )}
                 {/* Accès point de vente (consultation seule) : inclus ou non selon le forfait */}
-                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2 text-sm text-muted">
                   {plan.max_pos_accounts === 0 ? (
-                    <XCircle className="w-4 h-4 text-slate-400" />
+                    <XCircle className="w-4 h-4 text-muted" />
                   ) : (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <CheckCircle2 className="w-4 h-4 text-success-soft-foreground" />
                   )}
-                  <span className={plan.max_pos_accounts === 0 ? 'text-slate-400 line-through' : undefined}>
+                  <span className={plan.max_pos_accounts === 0 ? 'text-muted line-through' : undefined}>
                     {plan.max_pos_accounts === 0
                       ? 'Accès points de vente'
                       : plan.max_pos_accounts && plan.max_pos_accounts > 0
@@ -530,8 +530,8 @@ export default function SubscriptionPage() {
                   </span>
                 </div>
                 {plan.max_tickets_per_month && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <CheckCircle2 className="w-4 h-4 text-success-soft-foreground" />
                     <span>Jusqu&apos;à {plan.max_tickets_per_month.toLocaleString()} tickets/mois</span>
                   </div>
                 )}
@@ -540,19 +540,19 @@ export default function SubscriptionPage() {
               <div className="mt-auto space-y-2 pt-2">
                 {/* Essai gratuit : seulement pour une première souscription */}
                 {!trialUsed && Number(plan.trial_days ?? 0) > 0 && (
-                  <p className="text-xs text-slate-500">Essai gratuit de {plan.trial_days} jours pour démarrer.</p>
+                  <p className="text-xs text-muted">Essai gratuit de {plan.trial_days} jours pour démarrer.</p>
                 )}
                 {subscription?.plan_id === plan.id && !onTrial && !isExpired ? (
-                  <div className="h-11 rounded-xl bg-brand-500/10 text-brand-700 dark:text-brand-300 text-sm font-bold flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" /> Forfait actuel
-                  </div>
+                  <Button variant="secondary" className="w-full" disabled>
+                    <CheckCircle2 className="size-4" /> Forfait actuel
+                  </Button>
                 ) : pendingRequest ? (
-                  <div className="h-11 rounded-xl bg-blue-500/10 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center justify-center gap-1.5 text-center px-2">
-                    <Hourglass className="w-4 h-4 shrink-0" /> Demande en cours de validation
-                  </div>
+                  <Button variant="secondary" className="w-full" disabled>
+                    <Hourglass className="size-4 shrink-0" /> Demande en cours de validation
+                  </Button>
                 ) : (
                   <Button
-                    className="w-full h-11 font-bold whitespace-nowrap"
+                    className="w-full whitespace-nowrap"
                     // Abonnement expiré : le forfait actuel se renouvelle
                     onClick={() => (subscription?.plan_id === plan.id && !onTrial ? handleRequest() : handleRequest(plan))}
                   >
@@ -561,7 +561,7 @@ export default function SubscriptionPage() {
                       : subscription?.plan && Number(plan.price) > Number(subscription.plan.price)
                       ? 'Passer à ce forfait'
                       : 'Choisir ce forfait'}
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <ArrowRight className="size-4" />
                   </Button>
                 )}
               </div>

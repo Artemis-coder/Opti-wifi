@@ -20,6 +20,7 @@ import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from 'rechar
 import { Card } from '@/components/ui/Card';
 import { AddButton } from '@/components/ui/AddButton';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { cn } from '@/lib/utils/cn';
 import { formatAmountShort, formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
@@ -42,7 +43,7 @@ const SHORTCUTS: { href: string; label: string; hint: string; icon: React.Elemen
     label: 'Allouer des tickets',
     hint: 'Distribuer du stock aux POS',
     icon: ArrowLeftRight,
-    tone: 'bg-purple-600 text-white',
+    tone: 'bg-accent text-accent-foreground',
     adminOnly: true,
   },
   {
@@ -50,15 +51,15 @@ const SHORTCUTS: { href: string; label: string; hint: string; icon: React.Elemen
     label: 'Nouvelle collecte',
     hint: 'Saisir un encaissement de caisse',
     icon: Receipt,
-    tone: 'bg-amber-500 text-slate-950',
+    tone: 'bg-warning text-foreground',
   },
-  { href: '/pos', label: 'Points de vente', hint: 'Gérer le réseau de distribution', icon: Store, tone: 'bg-indigo-900 text-white' },
+  { href: '/pos', label: 'Points de vente', hint: 'Gérer le réseau de distribution', icon: Store, tone: 'bg-accent text-accent-foreground' },
   {
     href: '/tickets',
     label: 'Types de tickets',
     hint: 'Consulter et modifier les tarifs',
     icon: Ticket,
-    tone: 'bg-emerald-600 text-white',
+    tone: 'bg-success text-success-foreground',
     adminOnly: true,
   },
 ];
@@ -70,18 +71,18 @@ const money = formatAmountShort;
 
 function Evolution({ current, previous, period }: { current: number; previous: number | undefined; period: DashboardPeriod }) {
   if (previous === undefined || period === 'all') return null;
-  if (previous === 0) return <p className="text-[11px] text-slate-400">{current > 0 ? `Rien sur ${PREVIOUS_LABEL[period]}` : ' '}</p>;
+  if (previous === 0) return <p className="text-xs text-muted">{current > 0 ? `Rien sur ${PREVIOUS_LABEL[period]}` : ' '}</p>;
   const pct = Math.round(((current - previous) / previous) * 100);
   const Icon = pct >= 0 ? ArrowUpRight : ArrowDownRight;
   return (
     <p
       className={cn(
-        'inline-flex items-center gap-0.5 text-[11px] font-semibold',
-        pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
+        'inline-flex items-center gap-0.5 text-xs font-semibold',
+        pct >= 0 ? 'text-success-soft-foreground' : 'text-danger',
       )}
     >
       <Icon className="w-3.5 h-3.5" /> {pct > 0 ? '+' : ''}
-      {pct} % <span className="font-normal text-slate-400">vs {PREVIOUS_LABEL[period]}</span>
+      {pct} % <span className="font-normal text-muted">vs {PREVIOUS_LABEL[period]}</span>
     </p>
   );
 }
@@ -90,17 +91,17 @@ function PosTooltip({ active, payload }: { active?: boolean; payload?: { payload
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg px-3 py-2 text-xs space-y-1 min-w-40">
-      <p className="font-bold text-slate-900 dark:text-white">{p.name}</p>
-      <p className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
-        Ventes <span className="font-semibold tabular-nums text-slate-900 dark:text-white">{money(p.revenue)}</span>
+    <div className="space-y-1 rounded-xl bg-overlay text-overlay-foreground shadow-overlay px-3 py-2 text-xs min-w-40">
+      <p className="font-semibold text-foreground">{p.name}</p>
+      <p className="flex justify-between gap-3 text-muted">
+        Ventes <span className="font-semibold tabular-nums text-foreground">{money(p.revenue)}</span>
       </p>
-      <p className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
-        Encaissé <span className="font-semibold tabular-nums text-slate-900 dark:text-white">{money(p.collected)}</span>
+      <p className="flex justify-between gap-3 text-muted">
+        Encaissé <span className="font-semibold tabular-nums text-foreground">{money(p.collected)}</span>
       </p>
-      <p className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
+      <p className="flex justify-between gap-3 text-muted">
         Écart{' '}
-        <span className={cn('font-semibold tabular-nums', p.gap < 0 ? 'text-red-600' : 'text-emerald-700 dark:text-emerald-400')}>
+        <span className={cn('font-semibold tabular-nums', p.gap < 0 ? 'text-danger' : 'text-success-soft-foreground')}>
           {money(p.gap)}
         </span>
       </p>
@@ -142,15 +143,15 @@ function AdminDashboard() {
   const gapAlert = !!t && t.gap < 0;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto pb-6">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Guide de démarrage d'un nouvel espace */}
       <OnboardingCard />
 
       {/* En-tête : période en surtitre, filtres de période */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{eyebrow}</p>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Tableau de bord</h1>
+          <p className="text-xs font-semibold text-muted">{eyebrow}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tableau de bord</h1>
         </div>
         <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
           {PERIODS.map((p) => (
@@ -160,10 +161,10 @@ function AdminDashboard() {
               onClick={() => setPeriod(p.value)}
               aria-pressed={period === p.value}
               className={cn(
-                'shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold border transition',
+                'shrink-0 h-9 px-3.5 rounded-xl text-xs font-semibold border transition',
                 period === p.value
-                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+                  ? 'bg-foreground text-background border-border'
+                  : 'bg-surface text-muted border-border hover:border-border',
               )}
             >
               {p.label}
@@ -173,14 +174,14 @@ function AdminDashboard() {
       </div>
 
       {/* Chiffres clés */}
-      <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-60')}>
+      <KpiGrid cols={{ base: 2, lg: 4 }} className={cn('transition-opacity', loading && 'opacity-60')}>
         <StatTile
           label="Tickets vendus"
           value={formatNumber(t?.tickets ?? 0)}
           icon={Ticket}
           accent="amber"
           footer={
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-muted">
               {t?.collections ?? 0} encaissement{(t?.collections ?? 0) > 1 ? 's' : ''}
             </p>
           }
@@ -206,17 +207,17 @@ function AdminDashboard() {
           accent="red"
           alert={gapAlert}
           footer={
-            <p className={cn('text-[11px]', gapAlert ? 'text-red-600/80 dark:text-red-400/80' : 'text-slate-400')}>
+            <p className={cn('text-xs', gapAlert ? 'text-danger' : 'text-muted')}>
               {gapAlert ? 'Manque à justifier' : 'Aucun manque'}
             </p>
           }
         />
-      </div>
+      </KpiGrid>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Raccourcis */}
-        <Card className="p-4 sm:p-5 space-y-3">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Raccourcis</h2>
+        <Card className="space-y-3">
+          <h2 className="text-sm font-semibold text-foreground">Raccourcis</h2>
           <ul className="space-y-2">
             {SHORTCUTS.filter((s) => !s.adminOnly || isAdmin).map((s) => {
               const Icon = s.icon;
@@ -224,16 +225,16 @@ function AdminDashboard() {
                 <li key={s.href}>
                   <Link
                     href={s.href}
-                    className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 px-3.5 py-3 hover:border-slate-300 dark:hover:border-slate-700 transition"
+                    className="flex items-center gap-3 rounded-xl bg-surface-secondary px-3.5 py-3 hover:bg-surface-tertiary transition"
                   >
                     <span className={cn('w-9 h-9 shrink-0 rounded-lg flex items-center justify-center', s.tone)}>
                       <Icon className="w-4 h-4" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">{s.label}</span>
-                      <span className="block text-xs text-slate-500 truncate">{s.hint}</span>
+                      <span className="block text-sm font-semibold text-foreground truncate">{s.label}</span>
+                      <span className="block text-xs text-muted truncate">{s.hint}</span>
                     </span>
-                    <ChevronRight className="w-4 h-4 shrink-0 text-slate-300" />
+                    <ChevronRight className="w-4 h-4 shrink-0 text-muted" />
                   </Link>
                 </li>
               );
@@ -242,19 +243,19 @@ function AdminDashboard() {
         </Card>
 
         {/* Ventes par point de vente */}
-        <Card className="p-4 sm:p-5 space-y-3">
+        <Card className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Ventes par point de vente</h2>
-            <span className="text-xs text-slate-500">{data?.pos_count ?? 0} POS</span>
+            <h2 className="text-sm font-semibold text-foreground">Ventes par point de vente</h2>
+            <span className="text-xs text-muted">{data?.pos_count ?? 0} POS</span>
           </div>
           {loading && !data ? (
-            <div className="h-56 flex items-center justify-center text-slate-400">
+            <div className="h-56 flex items-center justify-center text-muted">
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           ) : !data?.by_pos.length ? (
             <div className="h-56 flex flex-col items-center justify-center gap-2 text-center">
-              <Inbox className="w-8 h-8 text-slate-300 dark:text-slate-600" />
-              <p className="text-sm text-slate-500">Aucune vente sur cette période.</p>
+              <Inbox className="w-8 h-8 text-muted" />
+              <p className="text-sm text-muted">Aucune vente sur cette période.</p>
             </div>
           ) : (
             <>
@@ -288,12 +289,12 @@ function AdminDashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <p className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+              <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-[#3f9a4c]" /> Ventes du point de vente
+                  <span className="size-2.5 rounded-full bg-[#3f9a4c]" /> Ventes du point de vente
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-[#d04848]" /> Avec un écart de caisse
+                  <span className="size-2.5 rounded-full bg-[#d04848]" /> Avec un écart de caisse
                 </span>
               </p>
             </>
@@ -301,20 +302,20 @@ function AdminDashboard() {
         </Card>
 
         {/* Derniers encaissements */}
-        <Card className="p-4 sm:p-5 space-y-3">
+        <Card className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers encaissements</h2>
-            <Link href="/collections" className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+            <h2 className="text-sm font-semibold text-foreground">Derniers encaissements</h2>
+            <Link href="/collections" className="text-xs font-semibold text-accent hover:underline">
               Voir tout
             </Link>
           </div>
           {loading && !data ? (
-            <div className="py-10 flex justify-center text-slate-400">
+            <div className="py-10 flex justify-center text-muted">
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           ) : !data?.recent.length ? (
             <div className="py-6 text-center space-y-3">
-              <p className="text-sm text-slate-500">Aucun encaissement enregistré.</p>
+              <p className="text-sm text-muted">Aucun encaissement enregistré.</p>
               <AddButton what="une collecte de caisse" href="/collections/new" />
             </div>
           ) : (
@@ -326,28 +327,28 @@ function AdminDashboard() {
                   <li key={c.id}>
                     <Link
                       href={`/collections/${c.id}`}
-                      className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 px-3.5 py-3 hover:border-slate-300 dark:hover:border-slate-700 transition"
+                      className="flex items-center justify-between gap-3 rounded-xl bg-surface-secondary px-3.5 py-3 hover:bg-surface-tertiary transition"
                     >
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">{c.pos}</span>
-                        <span className="block text-xs text-slate-500 truncate">
+                        <span className="block text-sm font-semibold text-foreground truncate">{c.pos}</span>
+                        <span className="block text-xs text-muted truncate">
                           {c.collector || 'Collecteur'} · {formatCurrencyFCFA(c.collected)}
                         </span>
                       </span>
                       <span className="flex items-center gap-1.5 shrink-0">
                         <span
                           className={cn(
-                            'text-[11px] font-bold px-2.5 py-1 rounded-full',
+                            'text-xs font-semibold px-2.5 py-1 rounded-full',
                             draft
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+                              ? 'bg-warning-soft text-warning-soft-foreground'
                               : gap
-                                ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
-                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                ? 'bg-danger-soft text-danger'
+                                : 'bg-success-soft text-success-soft-foreground',
                           )}
                         >
                           {draft ? 'Brouillon' : gap ? 'Écart' : 'Validée'}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                        <ChevronRight className="w-4 h-4 text-muted" />
                       </span>
                     </Link>
                   </li>

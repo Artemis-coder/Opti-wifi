@@ -56,15 +56,15 @@ export default function PlatformAuditLogsPage() {
   }, [category, startDate, endDate, filtersKey]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Journal d&apos;audit</h1>
-        <p className="text-xs text-slate-500">Historique des actions du back-office. Touchez une ligne pour voir le détail.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Journal d&apos;audit</h1>
+        <p className="text-xs text-muted">Historique des actions du back-office. Touchez une ligne pour voir le détail.</p>
       </div>
 
       {/* Filtres */}
-      <Card className="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <CustomSelect
             label="Catégorie"
             value={category}
@@ -78,21 +78,21 @@ export default function PlatformAuditLogsPage() {
       </Card>
 
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Chargement du journal…</span>
         </div>
       ) : logs.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <History className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune action enregistrée</h3>
-          <p className="text-xs text-slate-500">Modifiez les filtres pour élargir la recherche.</p>
+        <Card className="text-center space-y-3 py-8">
+          <History className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucune action enregistrée</h3>
+          <p className="text-xs text-muted">Modifiez les filtres pour élargir la recherche.</p>
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Action</th>
                   <th className="px-4 py-3">Client</th>
@@ -101,7 +101,7 @@ export default function PlatformAuditLogsPage() {
                   <th className="px-4 py-3 text-right">Détail</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {logs.map((log) => {
                   const info = auditActionInfo(log.action);
                   const summary = auditSummary(log);
@@ -109,17 +109,17 @@ export default function PlatformAuditLogsPage() {
                     <tr
                       key={log.id}
                       onClick={() => setSelected(log)}
-                      className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
+                      className="cursor-pointer hover:bg-surface-secondary transition"
                     >
                       <td className="px-4 py-3">
                         <Badge variant={info.tone} className="text-xs">
                           {info.label}
                         </Badge>
-                        {summary && <p className="mt-1 text-slate-500 line-clamp-1">{summary}</p>}
+                        {summary && <p className="mt-1 text-muted line-clamp-1">{summary}</p>}
                       </td>
-                      <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{log.organization?.name || '—'}</td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{authorName(log)}</td>
-                      <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{dateTime(log.created_at)}</td>
+                      <td className="px-4 py-3 text-foreground">{log.organization?.name || '—'}</td>
+                      <td className="px-4 py-3 text-muted">{authorName(log)}</td>
+                      <td className="px-4 py-3 text-muted whitespace-nowrap">{dateTime(log.created_at)}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
@@ -127,7 +127,7 @@ export default function PlatformAuditLogsPage() {
                             e.stopPropagation();
                             setSelected(log);
                           }}
-                          className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                          className="inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs font-semibold text-foreground bg-default hover:bg-default transition"
                         >
                           Voir <ChevronRight className="w-4 h-4" />
                         </button>
@@ -164,38 +164,38 @@ function AuditDetail({ log, onClose }: { log: PlatformAuditLogWithUser | null; o
       title={info?.label ?? 'Détail'}
     >
       {log && info && (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* Contexte */}
           <dl className="grid gap-3 text-sm">
             <div className="flex items-start gap-3">
-              <Clock className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" />
+              <Clock className="w-4 h-4 mt-0.5 shrink-0 text-muted" />
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Date</dt>
-                <dd className="text-slate-900 dark:text-white first-letter:uppercase">{longDateTime(log.created_at)}</dd>
+                <dt className="text-xs font-semibold text-muted">Date</dt>
+                <dd className="text-foreground first-letter:">{longDateTime(log.created_at)}</dd>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <User className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" />
+              <User className="w-4 h-4 mt-0.5 shrink-0 text-muted" />
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Par</dt>
-                <dd className="text-slate-900 dark:text-white">
+                <dt className="text-xs font-semibold text-muted">Par</dt>
+                <dd className="text-foreground">
                   {authorName(log)}
                   {log.platform_user?.email && log.platform_user.full_name && (
-                    <span className="block text-xs text-slate-500">{log.platform_user.email}</span>
+                    <span className="block text-xs text-muted">{log.platform_user.email}</span>
                   )}
                 </dd>
               </div>
             </div>
             {(log.organization?.name || log.organization_id) && (
               <div className="flex items-start gap-3">
-                <Building2 className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" />
+                <Building2 className="w-4 h-4 mt-0.5 shrink-0 text-muted" />
                 <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Client</dt>
+                  <dt className="text-xs font-semibold text-muted">Client</dt>
                   <dd>
                     {log.organization_id ? (
                       <Link
                         href={`/platform/clients/${log.organization_id}`}
-                        className="font-semibold text-brand-700 dark:text-brand-300 hover:underline"
+                        className="font-semibold text-accent hover:underline"
                       >
                         {log.organization?.name || 'Voir le client'}
                       </Link>
@@ -208,10 +208,10 @@ function AuditDetail({ log, onClose }: { log: PlatformAuditLogWithUser | null; o
             )}
             {log.entity_type && (
               <div className="flex items-start gap-3">
-                <History className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" />
+                <History className="w-4 h-4 mt-0.5 shrink-0 text-muted" />
                 <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Élément concerné</dt>
-                  <dd className="text-slate-900 dark:text-white">
+                  <dt className="text-xs font-semibold text-muted">Élément concerné</dt>
+                  <dd className="text-foreground">
                     {AUDIT_ENTITY_LABELS[log.entity_type] || log.entity_type}
                     {log.entity_type === 'platform_settings' && log.entity_id ? ` : ${settingLabel(log.entity_id)}` : ''}
                   </dd>
@@ -222,24 +222,24 @@ function AuditDetail({ log, onClose }: { log: PlatformAuditLogWithUser | null; o
 
           {/* Ce qui a changé */}
           <section className="space-y-2">
-            <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <h4 className="text-xs font-semibold text-muted">
               {isCreation ? 'Informations enregistrées' : isDeletion ? 'Informations supprimées' : 'Ce qui a changé'}
             </h4>
             {changes.length === 0 ? (
-              <p className="text-sm text-slate-500">Aucun détail enregistré pour cette action.</p>
+              <p className="text-sm text-muted">Aucun détail enregistré pour cette action.</p>
             ) : (
-              <ul className="rounded-2xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800 overflow-hidden">
+              <ul className="rounded-xl border border-border divide-y divide-separator overflow-hidden">
                 {changes.map((c) => (
                   <li key={c.key} className="px-4 py-3 space-y-1">
-                    <p className="text-xs font-semibold text-slate-500">{c.label}</p>
+                    <p className="text-xs font-semibold text-muted">{c.label}</p>
                     {c.before !== null && c.after !== null ? (
                       <p className="text-sm flex flex-wrap items-center gap-x-2 gap-y-1 break-words">
-                        <span className="text-slate-500 line-through decoration-slate-400/70">{c.before}</span>
-                        <ArrowRight className="w-4 h-4 shrink-0 text-slate-400" aria-label="devient" />
-                        <span className="font-semibold text-slate-900 dark:text-white">{c.after}</span>
+                        <span className="text-muted line-through decoration-slate-400/70">{c.before}</span>
+                        <ArrowRight className="w-4 h-4 shrink-0 text-muted" aria-label="devient" />
+                        <span className="font-semibold text-foreground">{c.after}</span>
                       </p>
                     ) : (
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white break-words">{c.after ?? c.before}</p>
+                      <p className="text-sm font-semibold text-foreground break-words">{c.after ?? c.before}</p>
                     )}
                   </li>
                 ))}
@@ -253,14 +253,14 @@ function AuditDetail({ log, onClose }: { log: PlatformAuditLogWithUser | null; o
               type="button"
               onClick={() => setShowRaw((v) => !v)}
               aria-expanded={showRaw}
-              className="inline-flex items-center gap-1.5 h-9 -ml-2 px-2 rounded-lg text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              className="inline-flex items-center gap-1.5 h-9 -ml-2 px-2 rounded-xl text-xs font-semibold text-muted hover:text-foreground"
             >
               <ChevronDown className={`w-4 h-4 transition-transform ${showRaw ? 'rotate-180' : ''}`} />
               Données techniques
             </button>
             {showRaw && (
               <div className="mt-2 space-y-2">
-                <p className="text-[11px] text-slate-500">
+                <p className="text-xs text-muted">
                   Action : <span className="font-mono">{log.action}</span>
                   {log.entity_id && (
                     <>
@@ -275,7 +275,7 @@ function AuditDetail({ log, onClose }: { log: PlatformAuditLogWithUser | null; o
                     </>
                   )}
                 </p>
-                <pre className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 overflow-x-auto max-h-64">
+                <pre className="text-xs leading-relaxed text-muted bg-surface-secondary rounded-xl p-3 overflow-x-auto max-h-64">
                   {JSON.stringify({ avant: log.old_data ?? null, apres: log.new_data ?? null }, null, 2)}
                 </pre>
               </div>

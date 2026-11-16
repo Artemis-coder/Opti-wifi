@@ -141,15 +141,15 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
   };
 
   return (
-    <Card className="p-6 space-y-4">
+    <Card className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <div className="p-2.5 rounded-xl bg-success-soft text-success-soft-foreground">
             <Eye className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white">Accès du point de vente</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="font-semibold text-foreground">Accès du point de vente</h3>
+            <p className="text-xs text-muted">
               Consultation seule : ses allocations reçues et ses collectes, rien d’autre.
             </p>
           </div>
@@ -164,14 +164,14 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
       {account ? (
         <div className="space-y-3">
           <div className="text-sm">
-            <p className="font-semibold text-slate-900 dark:text-white">{account.nom}</p>
+            <p className="font-semibold text-foreground">{account.nom}</p>
             {account.telephone && (
-              <p className="flex items-center gap-1 text-xs text-slate-500">
-                <Phone className="w-3 h-3" /> {account.telephone} <span className="text-slate-400">(identifiant de connexion)</span>
+              <p className="flex items-center gap-1 text-xs text-muted">
+                <Phone className="w-3 h-3" /> {account.telephone} <span className="text-muted">(identifiant de connexion)</span>
               </p>
             )}
             {!isInternalPosAccountEmail(account.email) && (
-              <p className="flex items-center gap-1 text-xs text-slate-500">
+              <p className="flex items-center gap-1 text-xs text-muted">
                 <Mail className="w-3 h-3" /> {account.email}
               </p>
             )}
@@ -179,11 +179,11 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
               <p
                 className={
                   status.pending_password
-                    ? 'mt-1 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400'
-                    : 'mt-1 flex items-center gap-1.5 text-xs text-slate-500'
+                    ? 'mt-1 flex items-center gap-1.5 text-xs font-semibold text-warning-soft-foreground'
+                    : 'mt-1 flex items-center gap-1.5 text-xs text-muted'
                 }
               >
-                {status.pending_password ? <Clock className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                {status.pending_password ? <Clock className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5 text-success-soft-foreground" />}
                 {status.pending_password
                   ? 'Accès pas encore utilisés'
                   : status.last_sign_in_at
@@ -196,51 +196,49 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
             <WriteButton
               variant="outline"
               size="sm"
-              className="h-10 font-semibold"
               onClick={() => setManageOpen(true)}
               disabled={account.is_active === false}
-            >
-              <KeyRound className="w-4 h-4 mr-1.5" /> Gérer l’accès
+              >
+              <KeyRound className="w-4 h-4" /> Gérer l’accès
             </WriteButton>
             <WriteButton
-              variant="outline"
+              variant="danger-soft"
               size="sm"
-              className="h-10 font-semibold text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/60 dark:hover:bg-red-900/30"
               onClick={remove}
-            >
-              <Trash2 className="w-4 h-4 mr-1.5" /> Retirer
+              >
+              <Trash2 className="w-4 h-4" /> Retirer
             </WriteButton>
           </div>
           <Link
             href="/users?filtre=points-de-vente"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline"
-          >
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+              >
             <Users className="w-3.5 h-3.5" /> Voir tous les accès dans Utilisateurs &amp; équipe
           </Link>
         </div>
       ) : blocked ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30 p-3.5 flex flex-col sm:flex-row sm:items-center gap-3">
-          <Lock className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <div className="rounded-xl bg-warning-soft p-3.5 flex flex-col sm:flex-row sm:items-center gap-3">
+          <Lock className="w-5 h-5 shrink-0 text-warning-soft-foreground" />
           <div className="flex-1 text-sm">
-            <p className="font-semibold text-amber-900 dark:text-amber-200">{blocked.title}</p>
-            <p className="text-xs text-amber-800/80 dark:text-amber-300/80">{blocked.hint}</p>
+            <p className="font-semibold text-warning-soft-foreground">{blocked.title}</p>
+            <p className="text-xs text-warning-soft-foreground">{blocked.hint}</p>
           </div>
           <Link
             href="/subscription"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 dark:text-amber-200 hover:underline whitespace-nowrap"
-          >
+            className="inline-flex items-center gap-1 text-sm font-semibold text-warning-soft-foreground hover:underline whitespace-nowrap"
+              >
             Voir les forfaits <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       ) : (
-        <WriteButton size="sm" className="h-10 font-semibold" onClick={() => setIsOpen(true)} disabled={!limits}>
-          <UserPlus className="w-4 h-4 mr-1.5" /> Créer un accès
+        <WriteButton size="sm" onClick={() => setIsOpen(true)} disabled={!limits}>
+          <UserPlus className="w-4 h-4" /> Créer un accès
         </WriteButton>
       )}
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={`Créer un accès pour ${pos.nom}`}>
         <form onSubmit={create} className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-muted">
             Le point de vente pourra consulter ses allocations et ses collectes (montants, écarts, commission), sans
             rien modifier. Vos notes internes ne lui sont pas montrées.
           </p>
@@ -272,7 +270,7 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
             autoComplete="off"
           />
           {email.trim() !== '' && (
-          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
             <input
               type="checkbox"
               checked={sendEmail}
@@ -282,8 +280,8 @@ export function PosAccessCard({ pos, account, onChanged, limits }: PosAccessCard
             Envoyer les accès par e-mail
           </label>
           )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+          <div className="flex gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Annuler
             </Button>
             <Button type="submit" disabled={submitting}>

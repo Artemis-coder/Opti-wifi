@@ -1,5 +1,6 @@
 import React from 'react';
 import { StatTile, type StatAccent } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { cn } from '@/lib/utils/cn';
 
 export interface KpiTile {
@@ -15,7 +16,7 @@ export interface KpiTile {
 /** Rangée de chiffres clés du back-office (cadres StatTile) : 2 colonnes sur mobile, 4 sur ordinateur. */
 export function KpiTiles({ tiles, loading }: { tiles: KpiTile[]; loading?: boolean }) {
   return (
-    <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-50')}>
+    <KpiGrid cols={{ base: 2, lg: 4 }} className={cn('transition-opacity', loading && 'opacity-50')}>
       {tiles.map((t) => (
         <StatTile
           key={t.label}
@@ -26,6 +27,6 @@ export function KpiTiles({ tiles, loading }: { tiles: KpiTile[]; loading?: boole
           accent={t.accent ?? (t.highlight ? 'emerald' : 'slate')}
         />
       ))}
-    </div>
+    </KpiGrid>
   );
 }

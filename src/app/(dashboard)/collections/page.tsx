@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { formatAmountShort, formatCurrencyFCFA, formatDateFR, formatNumber } from '@/lib/utils/format';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { createClient } from '@/lib/supabase/client';
 import { useSpaceStore } from '@/lib/stores/spaceStore';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -88,15 +89,15 @@ export default function CollectionsPage() {
   }, [collections, searchQuery]);
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto pb-8">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Receipt className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <Receipt className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
             <span>{isCollector || isPosAccount ? 'Mes collectes' : 'Encaissements & Collectes'}</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             {isPosAccount
               ? 'Les collectes faites dans votre point de vente (consultation seule).'
               : isCollector
@@ -109,7 +110,7 @@ export default function CollectionsPage() {
 
       {/* Chiffres clés : mêmes cadres que le tableau de bord et les rapports */}
       {!loading && collections.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <KpiGrid cols={{ base: 2, lg: 4 }}>
           <StatTile label="Total encaissé" value={formatAmountShort(totalEncaissé)} icon={Receipt} accent="emerald" hint="Argent effectivement collecté" />
           <StatTile label="Total attendu" value={formatAmountShort(totalAttendu)} icon={DollarSign} accent="indigo" hint="D’après les tickets vendus" />
           <StatTile
@@ -121,7 +122,7 @@ export default function CollectionsPage() {
             hint={totalDifference < 0 ? 'Manque à encaisser' : totalDifference > 0 ? 'Excédent de caisse' : 'Aucun écart'}
           />
           <StatTile label="Collectes" value={formatNumber(collections.length)} icon={CheckCircle2} accent="slate" hint="Encaissements enregistrés" />
-        </div>
+        </KpiGrid>
       )}
 
       {/* Search Filter Bar */}
@@ -131,7 +132,7 @@ export default function CollectionsPage() {
             placeholder="Rechercher par POS ou collecteur..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            rightElement={<Search className="w-4 h-4 text-slate-400" />}
+            rightElement={<Search className="w-4 h-4 text-muted" />}
             className="h-10 text-xs sm:text-sm"
           />
         </div>
@@ -139,19 +140,19 @@ export default function CollectionsPage() {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="py-16 flex flex-col justify-center items-center gap-3 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
+        <div className="py-10 flex flex-col justify-center items-center gap-3 text-muted text-sm font-medium">
+          <Loader2 className="w-6 h-6 animate-spin text-accent" />
           <span>Chargement des collectes...</span>
         </div>
       ) : collections.length === 0 ? (
-        <Card className="p-10 sm:p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+        <Card className="text-center space-y-3 py-8">
+          <div className="w-14 h-14 rounded-xl bg-warning-soft text-warning-soft-foreground flex items-center justify-center mx-auto">
             <Receipt className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+          <h3 className="text-base font-semibold text-foreground">
             Aucun encaissement pour le moment
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <p className="text-xs text-muted max-w-sm mx-auto">
             {isPosAccount
               ? 'Aucune collecte n’a encore été faite dans votre point de vente.'
               : 'Vous n’avez enregistré aucune collecte de caisse. Lancez votre première levée de fonds.'}
@@ -163,8 +164,8 @@ export default function CollectionsPage() {
           )}
         </Card>
       ) : filteredCollections.length === 0 ? (
-        <Card className="p-8 text-center space-y-2">
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+        <Card className="text-center space-y-2 py-8">
+          <p className="text-sm font-semibold text-foreground">
             Aucun résultat trouvé pour &laquo; {searchQuery} &raquo;
           </p>
           <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
@@ -172,11 +173,11 @@ export default function CollectionsPage() {
           </Button>
         </Card>
       ) : (
-        <Card className="p-0 overflow-hidden border-slate-200 dark:border-slate-800">
+        <Card className="p-0 overflow-hidden border-border">
           {/* Desktop Table View (hidden on mobile, visible from md upwards) */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Point de Vente</th>
                   <th className="px-4 py-3">Collecteur</th>
@@ -189,44 +190,44 @@ export default function CollectionsPage() {
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {filteredCollections.map((c: Collection) => (
                   <tr
                     key={c.id}
                     onClick={() => router.push(`/collections/${c.id}`)}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer group"
+                    className="hover:bg-surface-secondary transition cursor-pointer group"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Store className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
-                        <span className="font-semibold text-slate-900 dark:text-white">
+                        <Store className="w-3.5 h-3.5 text-accent shrink-0" />
+                        <span className="font-semibold text-foreground">
                           {c.pos?.nom || 'POS'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-3 text-muted">
                       {c.collecteur?.nom || 'Collecteur'}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-600 dark:text-slate-300">
+                    <td className="px-4 py-3 text-right font-medium text-muted">
                       {formatCurrencyFCFA(c.montant_attendu)}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
+                    <td className="px-4 py-3 text-right font-semibold text-foreground">
                       {formatCurrencyFCFA(c.montant_collecte)}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-3 text-right font-medium text-muted">
                       {formatCurrencyFCFA(Number(c.commission || 0))}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {Number(c.difference) === 0 ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold inline-flex items-center gap-1">
+                        <span className="text-success-soft-foreground font-semibold inline-flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" /> {formatCurrencyFCFA(0)}
                         </span>
                       ) : Number(c.difference) < 0 ? (
-                        <span className="text-red-600 dark:text-red-400 font-bold inline-flex items-center gap-1">
+                        <span className="text-danger font-semibold inline-flex items-center gap-1">
                           <AlertTriangle className="w-3.5 h-3.5" /> {formatCurrencyFCFA(c.difference)}
                         </span>
                       ) : (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold inline-flex items-center gap-1">
+                        <span className="text-success-soft-foreground font-semibold inline-flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" /> +{formatCurrencyFCFA(c.difference)}
                         </span>
                       )}
@@ -238,11 +239,11 @@ export default function CollectionsPage() {
                         {c.statut === 'validee' ? 'Validée' : c.statut === 'annulee' ? 'Annulée' : 'Brouillon'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                    <td className="px-4 py-3 text-muted whitespace-nowrap">
                       {formatDateFR(c.created_at)}
                     </td>
                     <td className="px-4 py-3">
-                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition" />
+                      <ChevronRight className="w-4 h-4 text-muted group-hover:text-accent transition" />
                     </td>
                   </tr>
                 ))}
@@ -259,54 +260,54 @@ export default function CollectionsPage() {
                 tabIndex={0}
                 onClick={() => router.push(`/collections/${c.id}`)}
                 onKeyDown={(e) => e.key === 'Enter' && router.push(`/collections/${c.id}`)}
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-3 shadow-xs cursor-pointer hover:border-brand-500/50 hover:shadow-sm transition active:scale-[0.99]"
+                className="p-3.5 rounded-2xl bg-surface border border-border space-y-3 shadow-xs cursor-pointer hover:border-accent/50 hover:shadow-sm transition active:scale-[0.99]"
               >
                 {/* Header: POS + Status Badge */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
+                    <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
                       <Store className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                      <h4 className="font-semibold text-sm text-foreground truncate">
                         {c.pos?.nom || 'Point de Vente'}
                       </h4>
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        <User className="w-3 h-3 text-slate-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
+                        <User className="w-3 h-3 text-muted shrink-0" />
                         <span className="truncate">{c.collecteur?.nom || 'Collecteur'}</span>
                       </div>
                     </div>
                   </div>
                   <Badge
                     variant={c.statut === 'validee' ? 'success' : c.statut === 'annulee' ? 'danger' : 'warning'}
-                    className="text-[10px] px-2 py-0.5 shrink-0"
+                    className="text-xs px-2 py-0.5 shrink-0"
                   >
                     {c.statut === 'validee' ? 'Validée' : c.statut === 'annulee' ? 'Annulée' : 'Brouillon'}
                   </Badge>
                 </div>
 
                 {/* Financial Inset Card */}
-                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-surface-secondary">
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">
+                    <span className="text-xs font-semibold text-muted block">
                       Attendu
                     </span>
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <span className="text-xs font-semibold text-foreground">
                       {formatCurrencyFCFA(Number(c.montant_attendu))}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">
+                    <span className="text-xs font-semibold text-muted block">
                       Encaissé
                     </span>
-                    <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                    <span className="text-sm font-semibold text-success-soft-foreground">
                       {formatCurrencyFCFA(Number(c.montant_collecte))}
                     </span>
                   </div>
                   {Number(c.commission || 0) > 0 && (
-                    <div className="col-span-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400 font-medium">Commission</span>
-                      <span className="font-semibold text-slate-600 dark:text-slate-300">
+                    <div className="col-span-2 pt-1 border-t border-border flex items-center justify-between text-xs">
+                      <span className="text-muted font-medium">Commission</span>
+                      <span className="font-semibold text-muted">
                         {formatCurrencyFCFA(Number(c.commission))}
                       </span>
                     </div>
@@ -314,23 +315,23 @@ export default function CollectionsPage() {
                 </div>
 
                 {/* Footer: Date & Écart (Différence) */}
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 dark:border-slate-800/80">
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-separator">
+                  <div className="flex items-center gap-1.5 text-xs text-muted">
                     <Calendar className="w-3.5 h-3.5 shrink-0" />
                     <span>{formatDateFR(c.created_at)}</span>
                   </div>
 
                   <div>
                     {Number(c.difference) === 0 ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center gap-1">
+                      <span className="text-success-soft-foreground font-semibold text-xs flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Conforme
                       </span>
                     ) : Number(c.difference) < 0 ? (
-                      <span className="text-red-600 dark:text-red-400 font-bold text-xs flex items-center gap-1">
+                      <span className="text-danger font-semibold text-xs flex items-center gap-1">
                         <AlertTriangle className="w-3.5 h-3.5" /> {formatCurrencyFCFA(Number(c.difference))}
                       </span>
                     ) : (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center gap-1">
+                      <span className="text-success-soft-foreground font-semibold text-xs flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> +{formatCurrencyFCFA(Number(c.difference))}
                       </span>
                     )}
@@ -338,7 +339,7 @@ export default function CollectionsPage() {
                 </div>
 
                 {c.notes && (
-                  <p className="text-[11px] text-slate-500 italic bg-slate-50 dark:bg-slate-800/40 p-2 rounded-lg">
+                  <p className="text-xs text-muted italic bg-surface-secondary p-2 rounded-xl">
                     &laquo; {c.notes} &raquo;
                   </p>
                 )}

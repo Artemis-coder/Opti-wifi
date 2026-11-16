@@ -45,11 +45,11 @@ export function PhoneField({
   const selected = findCountry(country);
 
   return (
-    <div className="w-full space-y-1.5">
+    <div className="space-y-5 w-full">
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider"
+          className="block text-xs sm:text-xs font-semibold text-muted"
         >
           {label}
         </label>
@@ -78,13 +78,13 @@ export function PhoneField({
           aria-invalid={!!error}
           aria-label={selected ? `Numéro (${countryName(selected.code)}, +${selected.dial})` : 'Numéro'}
           className={cn(
-            'w-full min-w-0 h-14 sm:h-11 px-4 sm:px-3.5 bg-white dark:bg-slate-900 border rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition duration-150',
-            error ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-700'
+            'w-full min-w-0 h-14 sm:h-11 px-4 sm:px-3.5 bg-surface border rounded-field text-base sm:text-sm text-foreground placeholder-field-placeholder focus:outline-none focus:ring-2 focus:ring-focus focus:border-transparent transition duration-150',
+            error ? 'border-danger focus:ring-focus' : 'border-border'
           )}
         />
       </div>
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      {helperText && !error && <p className="text-xs text-slate-500">{helperText}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
+      {helperText && !error && <p className="text-xs text-muted">{helperText}</p>}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { Calendar, ExternalLink, History, KeyRound, Loader2 } from 'lucide-react
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
 import { formatCurrencyFCFA, formatDateOnlyFR } from '@/lib/utils/format';
@@ -78,43 +78,42 @@ export default function PlatformExpiringSubscriptionsPage() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         <span>Chargement...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <History className="w-6 h-6 text-amber-500" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <History className="size-6 text-muted" />
             Abonnements expirant bientôt
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted mt-1">
             Licences en cours qui se terminent dans les {WINDOW_DAYS} prochains jours, la plus proche d&apos;abord.
           </p>
         </div>
-        <Link href="/platform/subscriptions">
-          <Button variant="outline" size="sm" icon={KeyRound}>
+        <Link href="/platform/subscriptions" className={buttonClassName({ variant: 'outline', size: 'sm' })}>
+          <KeyRound className="size-4 shrink-0" aria-hidden />
             Tous les abonnements
-          </Button>
-        </Link>
+          </Link>
       </div>
 
       {subs.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <Calendar className="w-12 h-12 text-green-400 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune expiration à prévoir</h3>
-          <p className="text-xs text-slate-500">Aucune licence ne se termine dans les {WINDOW_DAYS} prochains jours.</p>
+        <Card className="text-center space-y-3 py-8">
+          <Calendar className="w-12 h-12 text-success-soft-foreground mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucune expiration à prévoir</h3>
+          <p className="text-xs text-muted">Aucune licence ne se termine dans les {WINDOW_DAYS} prochains jours.</p>
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-[11px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-xs text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Client</th>
                   <th className="px-4 py-3">Forfait</th>
@@ -123,23 +122,23 @@ export default function PlatformExpiringSubscriptionsPage() {
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-separator">
                 {subs.map((sub) => {
                   const days = sub.days_left ?? 0;
                   const urgent = days <= 7;
                   return (
-                    <tr key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <tr key={sub.id} className="hover:bg-surface-secondary transition">
                       <td className="px-4 py-3">
                         <Link
                           href={`/platform/clients/${sub.organization_id}`}
-                          className="font-semibold text-slate-900 dark:text-white hover:text-amber-600"
+                          className="font-semibold text-foreground hover:text-warning-soft-foreground"
                         >
                           {sub.organization_name}
                         </Link>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-slate-800 dark:text-slate-200">{sub.plan_name || '—'}</span>
-                        <span className="block text-[11px] text-slate-500">
+                        <span className="font-medium text-foreground">{sub.plan_name || '—'}</span>
+                        <span className="block text-xs text-muted">
                           {sub.is_trial
                             ? 'Essai gratuit'
                             : sub.plan_price
@@ -148,19 +147,19 @@ export default function PlatformExpiringSubscriptionsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={urgent ? 'danger' : 'warning'} className="text-[11px]">
+                        <Badge variant={urgent ? 'danger' : 'warning'} className="text-xs">
                           {urgent ? 'Expire très bientôt' : 'Expire bientôt'}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="block text-slate-700 dark:text-slate-300">
+                        <span className="block text-foreground">
                           {sub.end_date ? formatDateOnlyFR(sub.end_date) : '—'}
                         </span>
                         <span
                           className={
                             urgent
-                              ? 'text-xs font-semibold text-red-600 dark:text-red-400'
-                              : 'text-xs text-amber-600 dark:text-amber-400'
+                              ? 'text-xs font-semibold text-danger'
+                              : 'text-xs text-warning-soft-foreground'
                           }
                         >
                           Fin {whenLabel(days)}
@@ -170,19 +169,19 @@ export default function PlatformExpiringSubscriptionsPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <Button
                             size="sm"
-                            className="text-xs h-8 whitespace-nowrap"
+                            className="whitespace-nowrap"
                             icon={KeyRound}
                             onClick={() => setExtending(sub)}
-                          >
+                        >
                             Prolonger
                           </Button>
                           <Link
                             href={`/platform/clients/${sub.organization_id}`}
                             title="Voir le client"
                             aria-label="Voir le client"
-                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-                          >
-                            <ExternalLink className="w-4 h-4 text-slate-500" />
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-border hover:bg-default"
+                        >
+                            <ExternalLink className="w-4 h-4 text-muted" />
                           </Link>
                         </div>
                       </td>

@@ -158,11 +158,11 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
         />
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          <label className="block text-xs font-semibold text-foreground">
             Espace Wi-Fi
           </label>
           {pos?.space_id ? (
-            <div className="w-full h-10 px-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm flex items-center text-slate-700 dark:text-slate-300">
+            <div className="w-full h-10 px-3 bg-default border border-border rounded-xl text-sm flex items-center text-foreground">
               {spaces.find((s: WifiSpace) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
             </div>
           ) : (
@@ -178,7 +178,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          <label className="block text-xs font-semibold text-foreground">
             Collecteur Attribué (Optionnel)
           </label>
           <CustomSelect
@@ -192,7 +192,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          <label className="block text-xs font-semibold text-foreground">
             Statut
           </label>
           <CustomSelect
@@ -207,7 +207,7 @@ export function EditPosModal({ isOpen, onClose, pos, collectors, spaces, onSucce
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Annuler
           </Button>
           <Button type="submit" isLoading={isSubmitting}>

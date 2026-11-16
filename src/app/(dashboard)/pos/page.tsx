@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { AddButton } from '@/components/ui/AddButton';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { useGuideOpenForm } from '@/lib/onboarding';
 
 export default function PosPage() {
@@ -79,12 +80,12 @@ async function loadData() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{isAdmin ? 'Points de Vente (POS)' : 'Mes points de vente'}</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{isAdmin ? 'Points de Vente (POS)' : 'Mes points de vente'}</h1>
+          <p className="text-xs text-muted">
             {isAdmin
               ? 'Gérez le réseau de distribution et l’attribution des collecteurs.'
               : 'Les points de vente que votre administrateur vous a confiés.'}
@@ -94,7 +95,7 @@ async function loadData() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <KpiGrid cols={{ base: 2, sm: 3 }}>
         <StatTile
           label="Total POS"
           value={totalPos}
@@ -116,35 +117,35 @@ async function loadData() {
           accent="red"
           className="col-span-2 sm:col-span-1"
         />
-      </div>
+      </KpiGrid>
 
       {/* Filter Bar */}
-      <Card className="p-4">
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+      <Card>
+        <div className="relative w-full">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-muted" />
           <input
             type="text"
             placeholder="Rechercher par nom ou ville..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="input input--primary w-full pl-9 pr-4"
           />
         </div>
       </Card>
 
       {/* Grid POS Cards or Empty State */}
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           Chargement des points de vente...
         </div>
       ) : filteredPos.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+        <Card className="text-center space-y-3 py-8">
+          <div className="w-14 h-14 rounded-full bg-warning-soft text-warning-soft-foreground flex items-center justify-center mx-auto">
             <Store className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun point de vente trouvé</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <h3 className="text-base font-semibold text-foreground">Aucun point de vente trouvé</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto">
             {isAdmin
               ? 'Vous n’avez pas encore configuré de point de vente. Ajoutez votre premier emplacement pour démarrer les encaissements.'
               : 'Aucun point de vente ne vous est attribué pour le moment. Demandez à votre administrateur de vous en confier.'}
@@ -152,18 +153,18 @@ async function loadData() {
           {isAdmin && <AddButton what="un point de vente" tour="add:pos" onClick={() => setIsModalOpen(true)} />}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredPos.map((pos: PointOfSale) => (
             <Link key={pos.id} href={`/pos/${pos.id}`} className="block group">
-              <Card className="space-y-4 hover:border-amber-500/50 transition cursor-pointer h-full">
+              <Card className="space-y-4 hover:border-warning/50 transition cursor-pointer h-full">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-blue-900/10 text-blue-900 dark:text-amber-400 border border-blue-900/20">
+                    <div className="p-2.5 rounded-xl bg-accent-soft text-accent">
                       <Store className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-900 dark:text-white">{pos.nom}</h3>
-                      <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                      <h3 className="font-semibold text-sm text-foreground">{pos.nom}</h3>
+                      <div className="flex items-center gap-1 text-xs text-muted mt-0.5">
                         <MapPin className="w-3.5 h-3.5" />
                         <span>{pos.adresse || pos.ville}</span>
                       </div>
@@ -174,12 +175,12 @@ async function loadData() {
                   </Badge>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                <div className="pt-3 border-t border-separator flex items-center justify-between text-xs text-muted">
                   <div className="flex items-center gap-1">
-                    <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Collecteur : <strong className="text-slate-800 dark:text-slate-200">{pos.collecteur?.nom || 'Non attribué'}</strong></span>
+                    <UserCheck className="w-3.5 h-3.5 text-success-soft-foreground" />
+                    <span>Collecteur : <strong className="text-foreground">{pos.collecteur?.nom || 'Non attribué'}</strong></span>
                   </div>
-                  <span className="text-[11px] text-slate-400">ID #{pos.id.slice(0, 4)}</span>
+                  <span className="text-xs text-muted">ID #{pos.id.slice(0, 4)}</span>
                 </div>
 
                 {/* Actions de l'administrateur : toujours visibles (y compris sur téléphone), avec libellé */}
@@ -188,14 +189,13 @@ async function loadData() {
                     <WriteButton
                       variant="outline"
                       size="sm"
-                      className="h-10 font-semibold"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setEditingPos(pos);
                       }}
                     >
-                      <Edit className="w-4 h-4 mr-1.5" />
+                      <Edit className="w-4 h-4" />
                       Modifier
                     </WriteButton>
                     <WriteButton
@@ -207,11 +207,6 @@ async function loadData() {
                         e.stopPropagation();
                         handleToggleStatus(pos);
                       }}
-                      className={
-                        pos.statut === 'actif'
-                          ? 'h-10 font-semibold text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-950/30'
-                          : 'h-10 font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950/30'
-                      }
                     >
                       {togglingId === pos.id ? (
                         <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />

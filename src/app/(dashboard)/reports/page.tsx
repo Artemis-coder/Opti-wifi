@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { DateField } from '@/components/ui/DateField';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
@@ -354,22 +355,22 @@ export default function ReportsPage() {
   const money = (v: number) => formatCurrencyFCFA(v);
   // Montant d'un cadre : la carte l'ajuste à sa largeur (jamais coupé ni débordant)
   const tileMoney = (v: number) => money(v);
-  const gapClass = (v: number) => (v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-600 dark:text-slate-400');
+  const gapClass = (v: number) => (v < 0 ? 'text-danger font-semibold' : 'text-muted ');
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto">
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <FileSpreadsheet className="w-6 h-6 text-amber-500" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <FileSpreadsheet className="size-6 text-muted" />
             Rapports & exports
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted mt-1">
             Vos encaissements sur la période choisie, en synthèse ou en détail, exportables pour Excel.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
           <Button size="sm" icon={FileText} onClick={exportPdf} disabled={loading || filtered.length === 0}>
             Exporter en PDF
           </Button>
@@ -382,9 +383,9 @@ export default function ReportsPage() {
       {/* Filtres */}
       <Card className="space-y-4">
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-amber-500" />
-          <p className="text-sm font-bold text-slate-900 dark:text-white">Période</p>
-          <span className="text-xs text-slate-500">· {periodLabel}</span>
+          <Calendar className="w-4 h-4 text-warning-soft-foreground" />
+          <p className="text-sm font-semibold text-foreground ">Période</p>
+          <span className="text-xs text-muted">· {periodLabel}</span>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {PERIODS.map((p) => (
@@ -393,10 +394,10 @@ export default function ReportsPage() {
               type="button"
               onClick={() => setPeriod(p.value)}
               className={cn(
-                'px-3.5 h-9 rounded-full text-sm font-semibold whitespace-nowrap border transition',
+                'px-3.5 h-9 rounded-xl text-sm font-semibold whitespace-nowrap transition',
                 period === p.value
-                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  ? 'bg-foreground text-background '
+                  : 'bg-surface text-muted hover:bg-surface-tertiary'
               )}
             >
               {p.label}
@@ -404,7 +405,7 @@ export default function ReportsPage() {
           ))}
         </div>
         {period === 'custom' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <DateField label="Du" value={customStart} onChange={setCustomStart} max={customEnd || undefined} clearable />
             <DateField label="Au" value={customEnd} onChange={setCustomEnd} min={customStart || undefined} clearable />
           </div>
@@ -424,7 +425,7 @@ export default function ReportsPage() {
       </Card>
 
       {/* Chiffres clés de la période */}
-      <div className={cn('grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-50')}>
+      <KpiGrid cols={{ base: 2, sm: 3 }} className={cn('transition-opacity', loading && 'opacity-50')}>
         <StatTile label="Encaissements" value={totals.count} icon={ClipboardList} accent="indigo" hint={periodLabel} />
         <StatTile label="Chiffre d'affaires" sensitive value={tileMoney(totals.expected)} icon={TrendingUp} accent="amber" hint="Montant attendu" />
         <StatTile label="Encaissé" sensitive value={tileMoney(totals.collected)} icon={Banknote} accent="emerald" />
@@ -438,11 +439,11 @@ export default function ReportsPage() {
         />
         <StatTile label="Commission" sensitive value={tileMoney(totals.commission)} icon={Percent} accent="purple" />
         <StatTile label="Tickets vendus" value={ticketsSold.toLocaleString('fr-FR')} icon={Ticket} accent="blue" />
-      </div>
+      </KpiGrid>
 
       {/* Rapports */}
       <Card className="p-0 overflow-hidden">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 px-4 pt-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 px-4 pt-4 pb-3 ">
           <div role="tablist" aria-label="Rapport" className="flex gap-1.5 overflow-x-auto -mx-1 px-1">
             {TABS.map((t) => {
               const Icon = t.icon;
@@ -454,10 +455,10 @@ export default function ReportsPage() {
                   aria-selected={tab === t.value}
                   onClick={() => setTab(t.value)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-sm font-semibold whitespace-nowrap transition',
+                    'inline-flex items-center gap-1.5 px-3 h-9 rounded-xl text-sm font-semibold whitespace-nowrap transition',
                     tab === t.value
-                      ? 'bg-amber-500 text-slate-950'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted hover:bg-default '
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -472,18 +473,18 @@ export default function ReportsPage() {
         </div>
 
         {loading ? (
-          <p className="p-10 text-center text-sm text-slate-500">Chargement…</p>
+          <p className="p-10 text-center text-sm text-muted">Chargement…</p>
         ) : current.count === 0 ? (
           <div className="p-10 text-center space-y-1">
-            <FileSpreadsheet className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Aucune donnée pour ces filtres</p>
-            <p className="text-xs text-slate-500">Changez de période ou de filtre.</p>
+            <FileSpreadsheet className="w-10 h-10 text-muted mx-auto" />
+            <p className="text-sm font-semibold text-foreground ">Aucune donnée pour ces filtres</p>
+            <p className="text-xs text-muted">Changez de période ou de filtre.</p>
           </div>
         ) : (
           <ResponsiveTable>
             {tab === 'collections' && (
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-[11px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                <thead className="bg-surface-secondary text-xs text-muted font-semibold ">
                   <tr>
                     <th className="px-4 py-3">Date</th>
                     <th className="px-4 py-3">Point de vente</th>
@@ -495,16 +496,16 @@ export default function ReportsPage() {
                     <th className="px-4 py-3">Statut</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                <tbody className="divide-y divide-separator ">
                   {visibleRows.map((c) => {
                     const s = STATUS_BADGE[c.statut] || { label: c.statut, variant: 'neutral' as const };
                     return (
-                      <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateOnlyFR(dateOf(c))}</td>
-                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{c.pos?.nom || '—'}</td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{c.collecteur?.nom || '—'}</td>
+                      <tr key={c.id} className="hover:bg-surface-secondary ">
+                        <td className="px-4 py-3 text-muted whitespace-nowrap">{formatDateOnlyFR(dateOf(c))}</td>
+                        <td className="px-4 py-3 font-semibold text-foreground ">{c.pos?.nom || '—'}</td>
+                        <td className="px-4 py-3 text-muted ">{c.collecteur?.nom || '—'}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">{money(amount(c.montant_attendu))}</td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap font-bold text-slate-900 dark:text-white">
+                        <td className="px-4 py-3 text-right whitespace-nowrap font-semibold text-foreground ">
                           {money(amount(c.montant_collecte))}
                         </td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">{money(amount(c.commission))}</td>
@@ -512,7 +513,7 @@ export default function ReportsPage() {
                           {money(amount(c.difference))}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant={s.variant} className="text-[11px]">
+                          <Badge variant={s.variant} className="text-xs">
                             {s.label}
                           </Badge>
                         </td>
@@ -520,7 +521,7 @@ export default function ReportsPage() {
                     );
                   })}
                 </tbody>
-                <tfoot className="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-900 dark:text-white">
+                <tfoot className="bg-surface-secondary font-semibold text-foreground ">
                   <tr>
                     <td className="px-4 py-3" colSpan={3}>
                       Total ({totals.count})
@@ -528,7 +529,7 @@ export default function ReportsPage() {
                     <td className="px-4 py-3 text-right whitespace-nowrap">{money(totals.expected)}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">{money(totals.collected)}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">{money(totals.commission)}</td>
-                    <td className={cn('px-4 py-3 text-right whitespace-nowrap', totals.gap < 0 && 'text-red-600 dark:text-red-400')}>
+                    <td className={cn('px-4 py-3 text-right whitespace-nowrap', totals.gap < 0 && 'text-danger ')}>
                       {money(totals.gap)}
                     </td>
                     <td className="px-4 py-3" />
@@ -539,7 +540,7 @@ export default function ReportsPage() {
 
             {(tab === 'pos' || tab === 'collectors') && (
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-[11px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                <thead className="bg-surface-secondary text-xs text-muted font-semibold ">
                   <tr>
                     <th className="px-4 py-3">{tab === 'pos' ? 'Point de vente' : 'Collecteur'}</th>
                     <th className="px-4 py-3 text-right">Encaissements</th>
@@ -550,29 +551,29 @@ export default function ReportsPage() {
                     <th className="px-4 py-3">Part du CA</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                <tbody className="divide-y divide-separator ">
                   {(tab === 'pos' ? byPos : byCollector).map((r) => {
                     const share = totals.expected ? Math.round((r.expected / totals.expected) * 100) : 0;
                     const city = 'city' in r ? String(r.city || '') : '';
                     return (
-                      <tr key={r.name + r.count} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <tr key={r.name + r.count} className="hover:bg-surface-secondary ">
                         <td className="px-4 py-3">
-                          <span className="font-semibold text-slate-900 dark:text-white">{r.name}</span>
-                          {city && <span className="block text-[11px] text-slate-500">{city}</span>}
+                          <span className="font-semibold text-foreground ">{r.name}</span>
+                          {city && <span className="block text-xs text-muted">{city}</span>}
                         </td>
                         <td className="px-4 py-3 text-right">{r.count}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">{money(r.expected)}</td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap font-bold text-slate-900 dark:text-white">
+                        <td className="px-4 py-3 text-right whitespace-nowrap font-semibold text-foreground ">
                           {money(r.collected)}
                         </td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">{money(r.commission)}</td>
                         <td className={cn('px-4 py-3 text-right whitespace-nowrap', gapClass(r.gap))}>{money(r.gap)}</td>
                         <td className="px-4 py-3 min-w-32">
                           <div className="flex items-center gap-2">
-                            <div className="h-1.5 flex-1 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                              <div className="h-full rounded-full bg-amber-500" style={{ width: `${share}%` }} />
+                            <div className="h-1.5 flex-1 rounded-full bg-default overflow-hidden">
+                              <div className="h-full rounded-full bg-warning" style={{ width:`${share}%`}} />
                             </div>
-                            <span className="text-xs text-slate-500 tabular-nums w-9 text-right">{share} %</span>
+                            <span className="text-xs text-muted tabular-nums w-9 text-right">{share} %</span>
                           </div>
                         </td>
                       </tr>
@@ -584,23 +585,23 @@ export default function ReportsPage() {
 
             {tab === 'tickets' && (
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-[11px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                <thead className="bg-surface-secondary text-xs text-muted font-semibold ">
                   <tr>
                     <th className="px-4 py-3">Type de ticket</th>
                     <th className="px-4 py-3 text-right">Quantité vendue</th>
                     <th className="px-4 py-3 text-right">Chiffre d&apos;affaires</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                <tbody className="divide-y divide-separator ">
                   {byTicket.map((r) => (
-                    <tr key={r.name} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{r.name}</td>
+                    <tr key={r.name} className="hover:bg-surface-secondary ">
+                      <td className="px-4 py-3 font-semibold text-foreground ">{r.name}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{r.quantity.toLocaleString('fr-FR')}</td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap font-bold text-slate-900 dark:text-white">{money(r.revenue)}</td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap font-semibold text-foreground ">{money(r.revenue)}</td>
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-900 dark:text-white">
+                <tfoot className="bg-surface-secondary font-semibold text-foreground ">
                   <tr>
                     <td className="px-4 py-3">Total</td>
                     <td className="px-4 py-3 text-right tabular-nums">{ticketsSold.toLocaleString('fr-FR')}</td>
@@ -613,7 +614,7 @@ export default function ReportsPage() {
         )}
 
         {tab === 'collections' && filtered.length > 20 && (
-          <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="px-4 py-3 flex items-center justify-between gap-3 text-xs text-muted">
             <span>
               {showAll ? filtered.length : 20} sur {filtered.length} encaissements affichés · l&apos;export contient tout
             </span>
@@ -624,7 +625,7 @@ export default function ReportsPage() {
         )}
       </Card>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         « Exporter en PDF » produit un rapport A4 complet (chiffres clés, synthèses et détail) : choisissez « Enregistrer
         en PDF » dans la fenêtre d&apos;impression. Les fichiers Excel s&apos;ouvrent aussi dans Google Sheets. Les
         encaissements annulés ne sont comptés que si vous choisissez le statut « Annulées ».
@@ -635,7 +636,7 @@ export default function ReportsPage() {
         organizationName={organizationName}
         periodLabel={periodLabel}
         filters={[
-          posFilter && `Point de vente : ${posOptions.find((o) => o.value === posFilter)?.label}`,
+          posFilter &&`Point de vente : ${posOptions.find((o) => o.value === posFilter)?.label}`,
           collectorFilter && `Collecteur : ${collectorOptions.find((o) => o.value === collectorFilter)?.label}`,
           `Statut : ${STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label}`,
         ].filter((f): f is string => !!f)}

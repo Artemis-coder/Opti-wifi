@@ -220,34 +220,34 @@ function RequestFlow({
     ].filter(Boolean) as string[];
     return (
       <div className="space-y-5 text-left max-w-lg mx-auto">
-        <div className="rounded-2xl border border-brand-500/40 bg-brand-50/50 dark:bg-brand-950/20 p-5 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">Votre forfait</p>
+        <div className="rounded-xl bg-accent-soft p-5 space-y-3">
+          <p className="text-xs font-semibold text-accent">Votre forfait</p>
           <div className="flex items-end justify-between gap-3">
-            <p className="text-xl font-extrabold text-slate-900 dark:text-white">{plan.name}</p>
+            <p className="text-xl font-semibold text-foreground">{plan.name}</p>
             <p className="text-right">
-              <span className="block text-2xl font-extrabold text-slate-900 dark:text-white">
+              <span className="block text-2xl font-semibold text-foreground">
                 {isFree ? 'Gratuit' : formatCurrencyFCFA(plan.price)}
               </span>
-              <span className="text-xs text-slate-500">pour {months} mois</span>
+              <span className="text-xs text-muted">pour {months} mois</span>
             </p>
           </div>
           {features.length > 0 && (
-            <ul className="space-y-1.5 pt-3 border-t border-brand-500/20">
+            <ul className="space-y-1.5 pt-3 border-t border-accent/20">
               {features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" /> {f}
+                <li key={f} className="flex items-center gap-2 text-sm text-foreground">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-success-soft-foreground" /> {f}
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={onClose}>
             Annuler
           </Button>
           {isFree ? (
-            <Button type="button" onClick={send} isLoading={sending} className="gap-2">
+            <Button type="button" onClick={send} isLoading={sending}>
               {!sending && <Send className="w-4 h-4" />} Envoyer la demande
             </Button>
           ) : (
@@ -255,8 +255,7 @@ function RequestFlow({
               type="button"
               onClick={onlineEnabled === true ? payOnline : () => setStep('methods')}
               isLoading={redirecting}
-              className="gap-2"
-            >
+    >
               {!redirecting && (onlineEnabled === true ? <ArrowRight className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />)}{' '}
               {onlineEnabled === true ? 'Passer au paiement' : renewal ? 'Me réabonner' : 'Continuer vers le paiement'}
             </Button>
@@ -269,7 +268,7 @@ function RequestFlow({
   // ── Écran 2 : le choix du moyen de paiement ─────────────────────────
   if (screen === 'methods' && onlineEnabled === null) {
     return (
-      <div className="py-10 flex justify-center text-slate-400">
+      <div className="py-10 flex justify-center text-muted">
         <Loader2 className="w-6 h-6 animate-spin" />
       </div>
     );
@@ -282,7 +281,7 @@ function RequestFlow({
         <PlanSummary plan={plan} months={months} />
         <OnlinePayButton redirecting={redirecting} onClick={payOnline} />
         <div className="flex justify-end">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Annuler
           </Button>
         </div>
@@ -297,10 +296,10 @@ function RequestFlow({
         {methods !== null && methods.length === 0 ? null : (
           <>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-brand-600" /> Choisissez votre moyen de paiement
+              <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-accent" /> Choisissez votre moyen de paiement
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-muted mt-1">
                 Choisissez le moyen qui vous convient (filtrez par pays si besoin) : vous scannerez ensuite le QR code ou
                 copierez le numéro.
               </p>
@@ -315,17 +314,17 @@ function RequestFlow({
               title="Pays de paiement"
             />
             {methods === null ? (
-              <div className="py-10 flex justify-center text-slate-400">
+              <div className="py-10 flex justify-center text-muted">
                 <Loader2 className="w-6 h-6 animate-spin" />
               </div>
             ) : available.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-5 text-center space-y-3">
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+              <div className="rounded-xl border border-dashed border-border p-5 text-center space-y-3">
+                <p className="text-sm text-muted">
                   Aucun moyen de paiement en ligne n&apos;est encore disponible
                   {country ? ` pour ${countryName(country)}` : ''}. Envoyez votre
                   demande : l&apos;équipe OptiWifi vous contactera pour le paiement.
                 </p>
-                <Button type="button" onClick={send} isLoading={sending} className="gap-2">
+                <Button type="button" onClick={send} isLoading={sending}>
                   {!sending && <Send className="w-4 h-4" />} Envoyer la demande
                 </Button>
               </div>
@@ -339,20 +338,20 @@ function RequestFlow({
                       setMethodId(m.id);
                       setStep('pay');
                     }}
-                    className="group rounded-2xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+                    className="group rounded-xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-focus"
                     style={{ background: m.brand_color || DEFAULT_BRAND_COLOR }}
-                  >
+    >
                     <span className="w-14 h-14 shrink-0 rounded-xl bg-white/95 flex items-center justify-center overflow-hidden">
                       {m.brand_logo ? (
                         // Data URL stockée en base : next/image n'apporte rien ici
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={m.brand_logo} alt="" className="w-11 h-11 object-contain" />
                       ) : (
-                        <Wallet className="w-6 h-6 text-slate-500" />
+                        <Wallet className="w-6 h-6 text-muted" />
                       )}
                     </span>
                     <span className="flex-1 min-w-0">
-                      <span className="block text-lg font-extrabold leading-tight drop-shadow-sm">{m.name}</span>
+                      <span className="block text-lg font-semibold leading-tight drop-shadow-sm">{m.name}</span>
                       <span className="block text-xs text-white/90">Payer avec {m.name}</span>
                     </span>
                     <ArrowRight className="w-5 h-5 shrink-0 transition group-hover:translate-x-0.5" />
@@ -363,7 +362,7 @@ function RequestFlow({
           </>
         )}
         <div className="flex justify-end">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Annuler
           </Button>
         </div>
@@ -383,43 +382,43 @@ function RequestFlow({
       {renewal && <PlanSummary plan={plan} months={months} />}
 
       {methods === null ? (
-        <div className="py-10 flex justify-center text-slate-400">
+        <div className="py-10 flex justify-center text-muted">
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       ) : !method ? (
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-muted">
           Le paiement en ligne n&apos;est pas encore disponible. Envoyez votre demande : l&apos;équipe OptiWifi vous contactera pour le
           paiement.
         </p>
       ) : (
         <>
-          <div className="grid gap-5 md:grid-cols-2 md:items-start">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2 md:items-start">
             <PaymentPoster method={method} />
 
             <ol className="space-y-4">
               <li className="flex gap-3">
                 <StepNumber n={1} />
                 <div className="flex-1 min-w-0 text-sm space-y-2">
-                  <p className="font-semibold text-slate-900 dark:text-white">
+                  <p className="font-semibold text-foreground">
                     Payez {formatCurrencyFCFA(plan.price)} : scannez le QR code ou copiez le numéro {method.name}
                   </p>
                   <PayNumber method={method} />
                   {method.description && (
-                    <p className="text-slate-600 dark:text-slate-400 whitespace-pre-line break-words">{method.description}</p>
+                    <p className="text-muted whitespace-pre-line break-words">{method.description}</p>
                   )}
                 </div>
               </li>
               <li className="flex gap-3">
                 <StepNumber n={2} />
                 <div className="flex-1 min-w-0 text-sm space-y-2">
-                  <p className="font-semibold text-slate-900 dark:text-white">Envoyez le justificatif de paiement (capture) sur WhatsApp</p>
+                  <p className="font-semibold text-foreground">Envoyez le justificatif de paiement (capture) sur WhatsApp</p>
                   <WhatsappReceiptButton method={method} message={receiptMessage} />
                 </div>
               </li>
               <li className="flex gap-3">
                 <StepNumber n={3} />
                 <div className="flex-1 min-w-0 text-sm space-y-2">
-                  <p className="font-semibold text-slate-900 dark:text-white">Confirmez votre paiement</p>
+                  <p className="font-semibold text-foreground">Confirmez votre paiement</p>
                   <Input
                     placeholder={`ID de transaction ${method.name}`}
                     helperText="Facultatif : accélère la vérification."
@@ -434,15 +433,15 @@ function RequestFlow({
         </>
       )}
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         Votre compte est activé dès que l&apos;équipe OptiWifi a reçu et vérifié votre justificatif de paiement.
       </p>
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose}>
           Fermer
         </Button>
-        <Button type="button" onClick={send} isLoading={sending} className="gap-2">
+        <Button type="button" onClick={send} isLoading={sending}>
           {!sending && <Send className="w-4 h-4" />}
           {method ? "J'ai payé" : 'Envoyer la demande'}
         </Button>
@@ -454,32 +453,32 @@ function RequestFlow({
 /** Paiement en ligne SasPay : redirige vers la page de paiement hébergée. */
 function OnlinePayButton({ redirecting, onClick }: { redirecting: boolean; onClick: () => void }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <button
         type="button"
         onClick={onClick}
         disabled={redirecting}
-        className="group w-full rounded-2xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition bg-gradient-to-r from-brand-600 to-emerald-600 hover:shadow-md hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
-      >
+        className="group w-full rounded-xl p-4 text-left text-white flex items-center gap-3 shadow-sm transition bg-gradient-to-r from-brand-600 to-emerald-600 hover:shadow-md hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-focus"
+    >
         <span className="w-14 h-14 shrink-0 rounded-xl bg-white/95 flex items-center justify-center">
           {redirecting ? (
-            <Loader2 className="w-6 h-6 text-brand-600 animate-spin" />
+            <Loader2 className="w-6 h-6 text-accent animate-spin" />
           ) : (
-            <CreditCard className="w-6 h-6 text-brand-600" />
+            <CreditCard className="w-6 h-6 text-accent" />
           )}
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-lg font-extrabold leading-tight drop-shadow-sm">Passer au paiement</span>
+          <span className="block text-lg font-semibold leading-tight drop-shadow-sm">Passer au paiement</span>
           <span className="block text-xs text-white/90">Mobile Money ou carte bancaire · activation immédiate</span>
         </span>
         <ArrowRight className="w-5 h-5 shrink-0 transition group-hover:translate-x-0.5" />
       </button>
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
         <span className="inline-flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Paiement sécurisé par SasPay
+          <ShieldCheck className="w-3.5 h-3.5 text-success-soft-foreground" /> Paiement sécurisé par SasPay
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Zap className="w-3.5 h-3.5 text-amber-500" /> Licence activée dès la confirmation
+          <Zap className="w-3.5 h-3.5 text-warning-soft-foreground" /> Licence activée dès la confirmation
         </span>
       </p>
     </div>
@@ -491,7 +490,7 @@ function BackButton({ label, onClick }: { label: string; onClick: () => void }) 
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 -ml-1 px-1 py-1 text-sm font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+      className="inline-flex items-center gap-1.5 -ml-1 px-1 py-1 text-sm font-medium text-muted hover:text-foreground"
     >
       <ArrowLeft className="w-4 h-4" /> {label}
     </button>
@@ -501,14 +500,14 @@ function BackButton({ label, onClick }: { label: string; onClick: () => void }) 
 /** Rappel compact du forfait payé (réabonnement et choix du moyen de paiement) */
 function PlanSummary({ plan, months }: { plan: RequestedPlan; months: number }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-brand-500/30 bg-brand-50/50 dark:bg-brand-950/20 px-4 py-3">
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-accent-soft px-4 py-3">
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">Forfait</p>
-        <p className="font-bold text-slate-900 dark:text-white truncate">{plan.name}</p>
+        <p className="text-xs font-semibold text-accent">Forfait</p>
+        <p className="font-semibold text-foreground truncate">{plan.name}</p>
       </div>
       <p className="text-right shrink-0">
-        <span className="block text-lg font-extrabold text-slate-900 dark:text-white">{formatCurrencyFCFA(plan.price)}</span>
-        <span className="text-xs text-slate-500">pour {months} mois</span>
+        <span className="block text-lg font-semibold text-foreground">{formatCurrencyFCFA(plan.price)}</span>
+        <span className="text-xs text-muted">pour {months} mois</span>
       </p>
     </div>
   );
@@ -516,6 +515,6 @@ function PlanSummary({ plan, months }: { plan: RequestedPlan; months: number }) 
 
 function StepNumber({ n }: { n: number }) {
   return (
-    <span className="w-7 h-7 shrink-0 rounded-full bg-brand-600 text-white text-sm font-bold flex items-center justify-center">{n}</span>
+    <span className="w-7 h-7 shrink-0 rounded-full bg-accent text-accent-foreground text-sm font-semibold flex items-center justify-center">{n}</span>
   );
 }

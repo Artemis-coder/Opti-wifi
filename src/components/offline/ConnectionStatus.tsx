@@ -66,7 +66,7 @@ export function ConnectionStatus() {
   if (isOffline) {
     const at = dataAt ?? lastSyncAt();
     return (
-      <div role="status" className={`${chip} bg-red-600 text-white`}>
+      <div role="status" className={`${chip} bg-danger text-danger-foreground`}>
         <WifiOff className="w-4 h-4 shrink-0" />
         <span className="truncate">
           Hors ligne{at ? ` · données du ${time(at)}` : ''}
@@ -78,7 +78,7 @@ export function ConnectionStatus() {
 
   if (isUnstable) {
     return (
-      <div role="status" className={`${chip} bg-amber-500 text-slate-950`}>
+      <div role="status" className={`${chip} bg-warning text-foreground`}>
         <AlertTriangle className="w-4 h-4" /> Connexion instable
       </div>
     );
@@ -89,7 +89,7 @@ export function ConnectionStatus() {
       type="button"
       onClick={handleSync}
       disabled={syncing}
-      className={`${chip} bg-amber-600 hover:bg-amber-700 disabled:opacity-70 text-white transition-colors`}
+      className={`${chip} bg-warning hover:bg-warning-hover disabled:opacity-70 text-warning-foreground transition-colors`}
     >
       <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
       {syncing ? 'Synchronisation…' : `Synchroniser ${pendingCount} action(s)`}

@@ -74,7 +74,7 @@ export function TicketThread({ endpoint, viewer, backHref, backLabel, renderCont
 
   if (data === null) {
     return (
-      <div className="py-20 flex justify-center text-slate-400">
+      <div className="py-10 flex justify-center text-muted">
         <Loader2 className="w-6 h-6 animate-spin" />
       </div>
     );
@@ -82,10 +82,10 @@ export function TicketThread({ endpoint, viewer, backHref, backLabel, renderCont
   if (data === 'error') {
     return (
       <div className="max-w-3xl mx-auto space-y-4">
-        <Link href={backHref} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500">
+        <Link href={backHref} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted">
           <ArrowLeft className="w-4 h-4" /> {backLabel}
         </Link>
-        <p className="py-16 text-center text-sm text-slate-500">Ticket introuvable.</p>
+        <p className="py-10 text-center text-sm text-muted">Ticket introuvable.</p>
       </div>
     );
   }
@@ -95,27 +95,27 @@ export function TicketThread({ endpoint, viewer, backHref, backLabel, renderCont
   const closedForClient = viewer === 'client' && ticket.status === 'closed';
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 pb-6">
+    <div className="space-y-5 max-w-3xl mx-auto pb-6">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1.5 -ml-1 px-1 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+        className="inline-flex items-center gap-1.5 -ml-1 px-1 py-1.5 text-sm font-medium text-muted hover:text-foreground"
       >
         <ArrowLeft className="w-4 h-4" /> {backLabel}
       </Link>
 
-      <Card className="p-4 sm:p-5 space-y-3">
+      <Card className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-mono text-xs text-slate-500">{ticket.ticket_number}</p>
-            <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white break-words">{ticket.subject}</h1>
+            <p className="font-mono text-xs text-muted">{ticket.ticket_number}</p>
+            <h1 className="text-lg sm:text-xl font-semibold text-foreground break-words">{ticket.subject}</h1>
           </div>
           <Badge variant={status.variant} className="shrink-0">
             {status.label}
           </Badge>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
           {viewer === 'support' && ticket.organization_name && (
-            <Link href={`/platform/clients/${ticket.organization_id}`} className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+            <Link href={`/platform/clients/${ticket.organization_id}`} className="font-semibold text-accent hover:underline">
               {ticket.organization_name}
             </Link>
           )}
@@ -134,18 +134,18 @@ export function TicketThread({ endpoint, viewer, backHref, backLabel, renderCont
             <div key={m.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
               <div
                 className={cn(
-                  'max-w-[88%] sm:max-w-[75%] rounded-2xl px-4 py-3 space-y-1.5 border',
+                  'max-w-[88%] sm:max-w-[75%] rounded-xl px-4 py-3 space-y-1.5 border',
                   mine
-                    ? 'bg-brand-50 dark:bg-brand-950/40 border-brand-200 dark:border-brand-800 rounded-br-md'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-bl-md'
+                    ? 'bg-accent-soft rounded-br-md'
+                    : 'bg-surface border-border rounded-bl-md'
                 )}
-              >
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                  {m.from_support && <Headset className="w-3.5 h-3.5 text-brand-600" />}
+      >
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+                  {m.from_support && <Headset className="w-3.5 h-3.5 text-accent" />}
                   {m.from_support ? (viewer === 'client' ? 'Support OptiWifi' : `Support · ${m.author_name || 'OptiWifi'}`) : m.author_name || 'Client'}
                 </p>
-                <p className="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-line break-words">{m.body}</p>
-                <p className="text-[11px] text-slate-400">{fullDate(m.created_at)}</p>
+                <p className="text-sm text-foreground whitespace-pre-line break-words">{m.body}</p>
+                <p className="text-xs text-muted">{fullDate(m.created_at)}</p>
               </div>
             </div>
           );
@@ -155,9 +155,9 @@ export function TicketThread({ endpoint, viewer, backHref, backLabel, renderCont
 
       {/* Réponse */}
       {closedForClient ? (
-        <p className="text-sm text-slate-500 text-center py-2">Ce ticket est fermé. Ouvrez un nouveau ticket si besoin.</p>
+        <p className="text-sm text-muted text-center py-2">Ce ticket est fermé. Ouvrez un nouveau ticket si besoin.</p>
       ) : (
-        <form onSubmit={send} className="sticky bottom-0 sm:static bg-slate-50/95 dark:bg-slate-950/95 sm:bg-transparent backdrop-blur-sm -mx-1 px-1 py-2 space-y-2">
+        <form onSubmit={send} className="sticky bottom-0 sm:static bg-surface-secondary/95 sm:bg-transparent backdrop-blur-sm -mx-1 px-1 py-2 space-y-2">
           <label htmlFor="ticket-reply" className="sr-only">
             Votre réponse
           </label>
@@ -168,10 +168,10 @@ export function TicketThread({ endpoint, viewer, backHref, backLabel, renderCont
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             placeholder={viewer === 'support' ? 'Répondre au client…' : 'Écrire au support…'}
-            className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            className="textarea textarea--primary w-full"
           />
           <div className="flex justify-end">
-            <Button type="submit" icon={Send} isLoading={sending} disabled={!reply.trim()} className="w-full sm:w-auto font-semibold">
+            <Button type="submit" icon={Send} isLoading={sending} disabled={!reply.trim()} className="w-full sm:w-auto">
               Envoyer
             </Button>
           </div>

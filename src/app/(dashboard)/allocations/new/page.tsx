@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeftRight, CheckCircle2, Loader2, AlertCircle, Plus, Trash2, Receipt, Store } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
@@ -132,13 +132,13 @@ const addLine = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <ArrowLeftRight className="w-6 h-6 text-amber-500" />
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <ArrowLeftRight className="size-6 text-muted" />
           Allocation de Tickets aux Points de Vente
         </h1>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           {isCollector
             ? 'Attribuez des tickets à un de vos points de vente.'
             : 'Distribuez du stock de tickets à un point de vente de votre réseau.'}
@@ -146,46 +146,42 @@ const addLine = () => {
       </div>
 
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           Chargement des références...
         </div>
       ) : posList.length === 0 || ticketTypes.length === 0 ? (
-        <Card className="p-8 text-center space-y-4">
-          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Référentiel incomplet</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
+        <Card className="text-center space-y-4 py-8">
+          <AlertCircle className="w-10 h-10 text-warning-soft-foreground mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Référentiel incomplet</h3>
+          <p className="text-xs text-muted max-w-md mx-auto">
             {isCollector ? (
               <>Il vous faut au moins un <strong>point de vente attribué</strong> et un <strong>type de ticket</strong> créé par votre administrateur.</>
             ) : (
               <>Pour effectuer une allocation de stock, vous devez d&apos;abord avoir configuré au moins un <strong>Point de Vente</strong> et un <strong>Type de Ticket</strong>.</>
             )}
           </p>
-          {!isCollector && <div className="flex justify-center gap-3 pt-2">
+          {!isCollector && <div className="flex gap-3 pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
             {posList.length === 0 && (
-              <Link href="/pos">
-                <Button size="sm" variant="secondary" className="gap-2 font-bold">
+              <Link href="/pos" className={buttonClassName({ variant: 'secondary', size: 'sm'})}>
                   <Plus className="w-4 h-4" /> Créer un POS
-                </Button>
-              </Link>
+                </Link>
             )}
             {ticketTypes.length === 0 && (
-              <Link href="/tickets">
-                <Button size="sm" className="gap-2 font-bold">
+              <Link href="/tickets" className={buttonClassName({ variant: 'primary', size: 'sm'})}>
                   <Plus className="w-4 h-4" /> Créer un Ticket
-                </Button>
-              </Link>
+                </Link>
             )}
           </div>}
         </Card>
       ) : submitted ? (
-        <Card className="p-8 text-center space-y-3 border-emerald-500">
-          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Allocation Enregistrée !</h3>
-          <p className="text-xs text-slate-500">Le stock du point de vente a été mis à jour instantanément dans la base de données.</p>
+        <Card className="text-center space-y-3 border-success py-8">
+          <CheckCircle2 className="w-12 h-12 text-success-soft-foreground mx-auto animate-bounce" />
+          <h3 className="text-lg font-semibold text-foreground">Allocation Enregistrée !</h3>
+          <p className="text-xs text-muted">Le stock du point de vente a été mis à jour instantanément dans la base de données.</p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
           <Card className="lg:col-span-2" data-tour="form:allocation">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
@@ -201,7 +197,7 @@ const addLine = () => {
                   placeholder="Sélectionner un point de vente..."
                   title="Point de Vente Cible"
                   searchPlaceholder="Rechercher par nom ou ville..."
-                  leadingIcon={<Store className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                  leadingIcon={<Store className="w-4 h-4 text-success-soft-foreground" />}
                 />
               </div>
 
@@ -211,16 +207,16 @@ const addLine = () => {
 
                <div className="space-y-3">
                  <div className="flex items-center justify-between">
-                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                   <label className="block text-xs font-semibold text-foreground">
                      Tickets à Allouer
                    </label>
-                  <Button type="button" size="sm" variant="ghost" onClick={addLine} className="gap-1 text-xs">
+                  <Button type="button" size="sm" variant="ghost" onClick={addLine}>
                     <Plus className="w-4 h-4" /> Ajouter un type
                   </Button>
                 </div>
 
                 {lines.map((line, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div key={index} className="flex items-start gap-3 p-3 bg-surface-secondary rounded-xl">
                     <div className="flex-1 space-y-2">
                       <CustomSelect
                         value={line.ticketTypeId}
@@ -244,7 +240,7 @@ const addLine = () => {
                           placeholder="0"
                         />
                         <div className="flex items-end">
-                          <p className="text-[11px] text-slate-500 pb-2">
+                          <p className="text-xs text-muted pb-2">
                             Valeur : {formatCurrencyFCFA((line.quantite || 0) * (ticketTypes.find((t: TicketType) => t.id === line.ticketTypeId)?.prix || 0))}
                           </p>
                         </div>
@@ -256,7 +252,7 @@ const addLine = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeLine(index)}
-                        className="text-red-600 hover:text-red-700 mt-1"
+                        className="mt-1"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -272,9 +268,9 @@ const addLine = () => {
                 onChange={(e) => setNotes(e.target.value)}
               />
 
-              <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-2.5">
-                <Button type="button" variant="ghost" onClick={() => router.back()}>Annuler</Button>
-                <Button type="submit" variant="secondary" className="px-6 font-bold" isLoading={submitting}>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
+                <Button type="button" variant="outline" onClick={() => router.back()}>Annuler</Button>
+                <Button type="submit" variant="primary" isLoading={submitting}>
                   Valider l&apos;Allocation
                 </Button>
               </div>
@@ -284,50 +280,50 @@ const addLine = () => {
           <Card className="h-fit">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-amber-500" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Récapitulatif de l&apos;Allocation</h3>
+                <Receipt className="w-5 h-5 text-warning-soft-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">Récapitulatif de l&apos;Allocation</h3>
               </div>
 
               <div className="space-y-3">
-                 <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                   <p className="text-[11px] text-slate-500 font-semibold uppercase">Point de Vente</p>
-                   <p className="text-sm font-bold text-slate-900 dark:text-white">{selectedPos?.nom || '—'}</p>
-                   <p className="text-xs text-slate-500">{selectedPos?.ville || ''}</p>
+                 <div className="p-3 bg-default rounded-xl">
+                   <p className="text-xs text-muted font-semibold">Point de Vente</p>
+                   <p className="text-sm font-semibold text-foreground">{selectedPos?.nom || '—'}</p>
+                   <p className="text-xs text-muted">{selectedPos?.ville || ''}</p>
                  </div>
 
-                 <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                   <p className="text-[11px] text-slate-500 font-semibold uppercase">Date d&apos;Allocation</p>
-                   <p className="text-sm font-bold text-slate-900 dark:text-white">{dateAllocation}</p>
+                 <div className="p-3 bg-default rounded-xl">
+                   <p className="text-xs text-muted font-semibold">Date d&apos;Allocation</p>
+                   <p className="text-sm font-semibold text-foreground">{dateAllocation}</p>
                  </div>
 
                  <div className="space-y-2">
-                  <p className="text-[11px] text-slate-500 font-semibold uppercase">Détail par Ticket</p>
+                  <p className="text-xs text-muted font-semibold">Détail par Ticket</p>
                   {lines.map((line, index) => {
                     const ticket = ticketTypes.find((t: TicketType) => t.id === line.ticketTypeId);
                     if (!ticket) return null;
                     return (
-                      <div key={index} className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div key={index} className="flex items-center justify-between p-2 bg-surface rounded-xl border border-border">
                         <div>
-                          <p className="text-xs font-bold text-slate-900 dark:text-white">{ticket.nom}</p>
-                          <p className="text-[11px] text-slate-500">{formatCurrencyFCFA(ticket.prix)} / unité</p>
+                          <p className="text-xs font-semibold text-foreground">{ticket.nom}</p>
+                          <p className="text-xs text-muted">{formatCurrencyFCFA(ticket.prix)} / unité</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-extrabold text-slate-900 dark:text-white">{line.quantite || 0}</p>
-                          <p className="text-[10px] text-slate-500">alloué(s)</p>
+                          <p className="text-sm font-semibold text-foreground">{line.quantite || 0}</p>
+                          <p className="text-xs text-muted">alloué(s)</p>
                         </div>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="pt-3 border-t border-border space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Total Tickets</span>
-                    <span className="text-lg font-extrabold text-amber-600">{totalTickets}</span>
+                    <span className="text-xs font-semibold text-muted">Total Tickets</span>
+                    <span className="text-lg font-semibold text-warning-soft-foreground">{totalTickets}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Montant Total</span>
-                    <span className="text-lg font-extrabold text-slate-900 dark:text-white">{formatCurrencyFCFA(totalMontant)}</span>
+                    <span className="text-xs font-semibold text-muted">Montant Total</span>
+                    <span className="text-lg font-semibold text-foreground">{formatCurrencyFCFA(totalMontant)}</span>
                   </div>
                 </div>
               </div>

@@ -39,7 +39,7 @@ function SourceBadge({ s, onReset, resetting }: { s?: Source; onReset: () => voi
           type="button"
           onClick={onReset}
           disabled={resetting}
-          className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline-offset-2 hover:underline disabled:opacity-50"
+          className="text-xs font-semibold text-muted hover:text-foreground underline-offset-2 hover:underline disabled:opacity-50"
         >
           Revenir à Vercel
         </button>
@@ -144,48 +144,48 @@ export function TelegramBotConfigCard() {
 
   if (!state) {
     return (
-      <Card className="py-10 flex justify-center text-slate-400">
+      <Card className="py-10 flex justify-center text-muted">
         <Loader2 className="w-6 h-6 animate-spin" />
       </Card>
     );
   }
 
   return (
-    <Card className="space-y-5">
+    <Card className="space-y-4">
       <div className="flex items-start gap-3">
-        <span className="w-10 h-10 shrink-0 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center">
+        <span className="w-10 h-10 shrink-0 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
           <Bot className="w-5 h-5" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Configuration du bot</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-base font-semibold text-foreground">Configuration du bot</h2>
+          <p className="text-xs text-muted">
             Les valeurs saisies sont chiffrées sur le serveur et ne sont jamais réaffichées. Elles remplacent les variables Vercel.
           </p>
         </div>
       </div>
 
       {/* État actuel */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 grid gap-2 text-sm">
+      <div className="rounded-xl border border-border p-3.5 grid gap-2 text-sm">
         <p className="flex items-center gap-2">
-          <Bot className="w-4 h-4 text-slate-400" />
-          <span className="text-slate-500">Bot :</span>
-          <span className="font-semibold text-slate-900 dark:text-white">{state.bot || 'aucun bot valide'}</span>
+          <Bot className="w-4 h-4 text-muted" />
+          <span className="text-muted">Bot :</span>
+          <span className="font-semibold text-foreground">{state.bot || 'aucun bot valide'}</span>
         </p>
         <p className="flex items-start gap-2">
-          <Link2 className="w-4 h-4 mt-0.5 text-slate-400" />
-          <span className="text-slate-500">Webhook :</span>
-          <span className={cn('font-semibold break-all', state.webhook.connectedHere ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-white')}>
+          <Link2 className="w-4 h-4 mt-0.5 text-muted" />
+          <span className="text-muted">Webhook :</span>
+          <span className={cn('font-semibold break-all', state.webhook.connectedHere ? 'text-success-soft-foreground' : 'text-foreground')}>
             {state.webhook.host ? (state.webhook.connectedHere ? `branché sur ce site (${state.webhook.host})` : state.webhook.host) : 'non branché'}
           </span>
-          {state.webhook.connectedHere && <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" />}
+          {state.webhook.connectedHere && <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-success-soft-foreground" />}
         </p>
-        <p className="text-xs text-slate-500">Environnement : {state.environment}</p>
+        <p className="text-xs text-muted">Environnement : {state.environment}</p>
       </div>
 
       {/* Jeton */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="text-xs sm:text-xs font-semibold text-muted flex items-center gap-1.5">
             <KeyRound className="w-3.5 h-3.5" /> Jeton du bot
           </p>
           <SourceBadge s={src('TELEGRAM_BOT_TOKEN')} onReset={() => reset('token')} resetting={resetting} />
@@ -203,8 +203,8 @@ export function TelegramBotConfigCard() {
               type="button"
               onClick={() => setShowToken((v) => !v)}
               aria-label={showToken ? 'Masquer le jeton' : 'Afficher le jeton'}
-              className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700"
-            >
+              className="w-10 h-10 flex items-center justify-center text-muted hover:text-foreground"
+        >
               {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           }
@@ -214,7 +214,7 @@ export function TelegramBotConfigCard() {
       {/* Secret */}
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="text-xs sm:text-xs font-semibold text-muted flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" /> Secret du webhook
           </p>
           <SourceBadge s={src('TELEGRAM_WEBHOOK_SECRET')} onReset={() => reset('secret')} resetting={resetting} />
@@ -236,10 +236,10 @@ export function TelegramBotConfigCard() {
               className={cn(
                 'min-h-11 px-3 py-2 rounded-xl border text-sm font-medium text-left transition',
                 secretMode === o.value
-                  ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30 text-brand-800 dark:text-brand-200'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                  ? 'bg-accent-soft text-accent'
+                  : 'border-border text-foreground hover:border-border'
               )}
-            >
+        >
               {o.label}
             </button>
           ))}
@@ -253,7 +253,7 @@ export function TelegramBotConfigCard() {
             onChange={(e) => setSecret(e.target.value)}
           />
         )}
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           Mot de passe que Telegram présente au site à chaque message. Le générer suffit : vous n&apos;avez jamais besoin de le voir.
           Le webhook est rebranché automatiquement quand il change.
         </p>
@@ -262,7 +262,7 @@ export function TelegramBotConfigCard() {
       {/* Chat autorisé */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="text-xs sm:text-xs font-semibold text-muted flex items-center gap-1.5">
             <MessageSquare className="w-3.5 h-3.5" /> Chat autorisé
           </p>
           <SourceBadge s={src('TELEGRAM_CHAT_ID')} onReset={() => reset('chat')} resetting={resetting} />
@@ -276,8 +276,8 @@ export function TelegramBotConfigCard() {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 pt-1">
-        <Button icon={Save} onClick={() => save(false)} isLoading={saving} className="w-full sm:w-auto font-semibold">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row pt-1 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
+        <Button icon={Save} onClick={() => save(false)} isLoading={saving} className="w-full sm:w-auto">
           Enregistrer et brancher le webhook
         </Button>
         {state.canConnect && src('TELEGRAM_BOT_TOKEN')?.configured && secretConfigured && (
@@ -287,7 +287,7 @@ export function TelegramBotConfigCard() {
         )}
       </div>
       {!state.canConnect && state.environment !== 'production' && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
+        <p className="text-xs text-warning-soft-foreground">
           Hors production, le webhook ne peut être branché qu&apos;avec un bot de test saisi ici (jamais le bot de production).
         </p>
       )}

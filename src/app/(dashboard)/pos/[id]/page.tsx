@@ -255,8 +255,8 @@ function PosDetailContent() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         Chargement du point de vente...
       </div>
     );
@@ -264,41 +264,37 @@ function PosDetailContent() {
 
   if (!pos) {
     return (
-      <Card className="p-12 text-center space-y-3">
-        <Info className="w-10 h-10 text-slate-400 mx-auto" />
-        <h3 className="text-base font-bold text-slate-900 dark:text-white">Point de vente introuvable</h3>
-        <p className="text-xs text-slate-500">Le point de vente demandé n&apos;existe pas ou a été supprimé.</p>
-        <Link href="/pos">
-          <Button variant="secondary" size="sm">
+      <Card className="text-center space-y-3 py-8">
+        <Info className="w-10 h-10 text-muted mx-auto" />
+        <h3 className="text-base font-semibold text-foreground">Point de vente introuvable</h3>
+        <p className="text-xs text-muted">Le point de vente demandé n&apos;existe pas ou a été supprimé.</p>
+        <Link href="/pos" className={buttonClassName({ variant: 'secondary', size: 'sm' })}>
             Retour aux points de vente
-          </Button>
-        </Link>
+          </Link>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2.5 min-w-0">
-          <Link href="/pos" className="shrink-0">
-            <Button variant="ghost" size="sm" className="gap-1.5 px-2.5">
-              <ArrowLeft className="w-4 h-4" /> <span className="hidden xs:inline">Retour</span>
-            </Button>
+          <Link href="/pos" aria-label="Retour aux points de vente" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'shrink-0'})}>
+            <ArrowLeft className="size-4" /> <span className="hidden xs:inline">Retour</span>
           </Link>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 min-w-0 truncate">
-            <Store className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 shrink-0" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2 min-w-0 truncate">
+            <Store className="w-5 h-5 sm:w-6 sm:h-6 text-muted shrink-0" />
             <span className="truncate">{pos.nom}</span>
           </h1>
         </div>
         <div className="flex items-center gap-2 self-stretch sm:self-auto">
           {isAdmin && (
             <WriteButton
-              variant="outline"
+              variant="danger-soft"
               size="sm"
               onClick={() => setIsResetModalOpen(true)}
-              className="flex-1 sm:flex-initial text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300"
+              className="flex-1 sm:flex-initial"
               title="Vider les données de ce POS"
             >
               <Trash2 className="w-4 h-4 shrink-0" />
@@ -317,8 +313,8 @@ function PosDetailContent() {
             pos.statut === 'actif' && (
               <Link
                 href={`/collections/new?pos=${pos.id}`}
-                className={buttonClassName({ size: 'sm', className: 'flex-1 sm:flex-initial' })}
-              >
+                className={buttonClassName({ size: 'sm', className: 'flex-1 sm:flex-initial'})}
+            >
                 <Receipt className="w-4 h-4 shrink-0" /> <span>Collecter</span>
               </Link>
             )
@@ -344,15 +340,15 @@ function PosDetailContent() {
                 aria-selected={active}
                 onClick={() => selectTab(t.value)}
                 className={cn(
-                  'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition',
+                  'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-xl text-sm font-semibold border transition',
                   active
-                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+                    ? 'bg-foreground text-background border-border'
+                    : 'bg-surface text-muted border-border hover:border-border',
                 )}
-              >
+            >
                 <Icon className="w-4 h-4" /> {t.label}
                 {t.value === 'acces' && posAccount && (
-                  <span className={cn('w-2 h-2 rounded-full', posAccount.is_active === false ? 'bg-slate-400' : 'bg-emerald-500')} />
+                  <span className={cn('w-2 h-2 rounded-full', posAccount.is_active === false ? 'bg-muted' : 'bg-success')} />
                 )}
               </button>
             );
@@ -367,19 +363,19 @@ function PosDetailContent() {
       {(!isAdmin || tab === 'details') && (
       <>
       {/* POS Info Card */}
-      <Card className="p-6 space-y-4">
+      <Card className="space-y-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-blue-900/10 text-blue-900 dark:text-amber-400 border border-blue-900/20">
+            <div className="p-3 rounded-xl bg-accent-soft text-accent">
               <Store className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{pos.nom}</h2>
-              <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+              <h2 className="text-xl font-semibold text-foreground">{pos.nom}</h2>
+              <div className="flex items-center gap-1 text-sm text-muted mt-1">
                 <MapPin className="w-4 h-4" />
                 <span>{pos.adresse || pos.ville}</span>
               </div>
-              <div className="flex items-center gap-1 text-sm text-slate-500 mt-0.5">
+              <div className="flex items-center gap-1 text-sm text-muted mt-0.5">
                 <MapPin className="w-4 h-4" />
                 <span>{pos.ville}</span>
               </div>
@@ -390,34 +386,34 @@ function PosDetailContent() {
           </Badge>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-2">
           <div className="flex items-center gap-2 text-sm">
-            <UserCheck className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-500">Collecteur :</span>
-            <strong className="text-slate-800 dark:text-slate-200">
+            <UserCheck className="w-4 h-4 text-muted" />
+            <span className="text-muted">Collecteur :</span>
+            <strong className="text-foreground">
               {pos.collecteur?.nom || 'Non attribué'}
             </strong>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Clock className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-500">Créé le :</span>
-            <span className="text-slate-800 dark:text-slate-200">{formatDateFR(pos.created_at)}</span>
+            <Clock className="w-4 h-4 text-muted" />
+            <span className="text-muted">Créé le :</span>
+            <span className="text-foreground">{formatDateFR(pos.created_at)}</span>
           </div>
           <div className="flex items-center gap-2 text-sm md:col-span-2">
-            <MapPin className="w-4 h-4 text-amber-500" />
-            <span className="text-slate-500">Espace Wi-Fi :</span>
+            <MapPin className="w-4 h-4 text-warning-soft-foreground" />
+            <span className="text-muted">Espace Wi-Fi :</span>
             {pos.space_id ? (
               isAdmin ? (
-                <Link href="/spaces" className="font-semibold text-amber-600 hover:text-amber-700 hover:underline">
+                <Link href="/spaces" className="font-semibold text-warning-soft-foreground hover:text-warning-soft-foreground hover:underline">
                   {pos.space?.nom || spaces.find((s: WifiSpace) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
                 </Link>
               ) : (
-                <strong className="text-slate-800 dark:text-slate-200">
+                <strong className="text-foreground">
                   {pos.space?.nom || spaces.find((s: WifiSpace) => s.id === pos.space_id)?.nom || 'Espace inconnu'}
                 </strong>
               )
             ) : (
-              <strong className="text-slate-500 italic">Non rattaché à un espace</strong>
+              <strong className="text-muted italic">Non rattaché à un espace</strong>
             )}
           </div>
         </div>
@@ -468,13 +464,13 @@ function PosDetailContent() {
 
       {/* Allocation Summary Table */}
       <Card className="p-0 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Package className="w-5 h-5 text-amber-500" />
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Package className="w-5 h-5 text-warning-soft-foreground" />
             Suivi des Allocations de Tickets
           </h2>
           {allocationSummary.length > 0 && (
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-muted font-medium">
               {allocationSummary.length} {allocationSummary.length > 1 ? 'types' : 'type'}
             </span>
           )}
@@ -482,23 +478,21 @@ function PosDetailContent() {
 
         {allocationSummary.length === 0 ? (
           <div className="p-8 text-center space-y-3">
-            <Package className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune allocation pour ce POS</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <Package className="w-10 h-10 text-muted mx-auto" />
+            <h3 className="text-base font-semibold text-foreground">Aucune allocation pour ce POS</h3>
+            <p className="text-xs text-muted max-w-sm mx-auto">
               Aucun ticket n&apos;a été alloué à ce point de vente.
             </p>
-            <Link href={`/allocations/new?pos=${pos.id}`}>
-              <Button variant="secondary" size="sm" className="gap-2 font-bold">
+            <Link href={`/allocations/new?pos=${pos.id}`} className={buttonClassName({ variant: 'secondary', size: 'sm'})}>
                 <Package className="w-4 h-4" /> Allouer des Tickets
-              </Button>
-            </Link>
+              </Link>
           </div>
         ) : (
           <>
             {/* Desktop Table View (>= md) */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                <thead className="bg-default text-muted font-semibold">
                   <tr>
                     <th className="px-4 py-3">Type de Ticket</th>
                     <th className="px-4 py-3 text-right">Alloués</th>
@@ -508,54 +502,54 @@ function PosDetailContent() {
                     <th className="px-4 py-3 text-right">Écarts</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                <tbody className="divide-y divide-separator font-medium">
                   {allocationSummary.map((s: AllocationSummary) => (
-                    <tr key={s.ticketType.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <tr key={s.ticketType.id} className="hover:bg-surface-secondary transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-emerald-600 dark:text-emerald-400">
+                          <span className="text-success-soft-foreground">
                             <Ticket className="w-4 h-4" />
                           </span>
-                          <span className="font-semibold text-slate-900 dark:text-white">{s.ticketType.nom}</span>
+                          <span className="font-semibold text-foreground">{s.ticketType.nom}</span>
                         </div>
-                        <div className="text-xs text-slate-500 mt-0.5">
+                        <div className="text-xs text-muted mt-0.5">
                           {formatCurrencyFCFA(s.ticketType.prix)} / unité
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{s.alloue}</td>
-                      <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{s.vendu}</td>
+                      <td className="px-4 py-3 text-right text-foreground">{s.alloue}</td>
+                      <td className="px-4 py-3 text-right text-foreground">{s.vendu}</td>
                       <td className="px-4 py-3 text-right">
-                        <span className={`${s.restant > 0 ? 'text-emerald-600' : s.restant < 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                        <span className={`${s.restant > 0 ? 'text-success-soft-foreground' : s.restant < 0 ? 'text-danger' : 'text-muted'}`}>
                           {s.restant > 0 ? s.restant : '0'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
+                      <td className="px-4 py-3 text-right font-semibold text-foreground">
                         {formatCurrencyFCFA(s.ca)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {s.ecarts === 0 ? (
-                          <span className="text-emerald-600 flex items-center justify-end gap-1">
+                          <span className="text-success-soft-foreground flex items-center justify-end gap-1">
                             <Info className="w-3.5 h-3.5" /> Conforme
                           </span>
                         ) : (
-                          <span className={s.ecarts < 0 ? 'text-red-600' : 'text-emerald-600'}>
+                          <span className={s.ecarts < 0 ? 'text-danger' : 'text-success-soft-foreground'}>
                             {formatCurrencyFCFA(s.ecarts)}
                           </span>
                         )}
                       </td>
                     </tr>
                   ))}
-                  <tr className="border-t-2 border-slate-200 dark:border-slate-700 font-bold">
-                    <td className="px-4 py-3 text-slate-900 dark:text-white">Totaux</td>
-                    <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{totalAlloue}</td>
-                    <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{totalVendu}</td>
-                    <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{totalRestant}</td>
-                    <td className="px-4 py-3 text-right text-amber-600">{formatCurrencyFCFA(totalCA)}</td>
+                  <tr className="border-t-2 border-border font-semibold">
+                    <td className="px-4 py-3 text-foreground">Totaux</td>
+                    <td className="px-4 py-3 text-right text-foreground">{totalAlloue}</td>
+                    <td className="px-4 py-3 text-right text-foreground">{totalVendu}</td>
+                    <td className="px-4 py-3 text-right text-foreground">{totalRestant}</td>
+                    <td className="px-4 py-3 text-right text-warning-soft-foreground">{formatCurrencyFCFA(totalCA)}</td>
                     <td className="px-4 py-3 text-right">
                       {totalEcarts === 0 ? (
-                        <span className="text-emerald-600">Conforme</span>
+                        <span className="text-success-soft-foreground">Conforme</span>
                       ) : (
-                        <span className={totalEcarts < 0 ? 'text-red-600' : 'text-emerald-600'}>
+                        <span className={totalEcarts < 0 ? 'text-danger' : 'text-success-soft-foreground'}>
                           {formatCurrencyFCFA(totalEcarts)}
                         </span>
                       )}
@@ -570,30 +564,30 @@ function PosDetailContent() {
               {allocationSummary.map((s: AllocationSummary) => (
                 <div
                   key={`mobile-summary-${s.ticketType.id}`}
-                  className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 space-y-3 shadow-xs"
-                >
+                  className="p-3.5 rounded-2xl bg-surface-secondary/80 space-y-3 shadow-xs"
+            >
                   {/* Header: Ticket Name + Price + Conforme badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                      <div className="w-9 h-9 rounded-lg bg-warning-soft text-warning-soft-foreground flex items-center justify-center shrink-0">
                         <Ticket className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                        <h4 className="font-semibold text-sm text-foreground truncate">
                           {s.ticketType.nom}
                         </h4>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-xs text-muted">
                           {formatCurrencyFCFA(s.ticketType.prix)} / ticket
                         </span>
                       </div>
                     </div>
                     <div className="shrink-0">
                       {s.ecarts === 0 ? (
-                        <Badge variant="success" className="text-[10px] px-2 py-0.5">
+                        <Badge variant="success" className="text-xs px-2 py-0.5">
                           ✓ Conforme
                         </Badge>
                       ) : (
-                        <Badge variant={s.ecarts < 0 ? 'danger' : 'success'} className="text-[10px] px-2 py-0.5">
+                        <Badge variant={s.ecarts < 0 ? 'danger' : 'success'} className="text-xs px-2 py-0.5">
                           {formatCurrencyFCFA(s.ecarts)}
                         </Badge>
                       )}
@@ -601,27 +595,27 @@ function PosDetailContent() {
                   </div>
 
                   {/* 3-column Counters: Alloués / Vendus / Restants */}
-                  <div className="grid grid-cols-3 gap-1.5 p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-center">
+                  <div className="grid grid-cols-3 gap-1.5 p-2 rounded-xl bg-surface border border-border text-center">
                     <div className="py-1">
-                      <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Alloués</span>
-                      <span className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5 block">{s.alloue}</span>
+                      <span className="block text-xs font-semibold text-muted">Alloués</span>
+                      <span className="text-sm font-semibold text-foreground mt-0.5 block">{s.alloue}</span>
                     </div>
-                    <div className="py-1 border-x border-slate-200 dark:border-slate-700/80">
-                      <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vendus</span>
-                      <span className="text-sm font-extrabold text-blue-600 dark:text-blue-400 mt-0.5 block">{s.vendu}</span>
+                    <div className="py-1 border-x border-border">
+                      <span className="block text-xs font-semibold text-muted">Vendus</span>
+                      <span className="text-sm font-semibold text-accent mt-0.5 block">{s.vendu}</span>
                     </div>
                     <div className="py-1">
-                      <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Restants</span>
-                      <span className={`text-sm font-extrabold mt-0.5 block ${s.restant > 0 ? 'text-emerald-600 dark:text-emerald-400' : s.restant < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`}>
+                      <span className="block text-xs font-semibold text-muted">Restants</span>
+                      <span className={`text-sm font-semibold mt-0.5 block ${s.restant > 0 ? 'text-success-soft-foreground ' : s.restant < 0 ? 'text-danger ' : 'text-muted'}`}>
                         {s.restant > 0 ? s.restant : '0'}
                       </span>
                     </div>
                   </div>
 
                   {/* Footer: CA */}
-                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
-                    <span className="text-slate-500 font-medium">CA théorique</span>
-                    <span className="font-extrabold text-amber-600 dark:text-amber-400 text-sm">
+                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-border">
+                    <span className="text-muted font-medium">CA théorique</span>
+                    <span className="font-semibold text-warning-soft-foreground text-sm">
                       {formatCurrencyFCFA(s.ca)}
                     </span>
                   </div>
@@ -629,27 +623,27 @@ function PosDetailContent() {
               ))}
 
               {/* Totaux Mobile Card */}
-              <div className="p-3.5 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/60 space-y-2.5">
+              <div className="p-3.5 rounded-xl bg-warning-soft space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                  <span className="text-xs font-semibold text-warning-soft-foreground">
                     Totaux consolidés
                   </span>
-                  <span className="text-sm font-extrabold text-amber-700 dark:text-amber-400">
+                  <span className="text-sm font-semibold text-warning-soft-foreground">
                     {formatCurrencyFCFA(totalCA)}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1 border-t border-amber-200 dark:border-amber-800/50">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1 border-t border-warning/30">
                   <div>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Total Alloué</span>
-                    <strong className="text-slate-900 dark:text-white font-extrabold text-sm">{totalAlloue}</strong>
+                    <span className="text-xs text-muted block font-medium">Total Alloué</span>
+                    <strong className="text-foreground font-semibold text-sm">{totalAlloue}</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Total Vendu</span>
-                    <strong className="text-blue-600 dark:text-blue-400 font-extrabold text-sm">{totalVendu}</strong>
+                    <span className="text-xs text-muted block font-medium">Total Vendu</span>
+                    <strong className="text-accent font-semibold text-sm">{totalVendu}</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Total Restant</span>
-                    <strong className="text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">{totalRestant}</strong>
+                    <span className="text-xs text-muted block font-medium">Total Restant</span>
+                    <strong className="text-success-soft-foreground font-semibold text-sm">{totalRestant}</strong>
                   </div>
                 </div>
               </div>
@@ -660,13 +654,13 @@ function PosDetailContent() {
 
       {/* Allocation History */}
       <Card className="p-0 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Clock className="w-5 h-5 text-amber-500" />
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Clock className="w-5 h-5 text-warning-soft-foreground" />
             Historique des Allocations
           </h2>
           {allocations.length > 0 && (
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-muted font-medium">
               {allocations.length} {allocations.length > 1 ? 'entrées' : 'entrée'}
             </span>
           )}
@@ -674,9 +668,9 @@ function PosDetailContent() {
 
         {allocations.length === 0 ? (
           <div className="p-8 text-center space-y-3">
-            <Clock className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune allocation enregistrée</h3>
-            <p className="text-xs text-slate-500">
+            <Clock className="w-10 h-10 text-muted mx-auto" />
+            <h3 className="text-base font-semibold text-foreground">Aucune allocation enregistrée</h3>
+            <p className="text-xs text-muted">
               Aucune allocation de tickets n&apos;a été effectuée pour ce point de vente.
             </p>
           </div>
@@ -685,7 +679,7 @@ function PosDetailContent() {
             {/* Desktop Table View (>= md) */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                <thead className="bg-default text-muted font-semibold">
                   <tr>
                     <th className="px-4 py-3">Date</th>
                     <th className="px-4 py-3">Type de Ticket</th>
@@ -695,32 +689,32 @@ function PosDetailContent() {
                     <th className="px-4 py-3">Notes</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                <tbody className="divide-y divide-separator font-medium">
                   {allocations.map((a: TicketAllocation) => (
-                    <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <tr key={a.id} className="hover:bg-surface-secondary transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <Clock className="w-3.5 h-3.5 text-muted" />
                           {formatDateFR(a.created_at)}
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <Ticket className="w-3.5 h-3.5 text-emerald-600" />
+                          <Ticket className="w-3.5 h-3.5 text-success-soft-foreground" />
                           {getTicketTypeName(a.ticket_type_id)}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-900 dark:text-white">{a.quantite}</td>
-                      <td className="px-4 py-3 text-right text-slate-900 dark:text-white">
+                      <td className="px-4 py-3 text-right text-foreground">{a.quantite}</td>
+                      <td className="px-4 py-3 text-right text-foreground">
                         {formatCurrencyFCFA(a.quantite * getTicketTypePrix(a.ticket_type_id))}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <User className="w-3.5 h-3.5 text-slate-400" />
+                          <User className="w-3.5 h-3.5 text-muted" />
                           {getAllocatorName(a.alloue_par)}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{a.notes || '—'}</td>
+                      <td className="px-4 py-3 text-muted">{a.notes || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -738,27 +732,27 @@ function PosDetailContent() {
                 return (
                   <div
                     key={`mobile-alloc-${a.id}`}
-                    className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs"
-                  >
+                    className="p-3.5 rounded-2xl bg-surface-secondary/80 space-y-2.5 shadow-xs"
+            >
                     {/* Top: Ticket Name + Type Badge */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                             isExchangeReturn
-                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                              ? 'bg-warning-soft text-warning-soft-foreground '
                               : isExchangeReceive
-                              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              ? 'bg-accent-soft text-accent '
+                              : 'bg-success-soft text-success-soft-foreground '
                           }`}
-                        >
+            >
                           <Ticket className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                          <h4 className="font-semibold text-sm text-foreground truncate">
                             {getTicketTypeName(a.ticket_type_id)}
                           </h4>
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-0.5">
+                          <div className="flex items-center gap-1 text-xs text-muted mt-0.5">
                             <Clock className="w-3 h-3 shrink-0" />
                             <span>{formatDateFR(a.created_at)}</span>
                           </div>
@@ -766,45 +760,45 @@ function PosDetailContent() {
                       </div>
                       <Badge
                         variant={isExchangeReturn ? 'warning' : isExchangeReceive ? 'info' : 'success'}
-                        className="text-[10px] px-2 py-0.5 shrink-0"
-                      >
+                        className="text-xs px-2 py-0.5 shrink-0"
+            >
                         {isExchangeReturn ? 'Retour' : isExchangeReceive ? 'Échange' : 'Allocation'}
                       </Badge>
                     </div>
 
                     {/* Stock & Value Card */}
-                    <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80">
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-surface border border-border">
                       <div>
-                        <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">
+                        <span className="text-xs font-semibold text-muted block">
                           Quantité
                         </span>
-                        <span className={`text-sm font-extrabold ${isExchangeReturn ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>
+                        <span className={`text-sm font-semibold ${isExchangeReturn ? 'text-warning-soft-foreground ' : 'text-foreground '}`}>
                           {isExchangeReturn ? `-${a.quantite}` : `+${a.quantite}`}{' '}
-                          <span className="text-xs font-normal text-slate-500">tickets</span>
+                          <span className="text-xs font-normal text-muted">tickets</span>
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">
+                        <span className="text-xs font-semibold text-muted block">
                           Valeur Stock
                         </span>
-                        <span className="text-sm font-extrabold text-amber-600 dark:text-amber-400">
+                        <span className="text-sm font-semibold text-warning-soft-foreground">
                           {formatCurrencyFCFA(totalAmount)}
                         </span>
                       </div>
                     </div>
 
                     {/* Alloué par & Notes */}
-                    <div className="space-y-1 text-xs pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
-                      <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                    <div className="space-y-1 text-xs pt-1.5 border-t border-border">
+                      <div className="flex items-center justify-between text-muted text-xs">
                         <span className="flex items-center gap-1">
-                          <User className="w-3 h-3 text-slate-400" /> Alloué par :
+                          <User className="w-3 h-3 text-muted" /> Alloué par :
                         </span>
-                        <strong className="text-slate-700 dark:text-slate-300 font-semibold">
+                        <strong className="text-foreground font-semibold">
                           {getAllocatorName(a.alloue_par)}
                         </strong>
                       </div>
                       {a.notes && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-2 py-1 rounded-lg italic mt-1">
+                        <p className="text-xs text-muted bg-default px-2 py-1 rounded-xl italic mt-1">
                           &ldquo;{a.notes}&rdquo;
                         </p>
                       )}
@@ -819,13 +813,13 @@ function PosDetailContent() {
 
       {/* Collection History */}
       <Card className="p-0 overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-blue-600" />
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-accent" />
             Historique des Collectes
           </h2>
           {collections.length > 0 && (
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-muted font-medium">
               {collections.length} {collections.length > 1 ? 'collectes' : 'collecte'}
             </span>
           )}
@@ -833,9 +827,9 @@ function PosDetailContent() {
 
         {collections.length === 0 ? (
           <div className="p-8 text-center space-y-3">
-            <Receipt className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune collecte enregistrée</h3>
-            <p className="text-xs text-slate-500">
+            <Receipt className="w-10 h-10 text-muted mx-auto" />
+            <h3 className="text-base font-semibold text-foreground">Aucune collecte enregistrée</h3>
+            <p className="text-xs text-muted">
               Aucune collecte de caisse n&apos;a été effectuée pour ce point de vente.
             </p>
           </div>
@@ -844,7 +838,7 @@ function PosDetailContent() {
             {/* Desktop Table View (>= md) */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                <thead className="bg-default text-muted font-semibold">
                   <tr>
                     <th className="px-4 py-3">Date</th>
                     <th className="px-4 py-3">Montant Attendu</th>
@@ -853,21 +847,21 @@ function PosDetailContent() {
                     <th className="px-4 py-3">Statut</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                <tbody className="divide-y divide-separator font-medium">
                   {collections.map((c: Collection) => (
-                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                    <tr key={c.id} className="hover:bg-surface-secondary transition">
+                      <td className="px-4 py-3 text-muted">
                         {formatDateFR(c.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatCurrencyFCFA(Number(c.montant_attendu))}</td>
-                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
+                      <td className="px-4 py-3 text-muted">{formatCurrencyFCFA(Number(c.montant_attendu))}</td>
+                      <td className="px-4 py-3 font-semibold text-foreground">
                         {formatCurrencyFCFA(Number(c.montant_collecte))}
                       </td>
                       <td className="px-4 py-3">
                         {Number(c.difference) === 0 ? (
-                          <span className="text-emerald-600 font-bold flex items-center gap-1">Conforme</span>
+                          <span className="text-success-soft-foreground font-semibold flex items-center gap-1">Conforme</span>
                         ) : (
-                          <span className={Number(c.difference) < 0 ? 'text-red-600' : 'text-emerald-600'}>
+                          <span className={Number(c.difference) < 0 ? 'text-danger' : 'text-success-soft-foreground'}>
                             {formatCurrencyFCFA(Number(c.difference))}
                           </span>
                         )}
@@ -888,39 +882,39 @@ function PosDetailContent() {
               {collections.map((c: Collection) => (
                 <div
                   key={`mobile-col-${c.id}`}
-                  className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs"
-                >
+                  className="p-3.5 rounded-2xl bg-surface-secondary/80 space-y-2.5 shadow-xs"
+            >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDateFR(c.created_at)}</span>
+                    <div className="flex items-center gap-1.5 text-xs text-muted">
+                      <Clock className="w-3.5 h-3.5 text-muted" />
+                      <span className="font-semibold text-foreground">{formatDateFR(c.created_at)}</span>
                     </div>
-                    <Badge variant={c.statut === 'validee' ? 'success' : c.statut === 'annulee' ? 'danger' : 'warning'} className="text-[10px] px-2 py-0.5">
+                    <Badge variant={c.statut === 'validee' ? 'success' : c.statut === 'annulee' ? 'danger' : 'warning'} className="text-xs px-2 py-0.5">
                       {c.statut === 'validee' ? 'Validée' : c.statut === 'annulee' ? 'Annulée' : 'Brouillon'}
                     </Badge>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80">
+                  <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-surface border border-border">
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">Attendu</span>
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                      <span className="text-xs font-semibold text-muted block">Attendu</span>
+                      <span className="text-xs font-semibold text-muted">
                         {formatCurrencyFCFA(Number(c.montant_attendu))}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">Encaissé</span>
-                      <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                      <span className="text-xs font-semibold text-muted block">Encaissé</span>
+                      <span className="text-sm font-semibold text-success-soft-foreground">
                         {formatCurrencyFCFA(Number(c.montant_collecte))}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
-                    <span className="text-slate-500 text-[11px]">Écart de caisse</span>
+                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-border">
+                    <span className="text-muted text-xs">Écart de caisse</span>
                     {Number(c.difference) === 0 ? (
-                      <span className="text-emerald-600 font-bold text-xs flex items-center gap-1">✓ Conforme</span>
+                      <span className="text-success-soft-foreground font-semibold text-xs flex items-center gap-1">✓ Conforme</span>
                     ) : (
-                      <span className={`font-bold text-xs ${Number(c.difference) < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      <span className={`font-semibold text-xs ${Number(c.difference) < 0 ? 'text-danger' : 'text-success-soft-foreground'}`}>
                         {formatCurrencyFCFA(Number(c.difference))}
                       </span>
                     )}
@@ -933,33 +927,33 @@ function PosDetailContent() {
       </Card>
 
       {/* Financial Summary */}
-      <Card className="p-6">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
-          <BarChart3 className="w-5 h-5 text-emerald-600" />
+      <Card>
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
+          <BarChart3 className="w-5 h-5 text-success-soft-foreground" />
           Synthèse Financière
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-center">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Montant Attendu</p>
-            <p className="text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          <div className="p-4 bg-surface-secondary rounded-xl text-center">
+            <p className="text-xs font-semibold text-muted">Montant Attendu</p>
+            <p className="text-xl font-semibold text-foreground mt-1">
               {formatCurrencyFCFA(totalExpected)}
             </p>
           </div>
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-center">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Montant Encaissé</p>
-            <p className="text-xl font-extrabold text-emerald-600 mt-1">
+          <div className="p-4 bg-surface-secondary rounded-xl text-center">
+            <p className="text-xs font-semibold text-muted">Montant Encaissé</p>
+            <p className="text-xl font-semibold text-success-soft-foreground mt-1">
               {formatCurrencyFCFA(totalCollected)}
             </p>
           </div>
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-center">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Écart Global</p>
-            <p className={`text-xl font-extrabold mt-1 ${
+          <div className="p-4 bg-surface-secondary rounded-xl text-center">
+            <p className="text-xs font-semibold text-muted">Écart Global</p>
+            <p className={`text-xl font-semibold mt-1 ${
               totalDifference === 0
-                ? 'text-emerald-600'
+                ? 'text-success-soft-foreground'
                 : totalDifference < 0
-                ? 'text-red-600'
-                : 'text-emerald-600'
+                ? 'text-danger'
+                : 'text-success-soft-foreground'
             }`}>
               {formatCurrencyFCFA(totalDifference)}
             </p>

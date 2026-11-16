@@ -21,9 +21,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
 import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
@@ -194,39 +195,32 @@ export default function PlatformSubscriptionsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <KeyRound className="w-6 h-6 text-amber-500" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <KeyRound className="size-6 text-muted" />
             Abonnements
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted mt-1">
             La licence en cours de chaque client : essais, renouvellements à prévoir et licences expirées.
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/platform/subscriptions/expiring">
-            <Button variant="outline" size="sm" icon={History}>
+          <Link href="/platform/subscriptions/expiring" className={buttonClassName({ variant: 'outline', size: 'sm' })}>
+            <History className="size-4 shrink-0" aria-hidden />
               Expirations
-            </Button>
-          </Link>
-          <Link href="/platform/plans">
-            <Button variant="secondary" size="sm" icon={Zap}>
+            </Link>
+          <Link href="/platform/plans" className={buttonClassName({ variant: 'secondary', size: 'sm' })}>
+            <Zap className="size-4 shrink-0" aria-hidden />
               Forfaits
-            </Button>
-          </Link>
+            </Link>
         </div>
       </div>
 
       {/* Chiffres clés */}
-      <div
-        className={cn(
-          'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 transition-opacity',
-          loading && 'opacity-50'
-        )}
-      >
+      <KpiGrid cols={{ base: 2, sm: 3, xl: 5 }} className={cn('transition-opacity', loading && 'opacity-50')}>
         <StatTile
           label="Licences payantes"
           value={kpis?.paid_active ?? '—'}
@@ -264,22 +258,22 @@ export default function PlatformSubscriptionsPage() {
           hint="Licences en cours, par mois"
           className="col-span-2 md:col-span-1"
         />
-      </div>
+      </KpiGrid>
 
       {/* Recherche et filtres */}
-      <Card className="p-4 space-y-3">
+      <Card className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="search"
               placeholder="Rechercher un client ou un forfait…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="input input--primary w-full pl-10 pr-3"
             />
           </div>
-          <label className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-xs font-medium text-muted cursor-pointer select-none">
             <input
               type="checkbox"
               checked={history}
@@ -299,26 +293,26 @@ export default function PlatformSubscriptionsPage() {
               type="button"
               onClick={() => setFilter(f.value)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap flex items-center gap-1.5',
+                'px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap flex items-center gap-1.5',
                 filter === f.value
-                  ? 'bg-amber-500 text-slate-950 font-bold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500/10'
+                  ? 'bg-accent text-accent-foreground font-medium'
+                  : 'bg-default text-muted hover:bg-default-hover hover:text-foreground'
               )}
             >
               {f.label}
               <span
                 className={cn(
-                  'min-w-5 px-1 rounded-md text-[10px] tabular-nums',
-                  filter === f.value ? 'bg-slate-950/15' : 'bg-slate-200 dark:bg-slate-700'
+                  'min-w-5 px-1 rounded-full text-xs tabular-nums',
+                  filter === f.value ? 'bg-foreground/15' : 'bg-default'
                 )}
-              >
+            >
                 {counts[f.value] || 0}
               </span>
             </button>
           ))}
         </div>
         {history && (
-          <p className="text-[11px] text-slate-500">
+          <p className="text-xs text-muted">
             Historique complet : une ligne par période de licence. Les périodes remplacées par un renouvellement
             apparaissent comme expirées.
           </p>
@@ -327,21 +321,21 @@ export default function PlatformSubscriptionsPage() {
 
       {/* Liste */}
       {loading && rows.length === 0 ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Chargement des abonnements…</span>
         </div>
       ) : visible.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <Receipt className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun abonnement</h3>
-          <p className="text-xs text-slate-500">Aucun abonnement ne correspond à ces critères.</p>
+        <Card className="text-center space-y-3 py-8">
+          <Receipt className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucun abonnement</h3>
+          <p className="text-xs text-muted">Aucun abonnement ne correspond à ces critères.</p>
         </Card>
       ) : (
         <Card className={cn('p-0 overflow-hidden transition-opacity', loading && 'opacity-50')}>
           <ResponsiveTable>
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-[11px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-xs text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Client</th>
                   <th className="px-4 py-3">Forfait</th>
@@ -350,7 +344,7 @@ export default function PlatformSubscriptionsPage() {
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-separator">
                 {visible.map((s) => {
                   const cfg = STATE_CONFIG[s.state];
                   const live = s.state === 'active' || s.state === 'trial' || s.state === 'expiring';
@@ -362,21 +356,21 @@ export default function PlatformSubscriptionsPage() {
                     (s.state === 'suspended' || s.state === 'cancelled') && s.days_left !== null && s.days_left > 0;
                   const busy = busyId === s.id;
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <tr key={s.id} className="hover:bg-surface-secondary transition">
                       <td className="px-4 py-3">
                         <Link
                           href={`/platform/clients/${s.organization_id}`}
-                          className="font-semibold text-slate-900 dark:text-white hover:text-amber-600"
-                        >
+                          className="font-semibold text-foreground hover:text-warning-soft-foreground"
+            >
                           {s.organization_name}
                         </Link>
                         {s.organization_status === 'suspended' && (
-                          <span className="block text-[11px] text-red-600 dark:text-red-400">Espace suspendu</span>
+                          <span className="block text-xs text-danger">Espace suspendu</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-slate-800 dark:text-slate-200">{s.plan_name || '—'}</span>
-                        <span className="block text-[11px] text-slate-500">
+                        <span className="font-medium text-foreground">{s.plan_name || '—'}</span>
+                        <span className="block text-xs text-muted">
                           {s.is_trial
                             ? 'Gratuit'
                             : s.plan_price
@@ -386,33 +380,33 @@ export default function PlatformSubscriptionsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
-                          <Badge variant={cfg.color} className="text-[11px]">
+                          <Badge variant={cfg.color} className="text-xs">
                             {cfg.label}
                           </Badge>
                           {s.cancel_at_period_end && live && (
-                            <Badge variant="warning" className="text-[11px]">
+                            <Badge variant="warning" className="text-xs">
                               Non renouvelé
                             </Badge>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                         <div className="mb-0.5">
                           {live && s.days_left !== null ? (
                             <span
                               className={cn(
-                                'text-xs font-bold tabular-nums',
+                                'text-xs font-semibold tabular-nums',
                                 s.days_left <= 3
-                                  ? 'text-red-600 dark:text-red-400'
+                                  ? 'text-danger'
                                   : s.days_left <= EXPIRING_DAYS
-                                    ? 'text-amber-600 dark:text-amber-400'
-                                    : 'text-slate-900 dark:text-white'
+                                    ? 'text-warning-soft-foreground'
+                                    : 'text-foreground'
                               )}
-                            >
+            >
                               {s.days_left} jour{s.days_left > 1 ? 's' : ''} restant{s.days_left > 1 ? 's' : ''}
                             </span>
                           ) : s.state === 'expired' && s.days_left !== null ? (
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-muted">
                               expiré depuis {-s.days_left} jour{-s.days_left > 1 ? 's' : ''}
                             </span>
                           ) : null}
@@ -420,15 +414,15 @@ export default function PlatformSubscriptionsPage() {
                         {s.start_date ? formatDateOnlyFR(s.start_date) : '—'} →{' '}
                         {s.end_date ? formatDateOnlyFR(s.end_date) : 'sans fin'}
                         {progress !== null && (
-                          <div className="mt-1.5 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                          <div className="mt-1.5 h-1.5 w-32 rounded-full bg-default overflow-hidden">
                             <div
                               className={cn(
                                 'h-full rounded-full',
                                 s.state === 'expiring'
-                                  ? 'bg-amber-500'
+                                  ? 'bg-warning'
                                   : s.state === 'trial'
-                                    ? 'bg-blue-500'
-                                    : 'bg-emerald-500'
+                                    ? 'bg-accent'
+                                    : 'bg-success'
                               )}
                               style={{ width: `${progress}%` }}
                             />
@@ -440,35 +434,35 @@ export default function PlatformSubscriptionsPage() {
                           <Button
                             size="sm"
                             variant={live && s.state !== 'expiring' ? 'outline' : 'primary'}
-                            className="text-xs h-8 whitespace-nowrap"
+                            className="whitespace-nowrap"
                             onClick={() => setLicenseFor(s)}
                             disabled={busy}
                             icon={KeyRound}
-                          >
+            >
                             {live ? 'Prolonger' : 'Activer un forfait'}
                           </Button>
                           {canReactivate && (
                             <IconAction title="Réactiver" onClick={() => runAction(s, 'reactivate')} busy={busy}>
-                              <PlayCircle className="w-4 h-4 text-emerald-600" />
+                              <PlayCircle className="w-4 h-4 text-success-soft-foreground" />
                             </IconAction>
                           )}
                           {live && (
                             <IconAction title="Suspendre" onClick={() => runAction(s, 'suspend')} busy={busy}>
-                              <PauseCircle className="w-4 h-4 text-amber-600" />
+                              <PauseCircle className="w-4 h-4 text-warning-soft-foreground" />
                             </IconAction>
                           )}
                           {live && (
                             <IconAction title="Annuler l'abonnement" onClick={() => runAction(s, 'cancel')} busy={busy}>
-                              <Ban className="w-4 h-4 text-red-600" />
+                              <Ban className="w-4 h-4 text-danger" />
                             </IconAction>
                           )}
                           <Link
                             href={`/platform/clients/${s.organization_id}`}
                             title="Voir le client"
                             aria-label="Voir le client"
-                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-                          >
-                            <ExternalLink className="w-4 h-4 text-slate-500" />
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-border hover:bg-default"
+            >
+                            <ExternalLink className="w-4 h-4 text-muted" />
                           </Link>
                         </div>
                       </td>
@@ -517,9 +511,9 @@ function IconAction({
       aria-label={title}
       onClick={onClick}
       disabled={busy}
-      className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
-    >
-      {busy ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : children}
+      className="w-8 h-8 inline-flex items-center justify-center rounded-xl border border-border hover:bg-default disabled:opacity-50"
+            >
+      {busy ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : children}
     </button>
   );
 }

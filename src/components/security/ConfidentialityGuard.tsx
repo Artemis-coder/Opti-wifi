@@ -133,9 +133,9 @@ export function ConfidentialityGuard() {
       data-confidential-overlay
       className="fixed inset-0 z-[100] bg-black flex-col items-center justify-center gap-3 text-center p-6"
     >
-      <ShieldCheck className="w-10 h-10 text-slate-600" />
-      <p className="font-bold text-slate-400">Contenu confidentiel</p>
-      <p className="text-sm text-slate-600 max-w-xs">
+      <ShieldCheck className="w-10 h-10 text-muted" />
+      <p className="font-semibold text-muted">Contenu confidentiel</p>
+      <p className="text-sm text-muted max-w-xs">
         Cliquez dans la fenêtre pour continuer. La reproduction de l’interface et des données est interdite.
       </p>
     </div>

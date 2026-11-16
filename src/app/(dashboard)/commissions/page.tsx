@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Award, CalendarHeart, Coins, Loader2, Percent, Receipt } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatTile } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { cn } from '@/lib/utils/cn';
 import { formatAmountShort, formatDateOnlyFR, formatNumber } from '@/lib/utils/format';
 import type { CommissionPeriod, PosAccountCommissions } from '@/lib/pos-account-commissions';
@@ -46,13 +47,13 @@ export default function CommissionsPage() {
   const k = data?.kpis;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto pb-8">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
           <span>Mes commissions</span>
         </h1>
-        <p className="text-xs text-slate-500 mt-0.5">Les commissions reçues à chaque collecte faite dans votre point de vente.</p>
+        <p className="text-xs text-muted mt-0.5">Les commissions reçues à chaque collecte faite dans votre point de vente.</p>
       </div>
 
       {/* Période */}
@@ -64,10 +65,10 @@ export default function CommissionsPage() {
             onClick={() => setPeriod(p.value)}
             aria-pressed={period === p.value}
             className={cn(
-              'shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold border transition',
+              'shrink-0 h-9 px-3.5 rounded-xl text-xs font-semibold border transition',
               period === p.value
-                ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+                ? 'bg-foreground text-background border-border'
+                : 'bg-surface text-muted border-border hover:border-border',
             )}
           >
             {p.label}
@@ -76,7 +77,7 @@ export default function CommissionsPage() {
       </div>
 
       {/* Chiffres clés de la période */}
-      <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-opacity', loading && 'opacity-60')}>
+      <KpiGrid cols={{ base: 2, lg: 4 }} className={cn('transition-opacity', loading && 'opacity-60')}>
         <StatTile
           label="Total des commissions"
           value={money(k?.total ?? 0)}
@@ -95,22 +96,22 @@ export default function CommissionsPage() {
         />
         <StatTile
           label="Mon mois de bonheur"
-          value={k?.best_month ? <span className="inline-block first-letter:uppercase">{monthLabel(k.best_month.month)}</span> : '—'}
+          value={k?.best_month ? <span className="inline-block first-letter:">{monthLabel(k.best_month.month)}</span> : '—'}
           icon={CalendarHeart}
           accent="purple"
           hint={k?.best_month ? `${money(k.best_month.total)} de commissions` : 'Le mois où vous avez gagné le plus'}
         />
-      </div>
+      </KpiGrid>
 
       {loading && !data ? (
-        <div className="py-16 flex justify-center text-slate-400">
+        <div className="py-10 flex justify-center text-muted">
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       ) : !data || data.items.length === 0 ? (
-        <Card className="p-10 text-center space-y-2">
-          <Coins className="w-9 h-9 mx-auto text-slate-300 dark:text-slate-600" />
-          <p className="font-semibold text-slate-800 dark:text-slate-100">Aucune commission sur cette période</p>
-          <p className="text-sm text-slate-500">Vos commissions apparaîtront ici après chaque collecte.</p>
+        <Card className="text-center space-y-2 py-8">
+          <Coins className="w-9 h-9 mx-auto text-muted" />
+          <p className="font-semibold text-foreground">Aucune commission sur cette période</p>
+          <p className="text-sm text-muted">Vos commissions apparaîtront ici après chaque collecte.</p>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -119,37 +120,37 @@ export default function CommissionsPage() {
 
           {/* Toutes les commissions de la période */}
           <Card className="p-0 overflow-hidden">
-            <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Toutes mes commissions</h2>
-              <span className="text-xs text-slate-500">{formatNumber(data.items.length)}</span>
+            <div className="px-4 sm:px-5 py-3.5 border-b border-separator flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Toutes mes commissions</h2>
+              <span className="text-xs text-muted">{formatNumber(data.items.length)}</span>
             </div>
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            <ul className="divide-y divide-separator">
               {data.items.map((c) => {
                 const isTop = k?.highest?.collection_id === c.collection_id;
                 return (
                   <li key={c.collection_id}>
                     <Link
                       href={`/collections/${c.collection_id}`}
-                      className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-surface-secondary"
                     >
-                      <span className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-emerald-600 bg-emerald-500/10">
+                      <span className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-success-soft-foreground bg-success-soft">
                         <Receipt className="w-4 h-4" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                           {formatDateOnlyFR(c.date)}
                           {isTop && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning-soft-foreground">
                               <Award className="w-3 h-3" /> La plus élevée
                             </span>
                           )}
                         </span>
-                        <span className="block text-xs text-slate-500 truncate">
+                        <span className="block text-xs text-muted truncate">
                           Collecte de {money(c.collected)}
                           {c.collector ? ` · par ${c.collector}` : ''}
                         </span>
                       </span>
-                      <span className="text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                      <span className="text-sm font-semibold tabular-nums text-success-soft-foreground">
                         +{money(c.commission)}
                       </span>
                     </Link>

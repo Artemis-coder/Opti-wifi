@@ -11,10 +11,10 @@ interface ChartCardProps {
 
 export function ChartCard({ title, subtitle, children, className }: ChartCardProps) {
   return (
-    <Card className={cn('p-5', className)}>
+    <Card className={cn('', className)}>
       <div className="mb-4">
-        <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
-        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}
       </div>
       {children}
     </Card>

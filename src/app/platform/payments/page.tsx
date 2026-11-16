@@ -110,15 +110,15 @@ export default function PlatformPaymentsPage() {
     .reduce((acc: number, p: PaymentRecord) => acc + Number(p.amount), 0);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Transactions</h1>
-          <p className="text-xs text-slate-500">Paiements de licence enregistrés à chaque activation validée.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Transactions</h1>
+          <p className="text-xs text-muted">Paiements de licence enregistrés à chaque activation validée.</p>
         </div>
         <div className="sm:text-right">
-          <p className="text-xs text-slate-500">Total de la liste filtrée</p>
-          <p className="text-lg font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(totalAmount)}</p>
+          <p className="text-xs text-muted">Total de la liste filtrée</p>
+          <p className="text-lg font-semibold text-foreground">{formatCurrencyFCFA(totalAmount)}</p>
         </div>
       </div>
 
@@ -159,24 +159,24 @@ export default function PlatformPaymentsPage() {
       />
 
       {stats && stats.by_method.length > 0 && (
-        <Card className="p-4 space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Par moyen de paiement</p>
+        <Card className="space-y-3">
+          <p className="text-xs font-semibold text-muted">Par moyen de paiement</p>
           <ul className="space-y-2.5">
             {stats.by_method.map((m) => {
               const pct = stats.successful_amount ? Math.round((m.amount / stats.successful_amount) * 100) : 0;
               return (
                 <li key={m.method} className="space-y-1">
                   <div className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{m.method}</span>
-                    <span className="tabular-nums font-bold text-slate-900 dark:text-white">
+                    <span className="font-semibold text-foreground">{m.method}</span>
+                    <span className="tabular-nums font-semibold text-foreground">
                       {formatCurrencyFCFA(m.amount)}{' '}
-                      <span className="font-medium text-slate-500">
+                      <span className="font-medium text-muted">
                         · {m.count} · {pct} %
                       </span>
                     </span>
                   </div>
                   <div
-                    className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"
+                    className="h-2 rounded-full bg-default overflow-hidden"
                     role="img"
                     aria-label={`${m.method} : ${pct} % des encaissements`}
                   >
@@ -196,22 +196,22 @@ export default function PlatformPaymentsPage() {
       {channel === 'manual' && (
       <>
       {/* Filters */}
-      <Card className="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted" />
             <input
               type="text"
               placeholder="Rechercher un client..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="input input--primary w-full pl-10 pr-3"
             />
           </div>
           <DateField label="Date de début" value={startDate} onChange={setStartDate} max={endDate || undefined} clearable />
           <DateField label="Date de fin" value={endDate} onChange={setEndDate} min={startDate || undefined} clearable />
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-500 uppercase">Statut</label>
+            <label className="block text-xs font-semibold text-muted">Statut</label>
             <div className="flex flex-wrap gap-1">
               {statusFilters.map((f: { value: string; label: string; icon: React.ElementType }) => {
                 const Icon = f.icon;
@@ -219,10 +219,10 @@ export default function PlatformPaymentsPage() {
                   <button
                     key={f.value}
                     onClick={() => setStatusFilter(f.value)}
-                    className={`px-2 py-1 rounded-lg text-xs font-medium transition ${
+                    className={`px-2 py-1 rounded-xl text-xs font-medium transition ${
                       statusFilter === f.value
-                        ? 'bg-amber-500 text-slate-950 font-bold'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500/10'
+                        ? 'bg-accent text-accent-foreground font-medium'
+                        : 'bg-default text-muted hover:bg-default-hover hover:text-foreground'
                     }`}
                   >
                     <Icon className="w-3 h-3 inline mr-1" />
@@ -237,20 +237,20 @@ export default function PlatformPaymentsPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Chargement des paiements...</span>
         </div>
       ) : payments.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <Receipt className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun paiement trouvé</h3>
+        <Card className="text-center space-y-3 py-8">
+          <Receipt className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucun paiement trouvé</h3>
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Client</th>
                   <th className="px-4 py-3">Plan</th>
@@ -261,25 +261,25 @@ export default function PlatformPaymentsPage() {
                   <th className="px-4 py-3">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {payments.map((p: PaymentRecord) => {
                   const config = STATUS_CONFIG[p.status as PaymentStatus] || STATUS_CONFIG.pending;
                   return (
-                    <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <tr key={p.id} className="hover:bg-surface-secondary transition">
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900 dark:text-white">{p.organization?.name || '—'}</p>
-                        <p className="text-xs text-slate-500">{p.organization?.email || ''}</p>
+                        <p className="font-semibold text-foreground">{p.organization?.name || '—'}</p>
+                        <p className="text-xs text-muted">{p.organization?.email || ''}</p>
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{p.plan?.name || '—'}</td>
-                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(Number(p.amount))}</td>
-                      <td className="px-4 py-3 text-slate-500">{p.payment_method || '—'}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono text-[10px]">{p.transaction_reference || '—'}</td>
+                      <td className="px-4 py-3 text-muted">{p.plan?.name || '—'}</td>
+                      <td className="px-4 py-3 font-semibold text-foreground">{formatCurrencyFCFA(Number(p.amount))}</td>
+                      <td className="px-4 py-3 text-muted">{p.payment_method || '—'}</td>
+                      <td className="px-4 py-3 text-muted font-mono text-xs">{p.transaction_reference || '—'}</td>
                       <td className="px-4 py-3">
                         <Badge variant={config.color} className="text-xs">
                           {config.label}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{p.paid_at ? formatDateFR(p.paid_at) : formatDateFR(p.created_at)}</td>
+                      <td className="px-4 py-3 text-muted">{p.paid_at ? formatDateFR(p.paid_at) : formatDateFR(p.created_at)}</td>
                     </tr>
                   );
                 })}

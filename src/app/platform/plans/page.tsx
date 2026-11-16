@@ -221,64 +221,64 @@ export default function PlatformPlansPage() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         <span>Chargement des plans...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Plans Tarifaires</h1>
-          <p className="text-xs text-slate-500">Configurez les offres commerciales de la plateforme SaaS.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Plans Tarifaires</h1>
+          <p className="text-xs text-muted">Configurez les offres commerciales de la plateforme SaaS.</p>
         </div>
         <AddButton what="un forfait" onClick={() => handleOpenModal()} />
       </div>
 
       {/* Search */}
-      <Card className="p-4">
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+      <Card>
+        <div className="relative w-full">
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted" />
           <input
             type="text"
             placeholder="Rechercher un plan..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="input input--primary w-full pl-10 pr-3"
           />
         </div>
       </Card>
 
       {/* Plans Grid */}
       {filteredPlans.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <Wallet className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun plan trouvé</h3>
-          <p className="text-xs text-slate-500">Créez votre premier plan tarifaire pour commencer.</p>
+        <Card className="text-center space-y-3 py-8">
+          <Wallet className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucun plan trouvé</h3>
+          <p className="text-xs text-muted">Créez votre premier plan tarifaire pour commencer.</p>
           <AddButton what="un forfait" onClick={() => handleOpenModal()} />
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredPlans.map((plan: SubscriptionPlan) => (
-            <Card key={plan.id} className="space-y-4 border-l-4 border-l-amber-500">
+            <Card key={plan.id} className="space-y-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">{plan.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1">{plan.description || 'Sans description'}</p>
+                  <h3 className="font-semibold text-lg text-foreground">{plan.name}</h3>
+                  <p className="text-xs text-muted mt-1">{plan.description || 'Sans description'}</p>
                 </div>
                 <Badge variant={plan.status === 'active' ? 'success' : 'neutral'}>
                   {plan.status === 'active' ? 'Actif' : 'Inactif'}
                 </Badge>
               </div>
 
-              <div className="text-3xl font-extrabold text-slate-900 dark:text-white">
+              <div className="text-3xl font-semibold text-foreground">
                 {formatCurrencyFCFA(plan.price)}
               </div>
 
-              <div className="text-xs text-slate-500 space-y-1">
+              <div className="text-xs text-muted space-y-1">
                 <p><span className="font-semibold">Période :</span> {BILLING_PERIODS.find((p: { value: BillingPeriod; label: string }) => p.value === plan.billing_period)?.label || plan.billing_period}</p>
                 {plan.trial_days && plan.trial_days > 0 && (
                   <p><span className="font-semibold">Essai :</span> {plan.trial_days} jours</p>
@@ -309,24 +309,24 @@ export default function PlatformPlansPage() {
               </div>
 
               {planFeatureList(plan.features).length > 0 && (
-                <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                <ul className="space-y-1 text-xs text-muted">
                   {planFeatureList(plan.features).map((f) => (
                     <li key={f} className="flex items-start gap-1.5">
-                      <CheckCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-brand-500" /> {f}
+                      <CheckCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" /> {f}
                     </li>
                   ))}
                 </ul>
               )}
 
-              <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                <Button variant="ghost" size="sm" className="flex-1 gap-1" onClick={() => handleToggleStatus(plan)}>
+              <div className="flex gap-2 pt-2 border-t border-border">
+                <Button variant="ghost" size="sm" className="flex-1" onClick={() => handleToggleStatus(plan)}>
                   {plan.status === 'active' ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
                   {plan.status === 'active' ? 'Désactiver' : 'Activer'}
                 </Button>
-                <Button variant="ghost" size="sm" className="p-1 h-8 w-8" onClick={() => handleOpenModal(plan)}>
+                <Button isIconOnly variant="ghost" size="sm" onClick={() => handleOpenModal(plan)}>
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="p-1 h-8 w-8 text-red-600 hover:text-red-700" onClick={() => handleDelete(plan)}>
+                <Button isIconOnly variant="danger-soft" size="sm" onClick={() => handleDelete(plan)}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -365,7 +365,7 @@ export default function PlatformPlansPage() {
               required
             />
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-foreground">
                 Devise
               </label>
               <CustomSelect
@@ -379,7 +379,7 @@ export default function PlatformPlansPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-foreground">
               Période de facturation
             </label>
             <CustomSelect
@@ -436,7 +436,7 @@ export default function PlatformPlansPage() {
           />
 
           <div className="space-y-1.5">
-            <label htmlFor="plan-features" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <label htmlFor="plan-features" className="block text-xs font-semibold text-foreground">
               Fonctionnalités incluses (une par ligne)
             </label>
             <textarea
@@ -445,15 +445,15 @@ export default function PlatformPlansPage() {
               value={formFeatures}
               onChange={(e) => setFormFeatures(e.target.value)}
               placeholder={'Rapports & exports CSV\nCommissions des collecteurs\nSupport prioritaire'}
-              className="w-full px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-y"
+              className="textarea textarea--primary w-full resize-y"
             />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted">
               Affichées sur le site vitrine sous les limites du forfait ({MAX_PLAN_FEATURES} maximum).
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-foreground">
               Statut
             </label>
             <CustomSelect
@@ -466,7 +466,7 @@ export default function PlatformPlansPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={handleCloseModal} disabled={submitting}>
+            <Button type="button" variant="outline" onClick={handleCloseModal} disabled={submitting}>
               Annuler
             </Button>
             <Button type="submit" variant="secondary" isLoading={submitting}>

@@ -178,25 +178,25 @@ export function NotificationBell({ className }: { className?: string }) {
   const panelBody = (
     <>
       {pushState === 'default' && (
-        <div className="px-4 py-2.5 bg-brand-500/5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-          <p className="text-[11px] text-slate-600 dark:text-slate-300">Être prévenu même quand le site est fermé.</p>
+        <div className="px-4 py-2.5 bg-accent-soft flex items-center justify-between gap-2">
+          <p className="text-xs text-muted">Être prévenu même quand le site est fermé.</p>
           <button
             type="button"
             onClick={enablePush}
             disabled={enabling}
-            className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-brand-600 text-white hover:bg-brand-500 disabled:opacity-60"
+            className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-xl bg-accent text-accent-foreground hover:bg-accent-hover disabled:opacity-60"
           >
             {enabling ? '…' : 'Activer'}
           </button>
         </div>
       )}
       {pushState === 'denied' && (
-        <p className="px-4 py-2 text-[11px] text-slate-500 border-b border-slate-100 dark:border-slate-800">
+        <p className="px-4 py-2 text-xs text-muted border-b border-separator">
           Notifications bloquées dans ce navigateur : autorisez-les dans les réglages du site pour les recevoir.
         </p>
       )}
       {pushState === 'ios-needs-install' && (
-        <p className="px-4 py-2 text-[11px] text-slate-500 border-b border-slate-100 dark:border-slate-800 flex items-start gap-1.5">
+        <p className="px-4 py-2 text-xs text-muted border-b border-separator flex items-start gap-1.5">
           <Smartphone className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           Sur iPhone : touchez « Partager » puis « Sur l&apos;écran d&apos;accueil » pour recevoir les notifications.
         </p>
@@ -205,11 +205,11 @@ export function NotificationBell({ className }: { className?: string }) {
       <ul
         className={cn(
           'overflow-y-auto overscroll-contain',
-          isMobile ? 'flex-1 min-h-0 md-scroll p-3 space-y-2' : 'max-h-[60vh] divide-y divide-slate-100 dark:divide-slate-800',
+          isMobile ? 'flex-1 min-h-0 md-scroll p-3 space-y-2' : 'max-h-[60vh] divide-y divide-separator',
         )}
       >
         {items.length === 0 ? (
-          <li className="px-4 py-8 text-center text-sm text-slate-500">Aucune notification pour le moment.</li>
+          <li className="px-4 py-8 text-center text-sm text-muted">Aucune notification pour le moment.</li>
         ) : (
           items.map((n) => (
             <li key={n.id}>
@@ -220,19 +220,19 @@ export function NotificationBell({ className }: { className?: string }) {
                   'w-full text-left flex gap-3 transition',
                   isMobile
                     ? cn(
-                        'p-3.5 rounded-2xl border active:scale-[0.99] touch-manipulation',
+                        'p-3.5 rounded-xl border active:scale-[0.99] touch-manipulation',
                         n.read_at
-                          ? 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800'
-                          : 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700/80',
+                          ? 'bg-surface-secondary/70'
+                          : 'bg-success-soft',
                       )
-                    : cn('px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60', !n.read_at && 'bg-brand-500/5'),
+                    : cn('px-4 py-3 hover:bg-surface-secondary', !n.read_at && 'bg-accent-soft'),
                 )}
               >
-                <span className={cn('mt-1.5 w-2 h-2 rounded-full shrink-0', n.read_at ? 'bg-transparent' : 'bg-brand-500')} />
+                <span className={cn('mt-1.5 w-2 h-2 rounded-full shrink-0', n.read_at ? 'bg-transparent' : 'bg-accent')} />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900 dark:text-white">{n.title}</span>
-                  {n.body && <span className="block text-xs text-slate-600 dark:text-slate-400 mt-0.5">{n.body}</span>}
-                  <span className={cn('block text-slate-400 mt-1', isMobile ? 'text-[11px]' : 'text-[10px]')}>{timeAgo(n.created_at)}</span>
+                  <span className="block text-sm font-semibold text-foreground">{n.title}</span>
+                  {n.body && <span className="block text-xs text-muted mt-0.5">{n.body}</span>}
+                  <span className={cn('block text-muted mt-1', isMobile ? 'text-xs' : 'text-xs')}>{timeAgo(n.created_at)}</span>
                 </span>
               </button>
             </li>
@@ -247,13 +247,13 @@ export function NotificationBell({ className }: { className?: string }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition"
+        className="relative p-2 rounded-xl text-muted hover:text-foreground hover:bg-default transition"
         aria-label={unread > 0 ? `Notifications (${unread} non lue${unread > 1 ? 's' : ''})` : 'Notifications'}
         aria-expanded={open}
       >
         {unread > 0 ? <BellRing className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-danger text-danger-foreground text-xs font-semibold flex items-center justify-center">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
@@ -267,21 +267,21 @@ export function NotificationBell({ className }: { className?: string }) {
               aria-modal="true"
               aria-label="Notifications"
               onClick={() => setOpen(false)}
-              className="fixed inset-0 flex flex-col justify-end items-center px-3.5 bg-slate-950/70 backdrop-blur-sm md-anim-fade"
+              className="fixed inset-0 flex flex-col justify-end items-center px-3.5 bg-foreground/70 backdrop-blur-sm md-anim-fade"
               style={{ zIndex: 45 }}
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-lg h-auto max-h-[calc(100dvh-12rem)] flex flex-col overflow-hidden bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 md-anim-scale elevate-above-bottom-nav"
+                className="w-full max-w-lg h-auto max-h-[calc(100dvh-12rem)] flex flex-col overflow-hidden bg-surface rounded-2xl shadow-2xl border border-border md-anim-scale elevate-above-bottom-nav"
               >
-                <div className="relative flex items-center justify-between gap-3 px-4 pt-3.5 pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                <div className="relative flex items-center justify-between gap-3 px-4 pt-3.5 pb-3 border-b border-border shrink-0">
                   <div
                     aria-hidden
-                    className="absolute left-1/2 -translate-x-1/2 top-2.5 w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"
+                    className="absolute left-1/2 -translate-x-1/2 top-2.5 w-12 h-1.5 rounded-full bg-default-hover"
                   />
                   <div className="min-w-0 flex-1 pt-2">
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Notifications</h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    <h3 className="text-base font-semibold text-foreground">Notifications</h3>
+                    <p className="text-xs text-muted mt-0.5">
                       {unread > 0 ? `${unread} non lue${unread > 1 ? 's' : ''}` : 'Tout est lu'}
                     </p>
                   </div>
@@ -289,17 +289,17 @@ export function NotificationBell({ className }: { className?: string }) {
                     type="button"
                     onClick={() => setOpen(false)}
                     aria-label="Fermer"
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-muted hover:text-muted hover:bg-default transition"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 {unread > 0 && (
-                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                  <div className="px-4 py-2 border-b border-separator shrink-0">
                     <button
                       type="button"
                       onClick={() => markRead({ all: true })}
-                      className="h-10 px-3 -ml-3 rounded-lg text-sm font-semibold text-brand-700 dark:text-brand-300 hover:bg-brand-500/10 flex items-center gap-1.5"
+                      className="h-10 px-3 -ml-3 rounded-xl text-sm font-semibold text-accent hover:bg-accent/10 flex items-center gap-1.5"
                     >
                       <CheckCheck className="w-4 h-4" /> Tout marquer comme lu
                     </button>
@@ -311,14 +311,14 @@ export function NotificationBell({ className }: { className?: string }) {
             document.body,
           )
         ) : (
-          <div className="absolute right-0 mt-2 w-[22rem] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-              <p className="text-sm font-bold text-slate-900 dark:text-white">Notifications</p>
+          <div className="absolute right-0 mt-2 w-[22rem] max-w-[calc(100vw-1.5rem)] bg-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-separator">
+              <p className="text-sm font-semibold text-foreground">Notifications</p>
               {unread > 0 && (
                 <button
                   type="button"
                   onClick={() => markRead({ all: true })}
-                  className="text-xs font-semibold text-brand-600 hover:text-brand-500 flex items-center gap-1"
+                  className="text-xs font-semibold text-accent hover:text-accent flex items-center gap-1"
                 >
                   <CheckCheck className="w-3.5 h-3.5" /> Tout marquer comme lu
                 </button>

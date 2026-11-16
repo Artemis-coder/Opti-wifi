@@ -68,28 +68,28 @@ export function ResetPosModal({
       title="Vider les données du POS"
       className="sm:max-w-md"
     >
-      <div className="space-y-5">
+      <div className="space-y-4">
         {/* Warning banner */}
-        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-2xl p-4 space-y-3">
+        <div className="bg-danger-soft rounded-xl p-4 space-y-3">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-9 h-9 rounded-lg bg-danger-soft text-danger flex items-center justify-center shrink-0 mt-0.5">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-bold text-red-900 dark:text-red-200">
+              <h4 className="text-sm font-semibold text-danger">
                 Action irréversible
               </h4>
-              <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
+              <p className="text-xs text-danger leading-relaxed">
                 Vous êtes sur le point de purger définitivement les données du point de vente{' '}
-                <strong className="font-semibold text-red-900 dark:text-red-100">
+                <strong className="font-semibold text-danger">
                   &laquo; {posName} &raquo;
                 </strong>.
               </p>
             </div>
           </div>
 
-          <div className="pt-2 border-t border-red-200/70 dark:border-red-900/60 text-xs text-red-800 dark:text-red-300 space-y-1.5 pl-1">
-            <p className="font-semibold text-[11px] uppercase tracking-wider text-red-700 dark:text-red-400">
+          <div className="pt-2 border-t border-danger/30 text-xs text-danger space-y-1.5 pl-1">
+            <p className="font-semibold text-xs text-danger">
               Seront supprimés :
             </p>
             <ul className="space-y-1 pl-3 list-disc">
@@ -97,7 +97,7 @@ export function ResetPosModal({
               <li>Toutes les collectes et encaissements enregistrés</li>
               <li>Tous les détails de vente d&apos;articles associés</li>
             </ul>
-            <p className="text-[11px] text-red-600 dark:text-red-400 pt-1">
+            <p className="text-xs text-danger pt-1">
               Le point de vente lui-même et ses paramètres restent conservés.
             </p>
           </div>
@@ -113,7 +113,7 @@ export function ResetPosModal({
             placeholder={CONFIRM_WORD}
             autoComplete="off"
             autoFocus
-            className="font-mono font-bold tracking-widest text-center sm:text-left uppercase text-red-600 dark:text-red-400 border-red-300 dark:border-red-900/60 focus:ring-red-500"
+            className="font-mono font-semibold text-center sm:text-left text-danger border-danger/30 focus:ring-focus"
             helperText={
               !isConfirmed && confirmText.length > 0
                 ? `Veuillez saisir exactement "${CONFIRM_WORD}"`
@@ -124,13 +124,13 @@ export function ResetPosModal({
 
         {/* Error message */}
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/80 text-red-700 dark:text-red-300 text-xs font-medium">
+          <div className="p-3 rounded-xl bg-danger-soft text-danger text-xs font-medium">
             {error}
           </div>
         )}
 
         {/* Modal Actions conforming to Design System */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end pt-3 border-t border-separator">
           <Button
             type="button"
             variant="outline"

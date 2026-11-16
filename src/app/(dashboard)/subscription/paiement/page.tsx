@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState, type ReactNode } fr
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, Clock, Loader2, RefreshCw, XCircle } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { formatCurrencyFCFA } from '@/lib/utils/format';
 
 interface PaymentStatus {
@@ -77,7 +77,7 @@ function PaymentReturn() {
 
   if (!ref) {
     return (
-      <Panel icon={<XCircle className="w-12 h-12 text-red-500" />} title="Lien de paiement incomplet">
+      <Panel icon={<XCircle className="w-12 h-12 text-danger" />} title="Lien de paiement incomplet">
         <BackLink />
       </Panel>
     );
@@ -85,8 +85,8 @@ function PaymentReturn() {
 
   if (!data) {
     return (
-      <Panel icon={<Loader2 className="w-12 h-12 text-brand-600 animate-spin" />} title="Vérification de votre paiement…">
-        {error && <p className="text-sm text-red-600">{error}</p>}
+      <Panel icon={<Loader2 className="w-12 h-12 text-accent animate-spin" />} title="Vérification de votre paiement…">
+        {error && <p className="text-sm text-danger">{error}</p>}
       </Panel>
     );
   }
@@ -96,8 +96,8 @@ function PaymentReturn() {
   if (data.status === 'succeeded') {
     if (data.needs_support) {
       return (
-        <Panel icon={<Clock className="w-12 h-12 text-amber-500" />} title="Paiement reçu">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+        <Panel icon={<Clock className="w-12 h-12 text-warning-soft-foreground" />} title="Paiement reçu">
+          <p className="text-sm text-muted">
             Votre paiement de {amount} est bien reçu{data.reference ? ` (réf. ${data.reference})` : ''}. L&apos;activation de
             votre licence demande une vérification : l&apos;équipe OptiWifi a été prévenue et s&apos;en occupe rapidement.
           </p>
@@ -107,27 +107,23 @@ function PaymentReturn() {
     }
     if (!data.license_activated) {
       return (
-        <Panel icon={<Loader2 className="w-12 h-12 text-brand-600 animate-spin" />} title="Paiement reçu, activation en cours…">
-          <p className="text-sm text-slate-600 dark:text-slate-400">Cela ne prend que quelques secondes.</p>
+        <Panel icon={<Loader2 className="w-12 h-12 text-accent animate-spin" />} title="Paiement reçu, activation en cours…">
+          <p className="text-sm text-muted">Cela ne prend que quelques secondes.</p>
         </Panel>
       );
     }
     return (
-      <Panel icon={<CheckCircle2 className="w-12 h-12 text-emerald-500" />} title="Paiement confirmé, licence activée">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+      <Panel icon={<CheckCircle2 className="w-12 h-12 text-success-soft-foreground" />} title="Paiement confirmé, licence activée">
+        <p className="text-sm text-muted">
           Forfait <strong>{data.plan_name}</strong> actif
           {data.license_end_date ? ` jusqu'au ${new Date(data.license_end_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}` : ''}.
           {data.reference ? ` Référence du paiement : ${data.reference}.` : ''}
         </p>
-        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-center">
           {data.invoice_id && (
-            <Link href={`/subscription/invoices/${data.invoice_id}`}>
-              <Button variant="outline">Voir la facture</Button>
-            </Link>
+            <Link href={`/subscription/invoices/${data.invoice_id}`} className={buttonClassName({ variant: 'outline', size: 'md' })}>Voir la facture</Link>
           )}
-          <Link href="/dashboard">
-            <Button>Aller au tableau de bord</Button>
-          </Link>
+          <Link href="/dashboard" className={buttonClassName({ variant: 'primary', size: 'md' })}>Aller au tableau de bord</Link>
         </div>
       </Panel>
     );
@@ -135,13 +131,13 @@ function PaymentReturn() {
 
   if (data.status === 'pending') {
     return (
-      <Panel icon={<Loader2 className="w-12 h-12 text-brand-600 animate-spin" />} title="Paiement en attente de confirmation">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+      <Panel icon={<Loader2 className="w-12 h-12 text-accent animate-spin" />} title="Paiement en attente de confirmation">
+        <p className="text-sm text-muted">
           Validez le paiement de {amount} sur votre téléphone si ce n&apos;est pas déjà fait. Cette page se met à jour toute seule ;
           votre licence s&apos;activera dès la confirmation, même si vous la fermez.
         </p>
         <div className="flex flex-col sm:flex-row gap-2 justify-center">
-          <Button variant="outline" onClick={check} isLoading={checking} className="gap-2">
+          <Button variant="outline" onClick={check} isLoading={checking}>
             {!checking && <RefreshCw className="w-4 h-4" />} Vérifier maintenant
           </Button>
           {data.checkout_url && (
@@ -155,8 +151,8 @@ function PaymentReturn() {
   }
 
   return (
-    <Panel icon={<XCircle className="w-12 h-12 text-red-500" />} title="Le paiement n'a pas abouti">
-      <p className="text-sm text-slate-600 dark:text-slate-400">
+    <Panel icon={<XCircle className="w-12 h-12 text-danger" />} title="Le paiement n'a pas abouti">
+      <p className="text-sm text-muted">
         {data.status === 'expired' ? 'La session de paiement a expiré.' : data.status === 'cancelled' ? 'Le paiement a été annulé.' : 'Le paiement a échoué.'}{' '}
         Aucun montant n&apos;a été prélevé pour cette tentative. Vous pouvez réessayer depuis la page Abonnement.
       </p>
@@ -167,9 +163,9 @@ function PaymentReturn() {
 
 function Panel({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
   return (
-    <div className="max-w-lg mx-auto mt-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center space-y-4 shadow-sm">
+    <div className="space-y-5 max-w-lg mx-auto mt-10 rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
       <div className="flex justify-center">{icon}</div>
-      <h1 className="text-xl font-bold text-slate-900 dark:text-white">{title}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
       {children}
     </div>
   );
@@ -177,9 +173,7 @@ function Panel({ icon, title, children }: { icon: ReactNode; title: string; chil
 
 function BackLink() {
   return (
-    <Link href="/subscription">
-      <Button variant="outline">Retour à l&apos;abonnement</Button>
-    </Link>
+    <Link href="/subscription" className={buttonClassName({ variant: 'outline', size: 'md' })}>Retour à l&apos;abonnement</Link>
   );
 }
 

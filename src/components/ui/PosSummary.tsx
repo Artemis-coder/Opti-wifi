@@ -18,14 +18,14 @@ export function PosSummary({ linkedPosCount, activePosCount, className }: PosSum
       'flex items-center gap-3',
       className
     )}>
-      <div className="p-2 rounded-lg bg-blue-900/10 text-blue-900 dark:bg-blue-900/20 dark:text-blue-400">
+      <div className="p-2 rounded-xl bg-accent-soft text-accent">
         <Store className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+        <p className="text-sm font-semibold text-muted">
           Points de Vente rattachés
         </p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           {linkedPosCount} POS {activeLabel}
         </p>
       </div>

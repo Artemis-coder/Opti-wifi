@@ -114,7 +114,7 @@ export function DateField({
   return (
     <div className={cn('w-full space-y-1.5', className)}>
       {label && (
-        <label htmlFor={fieldId} className="block text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+        <label htmlFor={fieldId} className="block text-xs sm:text-xs font-semibold text-muted">
           {label}
         </label>
       )}
@@ -127,19 +127,19 @@ export function DateField({
         aria-expanded={isOpen}
         className={cn(
           'w-full h-14 sm:h-11 px-4 sm:px-3.5 flex items-center justify-between gap-2 text-left',
-          'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm transition',
-          'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent',
+          'bg-surface border border-border rounded-xl text-base sm:text-sm transition',
+          'focus:outline-none focus:ring-2 focus:ring-focus focus:border-transparent',
           disabled && 'opacity-50 cursor-not-allowed',
-          error && 'border-red-500 focus:ring-red-500'
+          error && 'border-danger focus:ring-focus'
         )}
       >
-        <span className={cn('truncate first-letter:uppercase', display ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400')}>
+        <span className={cn('truncate first-letter:', display ? 'text-foreground' : 'text-muted')}>
           {display || placeholder}
         </span>
-        <CalendarDays className="w-5 h-5 shrink-0 text-slate-400" />
+        <CalendarDays className="w-5 h-5 shrink-0 text-muted" />
       </button>
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      {helperText && !error && <p className="text-xs text-slate-500">{helperText}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
+      {helperText && !error && <p className="text-xs text-muted">{helperText}</p>}
 
       {isOpen &&
         mounted &&
@@ -149,18 +149,18 @@ export function DateField({
             aria-modal="true"
             aria-label={label || 'Choisir une date'}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 flex flex-col justify-end sm:justify-center items-center px-3.5 sm:px-4 bg-slate-950/70 backdrop-blur-sm md-anim-fade"
+            className="fixed inset-0 flex flex-col justify-end sm:justify-center items-center px-3.5 sm:px-4 bg-backdrop md-anim-fade"
             style={{ zIndex: 45 }}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 md-anim-scale elevate-above-bottom-nav overflow-hidden"
+              className="w-full max-w-sm bg-overlay text-overlay-foreground rounded-2xl shadow-overlay md-anim-scale elevate-above-bottom-nav overflow-hidden"
             >
               {/* En-tête : date choisie */}
-              <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-border">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label || 'Date'}</p>
-                  <p className="text-lg font-bold text-slate-900 dark:text-white first-letter:uppercase truncate">
+                  <p className="text-xs font-semibold text-muted">{label || 'Date'}</p>
+                  <p className="text-lg font-semibold text-foreground first-letter: truncate">
                     {display || 'Aucune date'}
                   </p>
                 </div>
@@ -168,7 +168,7 @@ export function DateField({
                   type="button"
                   onClick={() => setIsOpen(false)}
                   aria-label="Fermer"
-                  className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  className="w-10 h-10 -mr-2 rounded-xl flex items-center justify-center text-muted hover:text-muted hover:bg-default transition"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -180,18 +180,18 @@ export function DateField({
                   type="button"
                   onClick={() => shiftMonth(-1)}
                   aria-label="Mois précédent"
-                  className="w-11 h-11 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-muted hover:bg-default transition"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <p className="text-sm font-bold text-slate-900 dark:text-white capitalize">
+                <p className="text-sm font-semibold text-foreground capitalize">
                   {MONTHS[view.month]} {view.year}
                 </p>
                 <button
                   type="button"
                   onClick={() => shiftMonth(1)}
                   aria-label="Mois suivant"
-                  className="w-11 h-11 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-muted hover:bg-default transition"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -200,7 +200,7 @@ export function DateField({
               {/* Grille */}
               <div className="grid grid-cols-7 gap-1 px-3 pb-2" role="grid">
                 {WEEKDAYS.map((d, i) => (
-                  <span key={i} className="h-8 flex items-center justify-center text-[11px] font-semibold text-slate-400">
+                  <span key={i} className="h-8 flex items-center justify-center text-xs font-semibold text-muted">
                     {d}
                   </span>
                 ))}
@@ -220,12 +220,12 @@ export function DateField({
                       aria-pressed={isSelected}
                       aria-label={new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full' }).format(date)}
                       className={cn(
-                        'h-11 rounded-full text-sm font-medium transition touch-manipulation',
+                        'h-11 rounded-xl text-sm font-medium transition touch-manipulation',
                         isSelected
-                          ? 'bg-brand-600 text-white font-bold shadow-sm'
+                          ? 'bg-accent text-accent-foreground font-semibold shadow-sm'
                           : isToday
-                            ? 'text-brand-700 dark:text-brand-300 ring-1 ring-brand-500/60 hover:bg-brand-500/10'
-                            : 'text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800',
+                            ? 'text-accent ring-1 ring-accent/60 hover:bg-accent/10'
+                            : 'text-foreground hover:bg-default',
                         off && 'opacity-30 cursor-not-allowed hover:bg-transparent'
                       )}
                     >
@@ -236,12 +236,12 @@ export function DateField({
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-border">
                 <button
                   type="button"
                   disabled={isDisabledDay(todayDate)}
                   onClick={() => pick(todayDate)}
-                  className="h-10 px-4 rounded-xl text-sm font-semibold text-brand-700 dark:text-brand-300 hover:bg-brand-500/10 disabled:opacity-40 transition"
+                  className="h-10 px-4 rounded-xl text-sm font-semibold text-accent hover:bg-accent/10 disabled:opacity-40 transition"
                 >
                   Aujourd&apos;hui
                 </button>
@@ -252,7 +252,7 @@ export function DateField({
                       onChange('');
                       setIsOpen(false);
                     }}
-                    className="h-10 px-4 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="h-10 px-4 rounded-xl text-sm font-semibold text-muted hover:bg-default transition"
                   >
                     Effacer
                   </button>

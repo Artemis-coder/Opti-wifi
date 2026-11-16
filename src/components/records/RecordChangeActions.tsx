@@ -147,19 +147,19 @@ export function RecordChangeActions({
   return (
     <>
       {pending && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
-          <Clock className="w-5 h-5 text-amber-600 shrink-0" />
+        <div className="rounded-xl bg-warning-soft px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+          <Clock className="w-5 h-5 text-warning-soft-foreground shrink-0" />
           <div className="flex-1 min-w-0 text-sm">
-            <p className="font-semibold text-amber-900 dark:text-amber-200">
+            <p className="font-semibold text-warning-soft-foreground">
               {pending.action === 'delete' ? 'Suppression' : 'Correction'} en attente de validation
             </p>
-            <p className="text-amber-800/80 dark:text-amber-300/80">
+            <p className="text-warning-soft-foreground">
               {isAdmin ? `Demandée par ${pending.requested_by_name ?? 'un collecteur'}` : 'Envoyée à votre administrateur'}
               {pending.reason ? ` — « ${pending.reason} »` : ''}
             </p>
           </div>
           {isAdmin ? (
-            <Link href="/change-requests" className="text-sm font-semibold text-amber-800 dark:text-amber-200 underline whitespace-nowrap">
+            <Link href="/change-requests" className="text-sm font-semibold text-warning-soft-foreground underline whitespace-nowrap">
               Examiner la demande
             </Link>
           ) : (
@@ -171,15 +171,14 @@ export function RecordChangeActions({
       )}
 
       {!pending && !readOnly && (isAdmin || role === 'collecteur') && (
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" icon={Pencil} onClick={openEdit} className="font-semibold">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
+          <Button variant="outline" icon={Pencil} onClick={openEdit}>
             {isAdmin ? 'Modifier' : 'Demander une correction'}
           </Button>
           <Button
-            variant="outline"
+            variant="danger-soft"
             icon={Trash2}
             onClick={() => (isAdmin ? deleteNow() : (setReason(''), setMode('delete')))}
-            className="font-semibold text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
           >
             {isAdmin ? 'Supprimer' : 'Demander la suppression'}
           </Button>
@@ -190,7 +189,7 @@ export function RecordChangeActions({
       <Modal isOpen={mode === 'edit'} onClose={() => setMode(null)} title={isAdmin ? 'Modifier' : 'Demander une correction'}>
         <div className="space-y-4 text-left">
           {!isAdmin && (
-            <p className="rounded-xl bg-brand-50 dark:bg-brand-950/30 px-3 py-2 text-sm text-brand-800 dark:text-brand-200">
+            <p className="rounded-xl bg-accent-soft px-3 py-2 text-sm text-accent">
               Votre correction sera appliquée après validation par l’administrateur de l’espace.
             </p>
           )}
@@ -215,8 +214,8 @@ export function RecordChangeActions({
               placeholder="Ex. : j'ai saisi 150 au lieu de 200"
             />
           )}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
-            <Button variant="ghost" onClick={() => setMode(null)}>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
+            <Button variant="outline" onClick={() => setMode(null)}>
               Annuler
             </Button>
             <Button
@@ -224,8 +223,7 @@ export function RecordChangeActions({
               isLoading={busy}
               disabled={busy || (!isAdmin && !reason.trim())}
               onClick={() => submit('edit')}
-              className="font-semibold"
-            >
+          >
               {isAdmin ? 'Enregistrer' : 'Envoyer la demande'}
             </Button>
           </div>
@@ -235,15 +233,15 @@ export function RecordChangeActions({
       {/* Demande de suppression (collecteur) */}
       <Modal isOpen={mode === 'delete'} onClose={() => setMode(null)} title="Demander la suppression">
         <div className="space-y-4 text-left">
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className="text-sm text-muted">
             L’administrateur de l’espace recevra votre demande et décidera de supprimer {WHAT[type]}.
           </p>
           <Input label="Pourquoi la supprimer ?" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. : saisie en double" />
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
-            <Button variant="ghost" onClick={() => setMode(null)}>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row justify-end">
+            <Button variant="outline" onClick={() => setMode(null)}>
               Annuler
             </Button>
-            <Button variant="danger" icon={Send} isLoading={busy} disabled={busy || !reason.trim()} onClick={() => submit('delete')} className="font-semibold">
+            <Button variant="danger" icon={Send} isLoading={busy} disabled={busy || !reason.trim()} onClick={() => submit('delete')}>
               Envoyer la demande
             </Button>
           </div>

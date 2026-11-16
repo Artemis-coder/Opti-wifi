@@ -26,7 +26,7 @@ interface AddButtonProps {
  * (en-têtes de page et états vides). Pleine largeur sur mobile, largeur auto au-delà.
  */
 export function AddButton({ what, href, onClick, className, tour, allowReadOnly }: AddButtonProps) {
-  const classes = cn('w-full sm:w-auto font-semibold', className);
+  const classes = cn('w-full sm:w-auto', className);
   const label = `Ajouter ${what}`;
   // Abonnement expiré : consultation seule, l'ajout est désactivé
   const locked = useReadOnly() && !allowReadOnly;

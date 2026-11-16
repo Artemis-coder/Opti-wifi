@@ -100,16 +100,16 @@ function ImageField({
 }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
-    <div className="space-y-1.5">
-      <p className="block text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">{label}</p>
+    <div className="space-y-4">
+      <p className="block text-xs sm:text-xs font-semibold text-muted">{label}</p>
       <div className="flex items-center gap-3">
         {preview}
         <div className="flex flex-col gap-2">
-          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => ref.current?.click()}>
+          <Button type="button" variant="outline" size="sm" onClick={() => ref.current?.click()}>
             <ImagePlus className="w-4 h-4" /> {value ? 'Changer' : 'Importer'}
           </Button>
           {value && (
-            <Button type="button" variant="ghost" size="sm" className="gap-1.5" onClick={onClear}>
+            <Button type="button" variant="ghost" size="sm" onClick={onClear}>
               <X className="w-4 h-4" /> Retirer
             </Button>
           )}
@@ -126,7 +126,7 @@ function ImageField({
           }}
         />
       </div>
-      <p className="text-xs text-slate-500">{help}</p>
+      <p className="text-xs text-muted">{help}</p>
     </div>
   );
 }
@@ -306,11 +306,11 @@ export default function PaymentMethodsPage() {
   const whatsappPreview = normalizedWhatsapp || null;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-5 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Moyens de paiement</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Moyens de paiement</h1>
+          <p className="text-xs text-muted">
             Affichés au client quand il se réabonne : affiche « Payez avec Wave » avec votre QR code, numéro à copier et numéro pour le
             justificatif de paiement.
           </p>
@@ -321,14 +321,14 @@ export default function PaymentMethodsPage() {
       <PaymentModeSwitch />
 
       {loading ? (
-        <div className="py-16 flex justify-center text-slate-400">
+        <div className="py-10 flex justify-center text-muted">
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       ) : methods.length === 0 ? (
-        <Card className="p-10 text-center space-y-3">
-          <QrCode className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun moyen de paiement</h3>
-          <p className="text-xs text-slate-500">
+        <Card className="text-center space-y-3 py-8">
+          <QrCode className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucun moyen de paiement</h3>
+          <p className="text-xs text-muted">
             Ajoutez Wave avec votre QR code : vos clients le verront en cliquant sur « Me réabonner ».
           </p>
           <AddButton what="un moyen de paiement" onClick={() => openModal()} />
@@ -336,44 +336,44 @@ export default function PaymentMethodsPage() {
       ) : (
         <>
           {activeCount === 0 && (
-            <p className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+            <p className="text-xs font-medium text-warning-soft-foreground bg-warning-soft rounded-xl px-4 py-3">
               Aucun moyen affiché : les clients ne voient aucun QR code pour payer.
             </p>
           )}
           <div className="space-y-3">
             {methods.map((m, i) => (
-              <Card key={m.id} className={cn('p-4 sm:p-5', !m.is_active && 'opacity-70')}>
+              <Card key={m.id} className={cn('', !m.is_active && 'opacity-70')}>
                 <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
                   <div className="flex gap-3.5 min-w-0 flex-1">
                     <PaymentQrThumb method={m} />
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-bold text-slate-900 dark:text-white">{m.name}</p>
+                        <p className="font-semibold text-foreground">{m.name}</p>
                         <Badge variant={m.is_active ? 'success' : 'neutral'}>{m.is_active ? 'Affiché aux clients' : 'Masqué'}</Badge>
                       </div>
-                      <p className="text-xs text-slate-500">
-                        Paiement : <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{m.account_number}</span>
+                      <p className="text-xs text-muted">
+                        Paiement : <span className="font-mono font-semibold text-foreground">{m.account_number}</span>
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted">
                         Pays :{' '}
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                        <span className="font-semibold text-foreground">
                           {m.countries && m.countries.length > 0
                             ? m.countries.map((c) => `${countryFlag(c)} ${countryName(c)}`).join(', ')
                             : 'tous les pays'}
                         </span>
                       </p>
-                      <p className="text-xs text-slate-500 break-all">
+                      <p className="text-xs text-muted break-all">
                         Justificatif :{' '}
                         <a
                           href={m.whatsapp_url || whatsappFromNumber(m.account_number)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
+                          className="font-semibold text-success-soft-foreground hover:underline"
                         >
                           {(m.whatsapp_url || whatsappFromNumber(m.account_number)).replace(/^https:\/\//, '')}
                         </a>
                       </p>
-                      {!m.logo && <p className="text-xs font-medium text-amber-700 dark:text-amber-400">QR code manquant</p>}
+                      {!m.logo && <p className="text-xs font-medium text-warning-soft-foreground">QR code manquant</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap sm:justify-end">
@@ -386,24 +386,23 @@ export default function PaymentMethodsPage() {
                       aria-label="Descendre"
                       disabled={i === methods.length - 1 || !!busyId}
                       onClick={() => move(i, 1)}
-                    >
+                        >
                       <ArrowDown className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1.5"
                       disabled={busyId === m.id}
                       onClick={() => patch(m.id, { is_active: !m.is_active }, m.is_active ? 'Masqué aux clients' : 'Affiché aux clients')}
-                    >
+                        >
                       {m.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       {m.is_active ? 'Masquer' : 'Afficher'}
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openModal(m)}>
+                    <Button variant="outline" size="sm" onClick={() => openModal(m)}>
                       <Pencil className="w-4 h-4" /> Modifier
                     </Button>
                     <Button variant="ghost" size="sm" aria-label={`Supprimer ${m.name}`} disabled={busyId === m.id} onClick={() => remove(m)}>
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4 text-danger" />
                     </Button>
                   </div>
                 </div>
@@ -418,8 +417,8 @@ export default function PaymentMethodsPage() {
         onClose={() => setModalOpen(false)}
         title={editing ? 'Modifier le moyen de paiement' : 'Nouveau moyen de paiement'}
         className="md:max-w-4xl"
-      >
-        <form onSubmit={save} className="grid gap-6 md:grid-cols-[1fr_20rem]">
+                        >
+        <form onSubmit={save} className="grid gap-3 sm:gap-4 md:grid-cols-[1fr_20rem]">
           <div className="space-y-4">
             <ImageField
               label="QR code de paiement *"
@@ -455,17 +454,17 @@ export default function PaymentMethodsPage() {
               }
             />
             <div className="space-y-1.5">
-              <label htmlFor="pm-color" className="block text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+              <label htmlFor="pm-color" className="block text-xs sm:text-xs font-semibold text-muted">
                 Couleur de l&apos;affiche
               </label>
               <div className="flex items-center gap-2">
-                <span className="w-11 h-11 shrink-0 rounded-xl border border-slate-200 dark:border-slate-700" style={{ background: form.brand_color }} />
+                <span className="w-11 h-11 shrink-0 rounded-xl border border-border" style={{ background: form.brand_color }} />
                 <input
                   id="pm-color"
                   value={form.brand_color}
                   maxLength={7}
                   onChange={(e) => setForm({ ...form, brand_color: e.target.value.trim() })}
-                  className="w-32 h-11 px-3 font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="input input--primary w-32 h-11 font-mono"
                 />
                 {form.brand_color !== DEFAULT_BRAND_COLOR && (
                   <Button type="button" variant="ghost" size="sm" onClick={() => setForm({ ...form, brand_color: DEFAULT_BRAND_COLOR })}>
@@ -504,8 +503,8 @@ export default function PaymentMethodsPage() {
             <div className="space-y-1.5">
               <label
                 htmlFor="pm-description"
-                className="block text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider"
-              >
+                className="block text-xs sm:text-xs font-semibold text-muted"
+                        >
                 Instructions (facultatif)
               </label>
               <textarea
@@ -515,7 +514,7 @@ export default function PaymentMethodsPage() {
                 placeholder="ex : Payez le montant exact du forfait."
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full px-4 sm:px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                className="textarea textarea--primary w-full"
               />
             </div>
             <CountryMultiSelect
@@ -525,12 +524,12 @@ export default function PaymentMethodsPage() {
               emptyLabel="Tous les pays"
               helperText="Au paiement, le client choisit son pays (par défaut celui de son compte) et ne voit que les moyens de ce pays. Aucun pays = disponible partout."
             />
-            <label className="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-3 text-sm font-medium text-foreground cursor-pointer">
               <input
                 type="checkbox"
                 checked={form.is_active}
                 onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                className="w-5 h-5 rounded accent-brand-600"
+                className="w-5 h-5 rounded-field accent-brand-600"
               />
               Afficher aux clients
             </label>
@@ -538,7 +537,7 @@ export default function PaymentMethodsPage() {
 
           {/* Aperçu côté client */}
           <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Aperçu pour le client</p>
+            <p className="text-xs font-semibold text-muted">Aperçu pour le client</p>
             <PaymentMethodPreview
               method={{
                 id: 'preview',
@@ -554,8 +553,8 @@ export default function PaymentMethodsPage() {
             />
           </div>
 
-          <div className="md:col-span-2 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row md:col-span-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Annuler
             </Button>
             <Button type="submit" isLoading={saving}>

@@ -32,26 +32,26 @@ const SEVERITY_CONFIG = {
   info: {
     icon: Bell,
     badge: 'info' as const,
-    bg: 'bg-blue-50 dark:bg-blue-950/20 border-l-blue-500',
-    iconColor: 'text-blue-500',
+    bg: 'bg-accent-soft',
+    iconColor: 'text-accent',
   },
   warning: {
     icon: AlertTriangle,
     badge: 'warning' as const,
-    bg: 'bg-amber-50 dark:bg-amber-950/20 border-l-amber-500',
-    iconColor: 'text-amber-500',
+    bg: 'bg-warning-soft',
+    iconColor: 'text-warning-soft-foreground',
   },
   danger: {
     icon: XCircle,
     badge: 'danger' as const,
-    bg: 'bg-red-50 dark:bg-red-950/20 border-l-red-500',
-    iconColor: 'text-red-500',
+    bg: 'bg-danger-soft',
+    iconColor: 'text-danger',
   },
   success: {
     icon: CheckCircle,
     badge: 'success' as const,
-    bg: 'bg-emerald-50 dark:bg-emerald-950/20 border-l-emerald-500',
-    iconColor: 'text-emerald-500',
+    bg: 'bg-success-soft',
+    iconColor: 'text-success-soft-foreground',
   },
 };
 
@@ -188,12 +188,12 @@ export default function PlatformNotificationsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-5 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notifications</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Notifications</h1>
+          <p className="text-xs text-muted mt-0.5">
             Alertes système générées automatiquement pour le Super Admin.
           </p>
         </div>
@@ -202,7 +202,6 @@ export default function PlatformNotificationsPage() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 text-xs"
               onClick={() => setDismissed(new Set(alerts.map((a: PlatformAlert) => a.id)))}
             >
               Tout marquer comme lu
@@ -211,10 +210,9 @@ export default function PlatformNotificationsPage() {
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 font-semibold"
             onClick={buildAlerts}
             isLoading={loading}
-          >
+            >
             <RefreshCw className="w-4 h-4" />
             Actualiser
           </Button>
@@ -223,17 +221,17 @@ export default function PlatformNotificationsPage() {
 
       {/* Alerts */}
       {loading ? (
-        <div className="py-10 flex justify-center items-center gap-2 text-slate-500 text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Analyse des alertes en cours...</span>
         </div>
       ) : visibleAlerts.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <Bell className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+        <Card className="text-center space-y-3 py-8">
+          <Bell className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">
             Aucune notification active
           </h3>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Toutes les alertes ont été lues. La plateforme fonctionne normalement.
           </p>
         </Card>
@@ -248,18 +246,18 @@ export default function PlatformNotificationsPage() {
               <Card
                 key={alert.id}
                 className={cn(
-                  'border-l-4 p-5 flex items-start gap-4 transition-all duration-200',
+                  'border-l-4 flex items-start gap-4 transition-all duration-200',
                   cfg.bg
                 )}
-              >
-                <div className={cn('p-2 rounded-lg bg-white/60 dark:bg-slate-900/40 shrink-0', cfg.iconColor)}>
+            >
+                <div className={cn('p-2 rounded-xl bg-white/60 shrink-0', cfg.iconColor)}>
                   <TypeIcon className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">{alert.title}</p>
+                        <p className="text-sm font-semibold text-foreground">{alert.title}</p>
                         <Badge variant={cfg.badge} className="text-xs">
                           <SevIcon className="w-3 h-3 mr-1" />
                           {alert.severity === 'danger' ? 'Urgent' :
@@ -267,24 +265,24 @@ export default function PlatformNotificationsPage() {
                            alert.severity === 'success' ? 'Info' : 'Info'}
                         </Badge>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{alert.message}</p>
-                      <p className="text-xs text-slate-400 mt-2">
+                      <p className="text-xs text-muted mt-1">{alert.message}</p>
+                      <p className="text-xs text-muted mt-2">
                         {new Date(alert.created_at).toLocaleString('fr-FR')}
                       </p>
                     </div>
                     <button
                       onClick={() => dismissAlert(alert.id)}
-                      className="shrink-0 p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-white/50 dark:hover:bg-slate-800/50 transition"
+                      className="shrink-0 p-1 rounded-xl text-muted hover:text-muted hover:bg-white/50 transition"
                       aria-label="Ignorer la notification"
-                    >
+            >
                       <XCircle className="w-4 h-4" />
                     </button>
                   </div>
                   {alert.link && (
                     <a
                       href={alert.link}
-                      className="inline-block mt-3 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                    >
+                      className="inline-block mt-3 text-xs font-semibold text-accent hover:underline"
+            >
                       Voir les détails →
                     </a>
                   )}
