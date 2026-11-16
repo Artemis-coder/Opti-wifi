@@ -1,6 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 
-const databaseUrl = "postgresql://neondb_owner:npg_eXQ0rhJs1Zum@ep-crimson-shape-ayvbw15x-pooler.c-5.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
+// Jamais d'adresse de base en dur : lue depuis l'environnement (base dev uniquement)
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error('DATABASE_URL manquant (lancer avec : node --env-file=.env.local test_webhook.mjs)');
+if (databaseUrl.includes('ep-flat-term')) throw new Error('Refus : script de test interdit sur la base de production');
 const sql = neon(databaseUrl);
 
 // Simulate getOrCreateSession
