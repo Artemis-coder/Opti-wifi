@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Building2,
   Search,
@@ -19,7 +20,8 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatTile } from '@/components/ui/StatTile';
-import { Button } from '@/components/ui/Button';
+import { KpiGrid } from '@/components/ui/KpiGrid';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { OrganizationStatus } from '@/types/platform';
@@ -76,9 +78,24 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 ];
 
 export default function PlatformClientsPage() {
+  return (
+    <Suspense>
+      <PlatformClientsContent />
+    </Suspense>
+  );
+}
+
+function PlatformClientsContent() {
+  // ?q= : recherche lancée depuis l'en-tête du back-office
+  const urlQuery = useSearchParams().get('q') ?? '';
   const [clients, setClients] = useState<ClientOrg[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(urlQuery);
+  const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
+  if (urlQuery !== prevUrlQuery) {
+    setPrevUrlQuery(urlQuery);
+    setSearch(urlQuery);
+  }
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionOrgId, setActionOrgId] = useState<string | null>(null);
@@ -190,19 +207,19 @@ export default function PlatformClientsPage() {
 
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Clients</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Clients</h1>
+          <p className="text-xs text-muted">
             Gérez tous les comptes clients de la plateforme SaaS.
           </p>
         </div>
       </div>
 
       {/* Chiffres clés */}
-      <div className={`grid gap-3 sm:gap-4 grid-cols-2 ${pendingCount > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
+      <KpiGrid cols={{ base: 2, lg: pendingCount > 0 ? 5 : 4 }}>
         <StatTile label="Total" value={clients.length} icon={Building2} accent="indigo" hint="Clients inscrits" />
         {pendingCount > 0 && (
           <StatTile label="En attente" value={pendingCount} icon={AlertCircle} accent="amber" hint="Inscriptions à valider" href="/platform/registrations" />
@@ -210,19 +227,19 @@ export default function PlatformClientsPage() {
         <StatTile label="Actifs" value={activeCount} icon={CheckCircle} accent="emerald" hint="Espaces en service" />
         <StatTile label="Suspendus" value={suspendedCount} icon={PauseCircle} accent="red" hint="Accès coupé" />
         <StatTile label="Nouveaux (7 j)" value={newClientsCount} icon={Activity} accent="blue" hint="Inscrits cette semaine" />
-      </div>
+      </KpiGrid>
 
       {/* Search + Filter */}
-      <Card className="p-4">
+      <Card>
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted" />
             <input
               type="text"
               placeholder="Rechercher par nom, email, téléphone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="input input--primary w-full pl-10 pr-3"
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -230,10 +247,10 @@ export default function PlatformClientsPage() {
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap ${
                   statusFilter === f.value
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500/10'
+                    ? 'bg-accent text-accent-foreground font-medium'
+                    : 'bg-default text-muted hover:bg-default-hover hover:text-foreground'
                 }`}
               >
                 {f.label}
@@ -245,15 +262,15 @@ export default function PlatformClientsPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Chargement des clients...</span>
         </div>
       ) : clients.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <Building2 className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun client trouvé</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+        <Card className="text-center space-y-3 py-8">
+          <Building2 className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucun client trouvé</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto">
             {search || statusFilter !== 'all'
               ? 'Aucun résultat pour cette recherche.'
               : 'La plateforme ne comporte pas encore de clients.'}
@@ -263,7 +280,7 @@ export default function PlatformClientsPage() {
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Client</th>
                   <th className="px-4 py-3">Téléphone</th>
@@ -275,20 +292,20 @@ export default function PlatformClientsPage() {
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {clients.map((client: ClientOrg) => {
                   const Icon = STATUS_ICONS[client.status as OrganizationStatus] || Building2;
                   const isActionDisabled = actionLoading === client.id;
                   return (
-                    <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <tr key={client.id} className="hover:bg-surface-secondary transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-900/10 text-blue-900 dark:text-amber-400 flex items-center justify-center border border-blue-900/20">
+                          <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
                             <Icon className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900 dark:text-white">{client.name}</p>
-                            {client.email && <p className="text-xs text-slate-500">{client.email}</p>}
+                            <p className="font-semibold text-foreground">{client.name}</p>
+                            {client.email && <p className="text-xs text-muted">{client.email}</p>}
                           </div>
                         </div>
                       </td>
@@ -296,16 +313,16 @@ export default function PlatformClientsPage() {
                         {client.phone ? (
                           <a
                             href={`tel:${client.phone.replace(/\s/g, '')}`}
-                            className="font-semibold text-slate-700 dark:text-slate-200 hover:text-brand-600 tabular-nums"
+                            className="font-semibold text-foreground hover:text-accent tabular-nums"
                             title="Appeler"
                           >
                             {client.phone}
                           </a>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-muted">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                      <td className="px-4 py-3 text-muted">
                         {client.contact_name || '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -320,10 +337,10 @@ export default function PlatformClientsPage() {
                           {getSubStatusBadge(client.subscription_status)}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
+                      <td className="px-4 py-3 text-muted">
                         {formatDateFR(client.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
+                      <td className="px-4 py-3 text-muted">
                         {client.subscription_end_date ? formatDateFR(client.subscription_end_date) : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -332,7 +349,7 @@ export default function PlatformClientsPage() {
                             <Button
                               variant="primary"
                               size="sm"
-                              className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1 shadow-xs"
+                              className="h-7 px-2.5 text-xs bg-success hover:bg-success-hover text-success-foreground font-semibold flex items-center gap-1 shadow-xs"
                               onClick={() => handleStatusAction(client.id, 'approve', client.name)}
                               disabled={!!isActionDisabled}
                               title="Valider et approuver ce client"
@@ -345,7 +362,7 @@ export default function PlatformClientsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-emerald-600 hover:text-emerald-700"
+                              className="p-1 h-7 text-success-soft-foreground hover:text-success-soft-foreground"
                               onClick={() => handleStatusAction(client.id, 'reactivate', client.name)}
                               disabled={!!isActionDisabled}
                               title="Réactiver l'espace"
@@ -357,7 +374,7 @@ export default function PlatformClientsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-red-600 hover:text-red-700"
+                              className="p-1 h-7 text-danger hover:text-danger"
                               onClick={() => handleStatusAction(client.id, 'suspend', client.name)}
                               disabled={!!isActionDisabled}
                               title="Suspendre l'espace"
@@ -369,7 +386,7 @@ export default function PlatformClientsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-red-700 hover:text-red-800"
+                              className="p-1 h-7 text-danger hover:text-danger"
                               onClick={() => handleStatusAction(client.id, 'archive', client.name)}
                               disabled={!!isActionDisabled}
                               title="Supprimer l'organisation"
@@ -377,11 +394,9 @@ export default function PlatformClientsPage() {
                               {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                             </Button>
                           )}
-                          <Link href={`/platform/clients/${client.id}`}>
-                            <Button variant="ghost" size="sm" className="p-1 h-7 text-slate-600 hover:text-slate-900">
+                          <Link href={`/platform/clients/${client.id}`} className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'p-1 h-7 text-muted hover:text-foreground' })}>
                               <MoreHorizontal className="w-3.5 h-3.5" />
-                            </Button>
-                          </Link>
+                            </Link>
                         </div>
                       </td>
                     </tr>

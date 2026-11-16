@@ -50,16 +50,16 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg px-3 py-2 text-xs space-y-1 min-w-36">
-      <p className="font-bold text-slate-900 dark:text-white first-letter:uppercase">{monthText(p.month, 'long')}</p>
-      <p className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
-        Commissions <span className="font-semibold tabular-nums text-slate-900 dark:text-white">{money(p.total)}</span>
+    <div className="space-y-5 rounded-2xl border border-border bg-surface shadow-lg px-3 py-2 text-xs min-w-36">
+      <p className="font-semibold text-foreground first-letter:">{monthText(p.month, 'long')}</p>
+      <p className="flex justify-between gap-3 text-muted">
+        Commissions <span className="font-semibold tabular-nums text-foreground">{money(p.total)}</span>
       </p>
-      <p className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
-        Collectes <span className="font-semibold tabular-nums text-slate-900 dark:text-white">{p.count}</span>
+      <p className="flex justify-between gap-3 text-muted">
+        Collectes <span className="font-semibold tabular-nums text-foreground">{p.count}</span>
       </p>
       {p.tag && (
-        <p className="font-semibold text-slate-700 dark:text-slate-200">{p.tag === 'peak' ? '▲ Pic de la période' : '▼ Mois le plus bas'}</p>
+        <p className="font-semibold text-foreground">{p.tag === 'peak' ? '▲ Pic de la période' : '▼ Mois le plus bas'}</p>
       )}
     </div>
   );
@@ -72,7 +72,7 @@ function TagLabel(props: { x?: number | string; y?: number | string; width?: num
   if (!point?.tag) return null;
   const cx = Number(x) + Number(width) / 2;
   return (
-    <text x={cx} y={Number(y) - 8} textAnchor="middle" className="fill-slate-700 dark:fill-slate-200" fontSize={11} fontWeight={700}>
+    <text x={cx} y={Number(y) - 8} textAnchor="middle" className="fill-muted" fontSize={11} fontWeight={700}>
       {point.tag === 'peak' ? '▲ Pic' : '▼ Plus bas'}
     </text>
   );
@@ -113,15 +113,15 @@ export function CommissionsChart({ months }: { months: { month: string; total: n
         tickFormatter={(v: number) => money(v)}
       />
     ),
-    grid: <CartesianGrid vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" strokeDasharray="3 3" />,
+    grid: <CartesianGrid vertical={false} stroke="currentColor" className="text-muted" strokeDasharray="3 3" />,
   };
 
   return (
-    <Card className="p-4 sm:p-5 space-y-4">
+    <Card className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-white">Mes commissions par mois</h2>
+        <h2 className="text-sm font-semibold text-foreground">Mes commissions par mois</h2>
         {/* Choix de l'affichage */}
-        <div role="group" aria-label="Type de graphique" className="inline-flex rounded-full border border-slate-200 dark:border-slate-700 p-0.5">
+        <div role="group" aria-label="Type de graphique" className="inline-flex rounded-full border border-border p-0.5">
           {(
             [
               { value: 'bar', label: 'Barres', icon: BarChart3 },
@@ -134,10 +134,10 @@ export function CommissionsChart({ months }: { months: { month: string; total: n
               aria-pressed={mode === o.value}
               onClick={() => setMode(o.value)}
               className={cn(
-                'inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold transition',
+                'inline-flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-semibold transition',
                 mode === o.value
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white',
+                  ? 'bg-foreground text-background'
+                  : 'text-muted hover:text-foreground',
               )}
             >
               <o.icon className="w-3.5 h-3.5" /> {o.label}
@@ -173,7 +173,7 @@ export function CommissionsChart({ months }: { months: { month: string; total: n
                 // Points visibles seulement sur le pic et le mois le plus bas, entourés de la couleur du fond
                 dot={(d: { cx?: number; cy?: number; index?: number }) =>
                   points[d.index ?? -1]?.tag ? (
-                    <circle key={d.index} cx={d.cx} cy={d.cy} r={5} fill="currentColor" stroke="white" strokeWidth={2} className="dark:stroke-slate-900" />
+                    <circle key={d.index} cx={d.cx} cy={d.cy} r={5} fill="currentColor" stroke="white" strokeWidth={2} className="" />
                   ) : (
                     <g key={d.index} />
                   )
@@ -190,19 +190,19 @@ export function CommissionsChart({ months }: { months: { month: string; total: n
       {/* Pic et mois le plus bas, en clair */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
         {peak && (
-          <p className="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-3 py-2">
-            <ArrowUp className="w-4 h-4 text-slate-500" />
-            <span className="text-slate-500">Pic :</span>
-            <span className="inline-block font-semibold text-slate-900 dark:text-white first-letter:uppercase">{monthText(peak.month, 'long')}</span>
-            <span className="ml-auto font-bold tabular-nums text-slate-900 dark:text-white">{money(peak.total)}</span>
+          <p className="flex items-center gap-2 rounded-xl bg-surface-secondary px-3 py-2">
+            <ArrowUp className="w-4 h-4 text-muted" />
+            <span className="text-muted">Pic :</span>
+            <span className="inline-block font-semibold text-foreground first-letter:">{monthText(peak.month, 'long')}</span>
+            <span className="ml-auto font-semibold tabular-nums text-foreground">{money(peak.total)}</span>
           </p>
         )}
         {low && (
-          <p className="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-3 py-2">
-            <ArrowDown className="w-4 h-4 text-slate-500" />
-            <span className="text-slate-500">Plus bas :</span>
-            <span className="inline-block font-semibold text-slate-900 dark:text-white first-letter:uppercase">{monthText(low.month, 'long')}</span>
-            <span className="ml-auto font-bold tabular-nums text-slate-900 dark:text-white">{money(low.total)}</span>
+          <p className="flex items-center gap-2 rounded-xl bg-surface-secondary px-3 py-2">
+            <ArrowDown className="w-4 h-4 text-muted" />
+            <span className="text-muted">Plus bas :</span>
+            <span className="inline-block font-semibold text-foreground first-letter:">{monthText(low.month, 'long')}</span>
+            <span className="ml-auto font-semibold tabular-nums text-foreground">{money(low.total)}</span>
           </p>
         )}
       </div>

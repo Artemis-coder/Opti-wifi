@@ -52,10 +52,10 @@ export function AmountsToggle({
       title={label}
       className={cn(
         'inline-flex items-center justify-center gap-1.5 rounded-xl transition-colors',
-        withLabel ? 'h-9 px-3 text-xs font-semibold' : size === 'sm' ? 'w-7 h-7 rounded-lg' : 'w-10 h-10',
+        withLabel ? 'h-9 px-3 text-xs font-semibold' : size === 'sm' ? 'w-7 h-7 rounded-xl' : 'w-10 h-10',
         hidden
-          ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'
-          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800',
+          ? 'bg-warning-soft text-warning-soft-foreground hover:bg-warning-soft'
+          : 'text-muted hover:bg-default hover:text-foreground',
         className
       )}
     >

@@ -1,23 +1,55 @@
 'use client';
 
 import React from 'react';
-import { Menu, Search, LogOut } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Avatar, Button, Dropdown, Label, SearchField, Separator } from '@heroui/react';
+import { LogOut, Menu, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { getPlatformPageTitle } from '@/components/platform/PlatformSidebar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { usePathname, useRouter } from 'next/navigation';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils/cn';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
-interface PlatformHeaderProps {
-  onOpenMobileMenu?: () => void;
+function initials(name: string): string {
+  const parts = name.trim().split(/[\s@._-]+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? 'S') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
-export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
+function ConnectionIndicator() {
+  const { isOnline, isOffline, isUnstable } = useOnlineStatus();
+  if (isOffline) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-danger">
+        <WifiOff className="size-3.5" /> Hors ligne
+      </span>
+    );
+  }
+  if (isUnstable) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-warning">
+        <AlertTriangle className="size-3.5" /> Connexion instable
+      </span>
+    );
+  }
+  if (isOnline) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-success">
+        <Wifi className="size-3.5" /> En ligne
+      </span>
+    );
+  }
+  return null;
+}
+
+/** En-tête du back-office : titre de page, recherche client, notifications, compte. */
+export function PlatformHeader({ onOpenMobileMenu }: { onOpenMobileMenu?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const { platformUser, logout } = usePlatformAuthStore();
   const supabase = createClient();
+
+  const displayName = platformUser?.full_name || platformUser?.email || 'Super admin';
+  const roleLabel = platformUser?.role === 'super_admin' ? 'Super administrateur' : 'Support';
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -25,58 +57,71 @@ export function PlatformHeader({ onOpenMobileMenu }: PlatformHeaderProps) {
     router.push('/login');
   };
 
+  const handleSearch = (value: string) => {
+    const q = value.trim();
+    router.push(q ? `/platform/clients?q=${encodeURIComponent(q)}` : '/platform/clients');
+  };
+
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
-      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-        <button
-          type="button"
-          onClick={onOpenMobileMenu}
-          className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition"
-          aria-label="Ouvrir le menu mobile"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-
-        <form className="hidden sm:flex items-center relative">
-          <input
-            type="text"
-            placeholder="Rechercher un client, un utilisateur, une facture..."
-            className="w-64 lg:w-80 h-9 pl-10 pr-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-          />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3" />
-        </form>
-
-        <h1 className="sm:hidden text-base font-bold text-slate-900 dark:text-white truncate">{getPlatformPageTitle(pathname)}</h1>
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-separator bg-background/85 px-4 backdrop-blur-md sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        {/* Mobile : bouton Menu du modèle HeroUI « Navigation Drawer » */}
+        {onOpenMobileMenu && (
+          <Button isIconOnly variant="secondary" size="sm" aria-label="Ouvrir le menu" className="shrink-0 lg:hidden" onPress={onOpenMobileMenu}>
+            <Menu className="size-4" />
+          </Button>
+        )}
+        <h1 className="truncate text-base font-semibold text-foreground lg:text-lg">{getPlatformPageTitle(pathname)}</h1>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <SearchField aria-label="Rechercher un client" className="hidden w-64 md:block lg:w-80" onSubmit={handleSearch}>
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input placeholder="Rechercher un client…" />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
+
         <NotificationBell />
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:block text-right">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              {platformUser?.full_name || platformUser?.email || 'Super Admin'}
-            </p>
-            <p className="text-xs text-slate-500">
-              {platformUser?.role === 'super_admin' ? '👑 Super Administrateur' : 'Support'}
-            </p>
-          </div>
-          <div className="w-8 h-8 rounded-full bg-brand-900 text-brand-400 flex items-center justify-center font-bold text-sm border border-brand-500/30">
-            {platformUser?.full_name?.[0] || platformUser?.email?.[0] || 'S'}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          className={cn(
-            'p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition'
-          )}
-          aria-label="Déconnexion"
-          title="Déconnexion"
-        >
-          <LogOut className="w-5 h-5" />
-        </button>
+        <Dropdown>
+          <Dropdown.Trigger
+            aria-label="Menu du compte"
+            className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <Avatar size="sm" color="accent" variant="soft">
+              <Avatar.Fallback>{initials(displayName)}</Avatar.Fallback>
+            </Avatar>
+            <span className="hidden text-left sm:block">
+              <span className="block max-w-40 truncate text-sm font-medium text-foreground">{displayName}</span>
+              <span className="block text-xs text-muted">{roleLabel}</span>
+            </span>
+          </Dropdown.Trigger>
+          <Dropdown.Popover placement="bottom end" className="min-w-64">
+            <div className="px-3 pb-2 pt-3">
+              <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
+              <p className="text-xs text-muted">{roleLabel}</p>
+              <div className="mt-2">
+                <ConnectionIndicator />
+              </div>
+            </div>
+            <Separator />
+            <Dropdown.Menu
+              aria-label="Compte"
+              onAction={(key) => {
+                if (key === 'logout') void handleLogout();
+              }}
+            >
+              <Dropdown.Item id="logout" textValue="Déconnexion" variant="danger">
+                <div className="flex w-full items-center justify-between gap-2">
+                  <Label>Déconnexion</Label>
+                  <LogOut className="size-3.5 text-danger" />
+                </div>
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
       </div>
     </header>
   );

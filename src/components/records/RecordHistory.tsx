@@ -16,13 +16,13 @@ interface HistoryEvent {
 }
 
 const KIND: Record<HistoryEvent['kind'], { icon: LucideIcon; tone: string }> = {
-  created: { icon: PlusCircle, tone: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' },
-  requested: { icon: Send, tone: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300' },
-  approved: { icon: CheckCircle2, tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' },
-  rejected: { icon: XCircle, tone: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300' },
-  cancelled: { icon: XCircle, tone: 'bg-slate-100 text-slate-500 dark:bg-slate-800' },
-  updated: { icon: Pencil, tone: 'bg-brand-100 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300' },
-  deleted: { icon: Trash2, tone: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300' },
+  created: { icon: PlusCircle, tone: 'bg-default text-muted' },
+  requested: { icon: Send, tone: 'bg-warning-soft text-warning-soft-foreground' },
+  approved: { icon: CheckCircle2, tone: 'bg-success-soft text-success-soft-foreground' },
+  rejected: { icon: XCircle, tone: 'bg-danger-soft text-danger' },
+  cancelled: { icon: XCircle, tone: 'bg-default text-muted' },
+  updated: { icon: Pencil, tone: 'bg-accent-soft text-accent' },
+  deleted: { icon: Trash2, tone: 'bg-danger-soft text-danger' },
 };
 
 const when = (d: string) =>
@@ -83,16 +83,16 @@ export function RecordHistory({ type, id, refreshKey }: { type: 'collection' | '
   const what = type === 'collection' ? 'Collecte enregistrée' : 'Allocation enregistrée';
 
   return (
-    <Card className="p-4 sm:p-6 space-y-4 hover:shadow-xs">
-      <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-        <History className="w-4 h-4 text-brand-600" /> Historique des modifications
+    <Card className="space-y-4 hover:shadow-xs">
+      <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <History className="w-4 h-4 text-accent" /> Historique des modifications
       </h2>
       {!events ? (
-        <p className="text-sm text-slate-500 flex items-center gap-2">
+        <p className="text-sm text-muted flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
         </p>
       ) : (
-        <ol className="relative space-y-4 before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-slate-200 dark:before:bg-slate-800">
+        <ol className="relative space-y-4 before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-default">
           {events.map((e, i) => {
             const K = KIND[e.kind];
             return (
@@ -101,23 +101,23 @@ export function RecordHistory({ type, id, refreshKey }: { type: 'collection' | '
                   <K.icon className="w-4 h-4" />
                 </span>
                 <div className="min-w-0 flex-1 pt-0.5">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{sentence(e, what)}</p>
-                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <p className="text-sm font-semibold text-foreground">{sentence(e, what)}</p>
+                  <p className="text-xs text-muted flex items-center gap-1">
                     <Clock className="w-3 h-3" /> {when(e.at)}
                   </p>
                   {e.fields && e.fields.length > 0 && (
                     <ul className="mt-1.5 space-y-0.5">
                       {e.fields.map((f) => (
-                        <li key={f.field} className="text-xs text-slate-600 dark:text-slate-300">
+                        <li key={f.field} className="text-xs text-muted">
                           <span className="font-semibold">{f.label}</span> :{' '}
-                          <span className="line-through text-slate-400 tabular-nums">{value(f.field, f.before)}</span> →{' '}
-                          <span className="font-semibold text-slate-900 dark:text-white tabular-nums">{value(f.field, f.after)}</span>
+                          <span className="line-through text-muted tabular-nums">{value(f.field, f.before)}</span> →{' '}
+                          <span className="font-semibold text-foreground tabular-nums">{value(f.field, f.after)}</span>
                         </li>
                       ))}
                     </ul>
                   )}
                   {e.note && (
-                    <p className="mt-1 text-xs text-slate-500 italic">
+                    <p className="mt-1 text-xs text-muted italic">
                       {e.kind === 'requested' ? 'Motif' : 'Note'} : « {e.note} »
                     </p>
                   )}

@@ -122,8 +122,8 @@ export default function AllocationDetailPage() {
 
   if (loading) {
     return (
-      <div className="py-24 flex flex-col items-center gap-3 text-slate-500 text-sm">
-        <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
+      <div className="py-10 flex flex-col items-center gap-3 text-muted text-sm">
+        <Loader2 className="w-6 h-6 animate-spin text-accent" />
         <span>Chargement de l&apos;allocation...</span>
       </div>
     );
@@ -131,14 +131,14 @@ export default function AllocationDetailPage() {
 
   if (notFound || !allocation) {
     return (
-      <Card className="p-10 text-center space-y-3 max-w-md mx-auto">
-        <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+      <Card className="text-center space-y-3 max-w-md mx-auto py-8">
+        <div className="w-14 h-14 rounded-xl bg-danger-soft text-danger flex items-center justify-center mx-auto">
           <ArrowLeftRight className="w-7 h-7" />
         </div>
-        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+        <h3 className="text-base font-semibold text-foreground">
           Allocation introuvable
         </h3>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           Cette opération d&apos;allocation n&apos;existe pas ou vous n&apos;y avez pas accès.
         </p>
         <Button variant="secondary" onClick={() => router.push('/allocations')} className="gap-2">
@@ -154,34 +154,34 @@ export default function AllocationDetailPage() {
   const totalValue = allocation.quantite * unitPrice;
 
   const typeConfig = isReturn
-    ? { label: 'Rendu (Échange)', variant: 'danger' as const, color: 'text-red-600', Icon: ArrowDownRight }
+    ? { label: 'Rendu (Échange)', variant: 'danger' as const, color: 'text-danger', Icon: ArrowDownRight }
     : isReceive
-    ? { label: 'Reçu (Échange)', variant: 'success' as const, color: 'text-emerald-600', Icon: ArrowUpRight }
-    : { label: 'Allocation / Réassort', variant: 'info' as const, color: 'text-brand-600', Icon: Ticket };
+    ? { label: 'Reçu (Échange)', variant: 'success' as const, color: 'text-success-soft-foreground', Icon: ArrowUpRight }
+    : { label: 'Allocation / Réassort', variant: 'info' as const, color: 'text-accent', Icon: Ticket };
 
   const TypeIcon = typeConfig.Icon;
 
   return (
-    <div className="space-y-5 max-w-3xl mx-auto pb-10">
+    <div className="space-y-5 max-w-3xl mx-auto">
       {/* ── Back nav + Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <Link
             href="/allocations"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition mb-2"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-accent transition mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Retour aux allocations
           </Link>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <ArrowLeftRight className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <ArrowLeftRight className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
             Détail de l&apos;allocation
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Référence : <span className="font-mono text-slate-700 dark:text-slate-300">{allocation.id}</span>
+          <p className="text-xs text-muted mt-0.5">
+            Référence : <span className="font-mono text-foreground">{allocation.id}</span>
           </p>
         </div>
-        <Badge variant={typeConfig.variant} className="self-start sm:self-auto text-sm px-3 py-1 gap-1.5 font-bold">
+        <Badge variant={typeConfig.variant} className="self-start sm:self-auto text-sm px-3 py-1 gap-1.5 font-semibold">
           <TypeIcon className="w-3.5 h-3.5" />
           {typeConfig.label}
         </Badge>
@@ -203,48 +203,48 @@ export default function AllocationDetailPage() {
       )}
 
       {/* ── Summary Card: Acteurs & Horodatages ── */}
-      <Card className="p-4 sm:p-6 border-slate-200 dark:border-slate-800 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card className="border-border space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Point de vente */}
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
+            <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
               <Store className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Point de vente</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate">
+              <p className="text-xs font-semibold text-muted">Point de vente</p>
+              <p className="text-sm font-semibold text-foreground mt-0.5 truncate">
                 {allocation.pos?.nom || '—'}
               </p>
               {allocation.pos?.ville && (
-                <p className="text-[11px] text-slate-500 truncate">{allocation.pos.ville}</p>
+                <p className="text-xs text-muted truncate">{allocation.pos.ville}</p>
               )}
             </div>
           </div>
 
           {/* Alloué par */}
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <div className="w-9 h-9 rounded-lg bg-default flex items-center justify-center shrink-0">
+              <User className="w-4 h-4 text-muted" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Alloué par</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate">
+              <p className="text-xs font-semibold text-muted">Alloué par</p>
+              <p className="text-sm font-semibold text-foreground mt-0.5 truncate">
                 {allocation.allocateur?.nom || 'Système'}
               </p>
               {allocation.allocateur?.email && (
-                <p className="text-[11px] text-slate-500 truncate">{allocation.allocateur.email}</p>
+                <p className="text-xs text-muted truncate">{allocation.allocateur.email}</p>
               )}
             </div>
           </div>
 
           {/* Date d'allocation */}
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-              <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <div className="w-9 h-9 rounded-lg bg-default flex items-center justify-center shrink-0">
+              <Calendar className="w-4 h-4 text-muted" />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Date d&apos;opération</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+              <p className="text-xs font-semibold text-muted">Date d&apos;opération</p>
+              <p className="text-sm font-semibold text-foreground mt-0.5">
                 {formatDateOnlyFR(allocation.date_allocation || allocation.created_at)}
               </p>
             </div>
@@ -252,12 +252,12 @@ export default function AllocationDetailPage() {
 
           {/* Enregistré dans le système (bonne heure) */}
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
               <Clock className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Enregistré dans le système</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+              <p className="text-xs font-semibold text-muted">Enregistré dans le système</p>
+              <p className="text-sm font-semibold text-foreground mt-0.5">
                 {formatDateFR(allocation.created_at)}
               </p>
             </div>
@@ -265,7 +265,7 @@ export default function AllocationDetailPage() {
         </div>
 
         {/* Separator */}
-        <div className="border-t border-slate-200 dark:border-slate-800" />
+        <div className="border-t border-border" />
 
         {/* Chiffres de l'allocation : mêmes cadres que le reste de l'application */}
         <div className="grid grid-cols-2 gap-3">
@@ -297,12 +297,12 @@ export default function AllocationDetailPage() {
         {/* Notes */}
         {allocation.notes && (
           <>
-            <div className="border-t border-slate-200 dark:border-slate-800" />
+            <div className="border-t border-border" />
             <div className="flex items-start gap-2.5">
-              <FileText className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+              <FileText className="w-4 h-4 text-muted mt-0.5 shrink-0" />
               <div>
-                <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-1">Notes &amp; Justificatif</p>
-                <p className="text-sm text-slate-700 dark:text-slate-300 italic">
+                <p className="text-xs font-semibold text-muted mb-1">Notes &amp; Justificatif</p>
+                <p className="text-sm text-foreground italic">
                   &laquo; {allocation.notes} &raquo;
                 </p>
               </div>
@@ -314,18 +314,18 @@ export default function AllocationDetailPage() {
       {/* ── Si échange groupé : afficher l'ensemble des opérations d'échange ── */}
       {allocation.exchange_group_id && allocation.exchangeOperations && allocation.exchangeOperations.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-            <Repeat className="w-4 h-4 text-amber-500" />
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Repeat className="w-4 h-4 text-warning-soft-foreground" />
             Opérations associées à cet échange
-            <span className="text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-semibold bg-warning-soft text-warning-soft-foreground px-2 py-0.5 rounded-full">
               Groupe {allocation.exchange_group_id.slice(0, 8)}
             </span>
           </h2>
 
-          <Card className="p-0 overflow-hidden border-slate-200 dark:border-slate-800">
+          <Card className="p-0 overflow-hidden border-border">
             <ResponsiveTable>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Nature</th>
                   <th className="px-4 py-3">Type de Ticket</th>
@@ -334,7 +334,7 @@ export default function AllocationDetailPage() {
                   <th className="px-4 py-3 text-right">Valeur</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {allocation.exchangeOperations.map((op) => {
                   const opIsReturn = op.type === 'exchange_return';
                   const opPrice = op.ticket_type?.prix || 0;
@@ -344,8 +344,8 @@ export default function AllocationDetailPage() {
                       key={op.id}
                       className={`transition ${
                         isCurrent
-                          ? 'bg-amber-50/60 dark:bg-amber-950/20 font-bold'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                          ? 'bg-warning-soft font-semibold'
+                          : 'hover:bg-surface-secondary '
                       }`}
                     >
                       <td className="px-4 py-3">
@@ -354,20 +354,20 @@ export default function AllocationDetailPage() {
                           {isCurrent ? ' (Courant)' : ''}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-slate-900 dark:text-white">
+                      <td className="px-4 py-3 text-foreground">
                         {op.ticket_type?.nom || `Type ${op.ticket_type_id.slice(0, 8)}`}
                       </td>
                       <td
-                        className={`px-4 py-3 text-right font-bold ${
-                          opIsReturn ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
+                        className={`px-4 py-3 text-right font-semibold ${
+                          opIsReturn ? 'text-danger ' : 'text-success-soft-foreground '
                         }`}
                       >
                         {opIsReturn ? `-${op.quantite}` : `+${op.quantite}`}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
+                      <td className="px-4 py-3 text-right text-muted">
                         {formatCurrencyFCFA(opPrice)}
                       </td>
-                      <td className="px-4 py-3 text-right font-extrabold text-slate-900 dark:text-white">
+                      <td className="px-4 py-3 text-right font-semibold text-foreground">
                         {formatCurrencyFCFA(op.quantite * opPrice)}
                       </td>
                     </tr>

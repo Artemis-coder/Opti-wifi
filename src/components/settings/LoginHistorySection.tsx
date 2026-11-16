@@ -71,12 +71,12 @@ export function LoginHistorySection() {
   const last = entries?.[0];
 
   return (
-    <Card className="space-y-5">
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <History className="w-5 h-5 shrink-0 text-brand-600" />
+    <Card className="space-y-4">
+      <div className="flex items-center gap-3 pb-4 border-b border-border">
+        <History className="w-5 h-5 shrink-0 text-accent" />
         <div>
-          <p className="text-sm font-bold text-slate-900 dark:text-white">Connexions et appareils</p>
-          <p className="text-xs text-slate-500">
+          <p className="text-sm font-semibold text-foreground">Connexions et appareils</p>
+          <p className="text-xs text-muted">
             Chaque connexion à votre compte : appareil, adresse IP et lieu approximatif. Une connexion que vous ne reconnaissez pas ?
             Changez votre mot de passe dans l’onglet Sécurité.
           </p>
@@ -84,26 +84,26 @@ export function LoginHistorySection() {
       </div>
 
       {error ? (
-        <p className="text-sm text-slate-500">Historique indisponible pour le moment (connexion internet nécessaire).</p>
+        <p className="text-sm text-muted">Historique indisponible pour le moment (connexion internet nécessaire).</p>
       ) : !entries ? (
-        <p className="text-sm text-slate-500 flex items-center gap-2">
+        <p className="text-sm text-muted flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
         </p>
       ) : entries.length === 0 ? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted">
           Aucune connexion enregistrée pour le moment : les prochaines connexions apparaîtront ici.
         </p>
       ) : (
         <>
           {last && (
-            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
-              <span className="text-slate-500">Dernière connexion</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{when(last.at)}</span>
-              {place(last) && <span className="text-slate-600 dark:text-slate-300">{place(last)}</span>}
+            <div className="rounded-xl bg-surface-secondary px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+              <span className="text-muted">Dernière connexion</span>
+              <span className="font-semibold text-foreground">{when(last.at)}</span>
+              {place(last) && <span className="text-muted">{place(last)}</span>}
             </div>
           )}
 
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="divide-y divide-separator">
             {list.map((e) => {
               const device = DEVICE[e.deviceType || ''] ?? { label: 'Appareil', icon: Monitor };
               const where = place(e);
@@ -112,22 +112,22 @@ export function LoginHistorySection() {
                 <li key={e.id} className="py-3 flex gap-3">
                   <span
                     className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                      e.id === currentId ? 'bg-brand-500/10 text-brand-600' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
+                      'w-10 h-10 rounded-lg flex items-center justify-center shrink-0',
+                      e.id === currentId ? 'bg-accent-soft text-accent' : 'bg-default text-muted'
                     )}
                   >
                     <device.icon className="w-5 h-5" />
                   </span>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-foreground flex flex-wrap items-center gap-2">
                       {[e.browser, e.os].filter(Boolean).join(' sur ') || device.label}
-                      <span className="text-xs font-medium text-slate-500">· {device.label}</span>
+                      <span className="text-xs font-medium text-muted">· {device.label}</span>
                       {e.id === currentId && <Badge variant="success">Cet appareil</Badge>}
                     </p>
-                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <p className="text-xs text-muted flex items-center gap-1">
                       <Clock className="w-3 h-3 shrink-0" /> {when(e.at)}
                     </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    <p className="text-xs text-muted flex flex-wrap items-center gap-x-3 gap-y-0.5">
                       <span className="inline-flex items-center gap-1">
                         <MapPin className="w-3 h-3 shrink-0" /> {where ?? 'Lieu inconnu'}
                       </span>
@@ -136,7 +136,7 @@ export function LoginHistorySection() {
                           href={`https://www.openstreetmap.org/?mlat=${e.latitude}&mlon=${e.longitude}#map=11/${e.latitude}/${e.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="tabular-nums text-brand-600 hover:text-brand-700 underline"
+                          className="tabular-nums text-accent hover:text-accent underline"
                           title="Voir sur la carte (position approximative)"
                         >
                           {e.latitude!.toFixed(4)}, {e.longitude!.toFixed(4)}
@@ -155,11 +155,11 @@ export function LoginHistorySection() {
           </ul>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs text-muted">
               Lieu déduit de l’adresse IP (précision : la ville). Historique conservé 180 jours.
             </p>
             {entries.length > 8 && (
-              <button type="button" onClick={() => setShowAll((v) => !v)} className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+              <button type="button" onClick={() => setShowAll((v) => !v)} className="text-xs font-semibold text-accent hover:text-accent">
                 {showAll ? 'Afficher moins' : `Tout afficher (${entries.length})`}
               </button>
             )}

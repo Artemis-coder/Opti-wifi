@@ -97,24 +97,24 @@ export default function PlatformInvoicesPage() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         <span>Chargement des factures...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Factures</h1>
-          <p className="text-xs text-slate-500">Factures de licence émises à chaque activation payante.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Factures</h1>
+          <p className="text-xs text-muted">Factures de licence émises à chaque activation payante.</p>
         </div>
         {totalOutstanding > 0 && (
           <div className="sm:text-right">
-            <p className="text-xs text-slate-500">Montant dû (impayé)</p>
-            <p className="text-xl font-bold text-red-600">{formatCurrencyFCFA(totalOutstanding)}</p>
+            <p className="text-xs text-muted">Montant dû (impayé)</p>
+            <p className="text-xl font-semibold text-danger">{formatCurrencyFCFA(totalOutstanding)}</p>
           </div>
         )}
       </div>
@@ -155,16 +155,16 @@ export default function PlatformInvoicesPage() {
         ]}
       />
 
-      <Card className="p-4">
+      <Card>
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted" />
             <input
               type="text"
               placeholder="Rechercher par nom de client..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="input input--primary w-full pl-10 pr-3"
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -172,10 +172,10 @@ export default function PlatformInvoicesPage() {
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap ${
                   statusFilter === f.value
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-500/10'
+                    ? 'bg-accent text-accent-foreground font-medium'
+                    : 'bg-default text-muted hover:bg-default-hover hover:text-foreground'
                 }`}
               >
                 {f.label}
@@ -186,15 +186,15 @@ export default function PlatformInvoicesPage() {
       </Card>
 
       {invoices.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune facture trouvée</h3>
+        <Card className="text-center space-y-3 py-8">
+          <FileText className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucune facture trouvée</h3>
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Numéro</th>
                   <th className="px-4 py-3">Client</th>
@@ -205,30 +205,30 @@ export default function PlatformInvoicesPage() {
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {invoices.map((inv: InvoiceRecord) => {
                   const config = STATUS_CONFIG[inv.status as InvoiceStatus] || STATUS_CONFIG.draft;
                   return (
-                    <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">{inv.invoice_number}</td>
+                    <tr key={inv.id} className="hover:bg-surface-secondary transition">
+                      <td className="px-4 py-3 font-mono text-xs text-muted">{inv.invoice_number}</td>
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900 dark:text-white">{inv.organization?.name || '—'}</p>
-                        <p className="text-xs text-slate-500">{inv.organization?.email || ''}</p>
+                        <p className="font-semibold text-foreground">{inv.organization?.name || '—'}</p>
+                        <p className="text-xs text-muted">{inv.organization?.email || ''}</p>
                       </td>
-                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{formatCurrencyFCFA(Number(inv.amount))}</td>
+                      <td className="px-4 py-3 font-semibold text-foreground">{formatCurrencyFCFA(Number(inv.amount))}</td>
                       <td className="px-4 py-3">
                         <Badge variant={config.color} className="text-xs">
                           {config.label}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{inv.issued_at ? formatDateFR(inv.issued_at) : '—'}</td>
-                      <td className="px-4 py-3 text-slate-500">
+                      <td className="px-4 py-3 text-muted">{inv.issued_at ? formatDateFR(inv.issued_at) : '—'}</td>
+                      <td className="px-4 py-3 text-muted">
                         {inv.plan_name ? `${inv.plan_name}${inv.duration_months ? ` · ${inv.duration_months} mois` : ''}` : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
                           href={`/platform/invoices/${inv.id}`}
-                          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-foreground bg-default hover:bg-default transition"
                         >
                           <Eye className="w-4 h-4" /> Voir
                         </Link>

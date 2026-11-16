@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -13,16 +13,9 @@ import {
   FileSpreadsheet,
   Users,
   Settings,
-  X,
   LogOut,
-  User as UserIcon,
   MapPin,
-  Wifi,
-  WifiOff,
-  AlertTriangle,
   CreditCard,
-  ChevronRight,
-  ShieldCheck,
   LifeBuoy,
   PlusCircle,
   Repeat,
@@ -32,9 +25,11 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
+import { Drawer, ScrollShadow } from '@heroui/react';
 import { cn } from '@/lib/utils/cn';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { PlanBadge } from '@/components/layout/PlanBadge';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -153,26 +148,11 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
     router.push('/login');
   };
 
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    if (isMobileOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape' && onCloseMobile) onCloseMobile();
-      };
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-        document.body.style.overflow = originalOverflow;
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }
-  }, [isMobileOpen, onCloseMobile]);
-
   const isAdmin = user?.role === 'administrateur';
   const isPosAccount = user?.role === 'point_de_vente';
+  const roleLabel = isAdmin ? 'Administrateur' : isPosAccount ? 'Point de vente' : 'Collecteur';
 
-  // Filter sections by user role
+  // Sections visibles selon le rôle
   const filteredSections = (
     user?.role === 'collecteur' ? collectorSections : isPosAccount ? posAccountSections : navSections
   )
@@ -182,188 +162,132 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
     }))
     .filter((section) => section.items.length > 0);
 
-  // Reusable Nav Content
-  const renderNavContent = (isMobile: boolean = false) => (
-    <div className="flex flex-col h-full bg-brand-950 text-white select-none">
-      {/* Brand Header */}
-      <div className="h-16 shrink-0 flex items-center justify-between gap-3 px-4 sm:px-5 border-b border-brand-800/80 bg-brand-950/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 shrink-0 rounded-xl overflow-hidden relative bg-brand-500/20 border border-brand-500/40 flex items-center justify-center shadow-inner">
-            <Image
-              src="/assets/logo.jpg"
-              alt="OptiSpace Logo"
-              width={40}
-              height={40}
-              className="object-cover"
-              priority
-            />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h2 className="font-bold text-base leading-tight tracking-wide text-white truncate">
-                OptiSpace
-              </h2>
-              {/* Forfait de l'organisation : ESSAI, DÉCO, STANDARD ou PRO */}
-              <PlanBadge userId={user?.id} />
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium tracking-wide truncate">
-              {isAdmin ? 'Espace Administrateur' : isPosAccount ? 'Espace Point de vente' : 'Espace Collecteur'}
-            </p>
-          </div>
-        </div>
+  // Entrée la plus précise : « Nouvelle collecte » ne rend pas « Mes collectes » actif
+  const matches = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'));
+  const isActive = (href: string) =>
+    matches(href) && !filteredSections.some((s) => s.items.some((o) => o.href.length > href.length && matches(o.href)));
 
-        {/* Close Button on Mobile Drawer */}
-        {isMobile && onCloseMobile && (
-          <button
-            type="button"
-            onClick={onCloseMobile}
-            className="md-ripple tap-target w-10 h-10 shrink-0 rounded-full bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition"
-            aria-label="Fermer le menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+  const connection = isOffline
+    ? { dot: 'bg-danger', label: 'Hors ligne' }
+    : isUnstable
+      ? { dot: 'bg-warning', label: 'Connexion instable' }
+      : isOnline
+        ? { dot: 'bg-success', label: 'En ligne' }
+        : null;
+
+  const brand = (
+    <div className="flex min-w-0 items-center gap-3">
+      <span className="relative size-9 shrink-0 overflow-hidden rounded-xl bg-surface-secondary">
+        <Image src="/assets/logo.jpg" alt="" width={36} height={36} className="object-cover" priority />
+      </span>
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-sm font-semibold text-foreground">OptiSpace</p>
+          {/* Forfait de l'organisation : Essai, Déco, Standard ou Pro */}
+          <PlanBadge userId={user?.id} />
+        </div>
+        <p className="truncate text-xs text-muted">Espace {roleLabel.toLowerCase()}</p>
       </div>
+    </div>
+  );
 
-      {/* User Status Card (especially prominent on mobile drawer) */}
-      <div className="p-3 mx-3 my-2 rounded-2xl bg-brand-900/50 border border-brand-800/60 flex items-center justify-between gap-3 shadow-sm">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center font-bold text-xs shrink-0">
-            {isAdmin ? <ShieldCheck className="w-5 h-5 text-amber-400" /> : <UserIcon className="w-5 h-5 text-brand-400" />}
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-white truncate">
-              {user?.nom || 'Utilisateur'}
-            </p>
-            <p className="text-[10px] font-semibold text-brand-400 uppercase tracking-wider truncate">
-              {isAdmin ? 'Administrateur' : isPosAccount ? 'Point de vente' : 'Collecteur'}
-            </p>
-          </div>
-        </div>
-
-        {/* Network indicator pill */}
-        <div className="shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-900/60 border border-slate-700/60 text-[10px] font-medium">
-          {isOnline && (
+  const account = (
+    <div className="flex items-center gap-3 rounded-xl bg-surface-secondary p-3">
+      <UserAvatar name={user?.nom} email={user?.email} className="shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">{user?.nom || 'Utilisateur'}</p>
+        <p className="flex items-center gap-1.5 truncate text-xs text-muted">
+          {roleLabel}
+          {connection && (
             <>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-emerald-300 hidden xs:inline">En ligne</span>
+              <span aria-hidden>·</span>
+              <span className={cn('size-1.5 shrink-0 rounded-full', connection.dot)} />
+              <span className="truncate">{connection.label}</span>
             </>
           )}
-          {isUnstable && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              <span className="text-amber-300 hidden xs:inline">Instable</span>
-            </>
-          )}
-          {isOffline && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-red-300 hidden xs:inline">Hors ligne</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Nav List with Grouping */}
-      <nav className="flex-1 px-3 py-1 space-y-4 overflow-y-auto overscroll-contain">
-        {filteredSections.map((section) => (
-          <div key={section.title} className="space-y-1">
-            <p className="text-[10px] font-bold text-slate-400/90 uppercase tracking-wider px-3 pt-2 pb-1">
-              {section.title}
-            </p>
-            <div className="space-y-0.5">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                // Entrée la plus précise : « Nouvelle collecte » ne rend pas « Mes collectes » actif
-                const matches = (href: string) =>
-                  pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'));
-                const isActive =
-                  matches(item.href) &&
-                  !filteredSections.some((s) =>
-                    s.items.some((other) => other.href.length > item.href.length && matches(other.href))
-                  );
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    data-tour={`nav:${item.href}`}
-                    onClick={onCloseMobile}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={cn(
-                      'md-ripple flex items-center justify-between gap-3 h-11 sm:h-10 px-3 rounded-xl text-xs sm:text-sm font-medium transition-colors duration-150',
-                      isActive
-                        ? 'bg-brand-500 text-slate-950 font-bold shadow-md'
-                        : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                    )}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Icon
-                        className={cn(
-                          'w-4 h-4 sm:w-5 sm:h-5 shrink-0 transition-colors',
-                          isActive ? 'text-slate-950 stroke-[2.4]' : 'text-slate-400'
-                        )}
-                      />
-                      <span className="truncate">{item.label}</span>
-                    </div>
-                    {isActive ? (
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-950 shrink-0" />
-                    ) : (
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-500/60 shrink-0" />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      {/* Footer Actions (Logout & Info) */}
-      <div className="p-3 border-t border-brand-800/80 bg-brand-950 space-y-2 shrink-0">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full h-11 flex items-center justify-center gap-2 rounded-xl text-xs font-bold text-red-300 bg-red-950/40 border border-red-900/60 hover:bg-red-900/50 hover:text-red-200 active:scale-[0.98] transition"
-        >
-          <LogOut className="w-4 h-4 shrink-0" />
-          <span>Déconnexion</span>
-        </button>
-
-        <p className="text-[10px] text-center text-slate-400 font-medium pt-1">
-          OptiSpace • Solution Wi-Fi Zone
         </p>
       </div>
     </div>
   );
 
+  const nav = (onNavigate?: () => void) => (
+    <nav aria-label="Navigation principale" className="flex flex-col gap-4">
+      {filteredSections.map((section) => (
+        <div key={section.title} className="flex flex-col gap-0.5">
+          <p className="px-3 pb-1 text-xs font-medium text-muted">{section.title}</p>
+          {section.items.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-tour={`nav:${item.href}`}
+                onClick={onNavigate}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-foreground outline-none transition-colors hover:bg-default',
+                  'focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+                  active && 'bg-default font-medium'
+                )}
+              >
+                <Icon className={cn('size-5 shrink-0', active ? 'text-foreground' : 'text-muted')} />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
+  );
+
+  const logoutButton = (
+    <button
+      type="button"
+      onClick={handleLogout}
+      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-danger outline-none transition-colors hover:bg-danger-soft focus-visible:ring-2 focus-visible:ring-focus"
+    >
+      <LogOut className="size-5 shrink-0" />
+      Déconnexion
+    </button>
+  );
+
   return (
     <>
-      {/* Desktop Persistent Sidebar */}
-      <aside className="hidden lg:block sticky top-0 h-screen shrink-0 w-64 border-r border-brand-800/80 shadow-xl">
-        {renderNavContent(false)}
+      {/* Bureau : colonne fixe */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-separator bg-surface lg:flex">
+        <div className="flex h-16 shrink-0 items-center px-5">{brand}</div>
+        <ScrollShadow className="flex-1 px-3 pb-4 pt-2" hideScrollBar>
+          {nav()}
+        </ScrollShadow>
+        <div className="shrink-0 space-y-1 border-t border-separator p-3">
+          {account}
+          {logoutButton}
+        </div>
       </aside>
 
-      {/* Mobile Slide-Over Drawer */}
-      {isMobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-50 flex"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu de navigation mobile"
-        >
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm md-anim-fade"
-            onClick={onCloseMobile}
-          />
-
-          {/* Drawer panel sliding in from left */}
-          <div className="relative z-10 w-[85vw] max-w-[340px] h-full bg-brand-950 shadow-2xl md-anim-drawer border-r border-brand-800/80 flex flex-col safe-top safe-bottom">
-            {renderNavContent(true)}
-          </div>
-        </div>
-      )}
+      {/* Mobile : tiroir depuis la gauche (bouton Menu de la barre du bas ou de l'en-tête) */}
+      <Drawer.Backdrop
+        isOpen={isMobileOpen}
+        onOpenChange={(open) => {
+          if (!open) onCloseMobile?.();
+        }}
+        className="lg:hidden"
+      >
+        <Drawer.Content placement="left">
+          <Drawer.Dialog>
+            <Drawer.CloseTrigger aria-label="Fermer le menu" />
+            <Drawer.Header>
+              <Drawer.Heading>Menu</Drawer.Heading>
+            </Drawer.Header>
+            <Drawer.Body className="space-y-4">
+              {account}
+              {nav(onCloseMobile)}
+            </Drawer.Body>
+            <Drawer.Footer className="safe-bottom">{logoutButton}</Drawer.Footer>
+          </Drawer.Dialog>
+        </Drawer.Content>
+      </Drawer.Backdrop>
     </>
   );
 }

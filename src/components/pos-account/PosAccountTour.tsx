@@ -147,7 +147,7 @@ export function PosAccountTour({ userId, ready }: { userId: string; ready: boole
       closeOnTargetClick={false}
       footer={
         <div className="flex w-full items-center justify-between gap-2">
-          <button type="button" onClick={finish} className="h-8 px-2 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+          <button type="button" onClick={finish} className="h-8 px-2 text-xs font-semibold text-muted hover:text-foreground">
             Passer
           </button>
           <div className="flex gap-2">
@@ -155,7 +155,7 @@ export function PosAccountTour({ userId, ready }: { userId: string; ready: boole
               <button
                 type="button"
                 onClick={() => setIndex(index - 1)}
-                className="inline-flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="inline-flex items-center gap-1 h-8 px-3 rounded-xl text-xs font-semibold bg-default text-foreground"
               >
                 <ArrowLeft className="w-3.5 h-3.5" /> Précédent
               </button>
@@ -163,7 +163,7 @@ export function PosAccountTour({ userId, ready }: { userId: string; ready: boole
             <button
               type="button"
               onClick={() => (last ? finish() : setIndex(index + 1))}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-semibold bg-brand-600 text-white hover:bg-brand-700"
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-xl text-xs font-semibold bg-accent text-accent-foreground hover:bg-accent-hover"
             >
               {last ? (
                 <>

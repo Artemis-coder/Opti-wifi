@@ -70,7 +70,7 @@ export function NewTicketForm({ endpoint, clients, onCreated, onCancel }: NewTic
         onChange={(e) => setSubject(e.target.value)}
         required
       />
-      <div className={forSupport ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : ''}>
+      <div className={forSupport ? 'grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4' : ''}>
         <CustomSelect label="Catégorie" value={category} onChange={setCategory} options={CATEGORY_OPTIONS} searchable={false} />
         {forSupport && (
           <CustomSelect label="Priorité" value={priority} onChange={setPriority} options={PRIORITY_OPTIONS} searchable={false} />
@@ -79,7 +79,7 @@ export function NewTicketForm({ endpoint, clients, onCreated, onCancel }: NewTic
       <div className="space-y-1.5">
         <label
           htmlFor="ticket-message"
-          className="block text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider"
+          className="block text-xs sm:text-xs font-semibold text-muted"
         >
           Message *
         </label>
@@ -97,7 +97,7 @@ export function NewTicketForm({ endpoint, clients, onCreated, onCancel }: NewTic
                 ? 'Décrivez la fonctionnalité souhaitée : ce que vous aimeriez pouvoir faire, et en quoi cela vous aiderait…'
                 : 'Décrivez votre problème : ce que vous faisiez, ce qui s’est passé, le message d’erreur…'
           }
-          className="w-full px-4 sm:px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          className="textarea textarea--primary w-full"
         />
       </div>
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">

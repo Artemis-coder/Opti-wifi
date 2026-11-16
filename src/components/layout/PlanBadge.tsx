@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { chipVariants } from '@heroui/styles';
 import { cn } from '@/lib/utils/cn';
 
 interface PlanInfo {
@@ -9,21 +10,19 @@ interface PlanInfo {
   trial: boolean;
 }
 
-/** Badge du forfait : libellé court et couleur propres à chaque formule. */
-export function planBadgeStyle(plan: PlanInfo): { label: string; className: string } {
+/** Badge du forfait : Chip HeroUI pleine (variante primary), lisible en clair comme en sombre. */
+export function planBadgeStyle(plan: PlanInfo): { label: string; color: 'accent' | 'success' | 'warning' } {
   const name = (plan.name || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
-  if (plan.trial) return { label: 'ESSAI', className: 'bg-sky-500/20 text-sky-300 border-sky-400/40' };
-  if (name.includes('decouverte')) return { label: 'DÉCO', className: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' };
-  if (name.includes('standard')) return { label: 'STANDARD', className: 'bg-indigo-500/25 text-indigo-200 border-indigo-400/40' };
-  if (name.includes('pro') || name.includes('decideur')) {
-    return { label: 'PRO', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
-  }
+  if (plan.trial) return { label: 'Essai', color: 'accent' };
+  if (name.includes('decouverte')) return { label: 'Déco', color: 'success' };
+  if (name.includes('standard')) return { label: 'Standard', color: 'accent' };
+  if (name.includes('pro') || name.includes('decideur')) return { label: 'Pro', color: 'warning' };
   // Autre forfait : son premier mot
-  const first = (plan.name || '').split(/\s+/)[0]?.toUpperCase().slice(0, 10);
-  return { label: first || 'FORFAIT', className: 'bg-slate-500/20 text-slate-300 border-slate-400/30' };
+  const first = (plan.name || '').split(/\s+/)[0]?.slice(0, 10);
+  return { label: first || 'Forfait', color: 'accent' };
 }
 
 /**
@@ -53,12 +52,9 @@ export function PlanBadge({ userId }: { userId: string | undefined }) {
   }, [userId]);
 
   if (!plan) return null;
-  const { label, className } = planBadgeStyle(plan);
+  const { label, color } = planBadgeStyle(plan);
   return (
-    <span
-      title={plan.trial ? 'Essai gratuit' : `Forfait ${plan.name ?? ''}`}
-      className={cn('shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border tracking-wide', className)}
-    >
+    <span title={plan.trial ? 'Essai gratuit' : `Forfait ${plan.name ?? ''}`} className={cn(chipVariants({ color, variant: 'primary', size: 'sm' }).base(), 'px-1.5 font-semibold')}>
       {label}
     </span>
   );

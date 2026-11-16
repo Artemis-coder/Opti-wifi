@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/Button';
 import type { HealthCheck, HealthStatus } from '@/lib/bot-health';
 
 const ICONS: Record<HealthStatus, { icon: React.ElementType; className: string; label: string }> = {
-  ok: { icon: CheckCircle2, className: 'text-emerald-600', label: 'OK' },
-  warning: { icon: AlertTriangle, className: 'text-amber-500', label: 'Attention' },
-  error: { icon: XCircle, className: 'text-red-500', label: 'Erreur' },
-  missing: { icon: CircleSlash, className: 'text-slate-400', label: 'Non configuré' },
+  ok: { icon: CheckCircle2, className: 'text-success-soft-foreground', label: 'OK' },
+  warning: { icon: AlertTriangle, className: 'text-warning-soft-foreground', label: 'Attention' },
+  error: { icon: XCircle, className: 'text-danger', label: 'Erreur' },
+  missing: { icon: CircleSlash, className: 'text-muted', label: 'Non configuré' },
 };
 
 /**
@@ -43,12 +43,12 @@ export function BotHealthCard() {
   return (
     <Card className="space-y-4">
       <div className="flex items-start gap-3">
-        <span className="w-10 h-10 shrink-0 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center">
+        <span className="w-10 h-10 shrink-0 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
           <Stethoscope className="w-5 h-5" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Santé du bot Telegram</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-base font-semibold text-foreground">Santé du bot Telegram</h2>
+          <p className="text-xs text-muted">
             Le serveur vérifie lui-même ses clés (Telegram, IA, Vercel). Seuls les résultats s&apos;affichent : aucune clé n&apos;est montrée.
           </p>
         </div>
@@ -56,11 +56,11 @@ export function BotHealthCard() {
 
       {checks && (
         <>
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+          <p className="text-xs font-semibold text-muted">
             {problems === 0 ? 'Tout fonctionne' : `${problems} point${problems > 1 ? 's' : ''} à corriger`}
-            {env && <span className="font-normal text-slate-500"> · environnement {env}</span>}
+            {env && <span className="font-normal text-muted"> · environnement {env}</span>}
           </p>
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800">
+          <ul className="divide-y divide-separator rounded-xl border border-border">
             {checks.map((c) => {
               const s = ICONS[c.status];
               const Icon = s.icon;
@@ -68,8 +68,8 @@ export function BotHealthCard() {
                 <li key={c.id} className="flex items-start gap-3 px-3.5 py-3">
                   <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${s.className}`} aria-label={s.label} />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{c.label}</p>
-                    <p className="text-xs text-slate-500 break-words">{c.message}</p>
+                    <p className="text-sm font-semibold text-foreground">{c.label}</p>
+                    <p className="text-xs text-muted break-words">{c.message}</p>
                   </div>
                 </li>
               );

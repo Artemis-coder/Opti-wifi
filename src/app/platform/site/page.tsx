@@ -1,5 +1,6 @@
 'use client';
 
+import { Switch } from '@heroui/react';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -94,14 +95,14 @@ function SiteContentEditor() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         <span>Chargement du site vitrine...</span>
       </div>
     );
   }
   if (!draft || !saved) {
-    return <p className="py-12 text-center text-sm text-slate-500">Contenu du site indisponible.</p>;
+    return <p className="py-10 text-center text-sm text-muted">Contenu du site indisponible.</p>;
   }
 
   const dirty = JSON.stringify(draft[tab]) !== JSON.stringify(saved[tab]);
@@ -136,11 +137,11 @@ function SiteContentEditor() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-5 max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Site vitrine</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Site vitrine</h1>
+          <p className="text-xs text-muted">
             Textes, liens et sections de la page de présentation d&apos;OptiSpace.
             {updatedAt && ` Dernière modification : ${new Date(updatedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}.`}
           </p>
@@ -150,7 +151,7 @@ function SiteContentEditor() {
             href={SITE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex-1 sm:flex-none"
+            className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-surface-secondary flex-1 sm:flex-none"
           >
             <ExternalLink className="w-4 h-4" /> Voir le site
           </a>
@@ -172,14 +173,14 @@ function SiteContentEditor() {
               role="tab"
               aria-selected={active}
               onClick={() => selectTab(t.value)}
-              className={`shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition ${
+              className={`shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-xl text-sm font-semibold border transition ${
                 active
-                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  ? 'bg-foreground text-background border-border '
+                  : 'bg-surface text-muted border-border hover:border-border'
               }`}
             >
               <Icon className="w-4 h-4" /> {t.label}
-              {changed && <span className="w-2 h-2 rounded-full bg-amber-500" aria-label="modifié, non enregistré" />}
+              {changed && <span className="w-2 h-2 rounded-full bg-warning" aria-label="modifié, non enregistré" />}
             </button>
           );
         })}
@@ -212,16 +213,16 @@ function SiteContentEditor() {
       {tab === 'hero' && (
         <Section icon={Sparkles} title="Accroche (haut de page)" hint="La première chose que voit le visiteur.">
           <Input label="Bandeau au-dessus du titre" value={draft.hero.badge} onChange={(e) => set('hero', { ...draft.hero, badge: e.target.value })} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input label="Titre, ligne 1 (blanc)" value={draft.hero.title_line1} onChange={(e) => set('hero', { ...draft.hero, title_line1: e.target.value })} />
             <Input label="Titre, ligne 2 (vert)" value={draft.hero.title_line2} onChange={(e) => set('hero', { ...draft.hero, title_line2: e.target.value })} />
           </div>
           <TextArea label="Sous-titre" value={draft.hero.subtitle} onChange={(v) => set('hero', { ...draft.hero, subtitle: v })} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input label="Bouton principal" value={draft.hero.cta_primary} onChange={(e) => set('hero', { ...draft.hero, cta_primary: e.target.value })} />
             <Input label="Bouton secondaire" value={draft.hero.cta_secondary} onChange={(e) => set('hero', { ...draft.hero, cta_secondary: e.target.value })} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {[0, 1, 2].map((i) => (
               <Input
                 key={i}
@@ -239,10 +240,10 @@ function SiteContentEditor() {
 
       {tab === 'sections' && (
         <Section icon={LayoutList} title="Sections affichées" hint="Masquez une section sans la supprimer : elle réapparaît dès que vous la réactivez.">
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="divide-y divide-separator">
             {SITE_SECTION_KEYS.map((k) => (
               <li key={k} className="flex items-center justify-between gap-4 py-3">
-                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{SITE_SECTION_LABELS[k]}</span>
+                <span className="text-sm font-medium text-foreground">{SITE_SECTION_LABELS[k]}</span>
                 <Toggle checked={draft.sections[k]} onChange={(v) => set('sections', { ...draft.sections, [k]: v })} label={SITE_SECTION_LABELS[k]} />
               </li>
             ))}
@@ -265,15 +266,15 @@ function SiteContentEditor() {
             options={[{ value: '', label: 'Aucun' }, ...plans.map((p) => ({ value: p.id, label: p.name, sublabel: formatPrice(p) }))]}
           />
           <div>
-            <p className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">Forfaits affichés sur le site</p>
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-4">
-              {plans.length === 0 && <li className="py-3 text-sm text-slate-500">Aucun forfait actif.</li>}
+            <p className="text-xs sm:text-xs font-semibold text-muted mb-2">Forfaits affichés sur le site</p>
+            <ul className="divide-y divide-separator rounded-xl border border-border px-4">
+              {plans.length === 0 && <li className="py-3 text-sm text-muted">Aucun forfait actif.</li>}
               {plans.map((p) => {
                 const shown = !draft.pricing.hidden_plan_ids.includes(p.id);
                 return (
                   <li key={p.id} className="flex items-center justify-between gap-4 py-3">
-                    <span className="text-sm text-slate-800 dark:text-slate-200">
-                      <strong>{p.name}</strong> <span className="text-slate-500">· {formatPrice(p)}</span>
+                    <span className="text-sm text-foreground">
+                      <strong>{p.name}</strong> <span className="text-muted">· {formatPrice(p)}</span>
                     </span>
                     <Toggle
                       checked={shown}
@@ -302,9 +303,9 @@ function SiteContentEditor() {
               const items = draft.faq.items;
               const update = (next: typeof items) => set('faq', { items: next });
               return (
-                <div key={i} className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                <div key={i} className="rounded-xl border border-border p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500">Question {i + 1}</span>
+                    <span className="text-xs font-semibold text-muted">Question {i + 1}</span>
                     <div className="flex gap-1">
                       <IconButton label="Monter" disabled={i === 0} onClick={() => update(move(items, i, i - 1))} icon={ArrowUp} />
                       <IconButton label="Descendre" disabled={i === items.length - 1} onClick={() => update(move(items, i, i + 1))} icon={ArrowDown} />
@@ -330,12 +331,12 @@ function SiteContentEditor() {
 
       {tab === 'final_cta' && (
         <Section icon={Megaphone} title="Appel final (bas de page)" hint="Le dernier message avant que le visiteur parte.">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input label="Titre" value={draft.final_cta.title} onChange={(e) => set('final_cta', { ...draft.final_cta, title: e.target.value })} />
             <Input label="Fin du titre (en vert)" value={draft.final_cta.highlight} onChange={(e) => set('final_cta', { ...draft.final_cta, highlight: e.target.value })} />
           </div>
           <TextArea label="Texte" value={draft.final_cta.text} onChange={(v) => set('final_cta', { ...draft.final_cta, text: v })} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input label="Bouton" value={draft.final_cta.cta_label} onChange={(e) => set('final_cta', { ...draft.final_cta, cta_label: e.target.value })} />
             <Input label="Mention sous le bouton" value={draft.final_cta.note} onChange={(e) => set('final_cta', { ...draft.final_cta, note: e.target.value })} />
           </div>
@@ -371,12 +372,12 @@ function SiteContentEditor() {
 
 function Section({ icon: Icon, title, hint, children }: { icon: React.ElementType; title: string; hint: string; children: React.ReactNode }) {
   return (
-    <Card className="space-y-5">
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <Icon className="w-5 h-5 text-amber-500" />
+    <Card className="space-y-4">
+      <div className="flex items-center gap-3 pb-4 border-b border-border">
+        <Icon className="w-5 h-5 text-warning-soft-foreground" />
         <div>
-          <p className="text-sm font-bold text-slate-900 dark:text-white">{title}</p>
-          <p className="text-xs text-slate-500">{hint}</p>
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-xs text-muted">{hint}</p>
         </div>
       </div>
       {children}
@@ -404,30 +405,30 @@ function LegalEditor({ kind, doc, onChange }: { kind: 'cgu' | 'cgv'; doc: SiteLe
       title={meta.title}
       hint={`Publiées sur ${SITE_URL}${meta.path} et dans le PDF téléchargeable, moins d'une minute après l'enregistrement.`}
     >
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl bg-surface-secondary px-4 py-3 text-xs text-muted">
         <span>
           Dernière mise à jour publiée : <strong>{updated}</strong> (mise à jour automatiquement à l&apos;enregistrement)
         </span>
-        <a href={`${SITE_URL}${meta.path}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:underline">
+        <a href={`${SITE_URL}${meta.path}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-accent hover:underline">
           <ExternalLink className="w-3.5 h-3.5" /> Voir la page
         </a>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3 sm:gap-4">
         <Input label="Version" value={doc.version} onChange={(e) => onChange({ ...doc, version: e.target.value })} placeholder="1.1" />
         <TextArea label="Introduction" value={doc.intro} onChange={(v) => onChange({ ...doc, intro: v })} />
       </div>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         Dans le texte d&apos;une section : une ligne vide sépare deux paragraphes ; une ligne qui commence par « - » devient une puce.
         Pensez à augmenter le numéro de version lors d&apos;un changement important.
       </p>
 
       <div className="space-y-4">
         {sections.map((sec, i) => (
-          <div key={i} className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+          <div key={i} className="rounded-xl border border-border p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">Section {i + 1}</span>
+              <span className="text-xs font-semibold text-muted">Section {i + 1}</span>
               <div className="flex gap-1">
                 <IconButton label="Monter" disabled={i === 0} onClick={() => setSections(move(sections, i, i - 1))} icon={ArrowUp} />
                 <IconButton label="Descendre" disabled={i === sections.length - 1} onClick={() => setSections(move(sections, i, i + 1))} icon={ArrowDown} />
@@ -470,8 +471,8 @@ function LegalEditor({ kind, doc, onChange }: { kind: 'cgu' | 'cgv'; doc: SiteLe
 function TextArea({ label, value, onChange, rows = 3 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   const id = React.useId();
   return (
-    <div className="w-full space-y-1.5">
-      <label htmlFor={id} className="block text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+    <div className="space-y-5 w-full">
+      <label htmlFor={id} className="block text-xs sm:text-xs font-semibold text-muted">
         {label}
       </label>
       <textarea
@@ -479,7 +480,7 @@ function TextArea({ label, value, onChange, rows = 3 }: { label: string; value: 
         rows={rows}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 sm:px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition duration-150 resize-y"
+        className="textarea textarea--primary w-full resize-y"
       />
     </div>
   );
@@ -487,16 +488,11 @@ function TextArea({ label, value, onChange, rows = 3 }: { label: string; value: 
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className={`relative shrink-0 inline-flex h-7 w-12 items-center rounded-full transition-colors ${checked ? 'bg-brand-500' : 'bg-slate-300 dark:bg-slate-700'}`}
-    >
-      <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
-    </button>
+    <Switch aria-label={label} isSelected={checked} onChange={onChange} className="shrink-0">
+      <Switch.Control>
+        <Switch.Thumb />
+      </Switch.Control>
+    </Switch>
   );
 }
 
@@ -520,8 +516,8 @@ function IconButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`grid h-9 w-9 place-items-center rounded-lg transition disabled:opacity-30 ${
-        danger ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+      className={`grid h-9 w-9 place-items-center rounded-xl transition disabled:opacity-30 ${
+        danger ? 'text-danger hover:bg-danger-soft ' : 'text-muted hover:bg-default '
       }`}
     >
       <Icon className="w-4 h-4" />

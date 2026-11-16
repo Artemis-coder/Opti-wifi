@@ -101,8 +101,8 @@ export function EditTicketModal({ isOpen, onClose, ticket, onSuccess }: EditTick
           required
           min="0"
         />
-        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
+          <label className="text-sm font-medium text-foreground">
             Statut actif
           </label>
           <button
@@ -110,12 +110,12 @@ export function EditTicketModal({ isOpen, onClose, ticket, onSuccess }: EditTick
             role="switch"
             aria-checked={actif}
             onClick={() => setActif(!actif)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-              actif ? 'bg-emerald-600' : 'bg-slate-400'
+            className={`relative inline-flex h-6 w-11 items-center rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-focus ${
+              actif ? 'bg-success' : 'bg-muted'
             }`}
           >
-            <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white" />
-            <span className={`absolute right-1 top-1 h-4 w-4 rounded-full bg-white transition ${
+            <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-surface" />
+            <span className={`absolute right-1 top-1 h-4 w-4 rounded-full bg-surface transition ${
               actif ? 'opacity-0' : 'opacity-100'
             }`} />
           </button>

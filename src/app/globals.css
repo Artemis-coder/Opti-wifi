@@ -1,5 +1,8 @@
 @import "tailwindcss";
+/* HeroUI v3 — design system par défaut (doit suivre Tailwind). Voir docs/design/HEROUI_DESIGN.md */
+@import "@heroui/styles";
 @import "../styles/design-system.css";
+@import "../styles/heroui-theme.css";
 
 @layer base {
   :root {
@@ -32,14 +35,12 @@
     --md-outline: 140 13% 82%;
     --md-outline-variant: 140 20% 90%;
 
-    /* ---- Legacy tokens kept for compatibility ---- */
+    /* ---- Legacy tokens kept for compatibility ----
+       --accent et --border appartiennent désormais à HeroUI (src/styles/heroui-theme.css). */
     --primary: 142 43% 43%;
     --primary-light: 101 47% 59%;
-    --accent: 101 47% 59%;
-    --accent-dark: 143 43% 36%;
     --bg-surface: 140 33% 99%;
     --card: 0 0% 100%;
-    --border: 140 20% 90%;
     --text-primary: 152 30% 12%;
     --text-secondary: 145 15% 45%;
   }
@@ -175,10 +176,10 @@
     .responsive-table thead { display: none; }
     .responsive-table tbody { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.75rem; }
     .responsive-table tbody tr {
-      border: 1px solid rgb(226 232 240);
-      border-radius: 1rem;
+      border-radius: var(--radius-xl);
       padding: 0.5rem 0.875rem;
-      background: white;
+      background: var(--surface);
+      box-shadow: var(--surface-shadow);
     }
     .responsive-table tbody td {
       display: flex;
@@ -190,7 +191,7 @@
       text-align: right;
       white-space: normal !important;
       border: 0 !important;
-      border-bottom: 1px dashed rgb(226 232 240) !important;
+      border-bottom: 1px solid var(--separator) !important;
       min-width: 0;
       overflow-wrap: anywhere;
     }
@@ -200,11 +201,9 @@
       flex-shrink: 0;
       max-width: 45%;
       text-align: left;
-      font-size: 0.6875rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: rgb(100 116 139);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
       margin-right: auto;
     }
     .responsive-table tbody td > * { min-width: 0; }
@@ -224,10 +223,6 @@
     .responsive-table tbody td[data-full]::before { display: none; }
     .responsive-table tbody tr:has(td[data-full]) { border: 0; background: transparent; }
     .responsive-table tbody td[data-label=""]::before { display: none; }
-  }
-  @media (max-width: 767px) and (prefers-color-scheme: dark) {
-    .responsive-table tbody tr { background: rgb(15 23 42); border-color: rgb(30 41 59); }
-    .responsive-table tbody td { border-bottom-color: rgb(30 41 59) !important; }
   }
   /* Network pill: fixed on the right, just above the 80dp navigation bar, so
      it stays put while the content scrolls. Screens without the bar (login)

@@ -130,16 +130,16 @@ export function Spotlight({
     <div className="fixed inset-0 z-[65] pointer-events-none" aria-live="polite">
       {/* Zone éclairée : l'ombre géante assombrit le reste de l'écran */}
       <div
-        className="absolute rounded-xl ring-4 ring-amber-400"
+        className="absolute rounded-xl ring-4 ring-warning"
         style={{ ...hole, boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)' }}
       />
-      <div className="absolute rounded-xl ring-[6px] ring-amber-300/70 animate-pulse" style={hole} />
+      <div className="absolute rounded-xl ring-[6px] ring-warning/70 animate-pulse" style={hole} />
 
       {/* Bulle d'explication */}
       <div
         role="dialog"
         aria-label={title}
-        className="absolute pointer-events-auto rounded-2xl bg-white dark:bg-slate-900 shadow-2xl p-4"
+        className="absolute pointer-events-auto rounded-2xl bg-surface shadow-2xl p-4"
         style={{
           width: TIP_WIDTH,
           left: pinned ? Math.max(12, vw / 2 - TIP_WIDTH / 2) : tipLeft,
@@ -148,7 +148,7 @@ export function Spotlight({
       >
         {!pinned && (
           <span
-            className="absolute w-4 h-4 rotate-45 bg-white dark:bg-slate-900"
+            className="absolute w-4 h-4 rotate-45 bg-surface"
             style={{ left: arrowLeft, ...(below ? { top: -7 } : { bottom: -7 }) }}
           />
         )}
@@ -156,18 +156,18 @@ export function Spotlight({
           type="button"
           onClick={onClose}
           aria-label="Fermer le guide"
-          className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="absolute top-2 right-2 w-8 h-8 rounded-xl flex items-center justify-center text-muted hover:bg-default"
         >
           <X className="w-4 h-4" />
         </button>
-        {step && <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-600">{step}</p>}
-        <p className="font-bold text-slate-900 dark:text-white pr-6 flex items-center gap-1.5">
-          <MousePointerClick className="w-4 h-4 text-amber-500 shrink-0" /> {title}
+        {step && <p className="text-xs font-semibold text-accent">{step}</p>}
+        <p className="font-semibold text-foreground pr-6 flex items-center gap-1.5">
+          <MousePointerClick className="w-4 h-4 text-warning-soft-foreground shrink-0" /> {title}
         </p>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{text}</p>
+        <p className="mt-1 text-sm text-muted">{text}</p>
         <div className="mt-3 flex justify-end">
           {footer ?? (
-            <button type="button" onClick={onClose} className="h-8 px-3 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+            <button type="button" onClick={onClose} className="h-8 px-3 rounded-xl text-xs font-semibold bg-default text-foreground">
               Compris
             </button>
           )}

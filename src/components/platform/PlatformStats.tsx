@@ -3,8 +3,9 @@
 import React, { useState, useSyncExternalStore } from 'react';
 import { ArrowDownRight, ArrowUpRight, Minus, Table2, BarChart3, UserPlus, KeyRound, Banknote, Repeat } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Card } from '@/components/ui/Card';
+import { Button, Card, ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import { StatTile, type StatAccent } from '@/components/ui/StatTile';
+import { KpiGrid } from '@/components/ui/KpiGrid';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import type { PlatformStats, StatsBucket } from '@/lib/platform-stats';
@@ -22,8 +23,8 @@ export const STATS_RANGES: { value: StatsRange; label: string }[] = [
 
 // Palette catégorielle validée (ordre fixe, contrôle daltonisme OK en clair et en sombre)
 const PALETTE = {
-  light: { s1: '#2a78d6', s2: '#eb6834', s3: '#1baf7a', s4: '#eda100', surface: '#ffffff', grid: '#e2e8f0', text: '#64748b' },
-  dark: { s1: '#3987e5', s2: '#d95926', s3: '#199e70', s4: '#c98500', surface: '#0f172a', grid: '#1e293b', text: '#94a3b8' },
+  light: { s1: '#2a78d6', s2: '#eb6834', s3: '#1baf7a', s4: '#eda100', surface: '#ffffff', grid: '#e4e4e7', text: '#71717a' },
+  dark: { s1: '#3987e5', s2: '#d95926', s3: '#199e70', s4: '#c98500', surface: '#18181b', grid: '#27272a', text: '#a1a1aa' },
 };
 
 const darkQuery = '(prefers-color-scheme: dark)';
@@ -32,7 +33,7 @@ function subscribeDark(cb: () => void) {
   mq.addEventListener('change', cb);
   return () => mq.removeEventListener('change', cb);
 }
-/** L'application suit le thème du système (pas de classe .dark) */
+/** L'application suit le thème du système (data-theme posé par le layout racine) */
 function useDarkMode() {
   return useSyncExternalStore(
     subscribeDark,
@@ -65,10 +66,10 @@ function compactFCFA(n: number) {
 
 /** Évolution par rapport à la période précédente de même durée */
 function Delta({ current, previous }: { current: number; previous: number }) {
-  if (previous === 0 && current === 0) return <span className="text-xs text-slate-400">Stable</span>;
+  if (previous === 0 && current === 0) return <span className="text-xs text-muted">Stable</span>;
   if (previous === 0)
     return (
-      <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-success">
         <ArrowUpRight className="w-3.5 h-3.5" /> Nouveau
       </span>
     );
@@ -77,8 +78,8 @@ function Delta({ current, previous }: { current: number; previous: number }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 text-xs font-semibold',
-        pct > 0 ? 'text-emerald-700 dark:text-emerald-400' : pct < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500',
+        'inline-flex items-center gap-0.5 text-xs font-medium',
+        pct > 0 ? 'text-success' : pct < 0 ? 'text-danger' : 'text-muted',
       )}
     >
       <Icon className="w-3.5 h-3.5" /> {pct > 0 ? '+' : ''}
@@ -111,7 +112,7 @@ function StatsTile({
       accent={accent}
       footer={
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 min-h-5">
-          {sub && <span className="text-[11px] text-slate-400">{sub}</span>}
+          {sub && <span className="text-xs text-muted">{sub}</span>}
           {delta}
         </div>
       }
@@ -142,25 +143,25 @@ function ChartTooltip({
   if (!active || !payload?.length || !label) return null;
   const total = payload.reduce((a, p) => a + Number(p.value || 0), 0);
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg px-3 py-2 text-xs space-y-1 min-w-36">
-      <p className="font-semibold text-slate-900 dark:text-white first-letter:uppercase">{bucketLabel(label, unit, true)}</p>
+    <div className="space-y-5 min-w-36 rounded-2xl bg-overlay px-3 py-2 text-xs text-overlay-foreground shadow-overlay">
+      <p className="font-medium first-letter:">{bucketLabel(label, unit, true)}</p>
       {payload
         .slice()
         .reverse()
         .map((p) => (
-          <p key={String(p.dataKey)} className="flex items-center justify-between gap-3 text-slate-600 dark:text-slate-300">
+          <p key={String(p.dataKey)} className="flex items-center justify-between gap-3 text-muted">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: p.color }} />
+              <span className="size-2.5 rounded-full" style={{ background: p.color }} />
               {p.name}
             </span>
-            <span className="font-semibold tabular-nums text-slate-900 dark:text-white">
+            <span className="font-medium tabular-nums text-foreground">
               {money ? formatCurrencyFCFA(Number(p.value)) : formatNumber(Number(p.value))}
             </span>
           </p>
         ))}
       {payload.length > 1 && (
-        <p className="flex justify-between gap-3 pt-1 border-t border-slate-100 dark:border-slate-800 text-slate-500">
-          Total <span className="font-semibold tabular-nums text-slate-900 dark:text-white">{money ? formatCurrencyFCFA(total) : formatNumber(total)}</span>
+        <p className="flex justify-between gap-3 border-t border-separator pt-1 text-muted">
+          Total <span className="font-medium tabular-nums text-foreground">{money ? formatCurrencyFCFA(total) : formatNumber(total)}</span>
         </p>
       )}
     </div>
@@ -183,27 +184,22 @@ function StatsChartCard({
 }) {
   const [showTable, setShowTable] = useState(false);
   return (
-    <Card className="p-4 sm:p-5 space-y-3">
-      <div className="flex items-start justify-between gap-3">
+    <Card>
+      <Card.Header className="flex-row items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
-          <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+          <Card.Title className="text-base font-semibold">{title}</Card.Title>
+          <Card.Description className="text-xs">{subtitle}</Card.Description>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowTable((v) => !v)}
-          aria-pressed={showTable}
-          className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-        >
-          {showTable ? <BarChart3 className="w-4 h-4" /> : <Table2 className="w-4 h-4" />}
+        <Button size="sm" variant="secondary" className="shrink-0" onPress={() => setShowTable((v) => !v)} aria-pressed={showTable}>
+          {showTable ? <BarChart3 className="size-4" /> : <Table2 className="size-4" />}
           {showTable ? 'Graphique' : 'Voir les chiffres'}
-        </button>
-      </div>
+        </Button>
+      </Card.Header>
       {legend && legend.length > 1 && !showTable && (
         <ul className="flex flex-wrap gap-x-4 gap-y-1">
           {legend.map((l) => (
-            <li key={l.label} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: l.color }} />
+            <li key={l.label} className="flex items-center gap-1.5 text-xs text-muted">
+              <span className="size-2.5 rounded-full" style={{ background: l.color }} />
               {l.label}
             </li>
           ))}
@@ -217,25 +213,25 @@ function StatsChartCard({
 function DataTable({ headers, rows }: { headers: string[]; rows: (string | number)[][] }) {
   return (
     <table className="w-full text-xs">
-      <thead className="sticky top-0 bg-white dark:bg-slate-900">
-        <tr className="text-left text-slate-500 border-b border-slate-200 dark:border-slate-800">
+      <thead className="sticky top-0 bg-surface">
+        <tr className="border-b border-separator text-left text-muted">
           {headers.map((h, i) => (
-            <th key={h} className={cn('py-2 font-semibold', i > 0 && 'text-right')}>
+            <th key={h} className={cn('py-2 font-medium', i > 0 && 'text-right')}>
               {h}
             </th>
           ))}
         </tr>
       </thead>
-      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+      <tbody className="divide-y divide-separator">
         {rows.map((r, i) => (
           <tr key={i}>
             {r.map((c, j) => (
               <td
                 key={j}
                 className={cn(
-                  'py-1.5 text-slate-700 dark:text-slate-300',
+                  'py-1.5 text-foreground',
                   j > 0 && 'text-right tabular-nums',
-                  j === 0 && 'first-letter:uppercase',
+                  j === 0 && 'first-letter:',
                 )}
               >
                 {c}
@@ -279,35 +275,37 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
     <section className="space-y-4" aria-labelledby="stats-title">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h2 id="stats-title" className="text-lg font-bold text-slate-900 dark:text-white">
+          <h2 id="stats-title" className="text-lg font-semibold text-foreground">
             Statistiques
           </h2>
-          <p className="text-xs text-slate-500">Comparées à la période précédente de même durée.</p>
+          <p className="text-sm text-muted">Comparées à la période précédente de même durée.</p>
         </div>
         {/* Filtre de période : une seule rangée, défilable sur mobile */}
-        <div role="group" aria-label="Période" className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 md-scroll">
-          {STATS_RANGES.map((r) => (
-            <button
-              key={r.value}
-              type="button"
-              onClick={() => onRangeChange(r.value)}
-              aria-pressed={range === r.value}
-              className={cn(
-                'shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold transition border',
-                range === r.value
-                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <ToggleButtonGroup
+            aria-label="Période"
+            size="sm"
+            selectionMode="single"
+            disallowEmptySelection
+            selectedKeys={[range]}
+            onSelectionChange={(keys) => {
+              const next = [...keys][0];
+              if (next) onRangeChange(next as StatsRange);
+            }}
+          >
+            {STATS_RANGES.map((r, i) => (
+              <ToggleButton key={r.value} id={r.value} className="shrink-0">
+                {i > 0 && <ToggleButtonGroup.Separator />}
+                {r.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
         </div>
       </div>
 
       <div className={cn('space-y-4 transition-opacity', loading && 'opacity-60')}>
         {/* Chiffres clés */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <KpiGrid cols={{ base: 2, lg: 4 }}>
           <StatsTile
             label="Inscriptions"
             icon={UserPlus}
@@ -339,9 +337,9 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
             value={formatCurrencyFCFA(stats?.mrr ?? 0)}
             sub={`${totalActive} licence${totalActive > 1 ? 's' : ''} en cours`}
           />
-        </div>
+        </KpiGrid>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
           <StatsChartCard
             title="Évolution des inscriptions"
             subtitle={`Comptes créés, ${rangeLabel} · ${formatNumber(stats?.totals.registrations ?? 0)} au total`}
@@ -431,28 +429,28 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
                   return (
                     <li key={p.plan_id} className="space-y-1.5">
                       <div className="flex items-baseline justify-between gap-3 text-sm">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                        <span className="truncate font-medium text-foreground">
                           {p.name}
-                          {p.is_trial && <span className="ml-1.5 text-xs font-medium text-slate-500">(essai)</span>}
+                          {p.is_trial && <span className="ml-1.5 text-xs text-muted">(essai)</span>}
                         </span>
-                        <span className="shrink-0 tabular-nums text-slate-900 dark:text-white font-bold">
-                          {p.count} <span className="font-medium text-slate-500">· {pct} %</span>
+                        <span className="shrink-0 font-semibold tabular-nums text-foreground">
+                          {p.count} <span className="font-normal text-muted">· {pct} %</span>
                         </span>
                       </div>
                       <div
-                        className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"
+                        className="h-2.5 overflow-hidden rounded-full bg-default"
                         role="img"
                         aria-label={`${p.name} : ${p.count} licence${p.count > 1 ? 's' : ''}, ${pct} %`}
                       >
                         <div className="h-full rounded-full" style={{ width: `${Math.max(pct, 2)}%`, background: c.s1 }} />
                       </div>
-                      {!p.is_trial && <p className="text-xs text-slate-500">{formatCurrencyFCFA(p.mrr)} / mois</p>}
+                      {!p.is_trial && <p className="text-xs text-muted">{formatCurrencyFCFA(p.mrr)} / mois</p>}
                     </li>
                   );
                 })}
               </ul>
             ) : (
-              <p className="h-40 flex items-center justify-center text-sm text-slate-400">Aucune licence en cours</p>
+              <p className="flex h-40 items-center justify-center text-sm text-muted">Aucune licence en cours</p>
             )}
           </StatsChartCard>
         </div>

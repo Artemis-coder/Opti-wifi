@@ -20,19 +20,19 @@ interface Dismissed {
 
 const TONES: Record<AccountNotice['tone'], { box: string; icon: string; button: string }> = {
   info: {
-    box: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/60',
-    icon: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    button: 'bg-blue-600 hover:bg-blue-700 text-white',
+    box: 'bg-accent-soft',
+    icon: 'bg-accent-soft text-accent',
+    button: 'bg-accent hover:bg-accent-hover text-accent-foreground',
   },
   warning: {
-    box: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/60',
-    icon: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-    button: 'bg-amber-500 hover:bg-amber-600 text-slate-950',
+    box: 'bg-warning-soft',
+    icon: 'bg-warning-soft text-warning-soft-foreground',
+    button: 'bg-warning hover:bg-warning-hover text-foreground',
   },
   danger: {
-    box: 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900/60',
-    icon: 'bg-red-500/10 text-red-600 dark:text-red-400',
-    button: 'bg-red-600 hover:bg-red-700 text-white',
+    box: 'bg-danger-soft',
+    icon: 'bg-danger-soft text-danger',
+    button: 'bg-danger hover:bg-danger-hover text-danger-foreground',
   },
 };
 
@@ -87,7 +87,7 @@ export function AccountNotices() {
   if (visible.length === 0) return null;
 
   return (
-    <div className="space-y-2 mb-4 sm:mb-6" role="region" aria-label="Informations du compte">
+    <div className="space-y-5 mb-4 sm:mb-6" role="region" aria-label="Informations du compte">
       {visible.map((n) => {
         const tone = TONES[n.tone];
         const Icon = n.id.startsWith('profile.') ? UserRoundPen : n.tone === 'info' ? Info : AlertTriangle;
@@ -96,15 +96,15 @@ export function AccountNotices() {
         return (
           <div
             key={n.id}
-            className={cn('flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border px-4 py-3', tone.box)}
+            className={cn('flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border px-4 py-3', tone.box)}
           >
             <div className="flex items-start gap-3 flex-1 min-w-0">
-              <span className={cn('w-9 h-9 shrink-0 rounded-xl flex items-center justify-center', tone.icon)}>
+              <span className={cn('w-9 h-9 shrink-0 rounded-lg flex items-center justify-center', tone.icon)}>
                 <Icon className="w-4 h-4" />
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-slate-900 dark:text-white">{n.title}</p>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{n.message}</p>
+                <p className="text-sm font-semibold text-foreground">{n.title}</p>
+                <p className="text-xs text-muted mt-0.5">{n.message}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:shrink-0 pl-12 sm:pl-0">
@@ -112,7 +112,7 @@ export function AccountNotices() {
                 <Link
                   href={n.action.href}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-xl px-3.5 h-9 text-xs font-bold transition',
+                    'inline-flex items-center gap-1.5 rounded-xl px-3.5 h-9 text-xs font-semibold transition',
                     tone.button
                   )}
                 >
@@ -123,7 +123,7 @@ export function AccountNotices() {
               <button
                 type="button"
                 onClick={() => dismiss(n.id)}
-                className="inline-flex items-center gap-1 rounded-xl px-2.5 h-9 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-white/60 dark:hover:text-slate-200 dark:hover:bg-slate-800/60"
+                className="inline-flex items-center gap-1 rounded-xl px-2.5 h-9 text-xs font-semibold text-muted hover:text-foreground hover:bg-white/60"
                 aria-label={`Masquer : ${n.title}`}
               >
                 <X className="w-3.5 h-3.5" />

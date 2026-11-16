@@ -101,33 +101,33 @@ export function OnlinePaymentsSection() {
   };
 
   return (
-    <Card className="p-4 space-y-4">
+    <Card className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-brand-600" />
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Paiements en ligne (SasPay)</h2>
+          <CreditCard className="w-5 h-5 text-accent" />
+          <h2 className="text-base font-semibold text-foreground">Paiements en ligne (SasPay)</h2>
           {config?.environment && (
             <Badge variant={config.environment === 'LIVE' ? 'success' : 'info'} className="text-xs">
               {config.environment === 'LIVE' ? 'Réel' : 'Test'}
             </Badge>
           )}
         </div>
-        <button onClick={() => void load()} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+        <button onClick={() => void load()} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-foreground">
           <RefreshCw className="w-3.5 h-3.5" /> Actualiser
         </button>
       </div>
 
       {config && (
-        <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
+        <div className="text-xs text-muted space-y-1">
           {config.mode === 'manual' ? (
             <p>⏸️ Mode « paiement manuel » choisi (page Moyens de paiement) : SasPay n&apos;est pas proposé aux clients.</p>
           ) : config.enabled ? (
             <p>✅ Paiement en ligne proposé aux clients.</p>
           ) : (
-            <p className="text-amber-700 dark:text-amber-400">⚠️ Paiement en ligne non proposé : {config.problem}</p>
+            <p className="text-warning-soft-foreground">⚠️ Paiement en ligne non proposé : {config.problem}</p>
           )}
           {!config.has_webhook_secret && (
-            <p className="text-amber-700 dark:text-amber-400">
+            <p className="text-warning-soft-foreground">
               ⚠️ Secret du webhook absent (SASPAY_WEBHOOK_SECRET) : les confirmations arrivent seulement par la page de retour et la vérification quotidienne.
             </p>
           )}
@@ -142,14 +142,14 @@ export function OnlinePaymentsSection() {
 
       {rows === null ? (
         <div className="py-6 flex justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
         </div>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-slate-500">Aucun paiement en ligne pour le moment.</p>
+        <p className="text-sm text-muted">Aucun paiement en ligne pour le moment.</p>
       ) : (
         <ResponsiveTable>
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+            <thead className="bg-default text-muted font-semibold">
               <tr>
                 <th className="px-3 py-2">Client</th>
                 <th className="px-3 py-2">Forfait</th>
@@ -162,48 +162,48 @@ export function OnlinePaymentsSection() {
                 <th className="px-3 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+            <tbody className="divide-y divide-separator font-medium">
               {rows.map((p) => {
                 const s = STATUS[p.status] || STATUS.pending;
                 const activationIssue = p.status === 'succeeded' && !p.subscription_id;
                 return (
                   <tr key={p.id} className="align-top">
-                    <td className="px-3 py-2 font-semibold text-slate-900 dark:text-white">
+                    <td className="px-3 py-2 font-semibold text-foreground">
                       {p.organization_name}
-                      {p.environment === 'SANDBOX' && <span className="ml-1 text-[10px] text-sky-600">test</span>}
+                      {p.environment === 'SANDBOX' && <span className="ml-1 text-xs text-accent">test</span>}
                     </td>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{p.plan_name || '—'}</td>
-                    <td className="px-3 py-2 font-bold text-slate-900 dark:text-white">{money(p.amount, p.currency)}</td>
-                    <td className="px-3 py-2 text-slate-500">
+                    <td className="px-3 py-2 text-muted">{p.plan_name || '—'}</td>
+                    <td className="px-3 py-2 font-semibold text-foreground">{money(p.amount, p.currency)}</td>
+                    <td className="px-3 py-2 text-muted">
                       {p.amount_charged ? `${money(p.amount_charged, p.currency)} / ${money(p.amount_net, p.currency)}` : '—'}
                     </td>
-                    <td className="px-3 py-2 text-slate-500">{p.network || '—'}</td>
-                    <td className="px-3 py-2 text-slate-500 font-mono text-[10px]">{p.transaction_reference || '—'}</td>
+                    <td className="px-3 py-2 text-muted">{p.network || '—'}</td>
+                    <td className="px-3 py-2 text-muted font-mono text-xs">{p.transaction_reference || '—'}</td>
                     <td className="px-3 py-2">
                       <Badge variant={activationIssue ? 'danger' : s.color} className="text-xs">
                         {activationIssue ? 'Payé, licence à activer' : s.label}
                       </Badge>
                       {p.failure_reason && (
-                        <p className="mt-1 max-w-[16rem] text-[11px] text-amber-700 dark:text-amber-400 flex gap-1">
+                        <p className="mt-1 max-w-[16rem] text-xs text-warning-soft-foreground flex gap-1">
                           <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" /> {p.failure_reason}
                         </p>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-slate-500">{formatDateFR(p.paid_at || p.created_at)}</td>
+                    <td className="px-3 py-2 text-muted">{formatDateFR(p.paid_at || p.created_at)}</td>
                     <td className="px-3 py-2">
                       {p.status === 'pending' && (
                         <div className="flex flex-col items-start gap-1.5">
                         <button
                           onClick={() => void resync(p.id)}
                           disabled={busy === p.id}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline disabled:opacity-50"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline disabled:opacity-50"
                         >
                           {busy === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Revérifier
                         </button>
                         <button
                           onClick={() => void resync(p.id, 'cancel')}
                           disabled={busy === p.id}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-danger hover:underline disabled:opacity-50"
                         >
                           <Ban className="w-3 h-3" /> Annuler
                         </button>

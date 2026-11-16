@@ -27,15 +27,15 @@ export function SpaceSelector() {
   const selectedSpace = spaces.find((s) => s.id === currentSpaceId);
 
   return (
-    <div className="px-4 py-3 border-b border-slate-800/80">
+    <div className="px-4 py-3 border-b border-border">
       <div className="flex items-center justify-between mb-1.5">
-        <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+        <label className="block text-xs font-semibold text-muted">
           Espace Wi-Fi
         </label>
         {currentSpaceId && selectedSpace && (
           <Link
             href={`/spaces/${currentSpaceId}`}
-            className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 hover:text-amber-300 uppercase tracking-wider"
+            className="flex items-center gap-1 text-xs font-semibold text-warning-soft-foreground hover:text-warning-soft-foreground"
             title="Voir le tableau de bord de cet espace"
           >
             Tableau de bord <ExternalLink className="w-2.5 h-2.5" />
@@ -45,15 +45,15 @@ export function SpaceSelector() {
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full h-9 pl-3 pr-8 bg-slate-900/50 border border-slate-700 rounded-lg text-xs font-medium text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-amber-500"
+          className="w-full h-9 pl-3 pr-8 bg-foreground/50 border border-border rounded-xl text-xs font-medium text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-focus"
         >
-          <span className={isOpen ? 'text-white' : 'text-slate-400'}>
+          <span className={isOpen ? 'text-white' : 'text-muted'}>
             {selectedSpace?.nom || 'Aucun espace'}
           </span>
-          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-slate-900/95 border border-slate-700 rounded-lg max-h-60 overflow-y-auto backdrop-blur-sm">
+          <div className="absolute z-50 w-full mt-1 bg-foreground/95 border border-border rounded-xl max-h-60 overflow-y-auto backdrop-blur-sm">
             {spaces.map((space) => {
               const isSelected = space.id === currentSpaceId;
               return (
@@ -63,8 +63,8 @@ export function SpaceSelector() {
                     setCurrentSpaceId(space.id);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-left text-xs hover:bg-slate-800/60 transition ${
-                    isSelected ? 'bg-amber-500/10 text-amber-400 font-medium' : 'text-slate-300'
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-left text-xs hover:bg-foreground/60 transition ${
+                    isSelected ? 'bg-warning-soft text-warning-soft-foreground font-medium' : 'text-muted'
                   }`}
                 >
                   <MapPin className="w-4 h-4" />
@@ -76,7 +76,7 @@ export function SpaceSelector() {
         )}
       </div>
       {selectedSpace && (
-        <p className="text-[10px] text-slate-400 mt-1 truncate">
+        <p className="text-xs text-muted mt-1 truncate">
           {selectedSpace.ville || selectedSpace.adresse || selectedSpace.description || 'Espace sélectionné'}
         </p>
       )}

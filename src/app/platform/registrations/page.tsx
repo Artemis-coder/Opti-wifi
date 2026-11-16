@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { UserPlus, Loader2, CheckCircle, XCircle, Mail, Phone, Search, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
@@ -125,13 +125,13 @@ export default function PlatformRegistrationsPage() {
     : rows;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <UserPlus className="w-6 h-6 text-amber-500" />
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <UserPlus className="size-6 text-muted" />
           Inscriptions
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-muted mt-1">
           Comptes créés sur la plateforme. Validez une inscription pour ouvrir l&apos;espace du client.
         </p>
       </div>
@@ -146,26 +146,26 @@ export default function PlatformRegistrationsPage() {
           </Button>
         </div>
         <div className="relative sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
           <input
             type="text"
             placeholder="Nom, contact, email, téléphone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="input input--primary w-full pl-10 pr-3"
           />
         </div>
       </div>
 
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Chargement des inscriptions...</span>
         </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-12 text-center space-y-2">
-          <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+        <Card className="text-center space-y-2 py-8">
+          <CheckCircle className="w-12 h-12 text-success-soft-foreground mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">
             {tab === 'pending_approval' ? 'Aucune inscription en attente' : 'Aucune inscription'}
           </h3>
         </Card>
@@ -173,7 +173,7 @@ export default function PlatformRegistrationsPage() {
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Organisation</th>
                   <th className="px-4 py-3">Contact</th>
@@ -182,16 +182,16 @@ export default function PlatformRegistrationsPage() {
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {filtered.map((r) => {
                   const st = STATUS_LABELS[r.status] || { label: r.status, variant: 'neutral' as const };
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <tr key={r.id} className="hover:bg-surface-secondary transition">
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900 dark:text-white">{r.name}</p>
-                        {r.contact_name && <p className="text-slate-500">{r.contact_name}</p>}
+                        <p className="font-semibold text-foreground">{r.name}</p>
+                        {r.contact_name && <p className="text-muted">{r.contact_name}</p>}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 space-y-0.5">
+                      <td className="px-4 py-3 text-muted space-y-0.5">
                         {r.email && (
                           <p className="flex items-center gap-1.5"><Mail className="w-3 h-3" />{r.email}</p>
                         )}
@@ -199,7 +199,7 @@ export default function PlatformRegistrationsPage() {
                           <p className="flex items-center gap-1.5"><Phone className="w-3 h-3" />{r.phone}</p>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{formatDateFR(r.created_at)}</td>
+                      <td className="px-4 py-3 text-muted">{formatDateFR(r.created_at)}</td>
                       <td className="px-4 py-3">
                         <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
                       </td>
@@ -218,7 +218,7 @@ export default function PlatformRegistrationsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs text-red-600"
+                                className="h-7 text-xs text-danger"
                                 onClick={() => setRejecting(r)}
                                 disabled={busyId === r.id}
                               >
@@ -226,11 +226,9 @@ export default function PlatformRegistrationsPage() {
                               </Button>
                             </>
                           )}
-                          <Link href={`/platform/clients/${r.id}`}>
-                            <Button size="sm" variant="ghost" className="h-7 text-xs" title="Voir la fiche">
+                          <Link href={`/platform/clients/${r.id}`} title="Voir la fiche" aria-label="Voir la fiche" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'h-7 text-xs' })}>
                               <Eye className="w-3.5 h-3.5" />
-                            </Button>
-                          </Link>
+                            </Link>
                         </div>
                       </td>
                     </tr>
@@ -244,7 +242,7 @@ export default function PlatformRegistrationsPage() {
 
       <Modal isOpen={!!rejecting} onClose={() => setRejecting(null)} title="Refuser l'inscription">
         <div className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-muted">
             Le client <strong>{rejecting?.name}</strong> n&apos;aura pas accès à la plateforme.
           </p>
           <textarea
@@ -253,7 +251,7 @@ export default function PlatformRegistrationsPage() {
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             placeholder="Motif (optionnel)"
-            className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="textarea textarea--primary w-full"
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setRejecting(null)}>Annuler</Button>

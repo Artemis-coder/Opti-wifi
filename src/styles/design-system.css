@@ -42,13 +42,8 @@
   --color-brand-on: #0b1a0f;
   --color-brand-ring: var(--color-brand-500);
 
-  /* ---- Feedback (kept neutral, not branded) ---- */
-  --color-danger: #ba1a1a;
-  --color-danger-soft: #fdecec;
-  --color-warning: #f59e0b;
-  --color-warning-soft: #ffdfa6;
-  --color-info: #3b82f6;
-  --color-success: var(--color-brand-500);
+  /* ---- Feedback : fournis par HeroUI (bg-danger, bg-warning-soft, text-success…).
+     Ne pas les redéfinir ici, sinon le thème HeroUI est écrasé. ---- */
 
   /* ---- Radii (pair with .md-shape-* helpers in globals.css) ---- */
   --radius-card: 0.75rem;

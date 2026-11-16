@@ -36,11 +36,11 @@ export function InvoiceView({ id, backHref, backLabel }: { id: string; backHref:
   }, [state]);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 pb-8">
+    <div className="space-y-5 max-w-3xl mx-auto pb-8">
       <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 print:hidden">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 -ml-1 px-1 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+          className="inline-flex items-center gap-1.5 -ml-1 px-1 py-1.5 text-sm font-medium text-muted hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> {backLabel}
         </Link>
@@ -52,11 +52,11 @@ export function InvoiceView({ id, backHref, backLabel }: { id: string; backHref:
       </div>
 
       {state === null ? (
-        <div className="py-20 flex justify-center text-slate-400">
+        <div className="py-10 flex justify-center text-muted">
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       ) : state === 'error' ? (
-        <p className="py-16 text-center text-sm text-slate-500">Facture introuvable.</p>
+        <p className="py-10 text-center text-sm text-muted">Facture introuvable.</p>
       ) : (
         <InvoiceDocument invoice={state.invoice} issuer={state.issuer} />
       )}

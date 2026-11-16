@@ -23,10 +23,10 @@ const PUSH_STATE_LABEL: Record<PushState, string> = {
 function Line({ ok, label, detail }: { ok: boolean; label: string; detail: string }) {
   return (
     <li className="flex items-start gap-2 text-sm">
-      {ok ? <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />}
+      {ok ? <CheckCircle2 className="w-4 h-4 text-success-soft-foreground mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 text-danger mt-0.5 shrink-0" />}
       <span>
-        <span className="font-semibold text-slate-900 dark:text-white">{label}</span>
-        <span className="text-slate-500"> — {detail}</span>
+        <span className="font-semibold text-foreground">{label}</span>
+        <span className="text-muted"> — {detail}</span>
       </span>
     </li>
   );
@@ -77,17 +77,17 @@ export function NotificationChannelsTest() {
   const tg = result?.telegram;
 
   return (
-    <Card className="space-y-5">
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <BellRing className="w-5 h-5 text-brand-600" />
+    <Card className="space-y-4">
+      <div className="flex items-center gap-3 pb-4 border-b border-border">
+        <BellRing className="w-5 h-5 text-accent" />
         <div>
-          <p className="text-sm font-bold text-slate-900 dark:text-white">Canaux de notification</p>
-          <p className="text-xs text-slate-500">Cloche, notifications push et Telegram : envoyez-vous un test.</p>
+          <p className="text-sm font-semibold text-foreground">Canaux de notification</p>
+          <p className="text-xs text-muted">Cloche, notifications push et Telegram : envoyez-vous un test.</p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+        <p className="text-sm text-muted">
           Push : <span className="font-semibold">{PUSH_STATE_LABEL[pushState]}</span>
         </p>
         {pushState === 'default' && (
@@ -101,7 +101,7 @@ export function NotificationChannelsTest() {
         <Send className="w-4 h-4" /> Envoyer une notification de test
       </Button>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       {result && push && tg && (
         <ul className="space-y-2">
           <Line ok={result.inApp} label="Cloche" detail={result.inApp ? 'notification créée' : 'échec'} />
@@ -124,7 +124,7 @@ export function NotificationChannelsTest() {
         </ul>
       )}
 
-      <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="pt-4 border-t border-border space-y-3">
         <Button variant="outline" onClick={testAssistant} isLoading={asking} className="gap-2">
           <Bot className="w-4 h-4" /> Tester l&apos;assistant Claude du bot
         </Button>
@@ -136,7 +136,7 @@ export function NotificationChannelsTest() {
               detail={assistant.ok ? `réponse en ${((assistant.duration_ms || 0) / 1000).toFixed(1)} s` : assistant.error || assistant.answer || 'échec'}
             />
             {assistant.ok && assistant.answer && (
-              <p className="whitespace-pre-wrap text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3">
+              <p className="whitespace-pre-wrap text-xs text-muted bg-surface-secondary rounded-xl p-3">
                 {assistant.answer.replace(/<[^>]+>/g, '')}
               </p>
             )}

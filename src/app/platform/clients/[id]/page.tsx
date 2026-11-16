@@ -33,7 +33,8 @@ import {
   Gift,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { UserAvatar } from '@/components/ui/UserAvatar';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { formatCurrencyFCFA, formatNumber, formatDateFR, formatDateOnlyFR } from '@/lib/utils/format';
@@ -196,8 +197,8 @@ export default function ClientDetailPage() {
 
   if (loading || !data) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         <span>Chargement de la fiche client...</span>
       </div>
     );
@@ -225,53 +226,57 @@ export default function ClientDetailPage() {
   const subAction = getSubAction();
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link href="/platform/clients">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="w-4 h-4" /> Retour aux clients
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{org.name}</h1>
-            <p className="text-xs text-slate-500 mt-1">
-              ID: {org.id} <button onClick={() => copyId(org.id)} className="hover:text-amber-500"><Copy className="w-3 h-3 inline" /></button>
+      <div className="space-y-3">
+        <Link href="/platform/clients" className={buttonClassName({ variant: 'ghost', size: 'sm', className: '-ml-3' })}>
+          <ArrowLeft className="size-4" /> Retour aux clients
+        </Link>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <h1 className="break-words text-2xl font-semibold tracking-tight text-foreground">{org.name}</h1>
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted">
+              <span className="min-w-0 truncate">ID : {org.id}</span>
+              <button
+                type="button"
+                onClick={() => copyId(org.id)}
+                aria-label="Copier l’identifiant"
+                className="shrink-0 rounded-xl p-1 hover:bg-default hover:text-foreground"
+              >
+                <Copy className="size-3" />
+              </button>
             </p>
           </div>
-        </div>
-        <div className="flex gap-2">
-          {subAction && (
-            <Button
-              variant={subAction.action === 'suspend' ? 'danger' : 'secondary'}
-              size="sm"
-              className="font-semibold"
-              onClick={() => handleStatusAction(subAction.action, subAction.label.toLowerCase())}
-              disabled={actionLoading}
-            >
-              {subAction.action === 'suspend' ? <PauseCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-              {subAction.label}
-            </Button>
-          )}
-          {org.status !== 'pending_approval' && org.status !== 'archived' && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 text-red-700 border-red-200 hover:bg-red-50"
-              onClick={() => handleStatusAction('archive', 'supprimer')}
-              disabled={actionLoading}
-            >
-              <Trash2 className="w-4 h-4" />
-              Supprimer
-            </Button>
-          )}
-          {org.status !== 'pending_approval' && org.status !== 'cancelled' && org.status !== 'archived' && (
-            <Button variant="primary" size="sm" className="gap-2" onClick={() => setLicenseModalOpen(true)}>
-              <KeyRound className="w-4 h-4" />
-              Activer une licence
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {org.status !== 'pending_approval' && org.status !== 'cancelled' && org.status !== 'archived' && (
+              <Button variant="primary" size="sm" onClick={() => setLicenseModalOpen(true)}>
+                <KeyRound className="size-4" />
+                Activer une licence
+              </Button>
+            )}
+            {subAction && (
+              <Button
+                variant={subAction.action === 'suspend' ? 'danger-soft' : 'secondary'}
+                size="sm"
+                onClick={() => handleStatusAction(subAction.action, subAction.label.toLowerCase())}
+                disabled={actionLoading}
+              >
+                {subAction.action === 'suspend' ? <PauseCircle className="size-4" /> : <CheckCircle className="size-4" />}
+                {subAction.label}
+              </Button>
+            )}
+            {org.status !== 'pending_approval' && org.status !== 'archived' && (
+              <Button
+                variant="danger-soft"
+                size="sm"
+                onClick={() => handleStatusAction('archive', 'supprimer')}
+                disabled={actionLoading}
+              >
+                <Trash2 className="size-4" />
+                Supprimer
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -295,10 +300,10 @@ export default function ClientDetailPage() {
         onClose={() => setConfirmModalOpen({ open: false, action: '', label: '' })}
         title="Confirmation d&apos;action"
       >
-        <p className="text-sm text-slate-700 dark:text-slate-300">
+        <p className="text-sm text-foreground">
           Voulez-vous vraiment <strong>{confirmModalOpen.label}</strong> ce compte client ?
           {(confirmModalOpen.action === 'suspend' || confirmModalOpen.action === 'archive') && (
-            <span className="block mt-2 text-xs text-red-600">
+            <span className="block mt-2 text-xs text-danger">
               Tous ses membres perdent immédiatement l&apos;accès.{' '}
               {confirmModalOpen.action === 'archive'
                 ? 'Les données sont conservées et l’organisation peut être réactivée.'
@@ -325,58 +330,58 @@ export default function ClientDetailPage() {
       </Modal>
 
       {/* Info Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* General Info */}
         <Card className="space-y-4">
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <Building2 className="w-5 h-5 text-amber-500" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Informations Générales</h2>
+          <div className="flex items-center gap-3 pb-3 border-b border-border">
+            <Building2 className="w-5 h-5 text-warning-soft-foreground" />
+            <h2 className="text-base font-semibold text-foreground">Informations Générales</h2>
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-3">
-              <Building2 className="w-4 h-4 text-slate-400 mt-0.5" />
+              <Building2 className="w-4 h-4 text-muted mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-500">Nom de l&apos;entreprise</span>
-                <p className="text-slate-900 dark:text-white">{org.name}</p>
+                <span className="font-semibold text-muted">Nom de l&apos;entreprise</span>
+                <p className="text-foreground">{org.name}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <User className="w-4 h-4 text-slate-400 mt-0.5" />
+              <User className="w-4 h-4 text-muted mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-500">Responsable</span>
-                <p className="text-slate-900 dark:text-white">{org.contact_name || '—'}</p>
+                <span className="font-semibold text-muted">Responsable</span>
+                <p className="text-foreground">{org.contact_name || '—'}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Mail className="w-4 h-4 text-slate-400 mt-0.5" />
+              <Mail className="w-4 h-4 text-muted mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-500">Email</span>
-                <p className="text-slate-900 dark:text-white">{org.email || '—'}</p>
+                <span className="font-semibold text-muted">Email</span>
+                <p className="text-foreground">{org.email || '—'}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Phone className="w-4 h-4 text-slate-400 mt-0.5" />
+              <Phone className="w-4 h-4 text-muted mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-500">Téléphone</span>
-                <p className="text-slate-900 dark:text-white">{org.phone || '—'}</p>
+                <span className="font-semibold text-muted">Téléphone</span>
+                <p className="text-foreground">{org.phone || '—'}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
+              <MapPin className="w-4 h-4 text-muted mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-500">Adresse</span>
-                <p className="text-slate-900 dark:text-white">{org.address || '—'}</p>
+                <span className="font-semibold text-muted">Adresse</span>
+                <p className="text-foreground">{org.address || '—'}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
+              <Calendar className="w-4 h-4 text-muted mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-500">Date de création</span>
-                <p className="text-slate-900 dark:text-white">{formatDateFR(org.created_at)}</p>
+                <span className="font-semibold text-muted">Date de création</span>
+                <p className="text-foreground">{formatDateFR(org.created_at)}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <span className="font-semibold text-slate-500">Statut du compte</span>
+              <span className="font-semibold text-muted">Statut du compte</span>
               <Badge variant={orgConfig.color} className="mt-0.5">
                 {orgConfig.label}
               </Badge>
@@ -386,50 +391,50 @@ export default function ClientDetailPage() {
 
         {/* Activity Info */}
         <Card className="space-y-4">
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <Activity className="w-5 h-5 text-blue-900 dark:text-blue-400" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Activité</h2>
+          <div className="flex items-center gap-3 pb-3 border-b border-border">
+            <Activity className="w-5 h-5 text-accent" />
+            <h2 className="text-base font-semibold text-foreground">Activité</h2>
           </div>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 text-center">
+            <div className="p-3 bg-surface-secondary rounded-xl">
+              <p className="text-2xl font-semibold text-foreground">
                 {formatNumber(org.user_count || 0)}
               </p>
-              <p className="text-xs text-slate-500">Utilisateurs</p>
+              <p className="text-xs text-muted">Utilisateurs</p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            <div className="p-3 bg-surface-secondary rounded-xl">
+              <p className="text-2xl font-semibold text-foreground">
                 {formatNumber(org.pos_count || 0)}
               </p>
-              <p className="text-xs text-slate-500">Points de vente</p>
+              <p className="text-xs text-muted">Points de vente</p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            <div className="p-3 bg-surface-secondary rounded-xl">
+              <p className="text-2xl font-semibold text-foreground">
                 {formatNumber(org.ticket_allocated || 0)}
               </p>
-              <p className="text-xs text-slate-500">Tickets alloués</p>
+              <p className="text-xs text-muted">Tickets alloués</p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            <div className="p-3 bg-surface-secondary rounded-xl">
+              <p className="text-2xl font-semibold text-foreground">
                 {formatNumber(org.tickets_sold || 0)}
               </p>
-              <p className="text-xs text-slate-500">Tickets vendus</p>
+              <p className="text-xs text-muted">Tickets vendus</p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            <div className="p-3 bg-surface-secondary rounded-xl">
+              <p className="text-2xl font-semibold text-foreground">
                 {formatCurrencyFCFA(org.revenue || 0)}
               </p>
-              <p className="text-xs text-slate-500">CA généré</p>
+              <p className="text-xs text-muted">CA généré</p>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-                <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            <div className="p-3 bg-surface-secondary rounded-xl">
+                <p className="text-2xl font-semibold text-foreground">
                 {formatNumber(org.collection_count || 0)}
               </p>
-              <p className="text-xs text-slate-500">Collectes</p>
+              <p className="text-xs text-muted">Collectes</p>
             </div>
           </div>
           {org.last_activity && (
-            <p className="text-xs text-slate-500 text-center pt-2 border-t border-slate-200 dark:border-slate-800">
+            <p className="text-xs text-muted text-center pt-2 border-t border-border">
               Dernière activité: {formatDateFR(org.last_activity)}
             </p>
           )}
@@ -437,20 +442,20 @@ export default function ClientDetailPage() {
 
         {/* Subscription Info */}
         <Card className="space-y-4">
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <Receipt className="w-5 h-5 text-amber-500" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Abonnement</h2>
+          <div className="flex items-center gap-3 pb-3 border-b border-border">
+            <Receipt className="w-5 h-5 text-warning-soft-foreground" />
+            <h2 className="text-base font-semibold text-foreground">Abonnement</h2>
           </div>
           {!liveSub && trial && (
-            <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-950/20 space-y-2">
+            <div className="p-3 rounded-xl bg-accent-soft space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Gift className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <p className="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">Période d&apos;essai</p>
+                <Gift className="w-4 h-4 text-accent" />
+                <p className="text-sm font-semibold text-foreground whitespace-nowrap">Période d&apos;essai</p>
                 <Badge variant={trial.used ? 'neutral' : 'info'} className="ml-auto">
                   {trial.used ? 'Non disponible' : 'Disponible'}
                 </Badge>
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-muted">
                 {trial.used ? (
                   <>Ce client a déjà eu un abonnement : l&apos;essai gratuit n&apos;est offert qu&apos;à la première souscription. Activez une licence payante.</>
                 ) : (
@@ -467,23 +472,23 @@ export default function ClientDetailPage() {
                 </Button>
               )}
               {!trial.used && org.status === 'pending_approval' && (
-                <p className="text-[11px] text-slate-500">L&apos;essai démarre automatiquement à la validation de l&apos;inscription.</p>
+                <p className="text-xs text-muted">L&apos;essai démarre automatiquement à la validation de l&apos;inscription.</p>
               )}
             </div>
           )}
           {sub ? (
             <div className="space-y-3 text-sm">
               <div>
-                <span className="font-semibold text-slate-500">Offre</span>
-                <p className="text-slate-900 dark:text-white font-bold">{sub.plan?.name || '—'}</p>
+                <span className="font-semibold text-muted">Offre</span>
+                <p className="text-foreground font-semibold">{sub.plan?.name || '—'}</p>
                 {sub.plan?.price > 0 && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted">
                     {formatCurrencyFCFA(sub.plan.price)} / {sub.plan.billing_period}
                   </p>
                 )}
               </div>
               <div>
-                <span className="font-semibold text-slate-500">Statut</span>
+                <span className="font-semibold text-muted">Statut</span>
                 {subStatus ? (
                   <Badge variant={subStatus.color} className="mt-1 block w-fit">
                     {subStatus.label}
@@ -493,60 +498,60 @@ export default function ClientDetailPage() {
                 )}
               </div>
               <div>
-                <span className="font-semibold text-slate-500">Date de début</span>
-                <p className="text-slate-900 dark:text-white">{formatDateFR(sub.start_date || org.created_at)}</p>
+                <span className="font-semibold text-muted">Date de début</span>
+                <p className="text-foreground">{formatDateFR(sub.start_date || org.created_at)}</p>
               </div>
               <div>
-                <span className="font-semibold text-slate-500">Date d&apos;expiration</span>
-                <p className="text-slate-900 dark:text-white">{formatDateFR(sub.end_date || '—')}</p>
+                <span className="font-semibold text-muted">Date d&apos;expiration</span>
+                <p className="text-foreground">{formatDateFR(sub.end_date || '—')}</p>
               </div>
               {liveSub && daysLeft !== null && (
                 <div>
-                  <span className="font-semibold text-slate-500">{liveSub.status === 'trialing' ? "Jours d'essai restants" : 'Jours restants'}</span>
-                  <p className="text-slate-900 dark:text-white font-bold">
+                  <span className="font-semibold text-muted">{liveSub.status === 'trialing' ? "Jours d'essai restants" : 'Jours restants'}</span>
+                  <p className="text-foreground font-semibold">
                     {daysLeft} jour{daysLeft > 1 ? 's' : ''}
                   </p>
                 </div>
               )}
               <div>
-                <span className="font-semibold text-slate-500">Renouvellement auto</span>
-                <p className="text-slate-900 dark:text-white">
+                <span className="font-semibold text-muted">Renouvellement auto</span>
+                <p className="text-foreground">
                   {sub.auto_renew ? 'Activé' : 'Désactivé'}
                 </p>
               </div>
               {sub.cancel_at_period_end && (
-                <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                <div className="p-2 bg-warning-soft rounded-xl">
+                  <p className="text-xs text-warning-soft-foreground">
                     L&apos;abonnement sera annulé à la fin de la période en cours.
                   </p>
                 </div>
               )}
             </div>
           ) : (
-            !trial && <p className="text-xs text-slate-500">Aucun abonnement lié à cette organisation.</p>
+            !trial && <p className="text-xs text-muted">Aucun abonnement lié à cette organisation.</p>
           )}
         </Card>
       </div>
 
       {/* Subscription History */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {/* Payments */}
         <Card className="space-y-4">
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <Wallet className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Paiements ({data.payments.length})</h2>
+          <div className="flex items-center gap-3 pb-3 border-b border-border">
+            <Wallet className="w-5 h-5 text-success-soft-foreground" />
+            <h2 className="text-base font-semibold text-foreground">Paiements ({data.payments.length})</h2>
           </div>
           {data.payments.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-6">Aucun paiement enregistré.</p>
+            <p className="text-xs text-muted text-center py-6">Aucun paiement enregistré.</p>
           ) : (
             <div className="space-y-2">
               {data.payments.map((p: { id: string; amount: number; currency: string; status: string; paid_at?: string | null; created_at: string; transaction_reference?: string }) => (
-                <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40">
+                <div key={p.id} className="flex items-center justify-between p-2 rounded-xl bg-surface-secondary">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    <p className="text-sm font-semibold text-foreground">
                       {formatCurrencyFCFA(p.amount)}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted">
                       {p.paid_at ? formatDateFR(p.paid_at) : formatDateFR(p.created_at)}
                     </p>
                   </div>
@@ -564,29 +569,25 @@ export default function ClientDetailPage() {
 
         {/* Users List */}
         <Card className="space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between pb-3 border-b border-border">
             <div className="flex items-center gap-3">
-              <Users className="w-5 h-5 text-purple-600" />
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">Utilisateurs ({data.users.length})</h2>
+              <Users className="w-5 h-5 text-accent" />
+              <h2 className="text-base font-semibold text-foreground">Utilisateurs ({data.users.length})</h2>
             </div>
-            <Link href={`/platform/users?org=${org.id}`}>
-              <Button variant="ghost" size="sm" className="text-xs">Voir tout</Button>
-            </Link>
+            <Link href={`/platform/users?org=${org.id}`} className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'text-xs' })}>Voir tout</Link>
           </div>
           {data.users.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-6">Aucun utilisateur.</p>
+            <p className="text-xs text-muted text-center py-6">Aucun utilisateur.</p>
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {data.users.map((u: { id: string; nom: string; email: string; role: string; created_at: string; last_login?: string | null }) => (
-                <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40">
-                  <div className="w-7 h-7 rounded-full bg-brand-900 text-brand-400 flex items-center justify-center font-bold text-xs">
-                    {u.nom?.[0] || u.email?.[0] || 'U'}
-                  </div>
+                <div key={u.id} className="flex items-center gap-3 p-2 rounded-xl bg-surface-secondary">
+                  <UserAvatar name={u.nom} email={u.email} className="shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{u.nom || u.email}</p>
-                    <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{u.nom || u.email}</p>
+                    <p className="text-xs text-muted truncate">{u.email}</p>
                   </div>
-                  <Badge variant={u.role === 'administrateur' ? 'warning' : 'info'} className="text-[10px]">
+                  <Badge variant={u.role === 'administrateur' ? 'warning' : 'info'} className="text-xs">
                     {u.role}
                   </Badge>
                 </div>
@@ -599,15 +600,15 @@ export default function ClientDetailPage() {
       {/* POS List */}
       {data.pos.length > 0 && (
         <Card className="space-y-4">
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <Store className="w-5 h-5 text-blue-900 dark:text-blue-400" />
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Points de Vente ({data.pos.length})</h2>
+          <div className="flex items-center gap-3 pb-3 border-b border-border">
+            <Store className="w-5 h-5 text-accent" />
+            <h2 className="text-base font-semibold text-foreground">Points de Vente ({data.pos.length})</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {data.pos.map((p: { id: string; nom: string; statut: string; created_at: string }) => (
-              <div key={p.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
-                <p className="font-semibold text-slate-900 dark:text-white text-sm">{p.nom}</p>
-                <p className="text-xs text-slate-500">{p.created_at ? formatDateFR(p.created_at) : ''}</p>
+              <div key={p.id} className="p-3 rounded-xl bg-surface-secondary">
+                <p className="font-semibold text-foreground text-sm">{p.nom}</p>
+                <p className="text-xs text-muted">{p.created_at ? formatDateFR(p.created_at) : ''}</p>
               </div>
             ))}
           </div>

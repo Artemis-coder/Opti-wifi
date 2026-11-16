@@ -103,39 +103,39 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
 
   const t = TEXT[audience];
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-slate-950/50 p-3" role="dialog" aria-modal="true" aria-labelledby="push-prompt-title">
-      <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] relative">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-foreground/50 p-3" role="dialog" aria-modal="true" aria-labelledby="push-prompt-title">
+      <div className="w-full max-w-sm rounded-2xl bg-surface shadow-2xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] relative">
         <button
           type="button"
           onClick={later}
           aria-label="Fermer"
-          className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center text-muted hover:bg-default"
         >
           <X className="w-5 h-5" />
         </button>
-        <div className="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-xl bg-accent-soft text-accent flex items-center justify-center mb-4">
           <BellRing className="w-7 h-7" />
         </div>
-        <h2 id="push-prompt-title" className="text-lg font-bold text-slate-900 dark:text-white">
+        <h2 id="push-prompt-title" className="text-lg font-semibold text-foreground">
           {mode === 'install' ? 'Recevoir les notifications sur iPhone' : t.title}
         </h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t.body}</p>
+        <p className="mt-2 text-sm text-muted">{t.body}</p>
         {mode === 'install' ? (
           <>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+            <p className="mt-3 text-sm text-muted">
               Sur iPhone, les notifications ne fonctionnent que depuis l’application installée :
             </p>
-            <ol className="mt-2 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+            <ol className="mt-2 space-y-2 text-sm text-foreground">
               <li className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold flex items-center justify-center shrink-0">1</span>
-                Touchez <Share className="w-4 h-4 text-brand-600 shrink-0" aria-label="Partager" /> <strong>Partager</strong> dans Safari
+                <span className="w-6 h-6 rounded-full bg-default text-xs font-semibold flex items-center justify-center shrink-0">1</span>
+                Touchez <Share className="w-4 h-4 text-accent shrink-0" aria-label="Partager" /> <strong>Partager</strong> dans Safari
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold flex items-center justify-center shrink-0">2</span>
-                Choisissez <PlusSquare className="w-4 h-4 text-brand-600 shrink-0" aria-hidden /> <strong>Sur l’écran d’accueil</strong>
+                <span className="w-6 h-6 rounded-full bg-default text-xs font-semibold flex items-center justify-center shrink-0">2</span>
+                Choisissez <PlusSquare className="w-4 h-4 text-accent shrink-0" aria-hidden /> <strong>Sur l’écran d’accueil</strong>
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold flex items-center justify-center shrink-0">3</span>
+                <span className="w-6 h-6 rounded-full bg-default text-xs font-semibold flex items-center justify-center shrink-0">3</span>
                 Ouvrez OptiSpace depuis l’icône : l’activation vous sera proposée
               </li>
             </ol>
@@ -147,7 +147,7 @@ export function PushPrompt({ userId, audience }: { userId: string | null | undef
           </>
         ) : (
           <>
-            <p className="mt-2 text-xs text-slate-500">Votre appareil va vous demander l’autorisation : choisissez « Autoriser ».</p>
+            <p className="mt-2 text-xs text-muted">Votre appareil va vous demander l’autorisation : choisissez « Autoriser ».</p>
             <div className="mt-5 grid grid-cols-1 gap-2">
               <Button className="h-12 font-semibold" icon={Bell} isLoading={busy} onClick={activate}>
                 Activer les notifications

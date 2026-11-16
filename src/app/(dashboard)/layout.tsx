@@ -135,10 +135,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // sinon le tableau de bord apparaîtrait brièvement pour un compte expiré ou suspendu.
   if (isLoading || checkingOrg || checkingSub) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
-          <div className="text-sm text-slate-500 font-medium">Chargement du tableau de bord...</div>
+          <div className="w-8 h-8 border-3 border-warning border-t-transparent rounded-full animate-spin" />
+          <div className="text-sm text-muted font-medium">Chargement du tableau de bord...</div>
         </div>
       </div>
     );
@@ -151,19 +151,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Pending approval screen
   if (orgStatus === 'pending_approval') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-center">
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-8 space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background text-center">
+        <div className="w-full max-w-md bg-surface rounded-2xl shadow-xl border border-border p-8 space-y-4">
+          <div className="w-16 h-16 rounded-xl bg-warning-soft text-warning-soft-foreground flex items-center justify-center mx-auto">
             <svg className="w-8 h-8 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Compte en attente de validation</h1>
-            <p className="text-xs text-slate-500 mt-2">
-              Votre entreprise <strong className="text-slate-800 dark:text-slate-200">{orgName || 'enregistrée'}</strong> est en attente d&apos;approbation par l&apos;administrateur de la plateforme.
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Compte en attente de validation</h1>
+            <p className="text-xs text-muted mt-2">
+              Votre entreprise <strong className="text-foreground">{orgName || 'enregistrée'}</strong> est en attente d&apos;approbation par l&apos;administrateur de la plateforme.
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-muted mt-1">
               Vous aurez accès à vos outils dès que votre compte sera activé.
             </p>
           </div>
@@ -172,13 +172,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <PendingWhatsappButton />
             <button
               onClick={() => window.location.reload()}
-              className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition"
+              className="w-full py-2.5 px-4 bg-warning hover:bg-warning-hover text-foreground font-semibold rounded-xl text-xs transition"
             >
               Vérifier le statut
             </button>
             <button
               onClick={handleSignOut}
-              className="w-full py-2.5 px-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold text-xs transition"
+              className="w-full py-2.5 px-4 text-muted hover:text-foreground font-semibold text-xs transition"
             >
               Se déconnecter
             </button>
@@ -191,31 +191,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Suspended screen
   if (orgStatus === 'suspended' || orgStatus === 'cancelled' || orgStatus === 'archived') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 text-center">
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-red-200 dark:border-red-900/40 p-8 space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background text-center">
+        <div className="w-full max-w-md bg-surface rounded-2xl shadow-xl border border-danger/30 p-8 space-y-4">
+          <div className="w-16 h-16 rounded-xl bg-danger-soft text-danger flex items-center justify-center mx-auto">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-red-600 dark:text-red-400">
+            <h1 className="text-xl font-semibold text-danger">
               {orgStatus === 'suspended' ? 'Espace désactivé' : 'Inscription refusée'}
             </h1>
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-muted mt-2">
               {orgStatus === 'suspended' ? (
-                <>L&apos;accès pour l&apos;organisation <strong className="text-slate-800 dark:text-slate-200">{orgName}</strong> a été désactivé.</>
+                <>L&apos;accès pour l&apos;organisation <strong className="text-foreground">{orgName}</strong> a été désactivé.</>
               ) : (
-                <>L&apos;inscription de l&apos;organisation <strong className="text-slate-800 dark:text-slate-200">{orgName}</strong> n&apos;a pas été validée.</>
+                <>L&apos;inscription de l&apos;organisation <strong className="text-foreground">{orgName}</strong> n&apos;a pas été validée.</>
               )}
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-muted mt-1">
               Veuillez contacter le support pour réactiver votre compte.
             </p>
           </div>
           <button
             onClick={handleSignOut}
-            className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition"
+            className="w-full py-2.5 px-4 bg-default hover:bg-default text-foreground font-semibold rounded-xl text-xs transition"
           >
             Se déconnecter
           </button>
@@ -225,13 +225,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen flex bg-background text-foreground">
       <Sidebar isMobileOpen={isMobileOpen} onCloseMobile={() => setIsMobileOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
         <Header onOpenMobileMenu={() => setIsMobileOpen(true)} />
 
-        <main className="flex-1 p-4 sm:p-6 md:p-8 pb-28 sm:pb-32 lg:pb-8 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-24 lg:pb-6">
           {isSubscriptionExpired && (
             <ReadOnlyBanner
               isAdmin={user.role === 'administrateur'}

@@ -35,12 +35,12 @@ function StepNumber({ step, index, current }: { step: OnboardingStep; index: num
   return (
     <span
       className={cn(
-        'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0',
+        'w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0',
         step.done
-          ? 'bg-emerald-500 text-white'
+          ? 'bg-success text-success-foreground'
           : current
-            ? 'bg-brand-600 text-white ring-4 ring-brand-100 dark:ring-brand-900/50'
-            : 'bg-slate-100 text-slate-400 dark:bg-slate-800'
+            ? 'bg-accent text-accent-foreground ring-4 ring-accent'
+            : 'bg-default text-muted'
       )}
     >
       {step.done ? <Check className="w-4 h-4" /> : step.optional ? '+' : index + 1}
@@ -53,19 +53,19 @@ function StepNumber({ step, index, current }: { step: OnboardingStep; index: num
 function WelcomeModal({ name, state, onDismiss }: { name?: string | null; state: OnboardingState; onDismiss: () => void }) {
   const required = state.steps.filter((s) => !s.optional);
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-slate-950/60 p-3" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-      <div className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 shadow-2xl">
-        <div className="bg-gradient-to-br from-brand-600 to-brand-800 text-white px-6 pt-6 pb-5 rounded-t-3xl relative">
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-backdrop p-3" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+      <div className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl bg-overlay text-overlay-foreground shadow-overlay">
+        <div className="bg-accent text-accent-foreground px-6 pt-6 pb-5 rounded-t-2xl relative">
           <button
             type="button"
             onClick={onDismiss}
             aria-label="Fermer"
-            className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/10"
+            className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center text-white/80 hover:bg-white/10"
           >
             <X className="w-5 h-5" />
           </button>
-          <Sparkles className="w-8 h-8 mb-3 text-amber-300" />
-          <h2 id="welcome-title" className="text-xl font-bold">
+          <Sparkles className="w-8 h-8 mb-3 text-warning-soft-foreground" />
+          <h2 id="welcome-title" className="text-xl font-semibold">
             Bienvenue sur OptiSpace{name ? `, ${name.split(' ')[0]}` : ''} !
           </h2>
           <p className="mt-1 text-sm text-white/85">
@@ -79,13 +79,13 @@ function WelcomeModal({ name, state, onDismiss }: { name?: string | null; state:
             <li key={s.id} className="flex gap-3">
               <StepNumber step={s} index={i} current={state.current?.id === s.id} />
               <div className="min-w-0 pt-0.5">
-                <p className="font-semibold text-slate-900 dark:text-white">{s.title}</p>
-                <p className="text-sm text-slate-500">{s.description}</p>
+                <p className="font-semibold text-foreground">{s.title}</p>
+                <p className="text-sm text-muted">{s.description}</p>
               </div>
             </li>
           ))}
         </ol>
-        <p className="px-6 -mt-1 text-xs text-slate-500">
+        <p className="px-6 -mt-1 text-xs text-muted">
           Ensuite, si vous travaillez en équipe, vous pourrez ajouter des collecteurs qui feront les tournées.
         </p>
 
@@ -214,11 +214,11 @@ export function OnboardingCard() {
     };
     const team = state.steps.find((s) => s.id === 'team');
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-900 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-        <PartyPopper className="w-10 h-10 text-emerald-600 shrink-0" />
+      <div className="rounded-xl bg-success-soft p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <PartyPopper className="w-10 h-10 text-success-soft-foreground shrink-0" />
         <div className="flex-1">
-          <p className="font-bold text-emerald-900 dark:text-emerald-200">Bravo, votre espace est prêt !</p>
-          <p className="text-sm text-emerald-800/80 dark:text-emerald-300/80">
+          <p className="font-semibold text-success-soft-foreground">Bravo, votre espace est prêt !</p>
+          <p className="text-sm text-success-soft-foreground">
             Zone, point de vente, tickets, allocation et première collecte : tout est en place. Vos chiffres s’affichent
             maintenant sur ce tableau de bord.
           </p>
@@ -248,7 +248,7 @@ export function OnboardingCard() {
           write('hidden', user.id, '0');
           setHidden(false);
         }}
-        className="w-full sm:w-auto inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 dark:bg-brand-950/30 dark:border-brand-900 px-4 h-10 text-sm font-semibold text-brand-700 dark:text-brand-300"
+        className="w-full sm:w-auto inline-flex items-center gap-2 rounded-xl bg-accent-soft px-4 h-10 text-sm font-semibold text-accent"
       >
         <Compass className="w-4 h-4" /> Guide de démarrage · {state.doneCount}/{state.total} · Afficher
       </button>
@@ -258,14 +258,14 @@ export function OnboardingCard() {
   const required = state.steps.filter((s) => !s.optional);
   const current = state.current!;
   return (
-    <section className="rounded-2xl border border-brand-200 dark:border-brand-900 bg-white dark:bg-slate-900 shadow-xs overflow-hidden" aria-labelledby="onboarding-title">
-      <div className="px-5 pt-5 pb-4 bg-gradient-to-r from-brand-50 to-white dark:from-brand-950/40 dark:to-slate-900">
+    <section className="rounded-2xl border border-accent/30 bg-surface shadow-xs overflow-hidden" aria-labelledby="onboarding-title">
+      <div className="px-5 pt-5 pb-4 bg-accent-soft">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300 flex items-center gap-1">
+            <p className="text-xs font-semibold text-accent flex items-center gap-1">
               <Compass className="w-3.5 h-3.5" /> Guide de démarrage
             </p>
-            <h2 id="onboarding-title" className="text-lg font-bold text-slate-900 dark:text-white">
+            <h2 id="onboarding-title" className="text-lg font-semibold text-foreground">
               Mettez votre espace en place en {state.total} étapes
             </h2>
           </div>
@@ -275,30 +275,30 @@ export function OnboardingCard() {
               write('hidden', user.id, '1');
               setHidden(true);
             }}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 whitespace-nowrap"
+            className="text-xs font-semibold text-muted hover:text-foreground whitespace-nowrap"
           >
             Masquer le guide
           </button>
         </div>
         <div className="mt-3 flex items-center gap-3">
-          <div className="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-            <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+          <div className="flex-1 h-2 rounded-full bg-default overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-full rounded-full bg-success transition-all" style={{ width: `${pct}%` }} />
           </div>
-          <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 tabular-nums">
+          <span className="text-xs font-semibold text-muted tabular-nums">
             {state.doneCount} / {state.total}
           </span>
         </div>
       </div>
 
       {/* Étape en cours, mise en avant */}
-      <div className="px-5 py-4 border-t border-brand-100 dark:border-brand-900/60 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="px-5 py-4 border-t border-accent/30 flex flex-col sm:flex-row sm:items-center gap-3">
         <StepNumber step={current} index={required.indexOf(current)} current />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+          <p className="text-xs font-semibold text-accent">
             Étape {required.indexOf(current) + 1} sur {state.total} · à faire maintenant
           </p>
-          <p className="font-bold text-slate-900 dark:text-white">{current.title}</p>
-          <p className="text-sm text-slate-500">{current.description}</p>
+          <p className="font-semibold text-foreground">{current.title}</p>
+          <p className="text-sm text-muted">{current.description}</p>
         </div>
         <Link href={stepHref(current)} data-tour="guide:start" className={buttonClassName({ className: 'shrink-0 font-semibold' })}>
           {current.action} <ArrowRight className="w-4 h-4" />
@@ -306,11 +306,11 @@ export function OnboardingCard() {
       </div>
 
       {/* Toutes les étapes */}
-      <div className="border-t border-slate-100 dark:border-slate-800">
+      <div className="border-t border-separator">
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="w-full px-5 py-3 flex items-center justify-between text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+          className="w-full px-5 py-3 flex items-center justify-between text-sm font-semibold text-muted hover:bg-surface-secondary"
           aria-expanded={showAll}
         >
           Voir toutes les étapes
@@ -326,18 +326,18 @@ export function OnboardingCard() {
                 <li key={s.id} className="flex items-center gap-3">
                   <StepNumber step={s} index={index} current={isCurrent} />
                   <div className="flex-1 min-w-0">
-                    <p className={cn('text-sm font-semibold', s.done ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-white')}>
+                    <p className={cn('text-sm font-semibold', s.done ? 'text-muted line-through' : 'text-foreground')}>
                       {s.title}
-                      {s.optional && <span className="ml-1.5 text-xs font-normal text-slate-400">(facultatif)</span>}
+                      {s.optional && <span className="ml-1.5 text-xs font-normal text-muted">(facultatif)</span>}
                     </p>
-                    {!s.done && <p className="text-xs text-slate-500">{s.description}</p>}
+                    {!s.done && <p className="text-xs text-muted">{s.description}</p>}
                   </div>
                   {s.done ? (
-                    <span className="text-xs font-semibold text-emerald-600">Fait</span>
+                    <span className="text-xs font-semibold text-success-soft-foreground">Fait</span>
                   ) : locked ? (
-                    <Lock className="w-4 h-4 text-slate-300" aria-label="Après l'étape précédente" />
+                    <Lock className="w-4 h-4 text-muted" aria-label="Après l'étape précédente" />
                   ) : (
-                    <Link href={stepHref(s)} className="text-xs font-semibold text-brand-600 hover:underline whitespace-nowrap">
+                    <Link href={stepHref(s)} className="text-xs font-semibold text-accent hover:underline whitespace-nowrap">
                       {s.action}
                     </Link>
                   )}
@@ -373,10 +373,10 @@ export function OnboardingBanner() {
   if (step.done) {
     content = (
       <>
-        <Check className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <Check className="w-5 h-5 text-success-soft-foreground shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-emerald-900 dark:text-emerald-200">Étape {number} terminée : {step.title.toLowerCase()}</p>
-          <p className="text-sm text-emerald-800/80 dark:text-emerald-300/80">Prochaine étape : {current.title.toLowerCase()}.</p>
+          <p className="font-semibold text-success-soft-foreground">Étape {number} terminée : {step.title.toLowerCase()}</p>
+          <p className="text-sm text-success-soft-foreground">Prochaine étape : {current.title.toLowerCase()}.</p>
         </div>
         <Link href={stepHref(current)} data-tour="guide:next" className={buttonClassName({ size: 'sm', className: 'shrink-0' })}>
           {current.action} <ArrowRight className="w-4 h-4" />
@@ -386,10 +386,10 @@ export function OnboardingBanner() {
   } else if (step.id !== current.id) {
     content = (
       <>
-        <Lock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <Lock className="w-5 h-5 text-warning-soft-foreground shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-amber-900 dark:text-amber-200">Avant cette étape : {current.title.toLowerCase()}</p>
-          <p className="text-sm text-amber-800/80 dark:text-amber-300/80">{current.description}</p>
+          <p className="font-semibold text-warning-soft-foreground">Avant cette étape : {current.title.toLowerCase()}</p>
+          <p className="text-sm text-warning-soft-foreground">{current.description}</p>
         </div>
         <Link href={stepHref(current)} className={buttonClassName({ size: 'sm', variant: 'outline', className: 'shrink-0' })}>
           {current.action}
@@ -399,15 +399,15 @@ export function OnboardingBanner() {
   } else {
     content = (
       <>
-        <span className="w-8 h-8 rounded-full bg-brand-600 text-white text-sm font-bold flex items-center justify-center shrink-0">{number}</span>
+        <span className="w-8 h-8 rounded-full bg-accent text-accent-foreground text-sm font-semibold flex items-center justify-center shrink-0">{number}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+          <p className="text-xs font-semibold text-accent">
             Guide de démarrage · étape {number} sur {state.total}
           </p>
-          <p className="font-semibold text-slate-900 dark:text-white">{step.title}</p>
-          <p className="text-sm text-slate-600 dark:text-slate-300">{step.why}</p>
+          <p className="font-semibold text-foreground">{step.title}</p>
+          <p className="text-sm text-muted">{step.why}</p>
           {!step.opensForm && pathname === step.path && (
-            <p className="text-sm font-semibold text-brand-700 dark:text-brand-300 mt-1">Remplissez le formulaire ci-dessous.</p>
+            <p className="text-sm font-semibold text-accent mt-1">Remplissez le formulaire ci-dessous.</p>
           )}
         </div>
         {!step.opensForm && pathname !== step.path && (
@@ -432,12 +432,12 @@ export function OnboardingBanner() {
     <div
       role="status"
       className={cn(
-        'mb-4 rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3',
+        'mb-4 rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3',
         step.done
-          ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900'
+          ? 'bg-success-soft'
           : step.id !== current.id
-            ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900'
-            : 'bg-brand-50 border-brand-200 dark:bg-brand-950/30 dark:border-brand-900'
+            ? 'bg-warning-soft'
+            : 'bg-accent-soft'
       )}
     >
       {content}

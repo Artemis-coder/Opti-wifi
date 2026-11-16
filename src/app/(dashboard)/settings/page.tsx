@@ -85,7 +85,7 @@ function SectionTitle({
   icon: Icon,
   title,
   hint,
-  tone = 'text-amber-500',
+  tone = 'text-warning-soft-foreground',
 }: {
   icon: React.ElementType;
   title: string;
@@ -93,11 +93,11 @@ function SectionTitle({
   tone?: string;
 }) {
   return (
-    <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+    <div className="flex items-center gap-3 pb-4 border-b border-border">
       <Icon className={cn('w-5 h-5 shrink-0', tone)} />
       <div>
-        <p className="text-sm font-bold text-slate-900 dark:text-white">{title}</p>
-        <p className="text-xs text-slate-500">{hint}</p>
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-xs text-muted">{hint}</p>
       </div>
     </div>
   );
@@ -106,8 +106,8 @@ function SectionTitle({
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <div className="text-sm font-medium text-slate-900 dark:text-white break-words">{value || 'Non renseigné'}</div>
+      <p className="text-xs font-semibold text-muted">{label}</p>
+      <div className="text-sm font-medium text-foreground break-words">{value || 'Non renseigné'}</div>
     </div>
   );
 }
@@ -137,7 +137,7 @@ function PasswordInput({
           type="button"
           onClick={() => setShow((v) => !v)}
           aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-          className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700"
+          className="w-10 h-10 flex items-center justify-center text-muted hover:text-foreground"
         >
           {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
@@ -302,8 +302,8 @@ function SettingsContent() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         Chargement des paramètres…
       </div>
     );
@@ -313,10 +313,10 @@ function SettingsContent() {
   const currency = organization?.currency || profile?.devise || 'XOF';
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-8">
+    <div className="space-y-5 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Paramètres</h1>
-        <p className="text-xs text-slate-500">Votre profil, votre organisation, la sécurité de votre compte et vos notifications.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Paramètres</h1>
+        <p className="text-xs text-muted">Votre profil, votre organisation, la sécurité de votre compte et vos notifications.</p>
       </div>
 
       {/* Onglets : une vue par thème (adresse ?tab=… pour y revenir directement) */}
@@ -334,10 +334,10 @@ function SettingsContent() {
               ref={active ? (el) => el?.scrollIntoView({ block: 'nearest', inline: 'center' }) : undefined}
               onClick={() => selectTab(t.value)}
               className={cn(
-                'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition',
+                'shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-xl text-sm font-semibold border transition',
                 active
-                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300',
+                  ? 'bg-foreground text-background border-border'
+                  : 'bg-surface text-muted border-border hover:border-border',
               )}
             >
               <Icon className="w-4 h-4" /> {t.label}
@@ -348,7 +348,7 @@ function SettingsContent() {
 
       {tab === 'profile' && (
         <>
-          <Card className="space-y-6">
+          <Card className="space-y-4">
             <SectionTitle icon={User} title="Informations du compte" hint="Mettez à jour vos données personnelles." />
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <Input label="Nom complet" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Votre nom" required />
@@ -359,7 +359,7 @@ function SettingsContent() {
                 disabled
                 helperText="L'adresse de connexion ne peut pas être modifiée ici."
               />
-              <div className={cn(completePhone && !phoneNumber && 'rounded-xl ring-2 ring-amber-400 ring-offset-4 ring-offset-white dark:ring-offset-slate-900')}>
+              <div className={cn(completePhone && !phoneNumber && 'rounded-xl ring-2 ring-warning ring-offset-4 ring-offset-white dark:ring-offset-slate-900')}>
                 <PhoneField
                   label="Téléphone"
                   country={phoneCountry}
@@ -371,7 +371,7 @@ function SettingsContent() {
                 />
               </div>
               <div className="flex justify-end">
-                <Button type="submit" icon={Save} variant="secondary" className="w-full sm:w-auto font-bold" isLoading={saving}>
+                <Button type="submit" icon={Save} variant="secondary" className="w-full sm:w-auto font-semibold" isLoading={saving}>
                   Enregistrer
                 </Button>
               </div>
@@ -379,14 +379,14 @@ function SettingsContent() {
           </Card>
 
           {profile && (
-            <Card className="space-y-6">
+            <Card className="space-y-4">
               <SectionTitle
                 icon={Shield}
                 title="Rôle et activité"
                 hint="Votre rôle dans l'organisation et l'état du compte."
-                tone="text-slate-500"
+                tone="text-muted"
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Field
                   label="Rôle"
                   value={
@@ -411,11 +411,11 @@ function SettingsContent() {
       )}
 
       {tab === 'organization' && (
-        <Card className="space-y-6">
+        <Card className="space-y-4">
           <SectionTitle icon={Building2} title="Organisation" hint="Informations de votre compte organisation." />
           {organization ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <Field label="Nom" value={organization.name} />
                 <Field
                   label="Statut"
@@ -426,37 +426,37 @@ function SettingsContent() {
                 <Field label="Téléphone" value={organization.phone} />
                 <Field label="Adresse" value={organization.address} />
               </div>
-              <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
-                <span className="w-9 h-9 shrink-0 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
+              <div className="flex items-center gap-3 rounded-xl border border-border p-3.5">
+                <span className="w-9 h-9 shrink-0 rounded-lg bg-warning-soft text-warning-soft-foreground flex items-center justify-center">
                   <Globe className="w-4 h-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">{CURRENCY_LABELS[currency] || currency}</p>
-                  <p className="text-xs text-slate-500">Devise du compte, fixée à la création : elle ne peut pas être modifiée.</p>
+                  <p className="text-sm font-semibold text-foreground">{CURRENCY_LABELS[currency] || currency}</p>
+                  <p className="text-xs text-muted">Devise du compte, fixée à la création : elle ne peut pas être modifiée.</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 Pour modifier ces informations,{' '}
-                <Link href="/support" className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+                <Link href="/support" className="font-semibold text-accent hover:underline">
                   contactez le support
                 </Link>
                 .
               </p>
             </>
           ) : (
-            <p className="text-sm text-slate-500">Aucune organisation associée à ce compte.</p>
+            <p className="text-sm text-muted">Aucune organisation associée à ce compte.</p>
           )}
         </Card>
       )}
 
       {tab === 'security' && (
         <>
-          <Card className="space-y-6">
+          <Card className="space-y-4">
             <SectionTitle
               icon={KeyRound}
               title="Changer mon mot de passe"
               hint="Le mot de passe actuel est demandé pour confirmer que c'est bien vous."
-              tone="text-indigo-900 dark:text-indigo-300"
+              tone="text-accent"
             />
             <form onSubmit={handleChangePassword} className="space-y-4">
               <PasswordInput
@@ -472,26 +472,26 @@ function SettingsContent() {
                 onChange={setConfirmPassword}
                 autoComplete="new-password"
               />
-              <p className="text-xs text-slate-500">8 caractères minimum.</p>
+              <p className="text-xs text-muted">8 caractères minimum.</p>
               <div className="flex justify-end">
-                <Button type="submit" icon={Save} variant="secondary" className="w-full sm:w-auto font-bold" isLoading={changingPassword}>
+                <Button type="submit" icon={Save} variant="secondary" className="w-full sm:w-auto font-semibold" isLoading={changingPassword}>
                   Changer le mot de passe
                 </Button>
               </div>
             </form>
           </Card>
 
-          <Card className="space-y-6">
+          <Card className="space-y-4">
             <SectionTitle
               icon={ShieldCheck}
               title="Protection des données"
               hint="Vos données ne sont visibles que par votre organisation."
-              tone="text-emerald-600"
+              tone="text-success-soft-foreground"
             />
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Isolation par organisation</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-semibold text-foreground">Isolation par organisation</p>
+                <p className="text-xs text-muted">
                   Chaque organisation ne voit que ses propres données ; les collecteurs n&apos;accèdent qu&apos;à ce qui les concerne.
                 </p>
               </div>
@@ -508,7 +508,7 @@ function SettingsContent() {
       )}
 
       {tab === 'notifications' && (
-        <Card className="space-y-6">
+        <Card className="space-y-4">
           <SectionTitle
             icon={BellRing}
             title="Notifications sur cet appareil"
@@ -516,12 +516,12 @@ function SettingsContent() {
           />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="w-9 h-9 shrink-0 rounded-lg bg-brand-500/10 text-brand-600 flex items-center justify-center">
+              <span className="w-9 h-9 shrink-0 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
                 <Smartphone className="w-4 h-4" />
               </span>
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Notifications push</p>
-                <p className="text-xs text-slate-500">{PUSH_LABELS[pushState]}</p>
+                <p className="text-sm font-semibold text-foreground">Notifications push</p>
+                <p className="text-xs text-muted">{PUSH_LABELS[pushState]}</p>
               </div>
             </div>
             {pushState === 'subscribed' ? (
@@ -537,15 +537,15 @@ function SettingsContent() {
               </Button>
             ) : null}
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Les notifications restent aussi disponibles dans la cloche, en haut de l&apos;écran. Le réglage s&apos;applique à cet appareil :
             activez-le sur chaque téléphone ou ordinateur utilisé.
           </p>
           {pushState === 'subscribed' && (
-            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-4 py-3 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-              <p className="font-semibold text-slate-900 dark:text-white">« Tester la sonnerie » : appuyez sur le bouton depuis le téléphone à tester</p>
+            <div className="rounded-xl bg-surface-secondary px-4 py-3 space-y-1.5 text-xs text-muted">
+              <p className="font-semibold text-foreground">« Tester la sonnerie » : appuyez sur le bouton depuis le téléphone à tester</p>
               <p>La notification de test arrive sur les appareils du compte connecté, 10 secondes plus tard : verrouillez le téléphone pour vérifier qu&apos;il sonne.</p>
-              <p className="font-semibold text-slate-900 dark:text-white pt-1">La notification arrive sans son (Android) ?</p>
+              <p className="font-semibold text-foreground pt-1">La notification arrive sans son (Android) ?</p>
               <p>
                 Le son se règle sur le téléphone, une seule fois : appuyez longuement sur une notification OptiSpace, choisissez{' '}
                 <strong>« Alerte »</strong> au lieu de « Silencieux », puis vérifiez que le <strong>son</strong> est activé. Ou :

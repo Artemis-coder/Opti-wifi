@@ -48,7 +48,7 @@ export function PendingWhatsappButton() {
       href={whatsappHref(contact.whatsapp_url, message)}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-[#128C7E] hover:bg-[#0e7268] transition"
+      className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-[#128C7E] hover:bg-[#0e7268] transition"
     >
       <MessageCircle className="w-4 h-4" />
       Demander l&apos;activation sur WhatsApp

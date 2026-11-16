@@ -2,8 +2,9 @@
 
 import React, { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Settings, Save, Globe, Loader2, Shield, Calendar, Bell, Mail, Key, ToggleLeft, ToggleRight, Wrench, Bot } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Shield, Calendar, Bell, Mail, Key, Wrench, Bot } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { Switch } from '@heroui/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -121,8 +122,8 @@ function PlatformSettingsContent() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         <span>Chargement des paramètres...</span>
       </div>
     );
@@ -131,11 +132,11 @@ function PlatformSettingsContent() {
   const maintenanceMode = getBoolean('maintenance_mode');
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-5 max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Paramètres de la plateforme</h1>
-          <p className="text-xs text-slate-500">Configurez les paramètres globaux de la plateforme SaaS.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Paramètres de la plateforme</h1>
+          <p className="text-xs text-muted">Configurez les paramètres globaux de la plateforme SaaS.</p>
         </div>
         {tab !== 'bot' && (
           <Button onClick={handleSave} variant="secondary" className="gap-2 font-semibold w-full sm:w-auto" isLoading={saving}>
@@ -156,10 +157,10 @@ function PlatformSettingsContent() {
               role="tab"
               aria-selected={active}
               onClick={() => selectTab(t.value)}
-              className={`shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition ${
+              className={`shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-xl text-sm font-semibold border transition ${
                 active
-                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  ? 'bg-foreground text-background border-border '
+                  : 'bg-surface text-muted border-border hover:border-border'
               }`}
             >
               <Icon className="w-4 h-4" /> {t.label}
@@ -171,16 +172,16 @@ function PlatformSettingsContent() {
       {tab === 'general' && (
         <>
           {/* General */}
-          <Card className="space-y-6">
-            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <Settings className="w-5 h-5 text-amber-500" />
+          <Card className="space-y-4">
+            <div className="flex items-center gap-3 pb-4 border-b border-border">
+              <Settings className="w-5 h-5 text-warning-soft-foreground" />
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Général</p>
-                <p className="text-xs text-slate-500">Configuration de base de la plateforme.</p>
+                <p className="text-sm font-semibold text-foreground">Général</p>
+                <p className="text-xs text-muted">Configuration de base de la plateforme.</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Input
                 label="Nom de la plateforme"
                 value={getString('platform_name', 'OptiWifi')}
@@ -208,7 +209,7 @@ function PlatformSettingsContent() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-foreground">
                 Devise principale
               </label>
               <CustomSelect
@@ -223,41 +224,38 @@ function PlatformSettingsContent() {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-surface-secondary rounded-xl">
               <div className="flex items-center gap-3">
-                <Globe className="w-5 h-5 text-blue-900 dark:text-blue-400" />
+                <Globe className="w-5 h-5 text-accent" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Autoriser les inscriptions publiques</p>
-                  <p className="text-xs text-slate-500">Permettre aux nouveaux clients de créer un compte.</p>
+                  <p className="text-sm font-semibold text-foreground">Autoriser les inscriptions publiques</p>
+                  <p className="text-xs text-muted">Permettre aux nouveaux clients de créer un compte.</p>
                 </div>
               </div>
-              <button
-                onClick={() => updateValue('allow_registration', !editedValues.allow_registration)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                  editedValues.allow_registration ? 'bg-amber-500' : 'bg-slate-400'
-                }`}
+              <Switch
+                aria-label="Autoriser les inscriptions publiques"
+                isSelected={!!editedValues.allow_registration}
+                onChange={(v) => updateValue('allow_registration', v)}
+                className="shrink-0"
               >
-                <span className="sr-only">Toggle registration</span>
-                {editedValues.allow_registration ? (
-                  <ToggleRight className="absolute right-1 h-4 w-4 text-white" />
-                ) : (
-                  <ToggleLeft className="absolute left-1 h-4 w-4 text-white" />
-                )}
-              </button>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch>
             </div>
           </Card>
 
           {/* Abonnements */}
-          <Card className="space-y-6">
-            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <Calendar className="w-5 h-5 text-emerald-600" />
+          <Card className="space-y-4">
+            <div className="flex items-center gap-3 pb-4 border-b border-border">
+              <Calendar className="w-5 h-5 text-success-soft-foreground" />
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Abonnements</p>
-                <p className="text-xs text-slate-500">Période d&apos;essai et période de grâce.</p>
+                <p className="text-sm font-semibold text-foreground">Abonnements</p>
+                <p className="text-xs text-muted">Période d&apos;essai et période de grâce.</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Input
                 label="Jours d'essai gratuit"
                 type="number"
@@ -274,56 +272,53 @@ function PlatformSettingsContent() {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-surface-secondary rounded-xl">
               <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-amber-500" />
+                <Bell className="w-5 h-5 text-warning-soft-foreground" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Renouvellement automatique par défaut</p>
-                  <p className="text-xs text-slate-500">Activer le renouvellement automatique pour les nouveaux abonnés.</p>
+                  <p className="text-sm font-semibold text-foreground">Renouvellement automatique par défaut</p>
+                  <p className="text-xs text-muted">Activer le renouvellement automatique pour les nouveaux abonnés.</p>
                 </div>
               </div>
-              <button
-                onClick={() => updateValue('auto_renew_default', !editedValues.auto_renew_default)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                  editedValues.auto_renew_default ? 'bg-amber-500' : 'bg-slate-400'
-                }`}
+              <Switch
+                aria-label="Renouvellement automatique par défaut"
+                isSelected={!!editedValues.auto_renew_default}
+                onChange={(v) => updateValue('auto_renew_default', v)}
+                className="shrink-0"
               >
-                <span className="sr-only">Toggle auto-renew</span>
-                {editedValues.auto_renew_default ? (
-                  <ToggleRight className="absolute right-1 h-4 w-4 text-white" />
-                ) : (
-                  <ToggleLeft className="absolute left-1 h-4 w-4 text-white" />
-                )}
-              </button>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch>
             </div>
           </Card>
 
           {/* Maintenance */}
-          <Card className="space-y-6">
-            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <Wrench className="w-5 h-5 text-red-600" />
+          <Card className="space-y-4">
+            <div className="flex items-center gap-3 pb-4 border-b border-border">
+              <Wrench className="w-5 h-5 text-danger" />
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Mode Maintenance</p>
-                <p className="text-xs text-slate-500">Activer/désactiver le mode maintenance de la plateforme.</p>
+                <p className="text-sm font-semibold text-foreground">Mode Maintenance</p>
+                <p className="text-xs text-muted">Activer/désactiver le mode maintenance de la plateforme.</p>
               </div>
             </div>
 
             <div
-              className={`flex items-center justify-between p-4 rounded-xl border ${
+              className={`flex items-center justify-between p-4 rounded-xl ${
                 maintenanceMode
-                  ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
-                  : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+                  ? 'bg-danger-soft '
+                  : 'bg-surface-secondary '
               }`}
             >
               <div className="flex items-center gap-3">
-                <Wrench className={`w-5 h-5 ${maintenanceMode ? 'text-red-600' : 'text-slate-400'}`} />
+                <Wrench className={`w-5 h-5 ${maintenanceMode ? 'text-danger' : 'text-muted'}`} />
                 <div>
                   <p
-                    className={`text-sm font-semibold ${maintenanceMode ? 'text-red-900 dark:text-red-300' : 'text-slate-900 dark:text-white'}`}
+                    className={`text-sm font-semibold ${maintenanceMode ? 'text-danger ' : 'text-foreground '}`}
                   >
                     {maintenanceMode ? 'Maintenance activée' : 'Maintenance désactivée'}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted">
                     {maintenanceMode
                       ? 'La plateforme est temporairement indisponible pour les clients.'
                       : 'La plateforme est opérationnelle pour tous les clients.'}
@@ -342,34 +337,34 @@ function PlatformSettingsContent() {
           </Card>
 
           {/* Security */}
-          <Card className="space-y-6">
-            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <Shield className="w-5 h-5 text-emerald-600" />
+          <Card className="space-y-4">
+            <div className="flex items-center gap-3 pb-4 border-b border-border">
+              <Shield className="w-5 h-5 text-success-soft-foreground" />
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Sécurité</p>
-                <p className="text-xs text-slate-500">Paramètres de sécurité de la plateforme.</p>
+                <p className="text-sm font-semibold text-foreground">Sécurité</p>
+                <p className="text-xs text-muted">Paramètres de sécurité de la plateforme.</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Authentification forte (MFA/2FA)</p>
-                  <p className="text-xs text-slate-500">Exiger la 2FA pour les super admins.</p>
+                  <p className="text-sm font-semibold text-foreground">Authentification forte (MFA/2FA)</p>
+                  <p className="text-xs text-muted">Exiger la 2FA pour les super admins.</p>
                 </div>
                 <Badge variant="success">Activé ✓</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Déconnexion automatique</p>
-                  <p className="text-xs text-slate-500">Après 30 minutes d&apos;inactivité.</p>
+                  <p className="text-sm font-semibold text-foreground">Déconnexion automatique</p>
+                  <p className="text-xs text-muted">Après 30 minutes d&apos;inactivité.</p>
                 </div>
                 <Badge variant="success">Activé ✓</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Limite des tentatives de connexion</p>
-                  <p className="text-xs text-slate-500">Blocage après 5 tentatives échouées.</p>
+                  <p className="text-sm font-semibold text-foreground">Limite des tentatives de connexion</p>
+                  <p className="text-xs text-muted">Blocage après 5 tentatives échouées.</p>
                 </div>
                 <Badge variant="success">Activé ✓</Badge>
               </div>
@@ -381,12 +376,12 @@ function PlatformSettingsContent() {
       {tab === 'notifications' && (
         <>
           {/* Notifications */}
-          <Card className="space-y-6">
-            <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <Mail className="w-5 h-5 text-blue-900 dark:text-blue-400" />
+          <Card className="space-y-4">
+            <div className="flex items-center gap-3 pb-4 border-b border-border">
+              <Mail className="w-5 h-5 text-accent" />
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Notifications Clients</p>
-                <p className="text-xs text-slate-500">Configurer les messages envoyés aux clients.</p>
+                <p className="text-sm font-semibold text-foreground">Notifications Clients</p>
+                <p className="text-xs text-muted">Configurer les messages envoyés aux clients.</p>
               </div>
             </div>
 
@@ -421,7 +416,7 @@ function PlatformSettingsContent() {
 
       {tab !== 'bot' && (
         <div className="flex justify-end pt-4">
-          <Button onClick={handleSave} variant="secondary" className="gap-2 font-bold" isLoading={saving}>
+          <Button onClick={handleSave} variant="secondary" className="gap-2 font-semibold" isLoading={saving}>
             <Save className="w-4 h-4" /> Enregistrer les modifications
           </Button>
         </div>

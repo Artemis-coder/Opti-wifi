@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils/cn';
  * Une tuile d'une ligne complète vaut U / colonnes ; une tuile de la dernière ligne vaut
  * U / (tuiles restantes).
  */
-interface KpiGridProps {
+interface KpiGridProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children' | 'className' | 'style'> {
   children: React.ReactNode;
   /** Colonnes par palier d'écran : mobile (base), ≥ 640 px (sm), ≥ 1024 px (lg), ≥ 1280 px (xl). */
   cols?: { base: number; sm?: number; lg?: number; xl?: number };
@@ -33,7 +33,7 @@ function spanFor(index: number, count: number, cols: number): number {
   return inLastRow ? units / remainder : units / cols;
 }
 
-export function KpiGrid({ children, cols = { base: 2, sm: 3, lg: 4 }, className }: KpiGridProps) {
+export function KpiGrid({ children, cols = { base: 2, sm: 3, lg: 4 }, className, ...rest }: KpiGridProps) {
   const items = React.Children.toArray(children).filter(Boolean);
   const base = cols.base;
   const sm = cols.sm ?? base;
@@ -42,6 +42,7 @@ export function KpiGrid({ children, cols = { base: 2, sm: 3, lg: 4 }, className 
 
   return (
     <div
+      {...rest}
       className={cn(
         'grid gap-3 sm:gap-4',
         'grid-cols-[repeat(var(--kpi-u),minmax(0,1fr))]',

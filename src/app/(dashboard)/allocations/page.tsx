@@ -18,7 +18,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -90,11 +90,11 @@ export default function AllocationsPage() {
   const getAllocationTypeLabel = (alloc: TicketAllocation) => {
     switch (alloc.type) {
       case 'exchange_return':
-        return { label: 'Rendu (Échange)', color: 'text-red-600' };
+        return { label: 'Rendu (Échange)', color: 'text-danger' };
       case 'exchange_receive':
-        return { label: 'Reçu (Échange)', color: 'text-emerald-600' };
+        return { label: 'Reçu (Échange)', color: 'text-success-soft-foreground' };
       default:
-        return { label: 'Allocation', color: 'text-amber-600' };
+        return { label: 'Allocation', color: 'text-warning-soft-foreground' };
     }
   };
 
@@ -156,23 +156,23 @@ export default function AllocationsPage() {
 
   if (loading) {
     return (
-      <div className="py-16 flex flex-col justify-center items-center gap-3 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
+      <div className="py-10 flex flex-col justify-center items-center gap-3 text-muted text-sm font-medium">
+        <Loader2 className="w-6 h-6 animate-spin text-accent" />
         <span>Chargement des allocations...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto pb-8">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <ArrowLeftRight className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600 dark:text-brand-400" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <ArrowLeftRight className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
             <span>{isCollector || isPosAccount ? 'Mes allocations' : 'Suivi des Allocations'}</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             {isPosAccount
               ? 'Les tickets reçus par votre point de vente (consultation seule).'
               : isCollector
@@ -184,11 +184,9 @@ export default function AllocationsPage() {
         {/* Action Buttons */}
         {!isPosAccount && (
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Link href="/allocations/exchange" className="flex-1 sm:flex-initial">
-            <Button variant="outline" size="sm" className="w-full gap-1.5 font-semibold text-xs sm:text-sm">
-              <Repeat className="w-4 h-4" />
-              <span>Échange de Tickets</span>
-            </Button>
+          <Link href="/allocations/exchange" className={buttonClassName({ variant: 'outline', size: 'sm', className: 'flex-1 sm:flex-initial' })}>
+            <Repeat className="size-4" />
+            <span>Échange de tickets</span>
           </Link>
           <AddButton what="une allocation" tour="add:allocation" href="/allocations/new" className="flex-1 sm:flex-initial" />
         </div>
@@ -215,7 +213,7 @@ export default function AllocationsPage() {
       )}
 
       {/* Filter and Search Bar */}
-      <Card className="p-3.5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+      <Card className="p-3.5 bg-surface border-border">
         <div className="flex flex-col sm:flex-row gap-3">
           {!isPosAccount && (
           <div className="flex-1">
@@ -234,20 +232,20 @@ export default function AllocationsPage() {
               placeholder="Tous les points de vente"
               title="Filtrer par Point de Vente"
               searchPlaceholder="Rechercher par nom ou ville..."
-              leadingIcon={<Store className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+              leadingIcon={<Store className="w-4 h-4 text-success-soft-foreground" />}
             />
           </div>
           )}
 
           <div className="flex-1">
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-muted mb-1">
               Rechercher
             </label>
             <Input
               placeholder="Rechercher par ticket, POS, utilisateur..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              rightElement={<Search className="w-4 h-4 text-slate-400" />}
+              rightElement={<Search className="w-4 h-4 text-muted" />}
               className="h-10 text-xs sm:text-sm"
             />
           </div>
@@ -256,12 +254,12 @@ export default function AllocationsPage() {
 
       {/* Allocations Content */}
       {Object.keys(allocationsByPos).length === 0 ? (
-        <Card className="p-10 sm:p-12 text-center space-y-3 border-slate-200 dark:border-slate-800">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+        <Card className="text-center space-y-3 border-border py-8">
+          <div className="w-14 h-14 rounded-xl bg-warning-soft text-warning-soft-foreground flex items-center justify-center mx-auto">
             <ArrowLeftRight className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune allocation trouvée</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <h3 className="text-base font-semibold text-foreground">Aucune allocation trouvée</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto">
             {selectedPosId === 'all' && !searchQuery
               ? "Aucune allocation n'a été effectuée pour le moment."
               : 'Aucun enregistrement ne correspond à vos critères de recherche.'}
@@ -273,7 +271,7 @@ export default function AllocationsPage() {
           )}
         </Card>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {Object.entries(allocationsByPos).map(([posId, { pos, allocations: posAllocations }]) => {
             const netPosTickets = posAllocations.reduce((sum: number, a: TicketAllocation) => {
               const qty = a.type === 'exchange_return' ? -a.quantite : a.quantite;
@@ -286,24 +284,24 @@ export default function AllocationsPage() {
             }, 0);
 
             return (
-              <Card key={posId} className="p-0 overflow-hidden border-slate-200 dark:border-slate-800">
+              <Card key={posId} className="p-0 overflow-hidden border-border">
                 {/* POS Header */}
-                <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
+                <div className="p-3.5 sm:p-4 bg-surface-secondary">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-blue-900/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-500/20">
+                      <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
                         <Store className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
+                        <h3 className="text-sm sm:text-base font-semibold text-foreground truncate">
                           {pos?.nom || 'Point de vente inconnu'}
                         </h3>
-                        <p className="text-xs text-slate-500 truncate">
+                        <p className="text-xs text-muted truncate">
                           {pos?.ville || ''} {pos?.adresse ? `• ${pos.adresse}` : ''}
                         </p>
                       </div>
                     </div>
-                    <Badge variant="neutral" className="text-[11px] px-2.5 py-0.5 shrink-0">
+                    <Badge variant="neutral" className="text-xs px-2.5 py-0.5 shrink-0">
                       {posAllocations.length} op.
                     </Badge>
                   </div>
@@ -312,7 +310,7 @@ export default function AllocationsPage() {
                 {/* Desktop Allocations Table (hidden on mobile, visible from md upwards) */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                    <thead className="bg-default text-muted font-semibold">
                       <tr>
                         <th className="px-4 py-3">Enregistré le</th>
                         <th className="px-4 py-3">Nature</th>
@@ -324,7 +322,7 @@ export default function AllocationsPage() {
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                    <tbody className="divide-y divide-separator font-medium">
                       {posAllocations.map((alloc: TicketAllocation) => {
                         const typeInfo = getAllocationTypeLabel(alloc);
                         const isReturn = alloc.type === 'exchange_return';
@@ -333,11 +331,11 @@ export default function AllocationsPage() {
                           <tr
                             key={alloc.id}
                             onClick={() => router.push(`/allocations/${alloc.id}`)}
-                            className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer group"
+                            className="hover:bg-surface-secondary transition cursor-pointer group"
                           >
                             <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                                <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <div className="flex items-center gap-1.5 text-muted">
+                                <Calendar className="w-3.5 h-3.5 text-muted shrink-0" />
                                 <span>{formatDateFR(alloc.created_at)}</span>
                               </div>
                             </td>
@@ -348,46 +346,46 @@ export default function AllocationsPage() {
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1.5">
-                                <Ticket className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span className="font-semibold text-slate-900 dark:text-white">
+                                <Ticket className="w-3.5 h-3.5 text-success-soft-foreground shrink-0" />
+                                <span className="font-semibold text-foreground">
                                   {getTicketTypeName(alloc.ticket_type_id)}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3 text-right">
                               <span
-                                className={`font-bold ${
+                                className={`font-semibold ${
                                   isReturn
-                                    ? 'text-red-600 dark:text-red-400'
+                                    ? 'text-danger '
                                     : isReceive
-                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                    : 'text-slate-900 dark:text-white'
+                                    ? 'text-success-soft-foreground '
+                                    : 'text-foreground '
                                 }`}
                               >
                                 {isReturn ? `-${alloc.quantite}` : `+${alloc.quantite}`}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
+                            <td className="px-4 py-3 text-right font-semibold text-foreground">
                               {formatCurrencyFCFA(alloc.quantite * getTicketTypePrix(alloc.ticket_type_id))}
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                                <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <div className="flex items-center gap-1.5 text-muted">
+                                <User className="w-3.5 h-3.5 text-muted shrink-0" />
                                 <span>{getAllocatorName(alloc.alloue_par)}</span>
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               {alloc.notes ? (
-                                <div className="flex items-center gap-1.5 text-slate-500">
-                                  <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <div className="flex items-center gap-1.5 text-muted">
+                                  <FileText className="w-3.5 h-3.5 text-muted shrink-0" />
                                   <span className="truncate max-w-[200px]">{alloc.notes}</span>
                                 </div>
                               ) : (
-                                <span className="text-slate-400">—</span>
+                                <span className="text-muted">—</span>
                               )}
                             </td>
                             <td className="px-4 py-3">
-                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition" />
+                              <ChevronRight className="w-4 h-4 text-muted group-hover:text-accent transition" />
                             </td>
                           </tr>
                         );
@@ -412,61 +410,61 @@ export default function AllocationsPage() {
                         tabIndex={0}
                         onClick={() => router.push(`/allocations/${alloc.id}`)}
                         onKeyDown={(e) => e.key === 'Enter' && router.push(`/allocations/${alloc.id}`)}
-                        className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs cursor-pointer hover:border-brand-500/50 hover:shadow-sm transition active:scale-[0.99]"
+                        className="p-3.5 rounded-2xl bg-surface border border-border space-y-2.5 shadow-xs cursor-pointer hover:border-accent/50 hover:shadow-sm transition active:scale-[0.99]"
                       >
                         {/* Header: Ticket Name + Nature Badge */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                            <div className="w-8 h-8 rounded-lg bg-success-soft text-success-soft-foreground flex items-center justify-center shrink-0">
                               <Ticket className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
-                              <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                              <h4 className="font-semibold text-xs sm:text-sm text-foreground truncate">
                                 {getTicketTypeName(alloc.ticket_type_id)}
                               </h4>
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                              <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
+                                <Calendar className="w-3 h-3 text-muted shrink-0" />
                                 <span>{formatDateFR(alloc.created_at)}</span>
                               </div>
                             </div>
                           </div>
                           <Badge
                             variant={isReturn ? 'danger' : isReceive ? 'success' : 'info'}
-                            className="text-[10px] px-2 py-0.5 shrink-0"
+                            className="text-xs px-2 py-0.5 shrink-0"
                           >
                             {typeInfo.label}
                           </Badge>
                         </div>
 
                         {/* Inset Numbers: Quantité & Valeur */}
-                        <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                        <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-surface-secondary text-xs">
                           <div>
-                            <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">
+                            <span className="text-xs font-semibold text-muted block">
                               Quantité
                             </span>
                             <span
-                              className={`text-sm font-extrabold ${
+                              className={`text-sm font-semibold ${
                                 isReturn
-                                  ? 'text-red-600 dark:text-red-400'
+                                  ? 'text-danger '
                                   : isReceive
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : 'text-slate-900 dark:text-white'
+                                  ? 'text-success-soft-foreground '
+                                  : 'text-foreground '
                               }`}
                             >
                               {isReturn ? `-${alloc.quantite}` : `+${alloc.quantite}`} tickets
                             </span>
                           </div>
                           <div className="text-right">
-                            <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">
+                            <span className="text-xs font-semibold text-muted block">
                               Valeur Totale
                             </span>
-                            <span className="text-sm font-extrabold text-amber-600 dark:text-amber-400">
+                            <span className="text-sm font-semibold text-warning-soft-foreground">
                               {formatCurrencyFCFA(totalPrice)}
                             </span>
                           </div>
-                          <div className="col-span-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-slate-500">
+                          <div className="col-span-2 pt-1 border-t border-border flex items-center justify-between text-xs text-muted">
                             <span className="flex items-center gap-1 truncate">
-                              <User className="w-3 h-3 text-slate-400 shrink-0" />
+                              <User className="w-3 h-3 text-muted shrink-0" />
                               <span className="truncate">Par : {getAllocatorName(alloc.alloue_par)}</span>
                             </span>
                             <span className="font-medium shrink-0">{formatCurrencyFCFA(unitPrice)} / u</span>
@@ -475,7 +473,7 @@ export default function AllocationsPage() {
 
                         {/* Notes if present */}
                         {alloc.notes && (
-                          <p className="text-[11px] text-slate-500 italic bg-slate-50 dark:bg-slate-800/40 p-2 rounded-lg">
+                          <p className="text-xs text-muted italic bg-surface-secondary p-2 rounded-xl">
                             &laquo; {alloc.notes} &raquo;
                           </p>
                         )}
@@ -485,16 +483,16 @@ export default function AllocationsPage() {
                 </div>
 
                 {/* POS Footer Summary */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
-                  <span className="text-slate-600 dark:text-slate-400 font-medium">
+                <div className="p-3 bg-surface-secondary flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                  <span className="text-muted font-medium">
                     Total pour ce POS :
                   </span>
-                  <div className="flex items-center gap-3 font-bold">
-                    <span className="text-slate-900 dark:text-white">
+                  <div className="flex items-center gap-3 font-semibold">
+                    <span className="text-foreground">
                       {netPosTickets} tickets net
                     </span>
-                    <span className="text-slate-300 dark:text-slate-600">•</span>
-                    <span className="text-amber-600 dark:text-amber-400">
+                    <span className="text-muted">•</span>
+                    <span className="text-warning-soft-foreground">
                       {formatCurrencyFCFA(netPosValeur)}
                     </span>
                   </div>

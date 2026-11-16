@@ -78,8 +78,8 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
   if (!isAdmin) {
     return (
       <Card className="flex items-start gap-3">
-        <ShieldAlert className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+        <ShieldAlert className="w-5 h-5 text-muted shrink-0 mt-0.5" />
+        <p className="text-sm text-muted">
           Le téléchargement des données et la suppression du compte sont réservés à l’administrateur de l’espace.
           Pour quitter l’équipe, demandez-lui de retirer votre accès.
         </p>
@@ -163,12 +163,12 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
       {/* Télécharger ses données */}
       <Card className="space-y-4">
         <div className="flex items-start gap-3">
-          <span className="w-9 h-9 shrink-0 rounded-lg bg-brand-500/10 text-brand-600 flex items-center justify-center">
+          <span className="w-9 h-9 shrink-0 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
             <FileJson className="w-4 h-4" />
           </span>
           <div className="min-w-0">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Télécharger mes données</h3>
-            <p className="text-sm text-slate-500">
+            <h3 className="text-base font-semibold text-foreground">Télécharger mes données</h3>
+            <p className="text-sm text-muted">
               Un fichier avec toutes les données de votre espace : équipe, zones, points de vente, types de tickets,
               allocations, collectes, abonnements, factures et support. Gardez-le précieusement avant toute suppression.
             </p>
@@ -180,29 +180,29 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
       </Card>
 
       {/* Zone de danger */}
-      <section className="rounded-2xl border-2 border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20 p-5 space-y-4" aria-labelledby="danger-title">
+      <section className="rounded-xl border-2 bg-danger-soft p-5 space-y-4" aria-labelledby="danger-title">
         <div className="flex items-start gap-3">
-          <span className="w-9 h-9 shrink-0 rounded-lg bg-red-600/10 text-red-600 flex items-center justify-center">
+          <span className="w-9 h-9 shrink-0 rounded-lg bg-danger-soft text-danger flex items-center justify-center">
             <AlertTriangle className="w-4 h-4" />
           </span>
           <div className="min-w-0">
-            <h3 id="danger-title" className="text-base font-bold text-red-700 dark:text-red-400">
+            <h3 id="danger-title" className="text-base font-semibold text-danger">
               Zone de danger
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300">Supprimer votre compte et toutes les données de votre espace.</p>
+            <p className="text-sm text-muted">Supprimer votre compte et toutes les données de votre espace.</p>
           </div>
         </div>
 
         {request === undefined ? (
-          <p className="text-sm text-slate-500 flex items-center gap-2">
+          <p className="text-sm text-muted flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
           </p>
         ) : pending ? (
-          <div className="rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900 p-4 space-y-3">
-            <p className="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <div className="rounded-xl bg-surface border border-warning/30 p-4 space-y-3">
+            <p className="font-semibold text-warning-soft-foreground flex items-center gap-2">
               <Clock className="w-4 h-4" /> Demande de suppression en attente de validation
             </p>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-muted">
               Envoyée le {formatDateFR(request.requested_at)}. Notre équipe va la traiter : vous recevrez un e-mail une fois
               la suppression effectuée. D’ici là, votre espace reste accessible et vous pouvez encore télécharger vos
               données ou annuler la demande.
@@ -214,12 +214,12 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
         ) : (
           <>
             {request?.status === 'rejected' && (
-              <p className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 text-sm text-slate-600 dark:text-slate-300">
+              <p className="rounded-xl bg-surface border border-border p-3 text-sm text-muted">
                 Votre demande du {formatDateFR(request.requested_at)} n’a pas été effectuée
                 {request.decision_note ? ` : ${request.decision_note}` : '.'}
               </p>
             )}
-            <div className="text-sm text-slate-700 dark:text-slate-300 space-y-2">
+            <div className="text-sm text-foreground space-y-2">
               <p>La suppression est <strong>définitive</strong>. Seront effacés :</p>
               <ul className="list-disc pl-5 space-y-0.5">
                 {DELETED_ITEMS.map((i) => (
@@ -241,19 +241,19 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
       {/* Confirmation */}
       <Modal isOpen={open} onClose={closeModal} title="Supprimer mon compte et mes données">
         <form onSubmit={send} className="space-y-4 text-left">
-          <p className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 p-3 text-sm text-red-800 dark:text-red-300 flex gap-2">
+          <p className="rounded-xl bg-danger-soft p-3 text-sm text-danger flex gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             Après validation par notre équipe, l’espace « {organizationName} » et toutes ses données seront effacés
             définitivement. Personne ne pourra les récupérer.
           </p>
 
           {/* 1. Données */}
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">1. Récupérez vos données</p>
+          <div className="rounded-xl border border-border p-3 space-y-2">
+            <p className="text-sm font-semibold text-foreground">1. Récupérez vos données</p>
             <Button type="button" variant="outline" size="sm" icon={downloaded ? CheckCircle2 : Download} isLoading={downloading} onClick={download}>
               {downloaded ? 'Données téléchargées' : 'Télécharger mes données'}
             </Button>
-            <label className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-start gap-2 text-sm text-muted cursor-pointer">
               <input
                 type="checkbox"
                 checked={acknowledged}
@@ -266,7 +266,7 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
 
           {/* 2. Motif */}
           <div className="space-y-1.5">
-            <label htmlFor="deletion-reason" className="block text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+            <label htmlFor="deletion-reason" className="block text-xs sm:text-xs font-semibold text-muted">
               2. Pourquoi partez-vous ? (facultatif)
             </label>
             <textarea
@@ -276,7 +276,7 @@ export function AccountDataSection({ organizationName, isAdmin }: { organization
               rows={2}
               maxLength={1000}
               placeholder="Votre avis nous aide à améliorer OptiSpace."
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+              className="w-full rounded-field border border-border bg-surface px-3 py-2 text-sm"
             />
           </div>
 

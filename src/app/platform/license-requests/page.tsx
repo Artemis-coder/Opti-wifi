@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Inbox, Loader2, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { LicenseActivationModal } from '@/components/platform/LicenseActivationModal';
@@ -107,13 +107,13 @@ export default function LicenseRequestsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Inbox className="w-6 h-6 text-amber-500" />
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <Inbox className="size-6 text-muted" />
           Demandes de licence
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-muted mt-1">
           Renouvellements demandés par les clients. Approuvez une demande pour activer la licence.
         </p>
       </div>
@@ -127,20 +127,20 @@ export default function LicenseRequestsPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Chargement des demandes...</span>
         </div>
       ) : rows.length === 0 ? (
-        <Card className="p-12 text-center space-y-2">
-          <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucune demande</h3>
+        <Card className="text-center space-y-2 py-8">
+          <CheckCircle className="w-12 h-12 text-success-soft-foreground mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucune demande</h3>
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Client</th>
                   <th className="px-4 py-3">Demande</th>
@@ -149,57 +149,55 @@ export default function LicenseRequestsPage() {
                   <th className="px-4 py-3 text-right">{tab === 'pending' ? 'Actions' : 'Traitée le'}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {rows.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition align-top">
+                  <tr key={r.id} className="hover:bg-surface-secondary transition align-top">
                     <td className="px-4 py-3">
-                      <Link href={`/platform/clients/${r.organization_id}`} className="font-semibold text-slate-900 dark:text-white hover:text-amber-500">
+                      <Link href={`/platform/clients/${r.organization_id}`} className="font-semibold text-foreground hover:text-warning-soft-foreground">
                         {r.organization_name}
                       </Link>
-                      <p className="text-slate-500">{r.requested_by_name || r.contact_name || '—'}</p>
-                      <p className="text-slate-500">{r.organization_phone || r.organization_email || ''}</p>
+                      <p className="text-muted">{r.requested_by_name || r.contact_name || '—'}</p>
+                      <p className="text-muted">{r.organization_phone || r.organization_email || ''}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-3 text-muted">
                       <Badge variant="info" className="text-xs">{TYPE_LABELS[r.type]}</Badge>
                       <p className="mt-1">
                         {r.plan_name || 'Forfait actuel'} · {r.duration_months} mois
                       </p>
                       {(r.payment_method_name || r.payment_reference) && (
-                        <p className="mt-1 text-slate-700 dark:text-slate-300">
+                        <p className="mt-1 text-foreground">
                           Payé par <strong>{r.payment_method_name || 'moyen supprimé'}</strong>
                           {r.payment_reference && <> · réf. <span className="font-mono">{r.payment_reference}</span></>}
                         </p>
                       )}
-                      {r.message && <p className="mt-1 italic text-slate-500">« {r.message} »</p>}
-                      {r.admin_note && <p className="mt-1 text-slate-500">Note : {r.admin_note}</p>}
+                      {r.message && <p className="mt-1 italic text-muted">« {r.message} »</p>}
+                      {r.admin_note && <p className="mt-1 text-muted">Note : {r.admin_note}</p>}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-3 text-muted">
                       <p>{r.current_plan_name || 'Aucune'}</p>
                       {r.current_end_date && (
-                        <p className={new Date(r.current_end_date) < new Date() ? 'text-red-600' : 'text-slate-500'}>
+                        <p className={new Date(r.current_end_date) < new Date() ? 'text-danger' : 'text-muted'}>
                           {new Date(r.current_end_date) < new Date() ? 'Expirée le ' : "Jusqu'au "}
                           {formatDateOnlyFR(r.current_end_date)}
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{formatDateFR(r.created_at)}</td>
+                    <td className="px-4 py-3 text-muted">{formatDateFR(r.created_at)}</td>
                     <td className="px-4 py-3">
                       {tab === 'pending' ? (
                         <div className="flex gap-1.5 justify-end">
                           <Button size="sm" className="h-7 text-xs" onClick={() => setApproving(r)}>
                             <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approuver
                           </Button>
-                          <Button size="sm" variant="outline" className="h-7 text-xs text-red-600" onClick={() => setRejecting(r)}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs text-danger" onClick={() => setRejecting(r)}>
                             <XCircle className="w-3.5 h-3.5 mr-1" /> Refuser
                           </Button>
-                          <Link href={`/platform/clients/${r.organization_id}`}>
-                            <Button size="sm" variant="ghost" className="h-7 text-xs" title="Voir la fiche">
+                          <Link href={`/platform/clients/${r.organization_id}`} title="Voir la fiche" aria-label="Voir la fiche" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'h-7 text-xs' })}>
                               <Eye className="w-3.5 h-3.5" />
-                            </Button>
-                          </Link>
+                            </Link>
                         </div>
                       ) : (
-                        <p className="text-right text-slate-500">{r.processed_at ? formatDateFR(r.processed_at) : '—'}</p>
+                        <p className="text-right text-muted">{r.processed_at ? formatDateFR(r.processed_at) : '—'}</p>
                       )}
                     </td>
                   </tr>
@@ -226,7 +224,7 @@ export default function LicenseRequestsPage() {
 
       <Modal isOpen={!!rejecting} onClose={() => setRejecting(null)} title="Refuser la demande">
         <div className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-muted">
             Demande de <strong>{rejecting?.organization_name}</strong>. Le client verra que sa demande a été refusée.
           </p>
           <textarea
@@ -235,7 +233,7 @@ export default function LicenseRequestsPage() {
             value={rejectNote}
             onChange={(e) => setRejectNote(e.target.value)}
             placeholder="Motif (optionnel, visible par le client)"
-            className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="textarea textarea--primary w-full"
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setRejecting(null)}>Annuler</Button>

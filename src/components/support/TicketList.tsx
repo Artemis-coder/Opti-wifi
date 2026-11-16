@@ -20,35 +20,35 @@ export function TicketList({ tickets, hrefBase, showClient }: { tickets: TicketL
             <Link
               href={`${hrefBase}/${t.id}`}
               className={cn(
-                'flex items-center gap-3 p-4 rounded-2xl border bg-white dark:bg-slate-900 transition hover:border-slate-300 dark:hover:border-slate-700',
-                awaiting ? 'border-brand-300 dark:border-brand-700' : 'border-slate-200 dark:border-slate-800'
+                'flex items-center gap-3 p-4 rounded-xl border bg-surface transition hover:border-border',
+                awaiting ? 'border-accent/30' : 'border-border'
               )}
             >
               <span
                 className={cn(
-                  'w-10 h-10 shrink-0 rounded-xl flex items-center justify-center',
-                  t.opened_by_support ? 'bg-amber-500/10 text-amber-600' : 'bg-brand-500/10 text-brand-600 dark:text-brand-400'
+                  'w-10 h-10 shrink-0 rounded-lg flex items-center justify-center',
+                  t.opened_by_support ? 'bg-warning-soft text-warning-soft-foreground' : 'bg-accent-soft text-accent'
                 )}
               >
                 {t.opened_by_support ? <Headset className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
               </span>
               <span className="min-w-0 flex-1 space-y-1">
                 <span className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-sm text-slate-900 dark:text-white break-words">{t.subject}</span>
+                  <span className="font-semibold text-sm text-foreground break-words">{t.subject}</span>
                   <Badge variant={status.variant}>{status.label}</Badge>
                   {awaiting && (
-                    <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-300">
+                    <span className="text-xs font-semibold text-accent">
                       {showClient ? 'Réponse attendue' : 'Nouvelle réponse'}
                     </span>
                   )}
                 </span>
-                <span className="block text-xs text-slate-500 truncate">
+                <span className="block text-xs text-muted truncate">
                   {t.ticket_number}
                   {showClient && t.organization_name ? ` · ${t.organization_name}` : ''} · {categoryLabel(t.category)} ·{' '}
                   {timeAgo(t.last_message_at)}
                 </span>
               </span>
-              <ChevronRight className="w-4 h-4 shrink-0 text-slate-400" />
+              <ChevronRight className="w-4 h-4 shrink-0 text-muted" />
             </Link>
           </li>
         );

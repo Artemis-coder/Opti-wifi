@@ -20,7 +20,7 @@ import {
   Store,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -300,33 +300,31 @@ export default function ExchangePage() {
 
   if (loading) {
     return (
-      <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+      <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         Chargement de l&apos;assistant d&apos;échange...
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/allocations">
-          <Button variant="ghost" size="sm" className="gap-2">
+        <Link href="/allocations" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'gap-2' })}>
             <ArrowLeft className="w-4 h-4" /> Retour
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <ArrowLeftRight className="w-6 h-6 text-amber-500" />
+          </Link>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <ArrowLeftRight className="size-6 text-muted" />
           Échange de Tickets
         </h1>
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         Rendez des tickets existants pour en recevoir d&apos;autres à valeur équivalente au même point de vente.
       </p>
 
       {/* Step Indicator */}
-      <div className="space-y-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="space-y-2 border-b border-border pb-4">
         <div className="flex items-center justify-between">
           {stepIndicators.map((s, idx) => {
             const stepNum = idx + 1;
@@ -335,40 +333,40 @@ export default function ExchangePage() {
             return (
               <div key={s.label} className="flex items-center gap-2">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs ${
                     isCompleted
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-success text-success-foreground'
                       : isActive
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md ring-2 ring-amber-500/30'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                      ? 'bg-warning text-foreground font-semibold shadow-md ring-2 ring-warning/30'
+                      : 'bg-default text-muted'
                   }`}
                 >
                   {isCompleted ? '✓' : stepNum}
                 </div>
                 <span
                   className={`hidden sm:inline text-xs font-semibold ${
-                    isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'
+                    isActive ? 'text-foreground ' : 'text-muted'
                   }`}
                 >
                   {s.label}
                 </span>
                 {idx < stepIndicators.length - 1 && (
-                  <ArrowRight className="w-4 h-4 text-slate-300 dark:text-slate-700 hidden sm:inline" />
+                  <ArrowRight className="w-4 h-4 text-muted hidden sm:inline" />
                 )}
               </div>
             );
           })}
         </div>
-        <p className="sm:hidden text-xs font-bold text-amber-600 dark:text-amber-400 text-center pt-1">
+        <p className="sm:hidden text-xs font-semibold text-warning-soft-foreground text-center pt-1">
           Étape {step} sur 4 : {stepIndicators[step - 1]?.label}
         </p>
       </div>
 
       {submitted ? (
-        <Card className="p-8 text-center space-y-3 border-emerald-500">
-          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Échange Enregistré !</h3>
-          <p className="text-xs text-slate-500">
+        <Card className="text-center space-y-3 border-success py-8">
+          <CheckCircle2 className="w-12 h-12 text-success-soft-foreground mx-auto animate-bounce" />
+          <h3 className="text-xl font-semibold text-foreground">Échange Enregistré !</h3>
+          <p className="text-xs text-muted">
             Les tickets ont été échangés avec succès dans la base de données.
           </p>
         </Card>
@@ -376,8 +374,8 @@ export default function ExchangePage() {
         <form onSubmit={handleSubmit}>
           {/* Step 1: Select POS */}
           {step === 1 && (
-            <Card className="p-6 space-y-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 1 : Choix du Point de Vente</h3>
+            <Card className="space-y-4">
+              <h3 className="text-base font-semibold text-foreground">Étape 1 : Choix du Point de Vente</h3>
               <div className="space-y-2">
                 <CustomSelect
                   label="Point de Vente concerné"
@@ -391,7 +389,7 @@ export default function ExchangePage() {
                   placeholder="Sélectionner un point de vente..."
                   title="Point de Vente concerné"
                   searchPlaceholder="Rechercher par nom ou ville..."
-                  leadingIcon={<Store className="w-4 h-4 text-amber-500" />}
+                  leadingIcon={<Store className="w-4 h-4 text-warning-soft-foreground" />}
                 />
               </div>
 
@@ -405,23 +403,23 @@ export default function ExchangePage() {
 
           {/* Step 2: Tickets to Return */}
           {step === 2 && (
-            <Card className="p-6 space-y-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 2 : Sélection des Tickets à Rendre</h3>
-              <p className="text-xs text-slate-500">
+            <Card className="space-y-4">
+              <h3 className="text-base font-semibold text-foreground">Étape 2 : Sélection des Tickets à Rendre</h3>
+              <p className="text-xs text-muted">
                 Sélectionnez les types de tickets que vous souhaitez rendre. Seuls les tickets disponibles (alloués - vendus) peuvent être rendus.
               </p>
 
               {loadingStock ? (
-                <div className="py-8 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-                  <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                <div className="py-8 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+                  <Loader2 className="w-5 h-5 animate-spin text-accent" />
                   Calcul du stock disponible...
                 </div>
               ) : Object.keys(posStockInfo).length === 0 ? (
                 <div className="py-8 text-center space-y-3">
-                  <Package className="w-10 h-10 text-slate-300 mx-auto" />
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun ticket alloué à ce POS</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    Aucun ticket n&apos;a été alloué à ce point de vente. <Link href="/allocations/new" className="text-amber-600 hover:underline">Allouer des tickets</Link>.
+                  <Package className="w-10 h-10 text-muted mx-auto" />
+                  <h3 className="text-base font-semibold text-foreground">Aucun ticket alloué à ce POS</h3>
+                  <p className="text-xs text-muted max-w-sm mx-auto">
+                    Aucun ticket n&apos;a été alloué à ce point de vente. <Link href="/allocations/new" className="text-warning-soft-foreground hover:underline">Allouer des tickets</Link>.
                   </p>
                 </div>
               ) : (
@@ -429,29 +427,29 @@ export default function ExchangePage() {
                   {Object.values(posStockInfo)
                     .filter((s: TicketStockInfo) => s.restant > 0)
                     .map((stock: TicketStockInfo) => (
-                      <div key={stock.ticketType.id} className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <div key={stock.ticketType.id} className="flex items-start gap-4 p-3 bg-surface-secondary rounded-xl">
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Ticket className="w-4 h-4 text-emerald-600" />
-                              <span className="font-bold text-sm text-slate-900 dark:text-white">{stock.ticketType.nom}</span>
+                              <Ticket className="w-4 h-4 text-success-soft-foreground" />
+                              <span className="font-semibold text-sm text-foreground">{stock.ticketType.nom}</span>
                             </div>
                             <Badge variant="neutral" className="text-xs">
                               {formatCurrencyFCFA(stock.prix_unitaire)} / unité
                             </Badge>
                           </div>
                           <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-                            <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                              <span className="text-slate-500">Alloués</span>
-                              <span className="block font-bold text-slate-900 dark:text-white">{stock.alloue}</span>
+                            <div className="text-center p-2 bg-surface rounded-xl">
+                              <span className="text-muted">Alloués</span>
+                              <span className="block font-semibold text-foreground">{stock.alloue}</span>
                             </div>
-                            <div className="text-center p-2 bg-white dark:bg-slate-900 rounded-lg">
-                              <span className="text-slate-500">Vendus</span>
-                              <span className="block font-bold text-slate-900 dark:text-white">{stock.vendu}</span>
+                            <div className="text-center p-2 bg-surface rounded-xl">
+                              <span className="text-muted">Vendus</span>
+                              <span className="block font-semibold text-foreground">{stock.vendu}</span>
                             </div>
-                            <div className="text-center p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                              <span className="text-emerald-700 dark:text-emerald-300">Disponibles</span>
-                              <span className="block font-bold text-emerald-700 dark:text-emerald-400">{stock.restant}</span>
+                            <div className="text-center p-2 bg-success-soft rounded-xl">
+                              <span className="text-success-soft-foreground">Disponibles</span>
+                              <span className="block font-semibold text-success-soft-foreground">{stock.restant}</span>
                             </div>
                           </div>
                         </div>
@@ -482,18 +480,18 @@ export default function ExchangePage() {
               )}
 
               {totalReturnedValue > 0 && (
-                <div className="pt-4 p-4 bg-blue-900/10 dark:bg-blue-950/40 rounded-xl border border-blue-900/20 flex items-center justify-between">
+                <div className="pt-4 p-4 bg-accent-soft rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5 text-blue-600" />
-                    <span className="font-semibold text-slate-900 dark:text-white">Valeur totale à rendre</span>
+                    <TrendingDown className="w-5 h-5 text-accent" />
+                    <span className="font-semibold text-foreground">Valeur totale à rendre</span>
                   </div>
-                  <span className="text-xl font-extrabold text-blue-700 dark:text-blue-300">
+                  <span className="text-xl font-semibold text-accent">
                     {formatCurrencyFCFA(totalReturnedValue)}
                   </span>
                 </div>
               )}
 
-              <div className="flex justify-between pt-4">
+              <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button type="button" variant="ghost" onClick={() => setStep(1)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
@@ -511,25 +509,25 @@ export default function ExchangePage() {
 
           {/* Step 3: Tickets to Receive */}
           {step === 3 && (
-            <Card className="p-6 space-y-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 3 : Sélection des Tickets à Recevoir</h3>
-              <p className="text-xs text-slate-500">
+            <Card className="space-y-4">
+              <h3 className="text-base font-semibold text-foreground">Étape 3 : Sélection des Tickets à Recevoir</h3>
+              <p className="text-xs text-muted">
                 Choisissez les types de tickets à recevoir en échange. La valeur totale reçue doit correspondre à la valeur rendue ({formatCurrencyFCFA(totalReturnedValue)}).
               </p>
 
-              <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-3 bg-default rounded-xl">
                 <div className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-amber-500" />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Valeur à échanger</span>
+                  <Info className="w-4 h-4 text-warning-soft-foreground" />
+                  <span className="text-sm font-medium text-foreground">Valeur à échanger</span>
                 </div>
-                <span className="text-lg font-extrabold text-slate-900 dark:text-white">
+                <span className="text-lg font-semibold text-foreground">
                   {formatCurrencyFCFA(totalReturnedValue)}
                 </span>
               </div>
 
               {receives.length === 0 ? (
                 <div className="text-center py-6 space-y-3">
-                  <Button onClick={addReceiveLine} variant="secondary" className="gap-2 font-bold">
+                  <Button onClick={addReceiveLine} variant="secondary" className="gap-2 font-semibold">
                     <Plus className="w-4 h-4" /> Ajouter un type de ticket
                   </Button>
                 </div>
@@ -539,7 +537,7 @@ export default function ExchangePage() {
                   const suggestedQty = line.ticketTypeId ? autoCalculateReceive(line.ticketTypeId) : 0;
 
                   return (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div key={index} className="flex items-start gap-3 p-3 bg-surface-secondary rounded-xl">
                       <div className="flex-1 space-y-2">
                         <CustomSelect
                           value={line.ticketTypeId}
@@ -569,7 +567,7 @@ export default function ExchangePage() {
                               <button
                                 type="button"
                                 onClick={() => updateReceive(index, 'quantite', suggestedQty)}
-                                className="text-xs text-amber-600 hover:text-amber-700 font-medium underline"
+                                className="text-xs text-warning-soft-foreground hover:text-warning-soft-foreground font-medium underline"
                               >
                                 Suggestion: {suggestedQty}
                               </button>
@@ -577,7 +575,7 @@ export default function ExchangePage() {
                           </div>
                         </div>
                         {ticket && (
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-muted">
                             {formatCurrencyFCFA(Number(ticket.prix))} × {line.quantite || 0} = {formatCurrencyFCFA((line.quantite || 0) * Number(ticket.prix))}
                           </p>
                         )}
@@ -588,7 +586,7 @@ export default function ExchangePage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeReceiveLine(index)}
-                          className="text-red-600 hover:text-red-700 mt-1"
+                          className="text-danger hover:text-danger mt-1"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -598,7 +596,7 @@ export default function ExchangePage() {
                 })
               )}
 
-              <div className="flex justify-between pt-2">
+              <div className="flex pt-2 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button type="button" size="sm" variant="ghost" onClick={addReceiveLine} className="gap-1 text-xs">
                   <Plus className="w-4 h-4" /> Ajouter un type
                 </Button>
@@ -610,17 +608,17 @@ export default function ExchangePage() {
               </div>
 
               {totalReceivedValue > 0 && (
-                <div className="pt-4 p-4 bg-purple-900/10 dark:bg-purple-950/40 rounded-xl border border-purple-900/20 flex items-center justify-between">
+                <div className="pt-4 p-4 bg-accent-soft rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
-                    <span className="font-semibold text-slate-900 dark:text-white">Valeur totale à recevoir</span>
+                    <TrendingUp className="w-5 h-5 text-accent" />
+                    <span className="font-semibold text-foreground">Valeur totale à recevoir</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-extrabold text-purple-700 dark:text-purple-300">
+                    <span className="text-xl font-semibold text-accent">
                       {formatCurrencyFCFA(totalReceivedValue)}
                     </span>
                     {valueDifference !== 0 && (
-                      <p className={`text-xs font-bold ${valueDifference > 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                      <p className={`text-xs font-semibold ${valueDifference > 0 ? 'text-danger' : 'text-warning-soft-foreground'}`}>
                         {valueDifference > 0 ? 'Excédent' : 'Manquant'}: {formatCurrencyFCFA(Math.abs(valueDifference))}
                       </p>
                     )}
@@ -628,7 +626,7 @@ export default function ExchangePage() {
                 </div>
               )}
 
-              <div className="flex justify-between pt-4">
+              <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button type="button" variant="ghost" onClick={() => setStep(2)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
@@ -646,35 +644,35 @@ export default function ExchangePage() {
 
           {/* Step 4: Review & Submit */}
           {step === 4 && (
-            <Card className="p-6 space-y-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Étape 4 : Vérification et Validation</h3>
+            <Card className="space-y-4">
+              <h3 className="text-base font-semibold text-foreground">Étape 4 : Vérification et Validation</h3>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 {/* Returns Summary */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
-                    <TrendingDown className="w-5 h-5 text-red-500" />
-                    <h4 className="font-bold text-slate-900 dark:text-white">Tickets à Rendre</h4>
+                  <div className="flex items-center gap-2 pb-2 border-b border-border">
+                    <TrendingDown className="w-5 h-5 text-danger" />
+                    <h4 className="font-semibold text-foreground">Tickets à Rendre</h4>
                   </div>
                   {returns.filter((r: ExchangeItem) => r.quantite > 0).map((r, idx) => {
                     const ticket = getTicketTypeById(r.ticketTypeId);
                     if (!ticket) return null;
                     return (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <div key={idx} className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
                         <div>
-                          <span className="font-bold text-sm text-slate-900 dark:text-white">{ticket.nom}</span>
-                          <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
+                          <span className="font-semibold text-sm text-foreground">{ticket.nom}</span>
+                          <span className="text-xs text-muted block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
                         </div>
                         <div className="text-right">
-                          <span className="font-bold text-slate-900 dark:text-white">{r.quantite}</span>
-                          <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
+                          <span className="font-semibold text-foreground">{r.quantite}</span>
+                          <span className="text-xs text-muted block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
                         </div>
                       </div>
                     );
                   })}
-                  <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800">
-                    <span className="font-bold text-red-800 dark:text-red-300">Total Rendu</span>
-                    <span className="font-extrabold text-red-700 dark:text-red-300">
+                  <div className="flex items-center justify-between p-3 bg-danger-soft rounded-xl">
+                    <span className="font-semibold text-danger">Total Rendu</span>
+                    <span className="font-semibold text-danger">
                       {formatCurrencyFCFA(totalReturnedValue)}
                     </span>
                   </div>
@@ -682,29 +680,29 @@ export default function ExchangePage() {
 
                 {/* Receives Summary */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
-                    <TrendingUp className="w-5 h-5 text-emerald-500" />
-                    <h4 className="font-bold text-slate-900 dark:text-white">Tickets à Recevoir</h4>
+                  <div className="flex items-center gap-2 pb-2 border-b border-border">
+                    <TrendingUp className="w-5 h-5 text-success-soft-foreground" />
+                    <h4 className="font-semibold text-foreground">Tickets à Recevoir</h4>
                   </div>
                   {receives.filter((r: ExchangeItem) => r.quantite > 0).map((r, idx) => {
                     const ticket = getTicketTypeById(r.ticketTypeId);
                     if (!ticket) return null;
                     return (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <div key={idx} className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
                         <div>
-                          <span className="font-bold text-sm text-slate-900 dark:text-white">{ticket.nom}</span>
-                          <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
+                          <span className="font-semibold text-sm text-foreground">{ticket.nom}</span>
+                          <span className="text-xs text-muted block">{formatCurrencyFCFA(Number(ticket.prix))} / unité</span>
                         </div>
                         <div className="text-right">
-                          <span className="font-bold text-slate-900 dark:text-white">{r.quantite}</span>
-                          <span className="text-xs text-slate-500 block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
+                          <span className="font-semibold text-foreground">{r.quantite}</span>
+                          <span className="text-xs text-muted block">{formatCurrencyFCFA(r.quantite * Number(ticket.prix))}</span>
                         </div>
                       </div>
                     );
                   })}
-                  <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                    <span className="font-bold text-emerald-800 dark:text-emerald-300">Total Reçu</span>
-                    <span className="font-extrabold text-emerald-700 dark:text-emerald-300">
+                  <div className="flex items-center justify-between p-3 bg-success-soft rounded-xl">
+                    <span className="font-semibold text-success-soft-foreground">Total Reçu</span>
+                    <span className="font-semibold text-success-soft-foreground">
                       {formatCurrencyFCFA(totalReceivedValue)}
                     </span>
                   </div>
@@ -712,10 +710,10 @@ export default function ExchangePage() {
               </div>
 
               {/* Balance Check */}
-              <div className={`p-4 rounded-xl border flex items-center justify-between ${
+              <div className={`p-4 rounded-xl flex items-center justify-between ${
                 isExchangeBalanced
-                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                  : 'bg-red-50 text-red-900 border-red-200'
+                  ? 'bg-success-soft text-success-soft-foreground '
+                  : 'bg-danger-soft text-danger '
               }`}>
                 <div className="flex items-center gap-2">
                   <Badge variant={isExchangeBalanced ? 'success' : 'danger'}>
@@ -723,11 +721,11 @@ export default function ExchangePage() {
                   </Badge>
                   <span className="font-semibold">Écart de valeur</span>
                 </div>
-                <span className="font-extrabold">{formatCurrencyFCFA(Math.abs(valueDifference))}</span>
+                <span className="font-semibold">{formatCurrencyFCFA(Math.abs(valueDifference))}</span>
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <label className="block text-xs font-semibold text-foreground">
                   Référence / Observations
                 </label>
                 <Input
@@ -737,14 +735,14 @@ export default function ExchangePage() {
                 />
               </div>
 
-              <div className="pt-4 flex justify-between">
+              <div className="pt-4 flex gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button type="button" variant="ghost" onClick={() => setStep(3)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
                 <Button
                   type="submit"
                   variant="secondary"
-                  className="px-8 font-bold gap-2"
+                  className="px-8 font-semibold gap-2"
                   isLoading={submitting}
                   disabled={!isExchangeBalanced}
                 >

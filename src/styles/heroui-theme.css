@@ -1,0 +1,116 @@
+/*
+ * OptiSpace — thème HeroUI v3
+ * ---------------------------------------------------------------------------
+ * HeroUI est le design system par défaut (docs/design/HEROUI_DESIGN.md).
+ * On garde son thème par défaut et on remplace seulement l'accent par le vert
+ * OptiSpace (brand-600 #358554 : contraste suffisant avec un texte blanc).
+ *
+ * Mode sombre : les variables HeroUI passent en sombre via `data-theme="dark"`
+ * sur <html>. Le script du layout racine (src/app/layout.tsx) pose cet attribut
+ * d'après le réglage du système, comme le reste de l'app (variant `dark:`).
+ */
+
+@layer theme {
+  :root,
+  .light,
+  .dark,
+  [data-theme='light'],
+  [data-theme='dark'] {
+    --accent: oklch(0.5539 0.1096 153.75); /* #358554 */
+    --accent-foreground: var(--snow);
+    --focus: var(--accent);
+  }
+
+  /* Blocs imbriqués plus légers en clair (demande du 16/11 : gris 100 plutôt que ~200) */
+  :root,
+  .light,
+  [data-theme='light'] {
+    --surface-secondary: oklch(0.9674 0.0013 286.38); /* #f4f4f5 (gris 100) */
+    --surface-tertiary: oklch(0.9437 0.0027 286.35); /* #ececee, survol des blocs */
+  }
+
+  .dark,
+  [data-theme='dark'] {
+    --accent: oklch(0.6272 0.1266 153.31); /* #3f9e63, plus lumineux sur fond sombre */
+    /* Mode sombre plus lisible (16/11) : niveaux bien séparés fond < carte < bloc < champ,
+       bordures et texte secondaire plus visibles. (La règle :root ci-dessus s'applique aussi
+       à <html data-theme="dark">, d'où la redéfinition de chaque surface ici.) */
+    --background: oklch(0.13 0.004 285.8);
+    --surface: oklch(0.205 0.005 285.9);
+    --overlay: oklch(0.235 0.005 285.9);
+    --surface-secondary: oklch(0.255 0.005 285.9);
+    --surface-tertiary: oklch(0.29 0.005 285.9);
+    --field-background: oklch(0.27 0.005 285.9);
+    --default: oklch(0.29 0.006 286);
+    --muted: oklch(0.77 0.012 286);
+    --border: oklch(0.36 0.006 286);
+    --separator: oklch(0.31 0.006 286);
+  }
+}
+
+/*
+ * Arrondis OptiSpace — une seule échelle pour toute l'app (demande du 16/11/2026 :
+ * « moins arrondi, mais uniforme »). Les composants HeroUI sont alignés dessus :
+ *   boutons, onglets, champs, éléments de menu ... 12 px (radius-xl)
+ *   cartes, alertes, popovers, modales, tiroirs . 16 px (radius-2xl)
+ *   blocs imbriqués dans une carte ............. 12 px (rounded-xl dans les pages)
+ *   pastilles d'icône .......................... 8 px  (rounded-lg dans les pages)
+ *   badges / Chip .............................. pilule
+ */
+@layer components {
+  .toggle-button-group .toggle-button {
+    border-radius: 0;
+  }
+  .button,
+  .toggle-button,
+  .toggle-button-group--detached .toggle-button,
+  .toggle-button-group--horizontal .toggle-button:first-child:last-child,
+  .toggle-button-group--vertical .toggle-button:first-child:last-child {
+    border-radius: var(--radius-xl);
+  }
+  .toggle-button-group--horizontal .toggle-button:first-child {
+    border-start-start-radius: var(--radius-xl);
+    border-end-start-radius: var(--radius-xl);
+  }
+  .toggle-button-group--horizontal .toggle-button:last-child {
+    border-start-end-radius: var(--radius-xl);
+    border-end-end-radius: var(--radius-xl);
+  }
+
+  .card,
+  .alert,
+  .popover,
+  .dropdown__popover,
+  .modal__dialog {
+    border-radius: var(--radius-2xl);
+  }
+
+  .menu-item {
+    border-radius: var(--radius-xl);
+  }
+
+  .chip {
+    border-radius: 9999px;
+  }
+
+  /* Actions dans une carte (doc HeroUI : boutons pleine largeur dans Card.Footer) :
+     un bouton placé dans une grille remplit sa case. */
+  .grid > .button {
+    width: 100%;
+  }
+
+  /* Espacements : padding des cartes identique partout (16 px mobile, 20 px bureau) */
+  .card {
+    padding: calc(var(--spacing) * 4);
+  }
+  @media (min-width: 640px) {
+    .card {
+      padding: calc(var(--spacing) * 5);
+    }
+  }
+}
+
+/* Champs : même arrondi que les boutons (12 px) */
+:root {
+  --field-radius: var(--radius-xl);
+}

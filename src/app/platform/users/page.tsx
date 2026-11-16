@@ -18,7 +18,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { UserAvatar } from '@/components/ui/UserAvatar';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import { formatDateFR } from '@/lib/utils/format';
@@ -248,43 +249,43 @@ interface CreateFormState {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Utilisateurs</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Tous les administrateurs de la plateforme.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Utilisateurs</h1>
+          <p className="text-xs text-muted">Tous les administrateurs de la plateforme.</p>
         </div>
         <AddButton what="un utilisateur" onClick={() => setShowCreateModal(true)} />
       </div>
 
-      <Card className="p-4">
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+      <Card>
+        <div className="relative w-full">
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted" />
           <input
             type="text"
             placeholder="Rechercher par nom ou email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="input input--primary w-full pl-10 pr-3"
           />
         </div>
       </Card>
 
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Chargement des utilisateurs...</span>
         </div>
       ) : users.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun utilisateur trouvé</h3>
+        <Card className="text-center space-y-3 py-8">
+          <Users className="w-12 h-12 text-muted mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Aucun utilisateur trouvé</h3>
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Utilisateur</th>
                   <th className="px-4 py-3">Organisation</th>
@@ -294,29 +295,23 @@ interface CreateFormState {
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-separator font-medium">
                 {users.map((u: PlatformUserProfile) => (
-                  <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                  <tr key={u.id} className="hover:bg-surface-secondary transition">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border border-amber-500/30 ${
-                          u.is_banned
-                            ? 'bg-red-100 text-red-600'
-                            : 'bg-brand-900 text-brand-400'
-                        }`}>
-                          {u.nom?.[0] || u.email?.[0] || 'U'}
-                        </div>
+                        <UserAvatar name={u.nom} email={u.email} danger={u.is_banned} className="shrink-0" />
                         <div>
-                          <p className={`font-semibold ${u.is_banned ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}>
+                          <p className={`font-semibold ${u.is_banned ? 'text-muted' : 'text-foreground '}`}>
                             {u.nom || u.email}
                           </p>
-                          <p className="text-xs text-slate-500">{u.email}</p>
+                          <p className="text-xs text-muted">{u.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                    <td className="px-4 py-3 text-muted">
                       {u.organization_name ? (
-                        <Link href={`/platform/clients/${u.organization_id}`} className="hover:text-amber-500">
+                        <Link href={`/platform/clients/${u.organization_id}`} className="hover:text-warning-soft-foreground">
                           {u.organization_name}
                         </Link>
                       ) : (
@@ -336,18 +331,18 @@ interface CreateFormState {
                         {u.deleted_at ? 'Supprimé' : u.is_banned || !u.is_active ? 'Suspendu' : 'Actif'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-slate-500">
+                    <td className="px-4 py-3 text-muted">
                       {formatDateFR(u.created_at)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-1 justify-end">
                         {currentPlatformUser?.auth_user_id === u.id ? (
-                          <span className="text-[11px] text-slate-400 self-center mr-1">Vous</span>
+                          <span className="text-xs text-muted self-center mr-1">Vous</span>
                         ) : u.deleted_at || u.is_banned || !u.is_active ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="p-1 h-7 text-emerald-600 hover:text-emerald-700"
+                            className="p-1 h-7 text-success-soft-foreground hover:text-success-soft-foreground"
                             onClick={() => handleAction(u.id, 'activate', 'réactiver')}
                             disabled={actionLoading === u.id}
                             title="Réactiver (rétablir l'accès)"
@@ -359,7 +354,7 @@ interface CreateFormState {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-red-600 hover:text-red-700"
+                              className="p-1 h-7 text-danger hover:text-danger"
                               onClick={() => handleAction(u.id, 'deactivate', 'suspendre')}
                               disabled={actionLoading === u.id}
                               title="Suspendre (couper l'accès)"
@@ -369,7 +364,7 @@ interface CreateFormState {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-7 text-red-700 hover:text-red-800"
+                              className="p-1 h-7 text-danger hover:text-danger"
                               onClick={() => handleAction(u.id, 'delete', 'supprimer')}
                               disabled={actionLoading === u.id}
                               title="Supprimer (couper l'accès, historique conservé)"
@@ -381,7 +376,7 @@ interface CreateFormState {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="p-1 h-7 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                          className="p-1 h-7 text-muted hover:text-foreground"
                           onClick={() => handleAction(u.id, 'reset_password', 'réinitialiser le mot de passe')}
                           disabled={actionLoading === u.id}
                           title="Réinitialiser le mot de passe"
@@ -389,17 +384,15 @@ interface CreateFormState {
                           <KeyRound className="w-3.5 h-3.5" />
                         </Button>
                         {u.organization_id && (
-                          <Link href={`/platform/clients/${u.organization_id}`}>
-                            <Button variant="ghost" size="sm" className="p-1 h-7 text-blue-600 hover:text-blue-700" title="Voir l'organisation">
+                          <Link href={`/platform/clients/${u.organization_id}`} title="Voir l'organisation" aria-label="Voir l'organisation" className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'p-1 h-7 text-accent hover:text-accent' })}>
                               <Building2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </Link>
+                            </Link>
                         )}
                         {currentPlatformUser?.auth_user_id !== u.id && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="p-1 h-7 text-amber-600 hover:text-amber-700"
+                          className="p-1 h-7 text-warning-soft-foreground hover:text-warning-soft-foreground"
                           onClick={() => openChangeRole(u)}
                           disabled={actionLoading === u.id || savingRole}
                           title="Changer le rôle / l'organisation"
@@ -420,7 +413,7 @@ interface CreateFormState {
       {/* Create Admin Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md p-6 space-y-4">
+          <Card className="w-full max-w-md space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Créer un administrateur</h2>
               <Button variant="ghost" size="sm" onClick={() => setShowCreateModal(false)}>
@@ -429,12 +422,12 @@ interface CreateFormState {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Email *</label>
+                <label className="block text-xs font-medium text-foreground mb-1">Email *</label>
                 <input
                   type="email"
                   value={createFormData.email}
                   onChange={(e) => setCreateFormData({ ...createFormData, email: e.target.value.toLowerCase() })}
-                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="input input--primary w-full"
                   placeholder="admin@organisation.com"
                   required
                   autoComplete="email"
@@ -442,38 +435,38 @@ interface CreateFormState {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nom complet *</label>
+                <label className="block text-xs font-medium text-foreground mb-1">Nom complet *</label>
                 <input
                   type="text"
                   value={createFormData.nom}
                   onChange={(e) => setCreateFormData({ ...createFormData, nom: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="input input--primary w-full"
                   placeholder="Jean Dupont"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Mot de passe (laissé vide = auto-généré)</label>
+                <label className="block text-xs font-medium text-foreground mb-1">Mot de passe (laissé vide = auto-généré)</label>
                 <input
                   type="password"
                   value={createFormData.password}
                   onChange={(e) => setCreateFormData({ ...createFormData, password: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="input input--primary w-full"
                   placeholder="Laisser vide pour générer"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Téléphone</label>
+                <label className="block text-xs font-medium text-foreground mb-1">Téléphone</label>
                <input
                  type="tel"
                  value={createFormData.telephone}
                  onChange={(e) => setCreateFormData({ ...createFormData, telephone: e.target.value })}
-                 className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                 className="input input--primary w-full"
                  placeholder="+225 XX XX XX XX"
                />
              </div>
              <div>
-               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Devise</label>
+               <label className="block text-xs font-medium text-foreground mb-1">Devise</label>
                <CustomSelect
                  value={createFormData.devise}
                  onChange={(v) => setCreateFormData({ ...createFormData, devise: v })}
@@ -485,7 +478,7 @@ interface CreateFormState {
                />
              </div>
              <div>
-               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Rôle</label>
+               <label className="block text-xs font-medium text-foreground mb-1">Rôle</label>
                <CustomSelect
                  value={createFormData.role}
                  onChange={(v) => setCreateFormData({ ...createFormData, role: v as 'administrateur' | 'collecteur' })}
@@ -496,9 +489,9 @@ interface CreateFormState {
                />
              </div>
              <div>
-               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Organisation *</label>
+               <label className="block text-xs font-medium text-foreground mb-1">Organisation *</label>
                {showCreateModal && orgsLoading ? (
-                 <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-500 animate-pulse">Chargement...</div>
+                 <div className="w-full px-3 py-2 bg-default border border-border rounded-xl text-sm text-muted animate-pulse">Chargement...</div>
                ) : (
                  <CustomSelect
                    value={createFormData.organization_id}
@@ -511,7 +504,7 @@ interface CreateFormState {
                )}
              </div>
            </div>
-           <div className="flex justify-end gap-2 pt-2">
+           <div className="flex gap-2 pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
              <Button variant="secondary" onClick={() => setShowCreateModal(false)} disabled={creating}>
                Annuler
              </Button>
@@ -527,19 +520,19 @@ interface CreateFormState {
      {/* Change Role Modal */}
      {changeRoleUser && (
        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-         <Card className="w-full max-w-md p-6 space-y-4">
+         <Card className="w-full max-w-md space-y-4">
            <div className="flex items-center justify-between">
              <h2 className="text-lg font-semibold">Modifier le rôle / l&apos;organisation</h2>
              <Button variant="ghost" size="sm" onClick={() => setChangeRoleUser(null)}>
                <X className="w-4 h-4" />
              </Button>
            </div>
-           <p className="text-sm text-slate-600 dark:text-slate-400">
+           <p className="text-sm text-muted">
              Utilisateur : <span className="font-medium">{changeRoleUser.nom || changeRoleUser.email}</span>
            </p>
            <div className="space-y-3">
              <div>
-               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nouveau rôle</label>
+               <label className="block text-xs font-medium text-foreground mb-1">Nouveau rôle</label>
                <CustomSelect
                  value={newRoleValue}
                  onChange={(v) => setNewRoleValue(v as 'administrateur' | 'collecteur')}
@@ -550,9 +543,9 @@ interface CreateFormState {
                />
              </div>
              <div>
-               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nouvelle organisation</label>
+               <label className="block text-xs font-medium text-foreground mb-1">Nouvelle organisation</label>
                {orgsLoading ? (
-                 <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-500 animate-pulse">Chargement...</div>
+                 <div className="w-full px-3 py-2 bg-default border border-border rounded-xl text-sm text-muted animate-pulse">Chargement...</div>
                ) : (
                  <CustomSelect
                    value={newOrgIdValue}
@@ -565,7 +558,7 @@ interface CreateFormState {
                )}
              </div>
            </div>
-           <div className="flex justify-end gap-2 pt-2">
+           <div className="flex gap-2 pt-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
              <Button variant="secondary" onClick={() => setChangeRoleUser(null)} disabled={savingRole}>
                Annuler
              </Button>

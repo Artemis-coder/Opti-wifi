@@ -102,44 +102,44 @@ export default function TicketTypesPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Types de Tickets Wi-Fi</h1>
-          <p className="text-xs text-slate-500">Configurez les forfaits et la grille tarifaire de vos tickets.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Types de Tickets Wi-Fi</h1>
+          <p className="text-xs text-muted">Configurez les forfaits et la grille tarifaire de vos tickets.</p>
         </div>
         <AddButton what="un type de ticket" tour="add:tickets" onClick={() => setIsModalOpen(true)} />
       </div>
 
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           Chargement des forfaits...
         </div>
       ) : tickets.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
+        <Card className="text-center space-y-3 py-8">
+          <div className="w-14 h-14 rounded-full bg-success-soft text-success-soft-foreground flex items-center justify-center mx-auto">
             <Ticket className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun type de ticket</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <h3 className="text-base font-semibold text-foreground">Aucun type de ticket</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto">
             Créez votre premier forfait (ex: Pass 1h, Pass 24h) pour commencer la distribution.
           </p>
           <AddButton what="un type de ticket" tour="add:tickets" onClick={() => setIsModalOpen(true)} />
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {tickets.map((t: TicketType) => (
-            <Card key={t.id} className="space-y-4 hover:border-emerald-500/50 transition">
+            <Card key={t.id} className="space-y-4 hover:border-success/50 transition">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                  <div className="p-2.5 rounded-xl bg-success-soft text-success-soft-foreground">
                     <Ticket className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.nom}</h3>
-                    <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
-                      <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <h3 className="font-semibold text-sm text-foreground">{t.nom}</h3>
+                    <div className="flex items-center gap-1 text-xs text-muted mt-0.5">
+                      <Clock className="w-3.5 h-3.5 text-warning-soft-foreground" />
                       <span>Durée : {formatTicketDuration(t.duree_heures)}</span>
                     </div>
                   </div>
@@ -149,9 +149,9 @@ export default function TicketTypesPage() {
                 </Badge>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-medium">Prix public :</span>
-                <span className="text-lg font-extrabold text-brand-900 dark:text-brand-400">{formatCurrencyFCFA(t.prix)}</span>
+              <div className="pt-3 border-t border-separator flex items-center justify-between">
+                <span className="text-xs text-muted font-medium">Prix public :</span>
+                <span className="text-lg font-semibold text-accent">{formatCurrencyFCFA(t.prix)}</span>
               </div>
 
               {/* Actions bien visibles, avec libellé */}
@@ -166,8 +166,8 @@ export default function TicketTypesPage() {
                   onClick={() => handleToggleActif(t)}
                   className={
                     t.actif
-                      ? 'h-10 font-semibold text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-950/30'
-                      : 'h-10 font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950/30'
+                      ? 'h-10 font-semibold text-warning-soft-foreground border-warning/30 hover:bg-warning-soft'
+                      : 'h-10 font-semibold text-success-soft-foreground border-success/30 hover:bg-success-soft'
                   }
                 >
                   {t.actif ? <PauseCircle className="w-4 h-4 mr-1.5" /> : <PlayCircle className="w-4 h-4 mr-1.5" />}

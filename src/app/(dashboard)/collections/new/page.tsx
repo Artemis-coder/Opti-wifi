@@ -1,5 +1,6 @@
 'use client';
 
+import { Alert } from '@heroui/react';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClassName } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -478,20 +479,20 @@ export default function NewCollectionWizard() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-5 max-w-3xl mx-auto">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Receipt className="w-6 h-6 text-amber-500" />
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <Receipt className="size-6 text-muted" />
           Assistant de Collecte & Encaissement Caisse
         </h1>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted mt-1">
           Vérification rigoureuse à chaque niveau et traçabilité financière intégrale.
         </p>
       </div>
 
       {/* Stepper Header */}
-      <div className="space-y-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="space-y-2 border-b border-border pb-4">
         <div className="flex items-center justify-between">
           {[1, 2, 3, 4, 5].map((s: number) => {
             const isCompleted = step > s;
@@ -502,12 +503,12 @@ export default function NewCollectionWizard() {
                   type="button"
                   disabled={!isCompleted}
                   onClick={() => isCompleted && setStep(s)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition ${
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center font-semibold text-xs transition ${
                     isCurrent
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md ring-2 ring-amber-500/30'
+                      ? 'bg-warning text-foreground font-semibold shadow-md ring-2 ring-warning/30'
                       : isCompleted
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
+                      ? 'bg-success text-warning-foreground hover:bg-success-hover cursor-pointer'
+                      : 'bg-default text-muted cursor-not-allowed'
                   }`}
                   aria-label={`Aller à l'étape ${s}`}
                 >
@@ -515,7 +516,7 @@ export default function NewCollectionWizard() {
                 </button>
                 <span
                   className={`hidden sm:inline text-xs font-semibold ${
-                    isCurrent ? 'text-slate-900 dark:text-white' : 'text-slate-400'
+                    isCurrent ? 'text-foreground ' : 'text-muted'
                   }`}
                 >
                   {s === 1 && 'Point de Vente'}
@@ -530,7 +531,7 @@ export default function NewCollectionWizard() {
         </div>
 
         {/* Mobile active step indicator */}
-        <p className="sm:hidden text-xs font-bold text-amber-600 dark:text-amber-400 text-center pt-1">
+        <p className="sm:hidden text-xs font-semibold text-warning-soft-foreground text-center pt-1">
           Étape {step}/5 :{' '}
           {step === 1 && 'Choix du Point de Vente'}
           {step === 2 && 'Comptage des Tickets Restants'}
@@ -541,50 +542,48 @@ export default function NewCollectionWizard() {
       </div>
 
       {loading ? (
-        <div className="py-12 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <div className="py-10 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           Chargement de l&apos;assistant de collecte...
         </div>
       ) : submitted ? (
-        <Card className="p-8 text-center space-y-3 border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20">
-          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Collecte Enregistrée avec Succès !</h3>
-          <p className="text-xs text-slate-500">
+        <Card className="text-center space-y-3 bg-success-soft py-8">
+          <CheckCircle2 className="w-12 h-12 text-success-soft-foreground mx-auto animate-bounce" />
+          <h3 className="text-xl font-semibold text-foreground">Collecte Enregistrée avec Succès !</h3>
+          <p className="text-xs text-muted">
             L&apos;encaissement a été validé et archivé dans la base de données. Redirection en cours...
           </p>
         </Card>
       ) : (
-        <Card className="p-4 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-800" data-tour="form:collection">
+        <Card className="shadow-sm border border-border" data-tour="form:collection">
           {/* ========================================================
               LEVEL 1 : Point of Sale Selection
              ======================================================== */}
           {step === 1 && (
             <div className="space-y-4">
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Store className="w-5 h-5 text-emerald-600" />
+              <div className="border-b border-separator pb-3">
+                <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                  <Store className="w-5 h-5 text-success-soft-foreground" />
                   Niveau 1 : Sélection du Point de Vente
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-muted mt-0.5">
                   Identifiez le point de vente physique pour lequel vous effectuez la collecte de caisse.
                 </p>
               </div>
 
               {posList.length === 0 ? (
-                <div className="p-6 text-center space-y-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                  <AlertTriangle className="w-8 h-8 text-amber-600 mx-auto" />
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Aucun point de vente disponible</p>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                <div className="p-6 text-center space-y-3 bg-warning-soft rounded-xl">
+                  <AlertTriangle className="w-8 h-8 text-warning-soft-foreground mx-auto" />
+                  <p className="text-sm font-semibold text-foreground">Aucun point de vente disponible</p>
+                  <p className="text-xs text-muted max-w-sm mx-auto">
                     {isCollector
                       ? 'Aucun point de vente ne vous est attribué pour cet espace Wi-Fi. Demandez à votre administrateur de vous en confier.'
                       : 'Aucun point de vente n’a été trouvé pour cet espace Wi-Fi. Veuillez d’abord en créer un.'}
                   </p>
                   {!isCollector && (
-                    <Link href="/pos">
-                      <Button size="sm" variant="secondary" className="font-bold">
+                    <Link href="/pos" className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'font-semibold' })}>
                         Gérer les Points de Vente
-                      </Button>
-                    </Link>
+                      </Link>
                   )}
                 </div>
               ) : (
@@ -601,14 +600,14 @@ export default function NewCollectionWizard() {
                     placeholder="Sélectionner un point de vente..."
                     title="Choisir le Point de Vente"
                     searchPlaceholder="Rechercher par nom ou ville..."
-                    leadingIcon={<Store className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                    leadingIcon={<Store className="w-4 h-4 text-success-soft-foreground" />}
                     error={errors.posId}
                   />
 
                   {selectedPos && (
-                    <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400">Localisation :</span>
-                      <span className="font-semibold text-slate-900 dark:text-white">
+                    <div className="mt-3 p-3 bg-surface-secondary rounded-xl flex items-center justify-between text-xs">
+                      <span className="text-muted">Localisation :</span>
+                      <span className="font-semibold text-foreground">
                         {selectedPos.ville || 'Non renseignée'}
                         {selectedPos.adresse ? ` — ${selectedPos.adresse}` : ''}
                       </span>
@@ -621,7 +620,7 @@ export default function NewCollectionWizard() {
                 <Button
                   onClick={goToStep2}
                   disabled={!posId || posList.length === 0}
-                  className="w-full sm:w-auto gap-2 font-bold"
+                  className="w-full sm:w-auto gap-2 font-semibold"
                 >
                   Continuer vers les Tickets <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -634,18 +633,18 @@ export default function NewCollectionWizard() {
              ======================================================== */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="border-b border-separator pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Package className="w-5 h-5 text-amber-500" />
+                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Package className="w-5 h-5 text-warning-soft-foreground" />
                     Niveau 2 : Comptage des Tickets Restants
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     Comptez physiquement les tickets invendus restant chez le gérant.
                   </p>
                 </div>
                 {selectedPos && (
-                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 w-fit">
+                  <span className="text-xs font-medium text-success-soft-foreground bg-success-soft px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit">
                     <Store className="w-3.5 h-3.5" />
                     {selectedPos.nom}
                   </span>
@@ -653,43 +652,41 @@ export default function NewCollectionWizard() {
               </div>
 
               {loadingAllocations ? (
-                <div className="py-8 flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-                  <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                <div className="py-8 flex justify-center items-center gap-2 text-muted text-sm font-medium">
+                  <Loader2 className="w-5 h-5 animate-spin text-accent" />
                   Vérification du stock alloué...
                 </div>
               ) : availableTickets.length === 0 ? (
-                <div className="py-8 text-center space-y-3 bg-amber-50/50 dark:bg-amber-950/10 rounded-xl border border-amber-200 dark:border-amber-800 p-6">
-                  <Package className="w-10 h-10 text-amber-500 mx-auto" />
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun stock de ticket disponible</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                <div className="py-8 text-center space-y-3 bg-warning-soft rounded-xl p-6">
+                  <Package className="w-10 h-10 text-warning-soft-foreground mx-auto" />
+                  <h3 className="text-base font-semibold text-foreground">Aucun stock de ticket disponible</h3>
+                  <p className="text-xs text-muted max-w-sm mx-auto">
                     Aucun ticket n&apos;est actuellement alloué à ce point de vente (ou tous les tickets ont déjà été collectés). Vous ne pouvez pas initier de collecte sans stock préalable.
                   </p>
-                  <Link href="/allocations/new">
-                    <Button variant="secondary" size="sm" className="gap-2 font-bold">
+                  <Link href="/allocations/new" className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'gap-2 font-semibold' })}>
                       <Package className="w-4 h-4" /> Allouer du Stock
-                    </Button>
-                  </Link>
+                    </Link>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {/* Quick-fill action bar */}
-                  <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-100 dark:bg-slate-800/60 rounded-xl text-xs">
-                    <span className="font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                      <Info className="w-3.5 h-3.5 text-blue-500" />
+                  <div className="flex items-center justify-between gap-2 p-2.5 bg-default rounded-xl text-xs">
+                    <span className="font-semibold text-muted flex items-center gap-1.5">
+                      <Info className="w-3.5 h-3.5 text-accent" />
                       Remplissage rapide :
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={setAllSold}
-                        className="px-2.5 py-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-200 font-semibold hover:border-emerald-500 hover:text-emerald-600 transition"
+                        className="px-2.5 py-1 bg-surface border border-border rounded-xl text-foreground font-semibold hover:border-success hover:text-success-soft-foreground transition"
                       >
                         Tous vendus (0)
                       </button>
                       <button
                         type="button"
                         onClick={setNoneSold}
-                        className="px-2.5 py-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-200 font-semibold hover:border-blue-500 hover:text-blue-600 transition"
+                        className="px-2.5 py-1 bg-surface border border-border rounded-xl text-foreground font-semibold hover:border-accent hover:text-accent transition"
                       >
                         Aucun vendu
                       </button>
@@ -709,27 +706,27 @@ export default function NewCollectionWizard() {
                     return (
                       <div
                         key={t.id}
-                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition ${
+                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl transition ${
                           fieldError
-                            ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-300 dark:border-rose-800'
-                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+                            ? 'bg-danger-soft '
+                            : 'bg-surface-secondary '
                         }`}
                       >
                         <div className="space-y-1">
-                          <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                             {t.nom}
-                            <span className="text-[11px] font-normal text-slate-500">
+                            <span className="text-xs font-normal text-muted">
                               ({formatCurrencyFCFA(t.prix)} / ticket)
                             </span>
                           </p>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 flex-wrap">
-                            <span className="px-2 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/60 font-medium">
+                          <div className="flex items-center gap-1.5 text-xs text-muted flex-wrap">
+                            <span className="px-2 py-0.5 rounded-xl bg-default/70 font-medium">
                               Alloué : {allocated}
                             </span>
-                            <span className="px-2 py-0.5 rounded bg-blue-100/70 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-medium">
+                            <span className="px-2 py-0.5 rounded-xl bg-accent-soft text-accent font-medium">
                               Déjà collecté : {soldAlready}
                             </span>
-                            <span className="px-2 py-0.5 rounded bg-emerald-100/70 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                            <span className="px-2 py-0.5 rounded-xl bg-success-soft text-success-soft-foreground font-semibold">
                               Stock en main : {available}
                             </span>
                           </div>
@@ -737,7 +734,7 @@ export default function NewCollectionWizard() {
 
                         <div className="flex flex-col sm:items-end gap-1">
                           <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
-                            <span className="sm:hidden text-xs font-semibold text-slate-600 dark:text-slate-400">
+                            <span className="sm:hidden text-xs font-semibold text-muted">
                               Restants comptés :
                             </span>
                             <div className="w-28">
@@ -748,16 +745,16 @@ export default function NewCollectionWizard() {
                                 value={remainingVal === undefined ? '' : remainingVal}
                                 onChange={(e) => handleRemainingChange(t.id, e.target.value)}
                                 placeholder="0"
-                                className={`text-center font-bold rounded-xl px-3 py-2 bg-white dark:bg-slate-900 ${
-                                  fieldError ? 'border-rose-500 focus:ring-rose-500' : ''
+                                className={`text-center font-semibold rounded-xl px-3 py-2 bg-surface ${
+                                  fieldError ? 'border-danger focus:ring-focus' : ''
                                 }`}
                               />
                             </div>
                           </div>
 
                           {/* Calculated sold tickets & subtotal */}
-                          <div className="text-[11px] text-right text-slate-500 font-medium flex items-center justify-between sm:justify-end gap-2 w-full">
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          <div className="text-xs text-right text-muted font-medium flex items-center justify-between sm:justify-end gap-2 w-full">
+                            <span className="text-success-soft-foreground font-semibold">
                               {soldNow} vendu{soldNow > 1 ? 's' : ''}
                             </span>
                             <span>= {formatCurrencyFCFA(subtotal)}</span>
@@ -765,7 +762,7 @@ export default function NewCollectionWizard() {
 
                           {/* Inline Error Message */}
                           {fieldError && (
-                            <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 mt-0.5">
+                            <p className="text-xs text-danger font-medium flex items-center gap-1 mt-0.5">
                               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                               {fieldError}
                             </p>
@@ -777,14 +774,14 @@ export default function NewCollectionWizard() {
                 </div>
               )}
 
-              <div className="flex justify-between pt-4">
+              <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button variant="ghost" onClick={() => setStep(1)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
                 <Button
                   onClick={goToStep3}
                   disabled={availableTickets.length === 0}
-                  className="gap-2 font-bold"
+                  className="gap-2 font-semibold"
                 >
                   Valider le Comptage <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -797,18 +794,18 @@ export default function NewCollectionWizard() {
              ======================================================== */}
           {step === 3 && (
             <div className="space-y-4">
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="border-b border-separator pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-emerald-600" />
+                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-success-soft-foreground" />
                     Niveau 3 : Calcul Automatique du Montant Attendu
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     Vérifiez la concordance mathématique entre les tickets vendus et la recette théorique.
                   </p>
                 </div>
                 {selectedPos && (
-                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 w-fit">
+                  <span className="text-xs font-medium text-success-soft-foreground bg-success-soft px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit">
                     <Store className="w-3.5 h-3.5" />
                     {selectedPos.nom}
                   </span>
@@ -816,24 +813,24 @@ export default function NewCollectionWizard() {
               </div>
 
               {/* Big KPI summary banner */}
-              <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 text-center space-y-1.5">
-                <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+              <div className="p-5 bg-success-soft rounded-xl text-center space-y-1.5">
+                <p className="text-xs font-semibold text-success-soft-foreground">
                   Montant Théorique à Encaisser en Caisse
                 </p>
-                <p className="text-3xl sm:text-4xl font-extrabold text-emerald-700 dark:text-emerald-400">
+                <p className="text-3xl sm:text-4xl font-semibold text-success-soft-foreground">
                   {formatCurrencyFCFA(montantAttendu)}
                 </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
+                <p className="text-xs text-muted">
                   Correspondant à <strong>{totalSoldTickets}</strong> ticket{totalSoldTickets > 1 ? 's' : ''} vendu{totalSoldTickets > 1 ? 's' : ''} au total.
                 </p>
               </div>
 
               {/* Breakdown table */}
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <p className="text-xs font-semibold text-foreground">
                   Détail par Type de Ticket
                 </p>
-                <div className="divide-y divide-slate-200 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900">
+                <div className="divide-y divide-separator rounded-xl border border-border overflow-hidden bg-surface">
                   {availableTickets.map((t) => {
                     const available = availableQtyMap[t.id] || 0;
                     const remaining = remainingTickets[t.id] ?? 0;
@@ -843,12 +840,12 @@ export default function NewCollectionWizard() {
                     return (
                       <div key={t.id} className="p-3 flex items-center justify-between text-xs sm:text-sm">
                         <div>
-                          <p className="font-bold text-slate-900 dark:text-white">{t.nom}</p>
-                          <p className="text-[11px] text-slate-500">
-                            {available} stock − {remaining} restant = <strong className="text-emerald-600 dark:text-emerald-400">{sold} vendu{sold > 1 ? 's' : ''}</strong> à {formatCurrencyFCFA(t.prix)}
+                          <p className="font-semibold text-foreground">{t.nom}</p>
+                          <p className="text-xs text-muted">
+                            {available} stock − {remaining} restant = <strong className="text-success-soft-foreground">{sold} vendu{sold > 1 ? 's' : ''}</strong> à {formatCurrencyFCFA(t.prix)}
                           </p>
                         </div>
-                        <div className="text-right font-extrabold text-slate-900 dark:text-white">
+                        <div className="text-right font-semibold text-foreground">
                           {formatCurrencyFCFA(subtotal)}
                         </div>
                       </div>
@@ -858,22 +855,24 @@ export default function NewCollectionWizard() {
               </div>
 
               {totalSoldTickets === 0 && (
-                <div className="p-3.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
-                  <div>
-                    <p className="font-bold">Aucune vente constatée (0 ticket)</p>
-                    <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+                <Alert status="warning">
+                  <Alert.Indicator>
+                    <AlertTriangle className="size-5" />
+                  </Alert.Indicator>
+                  <Alert.Content>
+                    <Alert.Title>Aucune vente constatée (0 ticket)</Alert.Title>
+                    <Alert.Description>
                       Si le point de vente a réalisé des ventes, cliquez sur &quot;Modifier le comptage&quot; pour corriger le stock de tickets restants.
-                    </p>
-                  </div>
-                </div>
+                    </Alert.Description>
+                  </Alert.Content>
+                </Alert>
               )}
 
-              <div className="flex justify-between pt-4">
+              <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button variant="ghost" onClick={() => setStep(2)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Modifier le comptage
                 </Button>
-                <Button onClick={goToStep4} className="gap-2 font-bold">
+                <Button onClick={goToStep4} className="gap-2 font-semibold">
                   Confirmer et Passer à la Caisse <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -885,18 +884,18 @@ export default function NewCollectionWizard() {
              ======================================================== */}
           {step === 4 && (
             <div className="space-y-4">
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="border-b border-separator pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Receipt className="w-5 h-5 text-amber-500" />
+                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-warning-soft-foreground" />
                     Niveau 4 : Saisie du Montant Réellement Encaissé
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     Saisissez les espèces remises en main propre par le gérant du POS.
                   </p>
                 </div>
                 {selectedPos && (
-                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 w-fit">
+                  <span className="text-xs font-medium text-success-soft-foreground bg-success-soft px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit">
                     <Store className="w-3.5 h-3.5" />
                     {selectedPos.nom}
                   </span>
@@ -920,16 +919,16 @@ export default function NewCollectionWizard() {
                   }}
                   placeholder="ex: 50000"
                   error={errors.montantCollecte}
-                  className="font-bold text-base"
+                  className="font-semibold text-base"
                 />
                 {montantCollecte && !isNaN(collecteNum) && (
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs text-muted font-medium">
                     Montant saisi : <strong>{formatCurrencyFCFA(collecteNum)}</strong>
                   </p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1.5">
                   <Input
                     label="Commission versée au POS (FCFA)"
@@ -947,7 +946,7 @@ export default function NewCollectionWizard() {
                     placeholder="ex: 2500"
                     error={errors.commission}
                   />
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs text-muted">
                     Optionnel. Rémunération du gérant déduite ou remise.
                   </p>
                 </div>
@@ -974,19 +973,19 @@ export default function NewCollectionWizard() {
               {/* Real-time discrepancy preview */}
               {montantCollecte.trim() !== '' && !isNaN(collecteNum) && (
                 <div
-                  className={`p-3.5 rounded-xl border flex items-center justify-between text-xs transition ${
+                  className={`p-3.5 rounded-xl flex items-center justify-between text-xs transition ${
                     difference === 0
-                      ? 'bg-emerald-50/70 text-emerald-900 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800'
+                      ? 'bg-success-soft text-success-soft-foreground '
                       : difference < 0
-                      ? 'bg-rose-50/70 text-rose-900 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800'
-                      : 'bg-amber-50/70 text-amber-900 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'
+                      ? 'bg-danger-soft text-danger '
+                      : 'bg-warning-soft text-warning-soft-foreground '
                   }`}
                 >
                   <div className="space-y-0.5">
-                    <p className="font-semibold text-slate-600 dark:text-slate-400">
+                    <p className="font-semibold text-muted">
                       Attendu : <strong>{formatCurrencyFCFA(montantAttendu)}</strong> • Compté : <strong>{formatCurrencyFCFA(collecteNum)}</strong>
                     </p>
-                    <p className="font-bold text-sm">
+                    <p className="font-semibold text-sm">
                       Écart estimé : {difference > 0 ? '+' : ''}{formatCurrencyFCFA(difference)}
                     </p>
                   </div>
@@ -996,11 +995,11 @@ export default function NewCollectionWizard() {
                 </div>
               )}
 
-              <div className="flex justify-between pt-4">
+              <div className="flex pt-4 gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button variant="ghost" onClick={() => setStep(3)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" /> Retour
                 </Button>
-                <Button onClick={goToStep5} className="gap-2 font-bold">
+                <Button onClick={goToStep5} className="gap-2 font-semibold">
                   Vérifier l&apos;Écart & Bilan <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -1011,19 +1010,19 @@ export default function NewCollectionWizard() {
               LEVEL 5 : Final Audit, Justification & Submission
              ======================================================== */}
           {step === 5 && (
-            <form onSubmit={handleFinish} className="space-y-5">
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <form onSubmit={handleFinish} className="space-y-4">
+              <div className="border-b border-separator pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-success-soft-foreground" />
                     Niveau 5 : Bilan de Contrôle & Validation Finale
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     Contrôlez l&apos;ensemble des chiffres avant l&apos;enregistrement comptable définitif.
                   </p>
                 </div>
                 {selectedPos && (
-                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 w-fit">
+                  <span className="text-xs font-medium text-success-soft-foreground bg-success-soft px-2.5 py-1 rounded-full flex items-center gap-1.5 w-fit">
                     <Store className="w-3.5 h-3.5" />
                     {selectedPos.nom}
                   </span>
@@ -1032,27 +1031,27 @@ export default function NewCollectionWizard() {
 
               {/* Financial Summary Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
-                  <p className="text-[11px] text-slate-500 font-semibold uppercase">Attendu</p>
-                  <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                <div className="p-3 bg-default rounded-xl">
+                  <p className="text-xs text-muted font-semibold">Attendu</p>
+                  <p className="text-base sm:text-lg font-semibold text-foreground">
                     {formatCurrencyFCFA(montantAttendu)}
                   </p>
                 </div>
-                <div className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
-                  <p className="text-[11px] text-slate-500 font-semibold uppercase">Compté Réel</p>
-                  <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                <div className="p-3 bg-default rounded-xl">
+                  <p className="text-xs text-muted font-semibold">Compté Réel</p>
+                  <p className="text-base sm:text-lg font-semibold text-success-soft-foreground">
                     {formatCurrencyFCFA(collecteNum)}
                   </p>
                 </div>
-                <div className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
-                  <p className="text-[11px] text-slate-500 font-semibold uppercase">Commission</p>
-                  <p className="text-base sm:text-lg font-bold text-slate-700 dark:text-slate-300">
+                <div className="p-3 bg-default rounded-xl">
+                  <p className="text-xs text-muted font-semibold">Commission</p>
+                  <p className="text-base sm:text-lg font-semibold text-foreground">
                     {formatCurrencyFCFA(commissionNum)}
                   </p>
                 </div>
-                <div className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
-                  <p className="text-[11px] text-slate-500 font-semibold uppercase">Net Caisse</p>
-                  <p className="text-base sm:text-lg font-bold text-brand-900 dark:text-brand-400">
+                <div className="p-3 bg-default rounded-xl">
+                  <p className="text-xs text-muted font-semibold">Net Caisse</p>
+                  <p className="text-base sm:text-lg font-semibold text-accent">
                     {formatCurrencyFCFA(collecteNum - commissionNum)}
                   </p>
                 </div>
@@ -1060,19 +1059,19 @@ export default function NewCollectionWizard() {
 
               {/* Discrepancy Card */}
               <div
-                className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                className={`p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                   difference === 0
-                    ? 'bg-emerald-50 text-emerald-950 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-800'
+                    ? 'bg-success-soft text-success-soft-foreground '
                     : difference < 0
-                    ? 'bg-rose-50 text-rose-950 border-rose-300 dark:bg-rose-950/30 dark:border-rose-800'
-                    : 'bg-amber-50 text-amber-950 border-amber-300 dark:bg-amber-950/30 dark:border-amber-800'
+                    ? 'bg-danger-soft text-danger '
+                    : 'bg-warning-soft text-warning-soft-foreground '
                 }`}
               >
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  <p className="text-xs font-semibold text-foreground">
                     Écart de Caisse Constaté
                   </p>
-                  <p className="text-2xl font-extrabold mt-0.5">
+                  <p className="text-2xl font-semibold mt-0.5">
                     {difference > 0 ? '+' : ''}{formatCurrencyFCFA(difference)}
                   </p>
                   <p className="text-xs mt-1 opacity-90">
@@ -1085,7 +1084,7 @@ export default function NewCollectionWizard() {
                 </div>
                 <Badge
                   variant={difference === 0 ? 'success' : difference < 0 ? 'danger' : 'warning'}
-                  className="text-xs font-bold px-3 py-1 self-start sm:self-auto"
+                  className="text-xs font-semibold px-3 py-1 self-start sm:self-auto"
                 >
                   {difference === 0
                     ? 'Caisse Conforme ✓'
@@ -1121,14 +1120,14 @@ export default function NewCollectionWizard() {
                   className="rounded-xl"
                 />
                 {difference !== 0 && (
-                  <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                  <p className="text-xs text-warning-soft-foreground font-medium">
                     Conformément aux règles de contrôle comptable, tout écart doit être documenté avec une explication claire.
                   </p>
                 )}
               </div>
 
               {/* Final Actions */}
-              <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-border [&>*]:min-w-0 [&>*]:flex-1 [&>*]:w-full">
                 <Button
                   type="button"
                   variant="ghost"
@@ -1140,7 +1139,7 @@ export default function NewCollectionWizard() {
                 <Button
                   type="submit"
                   variant="secondary"
-                  className="w-full sm:w-auto px-8 font-extrabold gap-2"
+                  className="w-full sm:w-auto px-8 font-semibold gap-2"
                   isLoading={submitting}
                 >
                   <Check className="w-4 h-4 stroke-[3]" />

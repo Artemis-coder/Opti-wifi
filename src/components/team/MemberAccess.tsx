@@ -46,8 +46,8 @@ function CopyRow({ label, value, mono }: { label: string; value: string; mono?: 
   return (
     <div className="flex items-center justify-between gap-3 py-2.5">
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-        <p className={cn('text-sm font-semibold text-slate-900 dark:text-white break-all', mono && 'font-mono text-base')}>{value}</p>
+        <p className="text-xs font-semibold text-muted">{label}</p>
+        <p className={cn('text-sm font-semibold text-foreground break-all', mono && 'font-mono text-base')}>{value}</p>
       </div>
       <button
         type="button"
@@ -57,10 +57,10 @@ function CopyRow({ label, value, mono }: { label: string; value: string; mono?: 
             setTimeout(() => setCopied(false), 1500);
           });
         }}
-        className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+        className="shrink-0 inline-flex items-center gap-1 h-9 px-3 rounded-xl text-xs font-semibold bg-default text-foreground hover:bg-default"
         aria-label={`Copier ${label}`}
       >
-        {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+        {copied ? <Check className="w-4 h-4 text-success-soft-foreground" /> : <Copy className="w-4 h-4" />}
         {copied ? 'Copié' : 'Copier'}
       </button>
     </div>
@@ -74,8 +74,8 @@ export function AccessCard({ member, access, emailSent }: { member: Member; acce
   const whatsapp = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 
   return (
-    <div className="space-y-4 text-left">
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 divide-y divide-slate-100 dark:divide-slate-800">
+    <div className="space-y-5 text-left">
+      <div className="rounded-xl border border-border px-4 divide-y divide-separator">
         <CopyRow label="Adresse de connexion" value={access.login_url} />
         {access.login_phone && <CopyRow label="Téléphone de connexion" value={access.login_phone} />}
         {!access.email_is_internal && !isInternalPosAccountEmail(access.email) && <CopyRow label="E-mail" value={access.email} />}
@@ -105,8 +105,8 @@ export function AccessCard({ member, access, emailSent }: { member: Member; acce
         className={cn(
           'flex items-start gap-2 rounded-xl px-3 py-2 text-xs',
           emailSent
-            ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
-            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+            ? 'bg-success-soft text-success-soft-foreground'
+            : 'bg-default text-muted'
         )}
       >
         <Mail className="w-4 h-4 shrink-0 mt-0.5" />
@@ -115,7 +115,7 @@ export function AccessCard({ member, access, emailSent }: { member: Member; acce
           : 'Aucun e-mail envoyé : transmettez ces accès par WhatsApp ou copiez-les.'}
       </p>
 
-      <p className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400">
+      <p className="flex items-start gap-2 text-xs text-warning-soft-foreground">
         <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
         Ce mot de passe ne sera plus affiché. En cas d&apos;oubli, utilisez le bouton « Accès » du membre pour lui en
         donner un nouveau. Il choisira son propre mot de passe à la première connexion.
@@ -135,8 +135,8 @@ export function InviteLinkCard({ member, link, emailSent }: { member: Member; li
   ].join('\n');
   const phone = (member.telephone || '').replace(/\D/g, '');
   return (
-    <div className="space-y-4 text-left">
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 divide-y divide-slate-100 dark:divide-slate-800">
+    <div className="space-y-5 text-left">
+      <div className="rounded-xl border border-border px-4 divide-y divide-separator">
         <CopyRow label="Lien pour choisir son mot de passe" value={link} />
         {phoneLogin(member) ? (
           <CopyRow label="Téléphone de connexion" value={phoneLogin(member) as string} />
@@ -166,14 +166,14 @@ export function InviteLinkCard({ member, link, emailSent }: { member: Member; li
         className={cn(
           'flex items-start gap-2 rounded-xl px-3 py-2 text-xs',
           emailSent
-            ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
-            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+            ? 'bg-success-soft text-success-soft-foreground'
+            : 'bg-default text-muted'
         )}
       >
         <Mail className="w-4 h-4 shrink-0 mt-0.5" />
         {emailSent ? `Le lien a aussi été envoyé par e-mail à ${member.email}.` : 'Aucun e-mail envoyé : transmettez le lien par WhatsApp ou copiez-le.'}
       </p>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         Le lien ne sert qu&apos;une fois. Son mot de passe actuel reste valable jusqu&apos;à ce qu&apos;il en choisisse un nouveau.
       </p>
     </div>
@@ -251,21 +251,21 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
       ) : (
         member && (
           <div className="space-y-4 text-left">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-muted">
               Les mots de passe ne sont pas conservés en clair : on ne peut pas retrouver les anciens accès, mais
               vous pouvez en redonner à <strong>{member.nom}</strong> ({phoneLogin(member) ?? member.email}).
             </p>
 
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
-              <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <Mail className="w-4 h-4 text-brand-600" /> Lui envoyer un lien pour choisir son mot de passe
+            <div className="rounded-xl border border-border p-4 space-y-2">
+              <p className="font-semibold text-foreground flex items-center gap-2">
+                <Mail className="w-4 h-4 text-accent" /> Lui envoyer un lien pour choisir son mot de passe
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 Il choisit lui-même son mot de passe (lien valable 7 jours). Vous transmettez le lien par WhatsApp ou en
                 le copiant ; son mot de passe actuel reste valable d&apos;ici là.
               </p>
               {canEmail && (
-              <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
                 <input type="checkbox" checked={linkByEmail} onChange={(e) => setLinkByEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
                 L&apos;envoyer aussi par e-mail
               </label>
@@ -275,16 +275,16 @@ export function MemberAccessDialog({ member, onClose }: { member: Member | null;
               </Button>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
-              <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-amber-600" /> Générer un nouveau mot de passe temporaire
+            <div className="rounded-xl border border-border p-4 space-y-2">
+              <p className="font-semibold text-foreground flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-warning-soft-foreground" /> Générer un nouveau mot de passe temporaire
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 L&apos;ancien mot de passe ne fonctionnera plus. Vous transmettez les nouveaux accès (copie, WhatsApp) ;
                 il choisira son mot de passe à la connexion.
               </p>
               {canEmail && (
-              <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
                 <input type="checkbox" checked={alsoEmail} onChange={(e) => setAlsoEmail(e.target.checked)} className="w-4 h-4 accent-brand-600" />
                 Les envoyer aussi par e-mail
               </label>
