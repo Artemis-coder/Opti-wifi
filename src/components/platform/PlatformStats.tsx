@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
-import { ArrowDownRight, ArrowUpRight, Minus, Table2, BarChart3, UserPlus, KeyRound, Banknote, Repeat } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Button, Card, ToggleButton, ToggleButtonGroup } from '@heroui/react';
+import React, { useId, useState, useSyncExternalStore } from 'react';
+import { ArrowDownRight, ArrowUpRight, Minus, Table2, BarChart3, UserPlus, KeyRound, Banknote, Repeat, TrendingUp } from 'lucide-react';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Card, Chip, Label, Meter, Skeleton, Table, ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import { StatTile, type StatAccent } from '@/components/ui/StatTile';
 import { KpiGrid } from '@/components/ui/KpiGrid';
 import { cn } from '@/lib/utils/cn';
@@ -23,8 +23,8 @@ export const STATS_RANGES: { value: StatsRange; label: string }[] = [
 
 // Palette catégorielle validée (ordre fixe, contrôle daltonisme OK en clair et en sombre)
 const PALETTE = {
-  light: { s1: '#2a78d6', s2: '#eb6834', s3: '#1baf7a', s4: '#eda100', surface: '#ffffff', grid: '#e4e4e7', text: '#71717a' },
-  dark: { s1: '#3987e5', s2: '#d95926', s3: '#199e70', s4: '#c98500', surface: '#18181b', grid: '#27272a', text: '#a1a1aa' },
+  light: { s1: '#2a78d6', s2: '#eb6834', s3: '#1baf7a', s4: '#eda100', surface: '#ffffff', grid: '#e4e4e7', text: '#71717a', track: '#f4f4f5' },
+  dark: { s1: '#3987e5', s2: '#d95926', s3: '#199e70', s4: '#c98500', surface: '#18181b', grid: '#27272a', text: '#a1a1aa', track: '#232327' },
 };
 
 const darkQuery = '(prefers-color-scheme: dark)';
@@ -168,79 +168,335 @@ function ChartTooltip({
   );
 }
 
-/** Carte de graphique avec bascule vers le tableau des chiffres (accessibilité, lecture précise) */
+/** Évolution en pastille (Chip du design system) : hausse en vert, baisse en rouge. */
+function DeltaChip({ current, previous }: { current: number; previous: number }) {
+  if (previous === 0 && current === 0)
+    return (
+      <Chip size="sm" variant="soft" color="default">
+        <Minus className="size-3" /> Stable
+      </Chip>
+    );
+  if (previous === 0)
+    return (
+      <Chip size="sm" variant="soft" color="success">
+        <ArrowUpRight className="size-3" /> Nouveau
+      </Chip>
+    );
+  const pct = Math.round(((current - previous) / previous) * 100);
+  const Icon = pct > 0 ? ArrowUpRight : pct < 0 ? ArrowDownRight : Minus;
+  return (
+    <Chip size="sm" variant="soft" color={pct > 0 ? 'success' : pct < 0 ? 'danger' : 'default'}>
+      <Icon className="size-3" />
+      {pct > 0 ? '+' : ''}
+      {pct} %
+    </Chip>
+  );
+}
+
+interface LegendItem {
+  label: string;
+  color: string;
+  value?: string;
+}
+
+/**
+ * Carte de graphique du design system : en-tête (titre, chiffre clé et évolution),
+ * bascule Graphique / Chiffres, légende en pastilles avec totaux, graphique ou tableau,
+ * pied de carte avec l'information à retenir.
+ */
 function StatsChartCard({
   title,
   subtitle,
+  headline,
+  delta,
   legend,
   table,
+  footer,
+  empty,
+  loading,
   children,
 }: {
   title: string;
   subtitle: string;
-  legend?: { label: string; color: string }[];
+  headline?: string;
+  delta?: React.ReactNode;
+  legend?: LegendItem[];
   table: React.ReactNode;
+  footer?: React.ReactNode;
+  /** Message affiché à la place du graphique quand la période ne contient rien */
+  empty?: string | null;
+  loading?: boolean;
   children: React.ReactNode;
 }) {
-  const [showTable, setShowTable] = useState(false);
+  const [view, setView] = useState<'chart' | 'table'>('chart');
   return (
     <Card>
       <Card.Header className="flex-row items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Card.Title className="text-base font-semibold">{title}</Card.Title>
+        <div className="min-w-0 space-y-1">
+          <Card.Title className="text-sm font-semibold">{title}</Card.Title>
+          {loading ? (
+            <Skeleton className="h-8 w-28 rounded-lg" />
+          ) : (
+            headline !== undefined && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-2xl font-bold tabular-nums text-foreground">{headline}</span>
+                {delta}
+              </div>
+            )
+          )}
           <Card.Description className="text-xs">{subtitle}</Card.Description>
         </div>
-        <Button size="sm" variant="secondary" className="shrink-0" onPress={() => setShowTable((v) => !v)} aria-pressed={showTable}>
-          {showTable ? <BarChart3 className="size-4" /> : <Table2 className="size-4" />}
-          {showTable ? 'Graphique' : 'Voir les chiffres'}
-        </Button>
+        <ToggleButtonGroup
+          aria-label={`Affichage : ${title}`}
+          size="sm"
+          selectionMode="single"
+          disallowEmptySelection
+          selectedKeys={[view]}
+          onSelectionChange={(keys) => {
+            const next = [...keys][0];
+            if (next) setView(next as 'chart' | 'table');
+          }}
+          className="shrink-0"
+        >
+          <ToggleButton id="chart" isIconOnly aria-label="Graphique">
+            <BarChart3 className="size-4" />
+          </ToggleButton>
+          <ToggleButton id="table" isIconOnly aria-label="Voir les chiffres">
+            <ToggleButtonGroup.Separator />
+            <Table2 className="size-4" />
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Card.Header>
-      {legend && legend.length > 1 && !showTable && (
-        <ul className="flex flex-wrap gap-x-4 gap-y-1">
-          {legend.map((l) => (
-            <li key={l.label} className="flex items-center gap-1.5 text-xs text-muted">
-              <span className="size-2.5 rounded-full" style={{ background: l.color }} />
-              {l.label}
-            </li>
-          ))}
-        </ul>
+
+      <Card.Content className="space-y-3">
+        {legend && legend.length > 1 && view === 'chart' && !empty && (
+          <ul className="flex flex-wrap gap-1.5" aria-label="Légende">
+            {legend.map((l) => (
+              <li key={l.label}>
+                <Chip size="sm" variant="secondary" color="default">
+                  <span className="size-2 shrink-0 rounded-full" style={{ background: l.color }} aria-hidden />
+                  <Chip.Label>
+                    {l.label}
+                    {l.value !== undefined && <span className="ml-1 font-semibold tabular-nums text-foreground">{l.value}</span>}
+                  </Chip.Label>
+                </Chip>
+              </li>
+            ))}
+          </ul>
+        )}
+        {loading ? (
+          <Skeleton className="h-60 w-full rounded-xl" />
+        ) : view === 'table' ? (
+          <div className="max-h-72 overflow-auto md-scroll">{table}</div>
+        ) : empty ? (
+          <div className="flex h-60 flex-col items-center justify-center gap-2 rounded-xl bg-surface-secondary text-center">
+            <BarChart3 className="size-6 text-muted" aria-hidden />
+            <p className="text-sm text-muted">{empty}</p>
+          </div>
+        ) : (
+          children
+        )}
+      </Card.Content>
+
+      {footer && !loading && (
+        <Card.Footer className="flex items-center gap-1.5 border-t border-separator pt-3 text-xs text-muted">
+          <TrendingUp className="size-3.5 shrink-0" aria-hidden />
+          <span className="min-w-0 truncate">{footer}</span>
+        </Card.Footer>
       )}
-      {showTable ? <div className="max-h-72 overflow-auto md-scroll" data-fit-table>{table}</div> : children}
     </Card>
   );
 }
 
-function DataTable({ headers, rows }: { headers: string[]; rows: (string | number)[][] }) {
+/** Tableau des chiffres (Table du design system), avec ligne de total facultative. */
+function DataTable({
+  label,
+  headers,
+  rows,
+  total,
+}: {
+  label: string;
+  headers: string[];
+  rows: (string | number)[][];
+  total?: (string | number)[];
+}) {
+  const all = total ? [...rows, total] : rows;
   return (
-    <table className="w-full text-xs">
-      <thead className="sticky top-0 bg-surface">
-        <tr className="border-b border-separator text-left text-muted">
-          {headers.map((h, i) => (
-            <th key={h} className={cn('py-2 font-medium', i > 0 && 'text-right')}>
-              {h}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-separator">
-        {rows.map((r, i) => (
-          <tr key={i}>
-            {r.map((c, j) => (
-              <td
-                key={j}
-                className={cn(
-                  'py-1.5 text-foreground',
-                  j > 0 && 'text-right tabular-nums',
-                  j === 0 && 'first-letter:',
-                )}
-              >
-                {c}
-              </td>
+    <Table variant="secondary">
+      <Table.ScrollContainer>
+        <Table.Content aria-label={label} className="text-xs">
+          <Table.Header>
+            {headers.map((h, i) => (
+              <Table.Column key={h} isRowHeader={i === 0} className={cn(i > 0 && 'text-right')}>
+                {h}
+              </Table.Column>
             ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+          </Table.Header>
+          <Table.Body>
+            {all.map((r, i) => {
+              const isTotal = !!total && i === all.length - 1;
+              return (
+                <Table.Row key={i} className={cn(isTotal && 'font-semibold')}>
+                  {r.map((c, j) => (
+                    <Table.Cell key={j} className={cn(j > 0 && 'text-right tabular-nums', isTotal && 'text-foreground')}>
+                      {c}
+                    </Table.Cell>
+                  ))}
+                </Table.Row>
+              );
+            })}
+          </Table.Body>
+        </Table.Content>
+      </Table.ScrollContainer>
+    </Table>
+  );
+}
+
+/** Tranche la plus haute d'une série : « Pic : 2 nov. (2) ». */
+function peak(series: StatsBucket[], value: (b: StatsBucket) => number, unit: PlatformStats['unit'], fmt: (n: number) => string) {
+  let best: StatsBucket | null = null;
+  for (const b of series) if (value(b) > 0 && (!best || value(b) > value(best))) best = b;
+  return best ? `Pic : ${bucketLabel(best.bucket, unit, true)} (${fmt(value(best))})` : null;
+}
+
+/**
+ * Segment de barre empilée : le plus haut de chaque barre est arrondi, et un écart de 2 px
+ * sépare les segments (sans contour, pour garder toute l'épaisseur de la barre).
+ */
+function StackSegment(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  fill?: string;
+  payload?: Record<string, number>;
+  dataKey?: string;
+  keys: readonly string[];
+}) {
+  const { x = 0, y = 0, width = 0, fill, payload, dataKey, keys } = props;
+  let { height = 0 } = props;
+  if (!height || height <= 0) return null;
+  const present = keys.filter((k) => Number(payload?.[k] || 0) > 0);
+  const top = present[present.length - 1];
+  const bottom = present[0];
+  if (dataKey !== bottom) height = Math.max(0, height - 2);
+  if (!height) return null;
+  const r = dataKey === top ? Math.min(6, width / 2, height) : 0;
+  const d = r
+    ? `M${x},${y + height} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + width - r},${y} Q${x + width},${y} ${x + width},${y + r} L${x + width},${y + height} Z`
+    : `M${x},${y} h${width} v${height} h${-width} Z`;
+  return <path d={d} fill={fill} />;
+}
+
+/** Regroupe des jours en semaines (barres plus épaisses sur 30 jours). */
+function groupByWeek(series: StatsBucket[]): StatsBucket[] {
+  const out: StatsBucket[] = [];
+  for (let i = 0; i < series.length; i += 7) {
+    const chunk = series.slice(i, i + 7);
+    out.push(
+      chunk.reduce(
+        (acc, b) => ({
+          ...acc,
+          registrations: acc.registrations + b.registrations,
+          trial: acc.trial + b.trial,
+          new: acc.new + b.new,
+          renewal: acc.renewal + b.renewal,
+          upgrade: acc.upgrade + b.upgrade,
+          revenue: acc.revenue + b.revenue,
+        }),
+        { bucket: chunk[0].bucket, registrations: 0, trial: 0, new: 0, renewal: 0, upgrade: 0, revenue: 0 },
+      ),
+    );
+  }
+  return out;
+}
+
+/** Infobulle d'une courbe cumulée : valeur de la tranche et cumul depuis le début de la période. */
+function CumulTooltip({
+  active,
+  payload,
+  label,
+  unit,
+  field,
+  name,
+  money,
+}: {
+  active?: boolean;
+  payload?: { payload?: Record<string, number> }[];
+  label?: string;
+  unit: PlatformStats['unit'];
+  field: string;
+  name: string;
+  money?: boolean;
+}) {
+  const row = payload?.[0]?.payload;
+  if (!active || !row || !label) return null;
+  const fmt = (n: number) => (money ? formatCurrencyFCFA(n) : formatNumber(n));
+  return (
+    <div className="min-w-40 space-y-1 rounded-2xl bg-overlay px-3 py-2 text-xs text-overlay-foreground shadow-overlay">
+      <p className="font-medium">{bucketLabel(label, unit, true)}</p>
+      <p className="flex justify-between gap-3 text-muted">
+        {name} <span className="font-medium tabular-nums text-foreground">{fmt(Number(row[field] || 0))}</span>
+      </p>
+      <p className="flex justify-between gap-3 text-muted">
+        Cumul <span className="font-medium tabular-nums text-foreground">{fmt(Number(row.cumul || 0))}</span>
+      </p>
+    </div>
+  );
+}
+
+/** Courbe douce (une série) : trait de 2 px, dégradé léger, point au survol. */
+function SoftAreaChart({
+  data,
+  dataKey,
+  name,
+  color,
+  palette,
+  xProps,
+  yProps,
+  tooltip,
+}: {
+  data: StatsBucket[];
+  dataKey: keyof Omit<StatsBucket, 'bucket'>;
+  name: string;
+  color: string;
+  palette: (typeof PALETTE)['light'];
+  xProps: Record<string, unknown>;
+  yProps: Record<string, unknown>;
+  tooltip: React.ReactElement;
+}) {
+  const id = useId().replace(/:/g, '');
+  // Courbe cumulée : croissance régulière, lisible même avec peu de valeurs par jour
+  const cumulative = data.reduce<(StatsBucket & { cumul: number })[]>((acc, b) => {
+    const prev = acc.length ? acc[acc.length - 1].cumul : 0;
+    acc.push({ ...b, cumul: prev + Number(b[dataKey] || 0) });
+    return acc;
+  }, []);
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <AreaChart data={cumulative} margin={{ top: 12, right: 8, left: -8, bottom: 0 }}>
+        <defs>
+          <linearGradient id={`fill-${id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.28} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke={palette.grid} strokeDasharray="4 4" />
+        <XAxis {...xProps} />
+        <YAxis {...yProps} />
+        <Tooltip cursor={{ stroke: palette.text, strokeOpacity: 0.35, strokeDasharray: '4 4' }} content={tooltip} />
+        <Area
+          type="monotone"
+          dataKey="cumul"
+          name={name}
+          stroke={color}
+          strokeWidth={2}
+          fill={`url(#fill-${id})`}
+          dot={false}
+          activeDot={{ r: 5, fill: color, stroke: palette.surface, strokeWidth: 2 }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -266,10 +522,19 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
     tick: axisTick,
     minTickGap: 16,
   };
-  const yProps = { axisLine: false, tickLine: false, tick: axisTick, width: 36, allowDecimals: false };
-  const cursor = { fill: dark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)' };
+  const yProps = { axisLine: false, tickLine: false, tick: axisTick, width: 36, allowDecimals: false, tickCount: 4 };
   const rows = (fn: (b: StatsBucket) => (string | number)[]) => series.map((b) => [bucketLabel(b.bucket, unit, true), ...fn(b)]);
   const totalActive = stats?.active_licenses ?? 0;
+  const firstLoad = !stats;
+  const sumOf = (key: keyof Omit<StatsBucket, 'bucket'>) => series.reduce((a, b) => a + Number(b[key] || 0), 0);
+  const licenceTotals = Object.fromEntries(LICENSE_SERIES.map((s) => [s.key, sumOf(s.key)])) as Record<(typeof LICENSE_SERIES)[number]['key'], number>;
+  const licencesTotal = Object.values(licenceTotals).reduce((a, b) => a + b, 0);
+  const licencesPrevious = (stats?.previous.paid_licenses ?? 0) + (stats?.previous.trials ?? 0);
+  // Abonnements : par semaine quand la période compte trop de jours (barres épaisses)
+  const weekly = unit === 'day' && series.length > 14;
+  const licSeries = weekly ? groupByWeek(series) : series;
+  const licUnit: PlatformStats['unit'] = weekly ? 'week' : unit;
+  const licX = { ...xProps, tickFormatter: (v: string) => bucketLabel(v, licUnit), minTickGap: 4 };
 
   return (
     <section className="space-y-4" aria-labelledby="stats-title">
@@ -342,37 +607,57 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
           <StatsChartCard
             title="Évolution des inscriptions"
-            subtitle={`Comptes créés, ${rangeLabel} · ${formatNumber(stats?.totals.registrations ?? 0)} au total`}
-            table={<DataTable headers={['Période', 'Inscriptions']} rows={rows((b) => [b.registrations])} />}
+            headline={formatNumber(stats?.totals.registrations ?? 0)}
+            delta={stats && <DeltaChip current={stats.totals.registrations} previous={stats.previous.registrations} />}
+            subtitle={`Cumul des comptes créés sur ${rangeLabel}, comparé à la période précédente`}
+            loading={firstLoad}
+            empty={stats && stats.totals.registrations === 0 ? `Aucune inscription sur ${rangeLabel}` : null}
+            footer={peak(series, (b) => b.registrations, unit, (n) => `${formatNumber(n)} inscription${n > 1 ? 's' : ''}`)}
+            table={
+              <DataTable
+                label="Inscriptions par période"
+                headers={['Période', 'Inscriptions']}
+                rows={rows((b) => [b.registrations])}
+                total={['Total', formatNumber(stats?.totals.registrations ?? 0)]}
+              />
+            }
           >
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={series} margin={{ top: 8, right: 4, left: -8, bottom: 0 }} barCategoryGap="20%">
-                <CartesianGrid vertical={false} stroke={c.grid} />
-                <XAxis {...xProps} />
-                <YAxis {...yProps} />
-                <Tooltip cursor={cursor} content={<ChartTooltip unit={unit} />} />
-                <Bar dataKey="registrations" name="Inscriptions" fill={c.s1} radius={[4, 4, 0, 0]} maxBarSize={36} />
-              </BarChart>
-            </ResponsiveContainer>
+            <SoftAreaChart
+              data={series}
+              dataKey="registrations"
+              name="Inscriptions"
+              color={c.s1}
+              palette={c}
+              xProps={xProps}
+              yProps={yProps}
+              tooltip={<CumulTooltip unit={unit} field="registrations" name="Inscriptions" />}
+            />
           </StatsChartCard>
 
           <StatsChartCard
             title="Évolution des abonnements"
-            subtitle={`Licences activées par type, ${rangeLabel}`}
-            legend={LICENSE_SERIES.map((s) => ({ label: s.label, color: c[s.color] }))}
+            headline={formatNumber(licencesTotal)}
+            delta={stats && <DeltaChip current={licencesTotal} previous={licencesPrevious} />}
+            subtitle={`Licences activées par type sur ${rangeLabel}${weekly ? ', par semaine' : ''}, essais compris`}
+            loading={firstLoad}
+            empty={stats && licencesTotal === 0 ? `Aucune licence activée sur ${rangeLabel}` : null}
+            legend={LICENSE_SERIES.map((s) => ({ label: s.label, color: c[s.color], value: formatNumber(licenceTotals[s.key]) }))}
+            footer={peak(licSeries, (b) => b.new + b.renewal + b.upgrade + b.trial, licUnit, (n) => `${formatNumber(n)} licence${n > 1 ? 's' : ''}`)}
             table={
               <DataTable
-                headers={['Période', 'Nouv.', 'Renouv.', 'Chang.', 'Essais']}
-                rows={rows((b) => [b.new, b.renewal, b.upgrade, b.trial])}
+                label="Licences activées par période et par type"
+                headers={['Période', 'Nouvelles', 'Renouv.', 'Changements', 'Essais']}
+                rows={licSeries.map((b) => [bucketLabel(b.bucket, licUnit, true), b.new, b.renewal, b.upgrade, b.trial])}
+                total={['Total', ...LICENSE_SERIES.map((s) => formatNumber(licenceTotals[s.key]))]}
               />
             }
           >
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={series} margin={{ top: 8, right: 4, left: -8, bottom: 0 }} barCategoryGap="20%">
-                <CartesianGrid vertical={false} stroke={c.grid} />
-                <XAxis {...xProps} />
+              <BarChart data={licSeries} margin={{ top: 12, right: 8, left: -8, bottom: 0 }} barCategoryGap="28%">
+                <CartesianGrid vertical={false} stroke={c.grid} strokeDasharray="4 4" />
+                <XAxis {...licX} />
                 <YAxis {...yProps} />
-                <Tooltip cursor={cursor} content={<ChartTooltip unit={unit} />} />
+                <Tooltip cursor={false} content={<ChartTooltip unit={licUnit} />} />
                 {LICENSE_SERIES.map((s, i) => (
                   <Bar
                     key={s.key}
@@ -380,11 +665,12 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
                     name={s.label}
                     stackId="licences"
                     fill={c[s.color]}
-                    // Espace de 2 px entre segments empilés (couleur du fond)
-                    stroke={c.surface}
-                    strokeWidth={2}
-                    radius={i === LICENSE_SERIES.length - 1 ? [4, 4, 0, 0] : 0}
-                    maxBarSize={36}
+                    maxBarSize={44}
+                    // Rail gris clair derrière chaque barre
+                    background={i === 0 ? { fill: c.track, radius: 6 } : undefined}
+                    shape={(props: unknown) => (
+                      <StackSegment {...(props as React.ComponentProps<typeof StackSegment>)} keys={LICENSE_SERIES.map((l) => l.key)} />
+                    )}
                   />
                 ))}
               </BarChart>
@@ -393,25 +679,42 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
 
           <StatsChartCard
             title="Évolution des revenus"
-            subtitle={`Montants des factures payées, à la date du paiement · ${formatCurrencyFCFA(stats?.totals.revenue ?? 0)}`}
-            table={<DataTable headers={['Période', 'Revenus']} rows={rows((b) => [formatCurrencyFCFA(b.revenue)])} />}
+            headline={formatCurrencyFCFA(stats?.totals.revenue ?? 0)}
+            delta={stats && <DeltaChip current={stats.totals.revenue} previous={stats.previous.revenue} />}
+            subtitle={`Cumul des factures payées sur ${rangeLabel}, à la date du paiement`}
+            loading={firstLoad}
+            empty={stats && stats.totals.revenue === 0 ? `Aucun encaissement sur ${rangeLabel}` : null}
+            footer={peak(series, (b) => b.revenue, unit, (n) => formatCurrencyFCFA(n))}
+            table={
+              <DataTable
+                label="Revenus par période"
+                headers={['Période', 'Revenus']}
+                rows={rows((b) => [formatCurrencyFCFA(b.revenue)])}
+                total={['Total', formatCurrencyFCFA(stats?.totals.revenue ?? 0)]}
+              />
+            }
           >
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={series} margin={{ top: 8, right: 4, left: 0, bottom: 0 }} barCategoryGap="20%">
-                <CartesianGrid vertical={false} stroke={c.grid} />
-                <XAxis {...xProps} />
-                <YAxis {...yProps} width={44} tickFormatter={compactFCFA} />
-                <Tooltip cursor={cursor} content={<ChartTooltip unit={unit} money />} />
-                <Bar dataKey="revenue" name="Revenus" fill={c.s1} radius={[4, 4, 0, 0]} maxBarSize={36} />
-              </BarChart>
-            </ResponsiveContainer>
+            <SoftAreaChart
+              data={series}
+              dataKey="revenue"
+              name="Revenus"
+              color={c.s3}
+              palette={c}
+              xProps={xProps}
+              yProps={{ ...yProps, width: 44, tickFormatter: compactFCFA }}
+              tooltip={<CumulTooltip unit={unit} field="revenue" name="Revenus" money />}
+            />
           </StatsChartCard>
 
           <StatsChartCard
             title="Répartition des abonnements"
-            subtitle={`Licences en cours par forfait · ${totalActive} au total`}
+            headline={formatNumber(totalActive)}
+            subtitle="Licences en cours par forfait"
+            loading={firstLoad}
+            footer={stats ? `Revenu mensuel récurrent : ${formatCurrencyFCFA(stats.mrr)}` : null}
             table={
               <DataTable
+                label="Licences en cours par forfait"
                 headers={['Forfait', 'Licences', 'Part', 'Revenu mensuel']}
                 rows={(stats?.plan_breakdown ?? []).map((p) => [
                   p.name,
@@ -427,30 +730,38 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
                 {stats.plan_breakdown.map((p) => {
                   const pct = totalActive ? Math.round((p.count / totalActive) * 100) : 0;
                   return (
-                    <li key={p.plan_id} className="space-y-1.5">
-                      <div className="flex items-baseline justify-between gap-3 text-sm">
-                        <span className="truncate font-medium text-foreground">
-                          {p.name}
-                          {p.is_trial && <span className="ml-1.5 text-xs text-muted">(essai)</span>}
-                        </span>
-                        <span className="shrink-0 font-semibold tabular-nums text-foreground">
-                          {p.count} <span className="font-normal text-muted">· {pct} %</span>
-                        </span>
-                      </div>
-                      <div
-                        className="h-2.5 overflow-hidden rounded-full bg-default"
-                        role="img"
+                    <li key={p.plan_id} className="space-y-1">
+                      {/* Part du forfait : jauge Meter du design system */}
+                      <Meter
+                        value={p.count}
+                        maxValue={Math.max(totalActive, 1)}
+                        color="accent"
+                        valueLabel={`${p.count} · ${pct} %`}
                         aria-label={`${p.name} : ${p.count} licence${p.count > 1 ? 's' : ''}, ${pct} %`}
                       >
-                        <div className="h-full rounded-full" style={{ width: `${Math.max(pct, 2)}%`, background: c.s1 }} />
-                      </div>
-                      {!p.is_trial && <p className="text-xs text-muted">{formatCurrencyFCFA(p.mrr)} / mois</p>}
+                        <Label className="flex min-w-0 items-center gap-1.5 truncate font-medium text-foreground">
+                          {p.name}
+                          {p.is_trial && (
+                            <Chip size="sm" variant="soft" color="default">
+                              Essai
+                            </Chip>
+                          )}
+                        </Label>
+                        <Meter.Output className="tabular-nums font-semibold text-foreground" />
+                        <Meter.Track>
+                          <Meter.Fill />
+                        </Meter.Track>
+                      </Meter>
+                      {!p.is_trial && <p className="text-xs text-muted tabular-nums">{formatCurrencyFCFA(p.mrr)} / mois</p>}
                     </li>
                   );
                 })}
               </ul>
             ) : (
-              <p className="flex h-40 items-center justify-center text-sm text-muted">Aucune licence en cours</p>
+              <div className="flex h-60 flex-col items-center justify-center gap-2 rounded-xl bg-surface-secondary text-center">
+                <KeyRound className="size-6 text-muted" aria-hidden />
+                <p className="text-sm text-muted">Aucune licence en cours</p>
+              </div>
             )}
           </StatsChartCard>
         </div>
