@@ -11,7 +11,7 @@ import type { InvoiceDetail } from '@/lib/invoices';
 const shortDate = (d: string | null) =>
   d ? new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(d)) : '—';
 
-/** Historique des paiements et factures de licence du client (page Abonnement). */
+/** Factures de licence du client (page Abonnement). */
 export function InvoiceList() {
   const [invoices, setInvoices] = useState<InvoiceDetail[] | null>(null);
 
@@ -33,7 +33,7 @@ export function InvoiceList() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-muted flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-accent" /> Paiements et factures
+            <Receipt className="w-4 h-4 text-accent" /> Factures
           </h2>
           <p className="text-xs text-muted mt-1">Une facture est émise à chaque licence activée après vérification de votre paiement.</p>
         </div>
