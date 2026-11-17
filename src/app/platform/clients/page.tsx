@@ -417,7 +417,7 @@ function PlatformClientsContent() {
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs whitespace-nowrap">
               <thead className="bg-default text-muted font-semibold">
                 <tr>
                   <th className="px-4 py-3">Client</th>
