@@ -3,6 +3,7 @@
 // Le modèle d'IA n'écrit jamais de SQL : il choisit un outil et ses paramètres.
 // ============================================================
 import { query } from '@/lib/neon/db';
+import { getDashboardKpis } from '@/lib/platform-dashboard';
 import { UUID_RE } from '@/lib/platform-actions';
 
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID || 'prj_sYLBGlV8d7PBEEiDbwJbq9qm9fdy';
@@ -77,11 +78,35 @@ export async function getPlatformOverview() {
     ),
     query(`SELECT name, status, created_at FROM organizations ORDER BY created_at DESC LIMIT 5`),
   ]);
+  // Chiffre d'affaires d'OptiSpace : licences payées (mêmes chiffres que le tableau de bord super admin)
+  const { kpis } = await getDashboardKpis();
   return {
+    chiffre_affaires_licences: {
+      encaisse_aujourdhui: kpis.revenue_today,
+      encaisse_7_derniers_jours: kpis.revenue_this_week,
+      encaisse_ce_mois: kpis.revenue_this_month,
+      encaisse_cette_annee: kpis.revenue_this_year,
+      devise: 'FCFA',
+      note: 'Paiements de licences réussis : ce que les clients ont payé à OptiSpace.',
+    },
+    tableau_de_bord: {
+      clients: kpis.total_clients,
+      espaces_actifs: kpis.active_clients,
+      espaces_desactives: kpis.suspended_clients,
+      licences_actives: kpis.active_subscriptions,
+      expirent_sous_7_jours: kpis.expiring_7d,
+      clients_sans_licence_active: kpis.clients_without_license,
+      inscriptions_a_valider: kpis.pending_registrations,
+      demandes_de_licence_en_attente: kpis.pending_license_requests,
+    },
     organisations_par_statut: orgs.rows,
     licences: licences.rows[0],
     demandes_de_licence_par_statut: requests.rows,
-    encaissements: { ...money.rows[0], devise: 'FCFA' },
+    collectes_des_clients: {
+      ...money.rows[0],
+      devise: 'FCFA',
+      note: "Argent collecté par les clients dans leurs points de vente WiFi : ce n'est pas le chiffre d'affaires d'OptiSpace.",
+    },
     activite: users.rows[0],
     dernieres_inscriptions: recent.rows,
   };

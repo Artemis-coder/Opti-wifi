@@ -39,7 +39,8 @@ const fr = (s: unknown) => STATUS_FR[String(s)] || esc(s);
 async function overview(): Promise<string> {
   const o = await getPlatformOverview();
   const l = o.licences as Row;
-  const e = o.encaissements as Row;
+  const ca = o.chiffre_affaires_licences;
+  const e = o.collectes_des_clients as Row;
   const a = o.activite as Row;
   return [
     '📊 <b>Vue d’ensemble</b>',
@@ -47,7 +48,8 @@ async function overview(): Promise<string> {
     `🏢 <b>Organisations :</b> ${(o.organisations_par_statut as Row[]).map((r) => `${r.n} ${fr(r.status)}`).join(', ') || 'aucune'}`,
     `🧾 <b>Demandes de licence :</b> ${(o.demandes_de_licence_par_statut as Row[]).map((r) => `${r.n} ${fr(r.status)}`).join(', ') || 'aucune'}`,
     `🔑 <b>Licences actives :</b> ${l.organisations_avec_licence_active} · expirent sous 7 j : ${l.expirent_sous_7_jours} · sous 30 j : ${l.expirent_sous_30_jours}`,
-    `💰 <b>Encaissé ce mois :</b> ${money(e.encaisse_ce_mois)} (${e.collectes_ce_mois} collectes) · mois dernier : ${money(e.encaisse_mois_dernier)}`,
+    `💰 <b>Licences encaissées ce mois :</b> ${money(ca.encaisse_ce_mois)} · cette année : ${money(ca.encaisse_cette_annee)}`,
+    `🧺 <b>Collectes des clients ce mois :</b> ${money(e.encaisse_ce_mois)} (${e.collectes_ce_mois} collectes) · mois dernier : ${money(e.encaisse_mois_dernier)}`,
     `👥 <b>Utilisateurs actifs :</b> ${a.utilisateurs_actifs} · points de vente : ${a.points_de_vente} · espaces WiFi : ${a.espaces_wifi}`,
     '',
     '🆕 <b>Dernières inscriptions</b>',

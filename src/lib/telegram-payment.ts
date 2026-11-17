@@ -8,6 +8,8 @@ import { escapeTelegramHtml, sendTelegramMessage } from '@/lib/telegram';
 import { checkSaspayConnection, getSaspayConfig, SaspayError } from '@/lib/saspay/client';
 import { getPaymentMode, setPaymentMode, type PaymentMode } from '@/lib/saspay/mode';
 
+export type { PaymentMode };
+
 export const PAYMENT_BUTTON = '💳 Paiement en ligne';
 const BTN_STATUS = '🔄 Statut du paiement';
 
@@ -27,27 +29,34 @@ async function send(chatId: string, text: string, replyMarkup: Record<string, un
   await sendTelegramMessage({ chat_id: chatId, text, parse_mode: 'HTML', reply_markup: replyMarkup });
 }
 
-/** Statut : connexion SasPay, mode proposé aux clients, dernier webhook, paiements des dernières 24 h. */
-export async function paymentStatusView(): Promise<{ text: string; keyboard: Record<string, unknown> }> {
+export interface PaymentStatus {
+  mode: PaymentMode;
+  effective: PaymentMode;
+  enabled: boolean;
+  environment: string | null;
+  connection: { ok: boolean; label: string };
+  lastWebhook: { event_type: string; signature_ok: boolean; received_at: string } | null;
+  day: { ok: number; ko: number; pending: number; to_fix: number };
+}
+
+/** Statut : connexion SasPay (test réel de la clé), mode proposé aux clients, dernier webhook, 24 h. */
+export async function getPaymentStatus(): Promise<PaymentStatus> {
   const config = getSaspayConfig();
   const mode = await getPaymentMode();
   const effective: PaymentMode = mode === 'saspay' && config.enabled ? 'saspay' : 'manual';
 
-  // Test réel de la clé (lecture seule)
-  let connection: string;
-  if (!config.enabled) connection = `❌ Indisponible : ${e(config.problem || 'non configuré')}`;
+  let connection: PaymentStatus['connection'];
+  if (!config.enabled) connection = { ok: false, label: `Indisponible : ${config.problem || 'non configuré'}` };
   else {
     try {
       const { networks } = await checkSaspayConnection();
-      connection = `✅ Connectée (${networks.length} réseaux ouverts)`;
+      connection = { ok: true, label: `Connectée (${networks.length} réseaux ouverts)` };
     } catch (err) {
       const status = err instanceof SaspayError ? err.status : 0;
-      connection =
-        status === 401
-          ? '❌ Clé refusée par SasPay'
-          : status === 0
-            ? '❌ SasPay injoignable'
-            : `❌ Erreur SasPay (HTTP ${status})`;
+      connection = {
+        ok: false,
+        label: status === 401 ? 'Clé refusée par SasPay' : status === 0 ? 'SasPay injoignable' : `Erreur SasPay (HTTP ${status})`,
+      };
     }
   }
 
@@ -61,8 +70,35 @@ export async function paymentStatusView(): Promise<{ text: string; keyboard: Rec
          FROM online_payments WHERE created_at > NOW() - INTERVAL '24 hours'`
     ),
   ]).catch(() => [{ rows: [] }, { rows: [] }]);
-  const h = hook.rows[0];
-  const d = day.rows[0] || { ok: 0, ko: 0, pending: 0, to_fix: 0 };
+  return {
+    mode,
+    effective,
+    enabled: config.enabled,
+    environment: config.environment ?? null,
+    connection,
+    lastWebhook: (hook.rows[0] as PaymentStatus['lastWebhook']) ?? null,
+    day: (day.rows[0] as PaymentStatus['day']) || { ok: 0, ko: 0, pending: 0, to_fix: 0 },
+  };
+}
+
+/** Bascule SasPay / manuel (chat ou Mini App), avec trace dans le journal d'audit. */
+export async function changePaymentMode(mode: PaymentMode, source: string): Promise<{ ok: true; changed: boolean } | { ok: false; error: string }> {
+  if (mode === 'saspay' && !getSaspayConfig().enabled) return { ok: false, error: 'SasPay est indisponible : activation impossible pour le moment.' };
+  const previous = await getPaymentMode();
+  if (previous === mode) return { ok: true, changed: false };
+  await setPaymentMode(mode);
+  await query(
+    `INSERT INTO platform_audit_logs (platform_user_id, action, entity_type, old_data, new_data)
+     VALUES (NULL, 'payment_mode_changed', 'platform_settings', $1, $2)`,
+    [JSON.stringify({ mode: previous }), JSON.stringify({ mode, source })]
+  ).catch((err) => console.error(`payment_mode audit (${source}) error:`, err));
+  return { ok: true, changed: true };
+}
+
+export async function paymentStatusView(): Promise<{ text: string; keyboard: Record<string, unknown> }> {
+  const { mode, effective, enabled: configEnabled, environment, connection: conn, lastWebhook: h, day: d } = await getPaymentStatus();
+  const config = { enabled: configEnabled, environment };
+  const connection = `${conn.ok ? '✅' : '❌'} ${e(conn.label)}`;
 
   const lines = [
     '💳 <b>Paiement en ligne (SasPay)</b>',
@@ -101,16 +137,10 @@ export async function handlePaymentButton(text: string, chatId: string): Promise
 /** Boutons sous le statut : pay:manual, pay:saspay, pay:refresh. */
 export async function handlePaymentCallback(action: string, chatId: string): Promise<void> {
   if (action === 'manual' || action === 'saspay') {
-    const previous = await getPaymentMode();
-    if (action === 'saspay' && !getSaspayConfig().enabled) {
-      await send(chatId, '❌ SasPay est indisponible : activation impossible pour le moment.', PAYMENT_MENU.reply_markup);
-    } else if (previous !== action) {
-      await setPaymentMode(action);
-      await query(
-        `INSERT INTO platform_audit_logs (platform_user_id, action, entity_type, old_data, new_data)
-         VALUES (NULL, 'payment_mode_changed', 'platform_settings', $1, $2)`,
-        [JSON.stringify({ mode: previous }), JSON.stringify({ mode: action, source: 'telegram' })]
-      ).catch((err) => console.error('payment_mode audit (telegram) error:', err));
+    const result = await changePaymentMode(action, 'telegram');
+    if (!result.ok) {
+      await send(chatId, `❌ ${e(result.error)}`, PAYMENT_MENU.reply_markup);
+    } else if (result.changed) {
       await send(
         chatId,
         action === 'manual'

@@ -137,25 +137,51 @@ export async function handleDevContext(text: string, chatId: string, context: st
   await updateSessionContext(chatId, 'general');
 
   if (context === 'dev_new') {
-    const r = await createDevRequest(text);
-    await send(chatId, `📨 <b>Demande #${r.id} enregistrée.</b>\nClaude étudie le code et vous envoie un plan de développement à valider (quelques minutes).`);
-    await wake(chatId, r, 'plan');
+    await submitDevRequest(chatId, text);
     return true;
   }
 
-  const id = Number(context.split(':')[1]);
+  const result = await submitDevFeedback(chatId, Number(context.split(':')[1]), text);
+  if (!result.ok) await send(chatId, result.error);
+  return true;
+}
+
+/** Nouvelle demande confiée à Claude (chat ou Mini App) : enregistrée puis Claude réveillé. */
+export async function submitDevRequest(chatId: string, text: string): Promise<DevRequest> {
+  const r = await createDevRequest(text);
+  await send(chatId, `📨 <b>Demande #${r.id} enregistrée.</b>\nClaude étudie le code et vous envoie un plan de développement à valider (quelques minutes).`);
+  await wake(chatId, r, 'plan');
+  return r;
+}
+
+/** Remarque sur un plan ou correction d'un développement (chat ou Mini App). */
+export async function submitDevFeedback(chatId: string, id: number, text: string): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
   const r = await getDevRequest(id);
-  if (!r || !['plan_ready', 'review', 'failed'].includes(r.status)) {
-    await send(chatId, 'Cette demande n’attend plus de remarque.');
-    return true;
-  }
+  if (!r || !['plan_ready', 'review', 'failed'].includes(r.status)) return { ok: false, error: 'Cette demande n’attend plus de remarque.' };
   await appendFeedback(id, text);
   // Remarque sur un plan (ou une demande bloquée sans développement) : nouveau plan ; sinon correction du développement
   const replan = r.status === 'plan_ready' || (r.status === 'failed' && !r.branch);
   const updated = await updateDevRequest(id, { status: replan ? 'planning' : 'developing' });
-  await send(chatId, replan ? `✏️ Remarque transmise. Claude revoit le plan de la demande #${id}.` : `✏️ Correction transmise. Claude reprend le développement de la demande #${id}.`);
+  const message = replan ? `Remarque transmise. Claude revoit le plan de la demande #${id}.` : `Correction transmise. Claude reprend le développement de la demande #${id}.`;
+  await send(chatId, `✏️ ${message}`);
   if (updated) await wake(chatId, updated, replan ? 'plan' : 'develop');
-  return true;
+  return { ok: true, message };
+}
+
+/** État de la mise en production : commits de develop qui partiraient en production. */
+export async function productionPreview(): Promise<{ configured: boolean; aheadBy: number; commits: string[] }> {
+  if (!isGitHubConfigured()) return { configured: false, aheadBy: 0, commits: [] };
+  const diff = await compareBranches('main', 'develop');
+  const commits = diff.commits
+    .map((c) => c.commit.message.split('\n')[0])
+    .filter((m) => !m.startsWith('Merge '))
+    .slice(-30)
+    .reverse();
+  return { configured: true, aheadBy: diff.ahead_by, commits };
+}
+
+export function devConfiguration() {
+  return { routine: isDevRoutineConfigured(), github: isGitHubConfigured(), repoUrl: REPO_URL };
 }
 
 /** Boutons du menu IA. Renvoie true si traité. */
