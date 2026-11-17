@@ -34,8 +34,6 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/auth/register',
   '/api/auth/reset-password',
   '/api/auth/set-password',
-  '/api/telegram/webhook',
-  '/api/telegram/ai-webhook',
   '/api/telegram/ai-webhook-v2',
   '/api/telegram/notify',
   '/api/telegram/test',
