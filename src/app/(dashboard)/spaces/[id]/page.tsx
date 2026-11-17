@@ -270,7 +270,7 @@ export default function SpaceDashboardPage() {
           Espace introuvable
         </h3>
         <p className="text-xs text-muted">
-          L'espace demandé n'existe pas ou a été supprimé.
+          L’espace demandé n’existe pas ou a été supprimé.
         </p>
         <Link href="/spaces" className={buttonClassName({ variant: 'secondary', size: 'sm' })}>
             Retour aux espaces
@@ -495,7 +495,7 @@ export default function SpaceDashboardPage() {
               </div>
               <h3 className="text-base font-semibold text-foreground">Aucun encaissement enregistré</h3>
               <p className="text-xs text-muted max-w-sm mx-auto">
-                Aucune collecte n'a été effectuée pour les points de vente rattachés à cet espace.
+                Aucune collecte n’a été effectuée pour les points de vente rattachés à cet espace.
               </p>
               <div className="pt-2">
                 <Link href="/collections/new" className={buttonClassName({ variant: 'secondary', size: 'sm' })}>
@@ -563,7 +563,7 @@ export default function SpaceDashboardPage() {
                 </h3>
                 {linkedPos.length === 0 ? (
                   <p className="text-xs text-muted py-4 text-center">
-                    Aucun POS n'est rattaché à cet espace.
+                    Aucun POS n’est rattaché à cet espace.
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -655,7 +655,7 @@ export default function SpaceDashboardPage() {
           <Card className="w-full max-w-md">
             <div className="p-6 space-y-4">
               <h2 className="text-lg font-semibold text-foreground">
-                Modifier l'espace
+                Modifier l’espace
               </h2>
               <form
                 onSubmit={async (e) => {
@@ -692,7 +692,7 @@ export default function SpaceDashboardPage() {
              >
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-foreground">
-                    Nom de l'espace *
+                    Nom de l’espace *
                   </label>
                   <input
                     name="nom"

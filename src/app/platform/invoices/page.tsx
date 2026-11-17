@@ -58,29 +58,33 @@ export default function PlatformInvoicesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  // Le chargement lit les données ; l'effet les applique (« chargement » posé par l'état initial et les filtres)
   useEffect(() => {
-    loadInvoices();
+    let cancelled = false;
+    const params = new URLSearchParams({ status: statusFilter, search });
+    fetch(`/api/platform/invoices?${params}`)
+      .then(async (res) => ({ ok: res.ok, result: await res.json() }))
+      .then(({ ok, result }) => {
+        if (cancelled) return;
+        if (ok) {
+          setInvoices(result.data || []);
+          if (result.stats) setStats(result.stats);
+        } else {
+          toast.error(result.error || 'Impossible de charger les factures.');
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Chargement des factures :', err);
+        toast.error('Impossible de charger les factures. Vérifiez votre connexion.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [search, statusFilter]);
-
-  async function loadInvoices() {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ status: statusFilter, search });
-      const res = await fetch(`/api/platform/invoices?${params}`);
-      const result = await res.json();
-      if (res.ok) {
-        setInvoices(result.data || []);
-        if (result.stats) setStats(result.stats);
-      } else {
-        toast.error(result.error || 'Impossible de charger les factures.');
-      }
-    } catch (err) {
-      console.error('Chargement des factures :', err);
-      toast.error('Impossible de charger les factures. Vérifiez votre connexion.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const statusFilters = [
     { value: 'all', label: 'Toutes' },
@@ -163,7 +167,10 @@ export default function PlatformInvoicesPage() {
               type="text"
               placeholder="Rechercher par nom de client..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setLoading(true);
+                setSearch(e.target.value);
+              }}
               className="input input--primary w-full pl-10 pr-3"
             />
           </div>
@@ -171,7 +178,10 @@ export default function PlatformInvoicesPage() {
             {statusFilters.map((f: { value: string; label: string }) => (
               <button
                 key={f.value}
-                onClick={() => setStatusFilter(f.value)}
+                onClick={() => {
+                  if (f.value !== statusFilter) setLoading(true);
+                  setStatusFilter(f.value);
+                }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap ${
                   statusFilter === f.value
                     ? 'bg-accent text-accent-foreground font-medium'

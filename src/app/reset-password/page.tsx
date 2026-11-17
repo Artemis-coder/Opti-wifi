@@ -10,20 +10,18 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const [token, setToken] = useState('');
+  // Jeton lu directement dans l'adresse (pas d'état à synchroniser)
+  const token = searchParams.get('token') || '';
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const tokenFromParams = searchParams.get('token');
-    if (tokenFromParams) {
-      setToken(tokenFromParams);
-    } else {
+    if (!searchParams.get('token')) {
       toast.error('Lien de réinitialisation invalide ou expiré');
       router.push('/login');
     }
-  }, [searchParams, router, toast]);
+  }, [searchParams, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +65,8 @@ function ResetPasswordForm() {
 
       toast.success(data.message || 'Mot de passe enregistré. Vous pouvez maintenant vous connecter.');
       router.push('/login');
-    } catch (error: any) {
-      toast.error(error.message || 'Une erreur est survenue');
+    } catch (error) {
+      toast.error((error instanceof Error && error.message) || 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }

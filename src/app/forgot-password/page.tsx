@@ -43,8 +43,8 @@ export default function ForgotPasswordPage() {
 
       toast.success('Un lien de réinitialisation a été envoyé à votre adresse email.');
       router.push('/login');
-    } catch (error: any) {
-      toast.error(error.message || 'Une erreur est survenue');
+    } catch (error) {
+      toast.error((error instanceof Error && error.message) || 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }

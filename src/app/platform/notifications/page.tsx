@@ -69,8 +69,8 @@ export default function PlatformNotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  const buildAlerts = useCallback(async () => {
-    setLoading(true);
+  // Calcule les alertes sans toucher à l'état ; l'appelant les applique (effet ou bouton Actualiser)
+  const buildAlerts = useCallback(async (): Promise<PlatformAlert[] | null> => {
     try {
       // Fetch data to generate smart alerts
       const [subsRes, orgsRes, logsRes] = await Promise.all([
@@ -170,16 +170,26 @@ export default function PlatformNotificationsPage() {
         });
       }
 
-      setAlerts(generated);
+      return generated;
     } catch (err) {
       console.warn('Notifications fetch error:', err);
-    } finally {
-      setLoading(false);
+      return null;
     }
   }, []);
 
+  const applyAlerts = (generated: PlatformAlert[] | null) => {
+    if (generated) setAlerts(generated);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    buildAlerts();
+    let cancelled = false;
+    buildAlerts().then((generated) => {
+      if (!cancelled) applyAlerts(generated);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [buildAlerts]);
 
   const visibleAlerts = alerts.filter((a: PlatformAlert) => !dismissed.has(a.id));
@@ -210,7 +220,10 @@ export default function PlatformNotificationsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={buildAlerts}
+            onClick={() => {
+              setLoading(true);
+              buildAlerts().then(applyAlerts);
+            }}
             isLoading={loading}
             >
             <RefreshCw className="w-4 h-4" />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -27,14 +27,17 @@ export function ResetPosModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Reset state whenever modal opens/closes
-  useEffect(() => {
+  // Remise à zéro à la fermeture : ajustement pendant le rendu plutôt que dans un effet
+  // (https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (!isOpen) {
       setConfirmText('');
       setError('');
       setLoading(false);
     }
-  }, [isOpen]);
+  }
 
   const isConfirmed = confirmText.trim() === CONFIRM_WORD;
 
