@@ -462,3 +462,70 @@ export async function syncPendingPayments(opts: { maxAgeHours?: number; limit?: 
   return { checked: rows.length, succeeded };
 }
 
+
+// ── Historique côté client (page Abonnement) ─────────────────────────────────
+
+/** Paiement en ligne tel que montré au client : aucun identifiant SasPay ni raison technique. */
+export interface ClientOnlinePayment {
+  id: string;
+  status: OnlinePaymentStatus;
+  amount: number;
+  currency: string;
+  duration_months: number;
+  plan_name: string | null;
+  network: string | null;
+  reference: string | null;
+  created_at: string;
+  paid_at: string | null;
+  license_activated: boolean;
+  license_end_date: string | null;
+  invoice_id: string | null;
+  /** Paiement reçu mais licence non activée : le support est prévenu */
+  needs_support: boolean;
+  /** Lien pour reprendre un paiement encore en attente */
+  checkout_url: string | null;
+}
+
+const CLIENT_PAYMENT_SELECT = `
+  SELECT op.id, op.status, op.amount, op.currency, op.duration_months, op.network, op.transaction_reference,
+         op.created_at, op.paid_at, op.subscription_id, op.invoice_id, op.failure_reason, op.checkout_url,
+         sp.name AS plan_name, s.end_date AS license_end_date
+    FROM online_payments op
+    LEFT JOIN subscription_plans sp ON sp.id = op.plan_id
+    LEFT JOIN subscriptions s ON s.id = op.subscription_id`;
+
+function toClientPayment(r: Record<string, unknown>): ClientOnlinePayment {
+  const status = r.status as OnlinePaymentStatus;
+  return {
+    id: String(r.id),
+    status,
+    amount: Number(r.amount),
+    currency: String(r.currency),
+    duration_months: Number(r.duration_months),
+    plan_name: (r.plan_name as string) ?? null,
+    network: (r.network as string) ?? null,
+    reference: (r.transaction_reference as string) ?? null,
+    created_at: String(r.created_at),
+    paid_at: r.paid_at ? String(r.paid_at) : null,
+    license_activated: Boolean(r.subscription_id),
+    license_end_date: r.license_end_date ? String(r.license_end_date) : null,
+    invoice_id: (r.invoice_id as string) ?? null,
+    needs_support: status === 'succeeded' && !r.subscription_id && Boolean(r.failure_reason),
+    checkout_url: status === 'pending' ? ((r.checkout_url as string) ?? null) : null,
+  };
+}
+
+/** Paiements en ligne d'UNE organisation, du plus récent au plus ancien. */
+export async function listOrganizationOnlinePayments(organizationId: string, limit = 100): Promise<ClientOnlinePayment[]> {
+  const { rows } = await query(`${CLIENT_PAYMENT_SELECT} WHERE op.organization_id = $1 ORDER BY op.created_at DESC LIMIT $2`, [
+    organizationId,
+    limit,
+  ]);
+  return rows.map(toClientPayment);
+}
+
+/** Un paiement, seulement s'il appartient à l'organisation (sinon null). */
+export async function getOrganizationOnlinePayment(organizationId: string, id: string): Promise<ClientOnlinePayment | null> {
+  const { rows } = await query(`${CLIENT_PAYMENT_SELECT} WHERE op.id = $1 AND op.organization_id = $2`, [id, organizationId]);
+  return rows[0] ? toClientPayment(rows[0]) : null;
+}
