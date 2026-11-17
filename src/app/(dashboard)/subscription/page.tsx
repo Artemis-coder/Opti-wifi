@@ -2,10 +2,10 @@
 
 import { Alert } from '@heroui/react';
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle, Layers, Store, Users, MapPin, Gift, ArrowRight, UserCheck, History } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle2, Clock, Package, AlertCircle, RotateCcw, AlertTriangle, Hourglass, XCircle, Layers, Store, Users, MapPin, Gift, ArrowRight, UserCheck } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Button, buttonClassName } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
@@ -229,22 +229,14 @@ export default function SubscriptionPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
-            <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
-            <span>Mon Abonnement</span>
-          </h1>
-          <p className="text-xs text-muted mt-0.5">
-            Gérez votre abonnement et découvrez nos forfaits
-          </p>
-        </div>
-        {/* Raccourci vers l'historique des paiements (administrateur du client) */}
-        {user?.role === 'administrateur' && (
-          <a href="#historique-paiements" className={`${buttonClassName({ variant: 'outline', size: 'sm' })} self-start shrink-0`}>
-            <History className="w-4 h-4" /> Historique des paiements
-          </a>
-        )}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
+          <span>Mon Abonnement</span>
+        </h1>
+        <p className="text-xs text-muted mt-0.5">
+          Gérez votre abonnement et découvrez nos forfaits
+        </p>
       </div>
 
       {pendingRequest && (
@@ -431,8 +423,6 @@ export default function SubscriptionPage() {
         </Card>
       )}
 
-      <PaymentHistory />
-
       {subscription?.plan && (
         <Card>
           <h2 className="text-sm font-semibold text-muted mb-4 flex items-center gap-2">
@@ -482,6 +472,8 @@ export default function SubscriptionPage() {
       )}
 
       <InvoiceList />
+
+      <PaymentHistory />
 
       <div>
         <h2 id="forfaits" className="text-lg font-semibold text-foreground mb-4 scroll-mt-24">Tous les forfaits disponibles</h2>
