@@ -22,6 +22,7 @@ import {
   runAssistant,
   sendBotMessage,
   sendTyping,
+  setMiniAppMenuButton,
   toTelegramHtml,
 } from '@/lib/bot/assistant';
 import { MENU_VIEWS } from '@/lib/bot/fallback-views';
@@ -101,6 +102,7 @@ async function handleMessage(message: TelegramMessage) {
 
   const command = text.split(/\s+/)[0].toLowerCase().replace(/@.*$/, '');
   if (['/start', '/menu'].includes(command)) {
+    await setMiniAppMenuButton(chatId);
     await sendBotMessage(chatId, `👋 Bonjour ! Que voulez-vous savoir ou faire ?\n\n${HELP_TEXT}`, HOME_MENU.reply_markup);
     return;
   }
@@ -123,6 +125,7 @@ async function handleMessage(message: TelegramMessage) {
   if (await handleSecurityButton(text, chatId)) return;
   if (await handleHealthButton(text, chatId)) return;
   if (text === '🔙 Menu Principal') {
+    await setMiniAppMenuButton(chatId);
     await sendBotMessage(chatId, '🏠 <b>Menu principal</b>', HOME_MENU.reply_markup);
     return;
   }

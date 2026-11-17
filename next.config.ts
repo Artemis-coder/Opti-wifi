@@ -57,6 +57,18 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Mini App Telegram : Telegram Web (web.telegram.org) l'affiche dans une iframe. Les applications
+      // Telegram mobiles et de bureau utilisent une vue web, sans iframe. Cette règle, placée après la
+      // règle générale, remplace sa CSP sur cette seule page (frame-ancestors prime sur X-Frame-Options).
+      {
+        source: '/telegram/app',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://web.telegram.org; base-uri 'self'; object-src 'none'; form-action 'self'",
+          },
+        ],
+      },
       // En-têtes spécifiques pour les API — ne pas cacher les réponses sensibles
       {
         source: '/api/(.*)',
