@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { cn } from '@/lib/utils/cn';
+import { confirmLogout } from '@/components/ui/ConfirmDialog';
 
 interface HeaderProps {
   onOpenMobileMenu?: () => void;
@@ -81,6 +82,7 @@ export function Header({ title }: HeaderProps) {
         : null;
 
   const handleLogout = async () => {
+    if (!(await confirmLogout())) return;
     await createClient().auth.signOut();
     logout();
     router.push('/login');

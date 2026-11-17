@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils/cn';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { PlanBadge } from '@/components/layout/PlanBadge';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { confirmLogout } from '@/components/ui/ConfirmDialog';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -142,7 +143,9 @@ export function Sidebar({ isMobileOpen = false, onCloseMobile }: SidebarProps) {
   const { isOnline, isOffline, isUnstable } = useOnlineStatus();
 
   const handleLogout = async () => {
+    // Menu mobile fermé d'abord : la question s'affiche seule à l'écran
     if (onCloseMobile) onCloseMobile();
+    if (!(await confirmLogout())) return;
     await supabase.auth.signOut();
     logout();
     router.push('/login');

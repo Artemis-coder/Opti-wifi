@@ -17,6 +17,7 @@ import { ReadOnlyBanner, ReadOnlyPage } from '@/components/layout/ReadOnlyBanner
 import { useAccessStore } from '@/lib/stores/accessStore';
 import { ConfidentialityGuard } from '@/components/security/ConfidentialityGuard';
 import { READ_ONLY_BLOCKED_PATHS } from '@/lib/read-only';
+import { confirmLogout } from '@/components/ui/ConfirmDialog';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -126,6 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [isSubscriptionExpired, user?.role]);
 
   const handleSignOut = async () => {
+    if (!(await confirmLogout())) return;
     await supabase.auth.signOut();
     useAuthStore.getState().logout();
     router.push('/login');
