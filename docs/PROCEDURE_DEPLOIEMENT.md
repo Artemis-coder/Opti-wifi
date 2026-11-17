@@ -73,9 +73,16 @@ git push origin develop           # jamais --force
 
 **Prérequis :** tout est validé sur `dev.optiwifi.site` et le propriétaire du projet donne son accord explicite.
 
-1. **Sauvegarder la production** (lecture seule, fichier hors Git dans `scripts/backups/`).
-   > `npm run backup` est **obsolète** (il utilise encore l'API Supabase) : utiliser une sauvegarde Neon directe
-   > (`SELECT *` de toutes les tables dans une transaction en lecture seule) en attendant qu'il soit réécrit.
+1. **Sauvegarder la production** — obligatoire à **chaque** mise en production, même sans migration :
+   ```bash
+   npm run backup:prod
+   ```
+   - Lecture seule (transaction `readOnly`), toutes les tables du schéma `public`, fichier JSON dans `scripts/backups/` (exclu de Git).
+   - Le script refuse toute autre base que la production (`ep-flat-term`). L'adresse de la base est lue depuis Vercel
+     dans un dossier temporaire, jamais affichée ni écrite dans le projet (CLI Vercel connecté requis).
+   - Il compare avec la sauvegarde précédente : en cas de **« ATTENTION, lignes en moins »**, s'arrêter et comprendre avant de publier.
+   - Si c'est un agent IA qui la lance, il lui faut l'**autorisation explicite** du propriétaire pour lire la base de production.
+   - `npm run backup` (ancien script Supabase) est **obsolète** : ne plus l'utiliser.
 2. **Migrations de base** : si la PR contient des fichiers dans `supabase/migrations/` :
    - les tester d'abord sur la base dev ;
    - les écrire **idempotentes** (`IF NOT EXISTS`, `CREATE OR REPLACE`…) et les exécuter dans **une seule transaction** ;
