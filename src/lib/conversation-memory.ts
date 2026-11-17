@@ -9,9 +9,9 @@ interface ConversationMessage {
   chat_id: string;
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
-  tool_calls?: any;
+  tool_calls?: unknown;
   tool_call_id?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at?: Date;
 }
 
@@ -26,8 +26,19 @@ interface ConversationSession {
   message_count: number;
 }
 
-// Initialize conversation tables
-export async function initConversationTables() {
+// Création des tables une seule fois par instance (et non à chaque message)
+let tablesReady: Promise<void> | null = null;
+export function initConversationTables(): Promise<void> {
+  if (!tablesReady) {
+    tablesReady = createConversationTables().catch((err) => {
+      tablesReady = null; // nouvel essai au prochain message
+      throw err;
+    });
+  }
+  return tablesReady;
+}
+
+async function createConversationTables() {
   await query(`
     CREATE TABLE IF NOT EXISTS conversation_sessions (
       chat_id VARCHAR(255) PRIMARY KEY,
@@ -62,6 +73,20 @@ export async function initConversationTables() {
   await query(`
     CREATE INDEX IF NOT EXISTS idx_conversation_messages_created_at 
     ON conversation_messages(created_at)
+  `);
+
+  // Mémoire durable de l'assistant (faits et préférences retenus à la demande du super admin)
+  await query(`
+    CREATE TABLE IF NOT EXISTS bot_learned_facts (
+      id BIGSERIAL PRIMARY KEY,
+      chat_id VARCHAR(255) NOT NULL,
+      fact TEXT NOT NULL,
+      category VARCHAR(50) DEFAULT 'general',
+      importance INT DEFAULT 5,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(chat_id, fact)
+    )
   `);
 }
 

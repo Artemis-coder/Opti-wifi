@@ -10,6 +10,8 @@ interface TelegramMessage {
 
 export interface TelegramSendResult {
   ok: boolean;
+  /** Identifiant du message envoyé (pour le modifier ensuite). */
+  messageId?: number;
   /** Raison lisible de l'échec (jamais le token). */
   error?: string;
 }
@@ -43,7 +45,7 @@ export async function sendTelegramMessageDetailed(message: TelegramMessage): Pro
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       const data = await response.json().catch(() => ({}));
-      if (data.ok) return { ok: true };
+      if (data.ok) return { ok: true, messageId: data.result?.message_id };
 
       const retryAfter = Number(data.parameters?.retry_after) || 0;
       const retryable = response.status === 429 || response.status >= 500;

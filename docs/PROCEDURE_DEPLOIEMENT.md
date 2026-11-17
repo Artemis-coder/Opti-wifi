@@ -9,7 +9,8 @@ Le **23/10/2026 à 15:12 UTC**, `develop` puis `main` ont été réinitialisés 
 Environ **30 commits** (39 fichiers, ~3 300 lignes) ont disparu des deux branches : montant net après commission, horodatage exact,
 quotas, suppression d'utilisateur, page Paramètres, gestion des administrateurs, durcissement de `/api/db` et des routes IA…
 La production a ensuite été redéployée **à la main avec le CLI Vercel**, sans que personne ne voie la perte.
-Ces commits sont conservés localement dans la branche `recovery/avant-push-force-2026-10-23`.
+Ces commits sont conservés localement (Mac du propriétaire, pas sur GitHub) dans l'étiquette `archive/recovery/avant-push-force-2026-10-23`.
+Pour la ressortir en branche : `git switch -c recovery/avant-push-force-2026-10-23 archive/recovery/avant-push-force-2026-10-23`.
 
 Trois pratiques en sont la cause ; elles sont désormais **interdites** :
 
@@ -72,9 +73,24 @@ git push origin develop           # jamais --force
 
 **Prérequis :** tout est validé sur `dev.optiwifi.site` et le propriétaire du projet donne son accord explicite.
 
-1. **Sauvegarder la production** (lecture seule, fichier hors Git dans `scripts/backups/`).
-   > `npm run backup` est **obsolète** (il utilise encore l'API Supabase) : utiliser une sauvegarde Neon directe
-   > (`SELECT *` de toutes les tables dans une transaction en lecture seule) en attendant qu'il soit réécrit.
+1. **Sauvegarder la production (double sauvegarde)** — obligatoire à **chaque** mise en production, même sans migration :
+   ```bash
+   npm run backup:prod
+   ```
+   La commande fait deux sauvegardes indépendantes :
+
+   | | Où | Contenu | Durée de vie | Sert à |
+   |---|---|---|---|---|
+   | **1. Fichier JSON** | Mac, `scripts/backups/` (exclu de Git) | Toutes les tables du schéma `public`, lues en lecture seule | Jusqu'à suppression manuelle | Copie hors de Neon : relire ou réinsérer des lignes précises |
+   | **2. Branche Neon** `backup-prod-AAAAMMJJ-HHMM` | Projet Neon `opti-wifi-db`, enfant de `production` | Copie instantanée complète (schéma + données), sans calcul | Supprimée par Neon après **30 jours** | Restauration complète en quelques secondes |
+
+   - Le fichier JSON refuse toute autre base que la production (`ep-flat-term`). L'adresse de la base est lue depuis Vercel
+     dans un dossier temporaire, jamais affichée ni écrite dans le projet.
+   - Il compare avec la sauvegarde précédente : en cas de **« ATTENTION, lignes en moins »**, s'arrêter et comprendre avant de publier.
+   - La branche Neon est créée **sans calcul** (aucun coût de calcul) et **sans secret** dans la sortie ; la commande vérifie qu'elle existe.
+   - Prérequis : CLI Vercel et `neonctl` connectés au compte du projet.
+   - Si c'est un agent IA qui la lance, il lui faut l'**autorisation explicite** du propriétaire pour lire la base de production.
+   - `npm run backup` (ancien script Supabase) est **obsolète** : ne plus l'utiliser.
 2. **Migrations de base** : si la PR contient des fichiers dans `supabase/migrations/` :
    - les tester d'abord sur la base dev ;
    - les écrire **idempotentes** (`IF NOT EXISTS`, `CREATE OR REPLACE`…) et les exécuter dans **une seule transaction** ;
@@ -85,7 +101,7 @@ git push origin develop           # jamais --force
    ```
    La description liste les changements, les migrations et les vérifications faites.
 4. **Fusionner la PR sur GitHub** (bouton *Merge pull request*, pas de *squash* ni de *rebase*) : Vercel déploie la production automatiquement.
-5. **Resynchroniser `develop`** avec la fusion :
+5. **Resynchroniser `develop`** avec la fusion (après **chaque** PR fusionnée dans `main`, PR de documentation comprise) :
    ```bash
    git switch develop
    git pull --ff-only origin develop
@@ -112,12 +128,16 @@ git push origin develop           # jamais --force
 |---|---|---|
 | Revenir tout de suite à la version précédente | Vercel → *Deployments* → déploiement précédent → **Instant Rollback** (aucun changement Git) | `git push --force` |
 | Annuler un commit dans le code | `git revert <sha>` sur `develop`, puis PR `develop → main` | `git reset --hard` + push |
+| Données de production abîmées (base) | Console Neon → projet `opti-wifi-db` → branche `production` → **Restore** depuis la dernière branche `backup-prod-…` (ou `neonctl branches restore production backup-prod-… --preserve-under-name production-avant-restauration`), **avec accord explicite** et après une sauvegarde de l'état actuel | Restaurer sans garder l'état actuel |
+| Récupérer quelques lignes seulement | Lire le fichier JSON de `scripts/backups/` (ou la branche `backup-prod-…`) et réinsérer les lignes concernées par une requête paramétrée | Écraser toute la base pour quelques lignes |
 | Retrouver un commit « perdu » | `git reflog`, puis `git branch recovery/<nom> <sha>` | — |
+| Ranger une vieille branche non fusionnée | `git tag archive/<nom> <branche>`, vérifier l'étiquette, puis `git branch -D <branche>` | Suppression sans archive |
 
 ## 6. Interdictions
 
 - ❌ `git push --force` / `--force-with-lease` sur `develop` ou `main`.
 - ❌ `git reset --hard` sur une branche déjà poussée.
+- ❌ Supprimer une branche dont la PR n'est pas **MERGED** sur GitHub (`gh pr view <n> --json state`).
 - ❌ `vercel --prod` (déploiement de production depuis le disque).
 - ❌ Commit ou push direct sur `main`.
 - ❌ Fichiers `.env*`, sauvegardes, cookies ou secrets dans Git ou dans un déploiement.

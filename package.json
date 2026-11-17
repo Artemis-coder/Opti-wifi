@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "backup": "bash scripts/backup.sh",
+    "backup:prod": "bash scripts/backup-prod.sh",
     "backup:restore": "bash scripts/backup.sh --restore=",
     "backup:list": "bash scripts/backup.sh --list",
     "backup:clean": "bash scripts/cron_backup.sh"
