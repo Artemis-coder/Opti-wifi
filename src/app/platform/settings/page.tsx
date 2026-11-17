@@ -45,29 +45,30 @@ function PlatformSettingsContent() {
   const [saving, setSaving] = useState(false);
   const [editedValues, setEditedValues] = useState<Record<string, SettingValue>>({});
 
+  // Chargé une seule fois à l'ouverture : l'effet lit puis applique (« chargement » = état initial)
   useEffect(() => {
-    loadSettings();
-  }, []);
-
-  async function loadSettings() {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/platform/settings');
-      const result = await res.json();
-      if (res.ok && result.data) {
+    let cancelled = false;
+    fetch('/api/platform/settings')
+      .then(async (res) => ({ ok: res.ok, result: await res.json() }))
+      .then(({ ok, result }) => {
+        if (cancelled || !ok || !result.data) return;
         const settingsMap: Record<string, SettingValue> = {};
         result.data.forEach((s: PlatformSettings) => {
           settingsMap[s.key] = s.value as SettingValue;
         });
         setSettings(settingsMap);
         setEditedValues(settingsMap);
-      }
-    } catch {
-      toast.error('Erreur de chargement des paramètres');
-    } finally {
-      setLoading(false);
-    }
-  }
+      })
+      .catch(() => {
+        if (!cancelled) toast.error('Erreur de chargement des paramètres');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
