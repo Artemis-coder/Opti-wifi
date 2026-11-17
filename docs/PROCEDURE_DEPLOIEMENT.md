@@ -82,12 +82,19 @@ git push origin develop           # jamais --force
    | | Où | Contenu | Durée de vie | Sert à |
    |---|---|---|---|---|
    | **1. Fichier JSON** | Mac, `scripts/backups/` (exclu de Git) | Toutes les tables du schéma `public`, lues en lecture seule | Jusqu'à suppression manuelle | Copie hors de Neon : relire ou réinsérer des lignes précises |
-   | **2. Branche Neon** `backup-prod-AAAAMMJJ-HHMM` | Projet Neon `opti-wifi-db`, enfant de `production` | Copie instantanée complète (schéma + données), sans calcul | Supprimée par Neon après **30 jours** | Restauration complète en quelques secondes |
+   | **2. Branche Neon** `backup-prod-AAAAMMJJ-HHMM` | Projet Neon `opti-wifi-db`, enfant de `production` | Copie instantanée complète (schéma + données), sans calcul | Les **3 dernières** gardées (rotation), 30 jours au plus | Restauration complète en quelques secondes |
 
    - Le fichier JSON refuse toute autre base que la production (`ep-flat-term`). L'adresse de la base est lue depuis Vercel
      dans un dossier temporaire, jamais affichée ni écrite dans le projet.
    - Il compare avec la sauvegarde précédente : en cas de **« ATTENTION, lignes en moins »**, s'arrêter et comprendre avant de publier.
    - La branche Neon est créée **sans calcul** (aucun coût de calcul) et **sans secret** dans la sortie ; la commande vérifie qu'elle existe.
+   - **Rotation automatique** (`scripts/neon-backup-rotate.mjs`) : le projet Neon est limité à **10 branches**. Avant de créer
+     sa branche, le script supprime les plus anciennes `backup-prod-AAAAMMJJ-HHMM` (enfants de `production`) pour n'en garder
+     que 3 et toujours laisser une place libre. Il ne touche à aucune autre branche (`develop`, `vercel-dev`, `preview*`…).
+     S'il n'y a plus de place et aucune sauvegarde à supprimer, il s'arrête avec un message. Les fichiers JSON restent la
+     sauvegarde longue durée.
+   - Simulation sans rien écrire ni supprimer : `BACKUP_DRY_RUN=1 npm run backup:prod`.
+   - **Lancer la sauvegarde avant d'ouvrir la PR** `develop → main`, et ne fusionner qu'une fois les deux parties confirmées.
    - Prérequis : CLI Vercel et `neonctl` connectés au compte du projet.
    - Si c'est un agent IA qui la lance, il lui faut l'**autorisation explicite** du propriétaire pour lire la base de production.
    - `npm run backup` (ancien script Supabase) est **obsolète** : ne plus l'utiliser.

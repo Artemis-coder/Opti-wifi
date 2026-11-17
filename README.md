@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.25.0</strong> — <a href="./RELEASE_NOTES_v1.25.0.md">notes de version</a>
+  <strong>Version actuelle : v1.26.0</strong> — <a href="./RELEASE_NOTES_v1.26.0.md">notes de version</a>
 </p>
 
 ---
@@ -331,6 +331,7 @@ Schéma et migrations : `supabase/neon_schema.sql` puis `supabase/migrations/*.s
 
 | Version | Contenu |
 |---|---|
+| [**v1.26.0**](./RELEASE_NOTES_v1.26.0.md) | 4 Mini Apps Telegram (Business, IA, Paiement, Système) avec KPI et graphiques ; chiffres alignés sur le tableau de bord |
 | [**v1.25.0**](./RELEASE_NOTES_v1.25.0.md) | Mini App Telegram : le back-office dans Telegram (chiffres clés, demandes à approuver, clients, licences) |
 | [**v1.24.0**](./RELEASE_NOTES_v1.24.0.md) | Bot Telegram plus rapide (réponse en direct) et plus intelligent (mémoire durable, rapports et SasPay), ancien moteur supprimé |
 | [**v1.20.0**](./RELEASE_NOTES_v1.20.0.md) | Nouvelle interface avec le design system HeroUI (super admin et espaces), menu mobile, mode sombre lisible |
