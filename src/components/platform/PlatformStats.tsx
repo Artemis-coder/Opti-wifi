@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useId, useState, useSyncExternalStore } from 'react';
 import { ArrowDownRight, ArrowUpRight, Minus, Table2, BarChart3, UserPlus, KeyRound, Banknote, Repeat, TrendingUp } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card, Chip, Label, Meter, Skeleton, Table, ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import { StatTile, type StatAccent } from '@/components/ui/StatTile';
 import { KpiGrid } from '@/components/ui/KpiGrid';
@@ -23,8 +23,8 @@ export const STATS_RANGES: { value: StatsRange; label: string }[] = [
 
 // Palette catégorielle validée (ordre fixe, contrôle daltonisme OK en clair et en sombre)
 const PALETTE = {
-  light: { s1: '#2a78d6', s2: '#eb6834', s3: '#1baf7a', s4: '#eda100', surface: '#ffffff', grid: '#e4e4e7', text: '#71717a' },
-  dark: { s1: '#3987e5', s2: '#d95926', s3: '#199e70', s4: '#c98500', surface: '#18181b', grid: '#27272a', text: '#a1a1aa' },
+  light: { s1: '#2a78d6', s2: '#eb6834', s3: '#1baf7a', s4: '#eda100', surface: '#ffffff', grid: '#e4e4e7', text: '#71717a', track: '#f4f4f5' },
+  dark: { s1: '#3987e5', s2: '#d95926', s3: '#199e70', s4: '#c98500', surface: '#18181b', grid: '#27272a', text: '#a1a1aa', track: '#232327' },
 };
 
 const darkQuery = '(prefers-color-scheme: dark)';
@@ -359,6 +359,147 @@ function peak(series: StatsBucket[], value: (b: StatsBucket) => number, unit: Pl
   return best ? `Pic : ${bucketLabel(best.bucket, unit, true)} (${fmt(value(best))})` : null;
 }
 
+/**
+ * Segment de barre empilée : le plus haut de chaque barre est arrondi, et un écart de 2 px
+ * sépare les segments (sans contour, pour garder toute l'épaisseur de la barre).
+ */
+function StackSegment(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  fill?: string;
+  payload?: Record<string, number>;
+  dataKey?: string;
+  keys: readonly string[];
+}) {
+  const { x = 0, y = 0, width = 0, fill, payload, dataKey, keys } = props;
+  let { height = 0 } = props;
+  if (!height || height <= 0) return null;
+  const present = keys.filter((k) => Number(payload?.[k] || 0) > 0);
+  const top = present[present.length - 1];
+  const bottom = present[0];
+  if (dataKey !== bottom) height = Math.max(0, height - 2);
+  if (!height) return null;
+  const r = dataKey === top ? Math.min(6, width / 2, height) : 0;
+  const d = r
+    ? `M${x},${y + height} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + width - r},${y} Q${x + width},${y} ${x + width},${y + r} L${x + width},${y + height} Z`
+    : `M${x},${y} h${width} v${height} h${-width} Z`;
+  return <path d={d} fill={fill} />;
+}
+
+/** Regroupe des jours en semaines (barres plus épaisses sur 30 jours). */
+function groupByWeek(series: StatsBucket[]): StatsBucket[] {
+  const out: StatsBucket[] = [];
+  for (let i = 0; i < series.length; i += 7) {
+    const chunk = series.slice(i, i + 7);
+    out.push(
+      chunk.reduce(
+        (acc, b) => ({
+          ...acc,
+          registrations: acc.registrations + b.registrations,
+          trial: acc.trial + b.trial,
+          new: acc.new + b.new,
+          renewal: acc.renewal + b.renewal,
+          upgrade: acc.upgrade + b.upgrade,
+          revenue: acc.revenue + b.revenue,
+        }),
+        { bucket: chunk[0].bucket, registrations: 0, trial: 0, new: 0, renewal: 0, upgrade: 0, revenue: 0 },
+      ),
+    );
+  }
+  return out;
+}
+
+/** Infobulle d'une courbe cumulée : valeur de la tranche et cumul depuis le début de la période. */
+function CumulTooltip({
+  active,
+  payload,
+  label,
+  unit,
+  field,
+  name,
+  money,
+}: {
+  active?: boolean;
+  payload?: { payload?: Record<string, number> }[];
+  label?: string;
+  unit: PlatformStats['unit'];
+  field: string;
+  name: string;
+  money?: boolean;
+}) {
+  const row = payload?.[0]?.payload;
+  if (!active || !row || !label) return null;
+  const fmt = (n: number) => (money ? formatCurrencyFCFA(n) : formatNumber(n));
+  return (
+    <div className="min-w-40 space-y-1 rounded-2xl bg-overlay px-3 py-2 text-xs text-overlay-foreground shadow-overlay">
+      <p className="font-medium">{bucketLabel(label, unit, true)}</p>
+      <p className="flex justify-between gap-3 text-muted">
+        {name} <span className="font-medium tabular-nums text-foreground">{fmt(Number(row[field] || 0))}</span>
+      </p>
+      <p className="flex justify-between gap-3 text-muted">
+        Cumul <span className="font-medium tabular-nums text-foreground">{fmt(Number(row.cumul || 0))}</span>
+      </p>
+    </div>
+  );
+}
+
+/** Courbe douce (une série) : trait de 2 px, dégradé léger, point au survol. */
+function SoftAreaChart({
+  data,
+  dataKey,
+  name,
+  color,
+  palette,
+  xProps,
+  yProps,
+  tooltip,
+}: {
+  data: StatsBucket[];
+  dataKey: keyof Omit<StatsBucket, 'bucket'>;
+  name: string;
+  color: string;
+  palette: (typeof PALETTE)['light'];
+  xProps: Record<string, unknown>;
+  yProps: Record<string, unknown>;
+  tooltip: React.ReactElement;
+}) {
+  const id = useId().replace(/:/g, '');
+  // Courbe cumulée : croissance régulière, lisible même avec peu de valeurs par jour
+  const cumulative = data.reduce<(StatsBucket & { cumul: number })[]>((acc, b) => {
+    const prev = acc.length ? acc[acc.length - 1].cumul : 0;
+    acc.push({ ...b, cumul: prev + Number(b[dataKey] || 0) });
+    return acc;
+  }, []);
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <AreaChart data={cumulative} margin={{ top: 12, right: 8, left: -8, bottom: 0 }}>
+        <defs>
+          <linearGradient id={`fill-${id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.28} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke={palette.grid} strokeDasharray="4 4" />
+        <XAxis {...xProps} />
+        <YAxis {...yProps} />
+        <Tooltip cursor={{ stroke: palette.text, strokeOpacity: 0.35, strokeDasharray: '4 4' }} content={tooltip} />
+        <Area
+          type="monotone"
+          dataKey="cumul"
+          name={name}
+          stroke={color}
+          strokeWidth={2}
+          fill={`url(#fill-${id})`}
+          dot={false}
+          activeDot={{ r: 5, fill: color, stroke: palette.surface, strokeWidth: 2 }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
 interface PlatformStatsSectionProps {
   stats: PlatformStats | null;
   range: StatsRange;
@@ -381,8 +522,7 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
     tick: axisTick,
     minTickGap: 16,
   };
-  const yProps = { axisLine: false, tickLine: false, tick: axisTick, width: 36, allowDecimals: false };
-  const cursor = { fill: dark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)' };
+  const yProps = { axisLine: false, tickLine: false, tick: axisTick, width: 36, allowDecimals: false, tickCount: 4 };
   const rows = (fn: (b: StatsBucket) => (string | number)[]) => series.map((b) => [bucketLabel(b.bucket, unit, true), ...fn(b)]);
   const totalActive = stats?.active_licenses ?? 0;
   const firstLoad = !stats;
@@ -390,6 +530,11 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
   const licenceTotals = Object.fromEntries(LICENSE_SERIES.map((s) => [s.key, sumOf(s.key)])) as Record<(typeof LICENSE_SERIES)[number]['key'], number>;
   const licencesTotal = Object.values(licenceTotals).reduce((a, b) => a + b, 0);
   const licencesPrevious = (stats?.previous.paid_licenses ?? 0) + (stats?.previous.trials ?? 0);
+  // Abonnements : par semaine quand la période compte trop de jours (barres épaisses)
+  const weekly = unit === 'day' && series.length > 14;
+  const licSeries = weekly ? groupByWeek(series) : series;
+  const licUnit: PlatformStats['unit'] = weekly ? 'week' : unit;
+  const licX = { ...xProps, tickFormatter: (v: string) => bucketLabel(v, licUnit), minTickGap: 4 };
 
   return (
     <section className="space-y-4" aria-labelledby="stats-title">
@@ -464,7 +609,7 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
             title="Évolution des inscriptions"
             headline={formatNumber(stats?.totals.registrations ?? 0)}
             delta={stats && <DeltaChip current={stats.totals.registrations} previous={stats.previous.registrations} />}
-            subtitle={`Comptes créés sur ${rangeLabel}, comparés à la période précédente`}
+            subtitle={`Cumul des comptes créés sur ${rangeLabel}, comparé à la période précédente`}
             loading={firstLoad}
             empty={stats && stats.totals.registrations === 0 ? `Aucune inscription sur ${rangeLabel}` : null}
             footer={peak(series, (b) => b.registrations, unit, (n) => `${formatNumber(n)} inscription${n > 1 ? 's' : ''}`)}
@@ -477,41 +622,42 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
               />
             }
           >
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={series} margin={{ top: 8, right: 4, left: -8, bottom: 0 }} barCategoryGap="20%">
-                <CartesianGrid vertical={false} stroke={c.grid} />
-                <XAxis {...xProps} />
-                <YAxis {...yProps} />
-                <Tooltip cursor={cursor} content={<ChartTooltip unit={unit} />} />
-                <Bar dataKey="registrations" name="Inscriptions" fill={c.s1} radius={[4, 4, 0, 0]} maxBarSize={36} />
-              </BarChart>
-            </ResponsiveContainer>
+            <SoftAreaChart
+              data={series}
+              dataKey="registrations"
+              name="Inscriptions"
+              color={c.s1}
+              palette={c}
+              xProps={xProps}
+              yProps={yProps}
+              tooltip={<CumulTooltip unit={unit} field="registrations" name="Inscriptions" />}
+            />
           </StatsChartCard>
 
           <StatsChartCard
             title="Évolution des abonnements"
             headline={formatNumber(licencesTotal)}
             delta={stats && <DeltaChip current={licencesTotal} previous={licencesPrevious} />}
-            subtitle={`Licences activées par type sur ${rangeLabel}, essais compris`}
+            subtitle={`Licences activées par type sur ${rangeLabel}${weekly ? ', par semaine' : ''}, essais compris`}
             loading={firstLoad}
             empty={stats && licencesTotal === 0 ? `Aucune licence activée sur ${rangeLabel}` : null}
             legend={LICENSE_SERIES.map((s) => ({ label: s.label, color: c[s.color], value: formatNumber(licenceTotals[s.key]) }))}
-            footer={peak(series, (b) => b.new + b.renewal + b.upgrade + b.trial, unit, (n) => `${formatNumber(n)} licence${n > 1 ? 's' : ''}`)}
+            footer={peak(licSeries, (b) => b.new + b.renewal + b.upgrade + b.trial, licUnit, (n) => `${formatNumber(n)} licence${n > 1 ? 's' : ''}`)}
             table={
               <DataTable
                 label="Licences activées par période et par type"
                 headers={['Période', 'Nouvelles', 'Renouv.', 'Changements', 'Essais']}
-                rows={rows((b) => [b.new, b.renewal, b.upgrade, b.trial])}
+                rows={licSeries.map((b) => [bucketLabel(b.bucket, licUnit, true), b.new, b.renewal, b.upgrade, b.trial])}
                 total={['Total', ...LICENSE_SERIES.map((s) => formatNumber(licenceTotals[s.key]))]}
               />
             }
           >
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={series} margin={{ top: 8, right: 4, left: -8, bottom: 0 }} barCategoryGap="20%">
-                <CartesianGrid vertical={false} stroke={c.grid} />
-                <XAxis {...xProps} />
+              <BarChart data={licSeries} margin={{ top: 12, right: 8, left: -8, bottom: 0 }} barCategoryGap="28%">
+                <CartesianGrid vertical={false} stroke={c.grid} strokeDasharray="4 4" />
+                <XAxis {...licX} />
                 <YAxis {...yProps} />
-                <Tooltip cursor={cursor} content={<ChartTooltip unit={unit} />} />
+                <Tooltip cursor={false} content={<ChartTooltip unit={licUnit} />} />
                 {LICENSE_SERIES.map((s, i) => (
                   <Bar
                     key={s.key}
@@ -519,11 +665,12 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
                     name={s.label}
                     stackId="licences"
                     fill={c[s.color]}
-                    // Espace de 2 px entre segments empilés (couleur du fond)
-                    stroke={c.surface}
-                    strokeWidth={2}
-                    radius={i === LICENSE_SERIES.length - 1 ? [4, 4, 0, 0] : 0}
-                    maxBarSize={36}
+                    maxBarSize={44}
+                    // Rail gris clair derrière chaque barre
+                    background={i === 0 ? { fill: c.track, radius: 6 } : undefined}
+                    shape={(props: unknown) => (
+                      <StackSegment {...(props as React.ComponentProps<typeof StackSegment>)} keys={LICENSE_SERIES.map((l) => l.key)} />
+                    )}
                   />
                 ))}
               </BarChart>
@@ -534,7 +681,7 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
             title="Évolution des revenus"
             headline={formatCurrencyFCFA(stats?.totals.revenue ?? 0)}
             delta={stats && <DeltaChip current={stats.totals.revenue} previous={stats.previous.revenue} />}
-            subtitle={`Factures payées sur ${rangeLabel}, à la date du paiement`}
+            subtitle={`Cumul des factures payées sur ${rangeLabel}, à la date du paiement`}
             loading={firstLoad}
             empty={stats && stats.totals.revenue === 0 ? `Aucun encaissement sur ${rangeLabel}` : null}
             footer={peak(series, (b) => b.revenue, unit, (n) => formatCurrencyFCFA(n))}
@@ -547,15 +694,16 @@ export function PlatformStatsSection({ stats, range, onRangeChange, loading }: P
               />
             }
           >
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={series} margin={{ top: 8, right: 4, left: 0, bottom: 0 }} barCategoryGap="20%">
-                <CartesianGrid vertical={false} stroke={c.grid} />
-                <XAxis {...xProps} />
-                <YAxis {...yProps} width={44} tickFormatter={compactFCFA} />
-                <Tooltip cursor={cursor} content={<ChartTooltip unit={unit} money />} />
-                <Bar dataKey="revenue" name="Revenus" fill={c.s1} radius={[4, 4, 0, 0]} maxBarSize={36} />
-              </BarChart>
-            </ResponsiveContainer>
+            <SoftAreaChart
+              data={series}
+              dataKey="revenue"
+              name="Revenus"
+              color={c.s3}
+              palette={c}
+              xProps={xProps}
+              yProps={{ ...yProps, width: 44, tickFormatter: compactFCFA }}
+              tooltip={<CumulTooltip unit={unit} field="revenue" name="Revenus" money />}
+            />
           </StatsChartCard>
 
           <StatsChartCard
