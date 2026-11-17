@@ -114,7 +114,7 @@ export default function ChangeRequestsPage() {
   const canReview = state?.canReview ?? false;
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto">
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
