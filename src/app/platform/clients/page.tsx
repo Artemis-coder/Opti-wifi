@@ -6,14 +6,11 @@ import { useSearchParams } from "next/navigation";
 import {
   Building2,
   Search,
-  Filter,
   Loader2,
   MoreHorizontal,
   CheckCircle,
   PauseCircle,
-  Ban,
   Clock,
-  Zap,
   AlertCircle,
   Trash2,
   Download,
@@ -26,7 +23,6 @@ import { StatTile } from "@/components/ui/StatTile";
 import { KpiGrid } from "@/components/ui/KpiGrid";
 import { Button, buttonClassName } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { formatCurrencyFCFA, formatDateFR } from "@/lib/utils/format";
 import { OrganizationStatus } from "@/types/platform";
 import { ResponsiveTable } from "@/components/ui/ResponsiveTable";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
@@ -108,17 +104,6 @@ const OFFER_FILTERS: { value: string; label: string }[] = [
   { value: "suspended", label: "Suspendue" },
   { value: "none", label: "Aucune offre" },
 ];
-
-const STATUS_ICONS: Record<OrganizationStatus, React.ElementType> = {
-  pending_approval: AlertCircle,
-  trial: Clock,
-  active: CheckCircle,
-  expiring: Clock,
-  expired: Ban,
-  suspended: PauseCircle,
-  cancelled: Ban,
-  archived: AlertCircle,
-};
 
 export default function PlatformClientsPage() {
   return (
@@ -259,7 +244,7 @@ function PlatformClientsContent() {
   const c = counts;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -417,43 +402,50 @@ function PlatformClientsContent() {
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
-            <table className="w-full text-left text-xs whitespace-nowrap">
+            {/* Largeur fixe pour les colonnes courtes ; client, email, responsable et offre se
+                partagent le reste et sont coupés (« … », texte complet au survol) :
+                tout tient dans la largeur de l'écran, une ligne par cellule. */}
+            <table className="w-full min-w-[920px] table-fixed text-left text-xs whitespace-nowrap">
+              <colgroup>
+                <col />
+                <col className="w-[134px]" />
+                <col />
+                <col />
+                <col />
+                <col className="w-[100px]" />
+                <col className="w-[124px]" />
+                <col className="w-[80px]" />
+                <col className="w-[84px]" />
+                <col className="w-[108px]" />
+              </colgroup>
               <thead className="bg-default text-muted font-semibold">
                 <tr>
-                  <th className="px-4 py-3">Client</th>
-                  <th className="px-4 py-3">Téléphone</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Responsable</th>
-                  <th className="px-4 py-3">Offre</th>
-                  <th className="px-4 py-3">Statut</th>
-                  <th className="px-4 py-3">Statut de l&apos;offre</th>
-                  <th className="px-4 py-3">Création</th>
-                  <th className="px-4 py-3">Expiration</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-2.5 py-3 truncate">Client</th>
+                  <th className="px-2.5 py-3 truncate">Téléphone</th>
+                  <th className="px-2.5 py-3 truncate">Email</th>
+                  <th className="px-2.5 py-3 truncate">Responsable</th>
+                  <th className="px-2.5 py-3 truncate">Offre</th>
+                  <th className="px-2.5 py-3 truncate">Statut</th>
+                  <th className="px-2.5 py-3 truncate">Statut de l&apos;offre</th>
+                  <th className="px-2.5 py-3 truncate">Création</th>
+                  <th className="px-2.5 py-3 truncate">Expiration</th>
+                  <th className="px-2.5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-separator font-medium">
                 {clients.map((client: ClientOrg) => {
-                  const Icon =
-                    STATUS_ICONS[client.status as OrganizationStatus] ||
-                    Building2;
                   const isActionDisabled = actionLoading === client.id;
                   return (
                     <tr
                       key={client.id}
                       className="hover:bg-surface-secondary transition"
                     >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <p className="font-semibold text-foreground">
-                            {client.name}
-                          </p>
-                        </div>
+                      <td className="px-2.5 py-3">
+                        <p className="font-semibold text-foreground truncate" title={client.name}>
+                          {client.name}
+                        </p>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-2.5 py-3">
                         {client.phone ? (
                           <a
                             href={`tel:${client.phone.replace(/\s/g, "")}`}
@@ -466,11 +458,12 @@ function PlatformClientsContent() {
                           <span className="text-muted">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-2.5 py-3">
                         {client.email ? (
                           <a
                             href={`mailto:${client.email}`}
-                            className="text-foreground hover:text-accent"
+                            className="block truncate text-foreground hover:text-accent"
+                            title={client.email}
                           >
                             {client.email}
                           </a>
@@ -478,29 +471,29 @@ function PlatformClientsContent() {
                           <span className="text-muted">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-muted">
-                        {client.contact_name || "—"}
+                      <td className="px-2.5 py-3 text-muted">
+                        <p className="truncate" title={client.contact_name || undefined}>
+                          {client.contact_name || "—"}
+                        </p>
                       </td>
-                      <td className="px-4 py-3">
-                        <Badge variant="info" className="text-xs">
+                      <td className="px-2.5 py-3" title={client.plan_name || "Aucune offre"}>
+                        <Badge variant="info" className="text-xs max-w-full truncate">
                           {client.plan_name || "Aucune offre"}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-2.5 py-3">
                         {clientBadge(client.client_status)}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-2.5 py-3">
                         {offerBadge(client.offer_status)}
                       </td>
-                      <td className="px-4 py-3 text-muted">
-                        {formatDateFR(client.created_at)}
+                      <td className="px-2.5 py-3 text-muted tabular-nums">
+                        {shortDate(client.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-muted">
-                        {client.offer_end_date
-                          ? formatDateFR(client.offer_end_date)
-                          : "—"}
+                      <td className="px-2.5 py-3 text-muted tabular-nums">
+                        {client.offer_end_date ? shortDate(client.offer_end_date) : "—"}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2.5 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {client.status === "pending_approval" && (
                             <Button
@@ -629,6 +622,13 @@ function PlatformClientsContent() {
       />
     </div>
   );
+}
+
+/** Date courte sur une ligne : 10/11/26. */
+function shortDate(d: string): string {
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit", timeZone: "Africa/Abidjan" });
 }
 
 /** Statut du client correspondant au statut du compte renvoyé après une action. */
