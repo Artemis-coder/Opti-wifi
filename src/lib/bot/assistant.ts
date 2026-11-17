@@ -10,6 +10,7 @@ import { sendTelegramMessageDetailed } from '@/lib/telegram';
 import { isVoiceReplyConfigured, sendVoiceReply, splitSpokenSummary, VOICE_INSTRUCTION } from '@/lib/bot/voice-reply';
 import { collectionAnomalies, morningReport, riskClients, weeklyReport } from '@/lib/business-reports';
 import { paymentStatusView } from '@/lib/telegram-payment';
+import { miniAppUrl } from '@/lib/telegram-webapp';
 import { INCIDENT_STATUS_LABEL, listIncidents, securitySummary, SECURITY_EVENTS, SEVERITY_LABEL } from '@/lib/security-events';
 import {
   activateLicense,
@@ -63,10 +64,22 @@ function getClient(): Anthropic {
 
 export const BUSINESS_BUTTON = '📊 Business OptiSpace';
 
-/** Accueil : trois univers — IA de développement (Claude Code), business, paiement en ligne. */
+export const MINI_APP_BUTTON = '📱 Ouvrir OptiSpace';
+const APP_URL = miniAppUrl();
+
+/**
+ * Accueil : la Mini App (back-office dans Telegram), puis trois univers — IA de développement
+ * (Claude Code), business, paiement en ligne. Le bouton Mini App n'existe qu'en HTTPS.
+ */
 export const HOME_MENU = {
   reply_markup: {
-    keyboard: [[{ text: '🤖 IA — Claude Code' }], [{ text: BUSINESS_BUTTON }], [{ text: '💳 Paiement en ligne' }], [{ text: '❓ Aide' }]],
+    keyboard: [
+      ...(APP_URL ? [[{ text: MINI_APP_BUTTON, web_app: { url: APP_URL } }]] : []),
+      [{ text: '🤖 IA — Claude Code' }],
+      [{ text: BUSINESS_BUTTON }],
+      [{ text: '💳 Paiement en ligne' }],
+      [{ text: '❓ Aide' }],
+    ],
     resize_keyboard: true,
     is_persistent: true,
     input_field_placeholder: 'Choisissez un menu ou posez une question…',
@@ -143,6 +156,18 @@ export async function sendBotMessage(chatId: string, html: string, replyMarkup: 
   }
 }
 
+/** Bouton « OptiSpace » à gauche de la zone de saisie : ouvre la Mini App. */
+export async function setMiniAppMenuButton(chatId: string) {
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  if (!token || !APP_URL) return;
+  await fetch(`https://api.telegram.org/bot${token}/setChatMenuButton`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: Number(chatId), menu_button: { type: 'web_app', text: 'OptiSpace', web_app: { url: APP_URL } } }),
+    signal: AbortSignal.timeout(5000),
+  }).catch(() => {});
+}
+
 export async function sendTyping(chatId: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) return;
@@ -161,7 +186,7 @@ type PendingAction =
   | { kind: 'reject_license_request'; requestId: string; note?: string | null }
   | { kind: 'organization_status'; organizationId: string; action: string; reason?: string | null };
 
-async function getBotPlatformUserId(): Promise<string | null> {
+export async function getBotPlatformUserId(): Promise<string | null> {
   const email = process.env.TELEGRAM_ADMIN_EMAIL?.trim().toLowerCase();
   const { rows } = await query(
     `SELECT id FROM platform_users WHERE role = 'super_admin' AND is_active = true
@@ -935,6 +960,8 @@ async function answer(
 }
 
 export const HELP_TEXT = `🤖 <b>Assistant OptiSpace</b>
+
+<b>📱 Ouvrir OptiSpace</b> : le back-office dans Telegram (chiffres clés, demandes à approuver, clients, licences à renouveler).
 
 Écrivez ou dictez (message vocal) ce que vous voulez savoir ou faire, par exemple :
 • « Quelles demandes de licence sont en attente ? »
