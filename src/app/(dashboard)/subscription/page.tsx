@@ -10,6 +10,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
 import { InvoiceList } from '@/components/invoices/InvoiceList';
+import { PaymentHistory } from '@/components/payments/PaymentHistory';
 import { LicenseRequestDialog, type RequestedPlan } from '@/components/payments/LicenseRequestDialog';
 
 interface SubscriptionPlan {
@@ -471,6 +472,8 @@ export default function SubscriptionPage() {
       )}
 
       <InvoiceList />
+
+      <PaymentHistory />
 
       <div>
         <h2 id="forfaits" className="text-lg font-semibold text-foreground mb-4 scroll-mt-24">Tous les forfaits disponibles</h2>
