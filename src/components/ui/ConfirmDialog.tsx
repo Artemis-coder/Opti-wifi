@@ -29,6 +29,16 @@ export function confirmAction(message: string, options: ConfirmOptions = {}): Pr
   return new Promise((resolve) => show?.({ message, resolve, ...options }));
 }
 
+/** Demande avant de déconnecter l'utilisateur (tous les boutons « Déconnexion »). */
+export function confirmLogout(): Promise<boolean> {
+  return confirmAction('Voulez-vous vraiment vous déconnecter ?', {
+    title: 'Déconnexion',
+    confirmLabel: 'Se déconnecter',
+    cancelLabel: 'Annuler',
+    danger: true,
+  });
+}
+
 /** À monter une seule fois (layout racine). */
 export function ConfirmHost() {
   const [request, setRequest] = useState<PendingConfirm | null>(null);

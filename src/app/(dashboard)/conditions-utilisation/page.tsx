@@ -35,7 +35,7 @@ export default function TermsPage() {
   const accepted = state?.acceptedAt;
 
   return (
-    <div className="space-y-5 max-w-3xl mx-auto">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
           <FileText className="size-6 text-muted" /> Conditions d’utilisation

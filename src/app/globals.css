@@ -165,6 +165,29 @@
 
 @layer components {
 
+  /* Tableaux ajustés à l'écran (TableFitter, à partir de 768 px) : une ligne par cellule,
+     texte trop long coupé par « … » (texte complet au survol). */
+  @media (min-width: 768px) {
+    .fit-table th,
+    .fit-table td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fit-table td :where(div, p, a, span) {
+      min-width: 0;
+      max-width: 100%;
+    }
+    .fit-table td :where(p, a, div:not([class*="flex"])) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fit-table td :where(div[class*="flex"]) > :where(p, a, span, div) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
   /* Tableaux sur mobile (ResponsiveTable) : chaque ligne devient une carte,
      chaque cellule affiche le nom de sa colonne. Au-delà de 768 px, tableau classique. */
   @media (max-width: 767px) {

@@ -358,7 +358,7 @@ export default function ReportsPage() {
   const gapClass = (v: number) => (v < 0 ? 'text-danger font-semibold' : 'text-muted ');
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
+    <div className="space-y-4">
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>

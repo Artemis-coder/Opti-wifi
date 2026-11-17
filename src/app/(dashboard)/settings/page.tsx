@@ -313,7 +313,7 @@ function SettingsContent() {
   const currency = organization?.currency || profile?.devise || 'XOF';
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Paramètres</h1>
         <p className="text-xs text-muted">Votre profil, votre organisation, la sécurité de votre compte et vos notifications.</p>

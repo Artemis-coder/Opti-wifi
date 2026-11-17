@@ -1,32 +1,38 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Building2,
   Search,
-  Filter,
   Loader2,
   MoreHorizontal,
   CheckCircle,
   PauseCircle,
-  Ban,
   Clock,
-  Zap,
   AlertCircle,
-  Activity,
   Trash2,
-} from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { StatTile } from '@/components/ui/StatTile';
-import { KpiGrid } from '@/components/ui/KpiGrid';
-import { Button, buttonClassName } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { formatCurrencyFCFA, formatDateFR } from '@/lib/utils/format';
-import { OrganizationStatus } from '@/types/platform';
-import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
-import { confirmAction } from '@/components/ui/ConfirmDialog';
+  Download,
+  Hourglass,
+  BadgeCheck,
+  CalendarX,
+} from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { StatTile } from "@/components/ui/StatTile";
+import { KpiGrid } from "@/components/ui/KpiGrid";
+import { Button, buttonClassName } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { OrganizationStatus } from "@/types/platform";
+import { ResponsiveTable } from "@/components/ui/ResponsiveTable";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { ExportClientsModal } from "./ExportClientsModal";
+import {
+  CLIENT_STATUS_LABELS,
+  OFFER_STATUS_LABELS,
+  type ClientStatus,
+  type OfferStatus,
+} from "@/lib/platform-client-status";
 
 interface ClientOrg {
   id: string;
@@ -41,40 +47,62 @@ interface ClientOrg {
   subscription_status?: string | null;
   subscription_end_date?: string | null;
   subscription_trial_end?: string | null;
+  client_status: ClientStatus;
+  offer_status: OfferStatus;
+  offer_end_date?: string | null;
 }
 
-const STATUS_CONFIG: Record<OrganizationStatus, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
-  pending_approval: { label: 'En attente', color: 'warning' },
-  trial: { label: 'Essai', color: 'info' },
-  active: { label: 'Actif', color: 'success' },
-  expiring: { label: 'Expire bientôt', color: 'warning' },
-  expired: { label: 'Expiré', color: 'danger' },
-  suspended: { label: 'Suspendu', color: 'danger' },
-  cancelled: { label: 'Refusé', color: 'neutral' },
-  archived: { label: 'Supprimé', color: 'neutral' },
+interface ClientCounts {
+  total: number;
+  client_active: number;
+  client_pending: number;
+  client_suspended: number;
+  offer_active: number;
+  offer_trial: number;
+  offer_expiring: number;
+  offer_expired: number;
+  new_7d: number;
+}
+
+type Tone = "success" | "warning" | "danger" | "info" | "neutral";
+
+const CLIENT_TONES: Record<ClientStatus, Tone> = {
+  active: "success",
+  pending: "warning",
+  suspended: "danger",
+  refused: "neutral",
+  deleted: "neutral",
 };
 
-const STATUS_ICONS: Record<OrganizationStatus, React.ElementType> = {
-  pending_approval: AlertCircle,
-  trial: Clock,
-  active: CheckCircle,
-  expiring: Clock,
-  expired: Ban,
-  suspended: PauseCircle,
-  cancelled: Ban,
-  archived: AlertCircle,
+const OFFER_TONES: Record<OfferStatus, Tone> = {
+  active: "success",
+  trial: "info",
+  expiring: "warning",
+  expired: "danger",
+  unpaid: "danger",
+  suspended: "danger",
+  cancelled: "neutral",
+  none: "neutral",
 };
 
-const STATUS_FILTERS: { value: string; label: string }[] = [
-  { value: 'all', label: 'Tous les statuts' },
-  { value: 'pending_approval', label: 'En attente' },
-  { value: 'active', label: 'Actifs' },
-  { value: 'trial', label: 'Essai' },
-  { value: 'expiring', label: 'Expire bientôt' },
-  { value: 'expired', label: 'Expirés' },
-  { value: 'suspended', label: 'Suspendus' },
-  { value: 'archived', label: 'Supprimés' },
-  { value: 'cancelled', label: 'Refusés' },
+const CLIENT_FILTERS: { value: string; label: string }[] = [
+  { value: "all", label: "Tous" },
+  { value: "active", label: "Actifs" },
+  { value: "pending", label: "En attente" },
+  { value: "suspended", label: "Suspendus" },
+  { value: "refused", label: "Refusés" },
+  { value: "deleted", label: "Supprimés" },
+];
+
+const OFFER_FILTERS: { value: string; label: string }[] = [
+  { value: "all", label: "Toutes" },
+  { value: "active", label: "Active" },
+  { value: "trial", label: "Essai" },
+  { value: "expiring", label: "Expire bientôt" },
+  { value: "expired", label: "Expirée" },
+  { value: "unpaid", label: "Impayée" },
+  { value: "suspended", label: "Suspendue" },
+  { value: "none", label: "Aucune offre" },
 ];
 
 export default function PlatformClientsPage() {
@@ -87,7 +115,7 @@ export default function PlatformClientsPage() {
 
 function PlatformClientsContent() {
   // ?q= : recherche lancée depuis l'en-tête du back-office
-  const urlQuery = useSearchParams().get('q') ?? '';
+  const urlQuery = useSearchParams().get("q") ?? "";
   const [clients, setClients] = useState<ClientOrg[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(urlQuery);
@@ -96,11 +124,12 @@ function PlatformClientsContent() {
     setPrevUrlQuery(urlQuery);
     setSearch(urlQuery);
   }
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [clientFilter, setClientFilter] = useState("all");
+  const [offerFilter, setOfferFilter] = useState("all");
+  const [counts, setCounts] = useState<ClientCounts | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionOrgId, setActionOrgId] = useState<string | null>(null);
-
-  const [newClientsCount, setNewClientsCount] = useState(0);
 
   useEffect(() => {
     async function fetchClients() {
@@ -108,44 +137,55 @@ function PlatformClientsContent() {
       try {
         const params = new URLSearchParams({
           search,
-          status: statusFilter,
-          limit: '100',
+          client: clientFilter === "all" ? "" : clientFilter,
+          offer: offerFilter === "all" ? "" : offerFilter,
+          limit: "100",
+          counts: "1",
         });
         const res = await fetch(`/api/platform/clients?${params}`);
         const result = await res.json();
         if (res.ok) {
-          const list = result.data || [];
-          setClients(list);
-          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-          setNewClientsCount(list.filter((c: ClientOrg) => new Date(c.created_at) >= weekAgo).length);
+          setClients(result.data || []);
+          if (result.counts) setCounts(result.counts);
         }
       } catch (err) {
-        console.warn('Clients fetch error:', err);
+        console.warn("Clients fetch error:", err);
       } finally {
         setLoading(false);
       }
     }
 
     fetchClients();
-  }, [search, statusFilter]);
+  }, [search, clientFilter, offerFilter]);
 
-  const handleStatusAction = async (orgId: string, action: string, orgName: string) => {
+  const handleStatusAction = async (
+    orgId: string,
+    action: string,
+    orgName: string,
+  ) => {
     const actionLabels: Record<string, string> = {
-      approve: 'valider',
+      approve: "valider",
       activate: "activer l'espace de",
       suspend: "suspendre l'espace de",
       reactivate: "réactiver l'espace de",
-      cancel: 'refuser',
-      archive: 'supprimer',
+      cancel: "refuser",
+      archive: "supprimer",
     };
     const label = actionLabels[action] || action;
     const consequence: Record<string, string> = {
-      suspend: "\n\nTous ses membres perdent immédiatement l'accès. Vous pourrez le réactiver.",
-      archive: "\n\nTous ses membres perdent immédiatement l'accès. Les données sont conservées et l'organisation peut être réactivée.",
+      suspend:
+        "\n\nTous ses membres perdent immédiatement l'accès. Vous pourrez le réactiver.",
+      archive:
+        "\n\nTous ses membres perdent immédiatement l'accès. Les données sont conservées et l'organisation peut être réactivée.",
     };
 
-    const danger = ['suspend', 'archive', 'cancel'].includes(action);
-    if (!(await confirmAction(`Voulez-vous vraiment ${label} « ${orgName} » ?${consequence[action] || ''}`, { danger }))) {
+    const danger = ["suspend", "archive", "cancel"].includes(action);
+    if (
+      !(await confirmAction(
+        `Voulez-vous vraiment ${label} « ${orgName} » ?${consequence[action] || ""}`,
+        { danger },
+      ))
+    ) {
       return;
     }
 
@@ -153,10 +193,14 @@ function PlatformClientsContent() {
     setActionOrgId(orgId);
 
     try {
-      const res = await fetch('/api/platform/clients/action', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizationId: orgId, action, reason: 'Super admin action' }),
+      const res = await fetch("/api/platform/clients/action", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId: orgId,
+          action,
+          reason: "Super admin action",
+        }),
       });
 
       const result = await res.json();
@@ -164,93 +208,170 @@ function PlatformClientsContent() {
         setClients((prev) =>
           prev.map((c: ClientOrg) =>
             c.id === orgId
-              ? { ...c, status: result.new_status }
-              : c
-          )
+              ? {
+                  ...c,
+                  status: result.new_status,
+                  client_status: toClientStatus(result.new_status),
+                }
+              : c,
+          ),
         );
       }
     } catch (err) {
-      console.warn('Action error:', err);
+      console.warn("Action error:", err);
     } finally {
       setActionLoading(null);
       setActionOrgId(null);
     }
   };
 
-  const getStatusBadge = (status: OrganizationStatus) => {
-    const config = STATUS_CONFIG[status] || STATUS_CONFIG.trial;
-    return (
-      <Badge variant={config.color} className="text-xs font-medium">
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const getSubStatusBadge = (status?: string | null) => {
-    if (!status || status === 'none') return <Badge variant="neutral">Aucun</Badge>;
-    const subStatusMap: Record<string, { label: string; color: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
-      active: { label: 'Actif', color: 'success' },
-      trialing: { label: 'Essai', color: 'info' },
-      past_due: { label: 'En retard', color: 'warning' },
-      unpaid: { label: 'Impayé', color: 'danger' },
-      cancelled: { label: 'Annulé', color: 'neutral' },
-      expired: { label: 'Expiré', color: 'danger' },
-      suspended: { label: 'Suspendu', color: 'danger' },
-    };
-    const s = subStatusMap[status] || { label: status, color: 'neutral' as const };
-    return <Badge variant={s.color} className="text-xs font-medium">{s.label}</Badge>;
-  };
-
-  const activeCount = clients.filter((c: ClientOrg) => c.status === 'active').length;
-  const suspendedCount = clients.filter((c: ClientOrg) => c.status === 'suspended').length;
-  const pendingCount = clients.filter((c: ClientOrg) => c.status === 'pending_approval').length;
-
+  const clientBadge = (st: ClientStatus) => (
+    <Badge
+      variant={CLIENT_TONES[st] || "neutral"}
+      className="text-xs font-medium"
+    >
+      {CLIENT_STATUS_LABELS[st] || st}
+    </Badge>
+  );
+  const offerBadge = (st: OfferStatus) => (
+    <Badge
+      variant={OFFER_TONES[st] || "neutral"}
+      className="text-xs font-medium"
+    >
+      {OFFER_STATUS_LABELS[st] || st}
+    </Badge>
+  );
+  const c = counts;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Clients</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Clients
+          </h1>
           <p className="text-xs text-muted">
             Gérez tous les comptes clients de la plateforme SaaS.
           </p>
         </div>
+        <Button
+          variant="outline"
+          icon={Download}
+          onClick={() => setExportOpen(true)}
+        >
+          Exporter
+        </Button>
       </div>
 
-      {/* Chiffres clés */}
-      <KpiGrid cols={{ base: 2, lg: pendingCount > 0 ? 5 : 4 }}>
-        <StatTile label="Total" value={clients.length} icon={Building2} accent="indigo" hint="Clients inscrits" />
-        {pendingCount > 0 && (
-          <StatTile label="En attente" value={pendingCount} icon={AlertCircle} accent="amber" hint="Inscriptions à valider" href="/platform/registrations" />
-        )}
-        <StatTile label="Actifs" value={activeCount} icon={CheckCircle} accent="emerald" hint="Espaces en service" />
-        <StatTile label="Suspendus" value={suspendedCount} icon={PauseCircle} accent="red" hint="Accès coupé" />
-        <StatTile label="Nouveaux (7 j)" value={newClientsCount} icon={Activity} accent="blue" hint="Inscrits cette semaine" />
+      {/* Chiffres clés : statut du client puis statut de l'offre (tous les clients, hors supprimés) */}
+      <KpiGrid cols={{ base: 2, lg: 4 }}>
+        <StatTile
+          label="Total clients"
+          value={c?.total ?? "—"}
+          icon={Building2}
+          accent="indigo"
+          hint={
+            c
+              ? `${c.new_7d} nouveau${c.new_7d > 1 ? "x" : ""} cette semaine`
+              : "Clients inscrits"
+          }
+        />
+        <StatTile
+          label="Clients actifs"
+          value={c?.client_active ?? "—"}
+          icon={CheckCircle}
+          accent="emerald"
+          hint="Compte validé"
+        />
+        <StatTile
+          label="En attente"
+          value={c?.client_pending ?? "—"}
+          icon={AlertCircle}
+          accent="amber"
+          hint="Inscriptions à valider"
+          href="/platform/registrations"
+        />
+        <StatTile
+          label="Suspendus"
+          value={c?.client_suspended ?? "—"}
+          icon={PauseCircle}
+          accent="red"
+          hint="Accès coupé"
+        />
+        <StatTile
+          label="Offre active"
+          value={c?.offer_active ?? "—"}
+          icon={BadgeCheck}
+          accent="emerald"
+          hint="Licence payée en cours"
+        />
+        <StatTile
+          label="En essai"
+          value={c?.offer_trial ?? "—"}
+          icon={Hourglass}
+          accent="blue"
+          hint="Période d'essai en cours"
+        />
+        <StatTile
+          label="Expire bientôt"
+          value={c?.offer_expiring ?? "—"}
+          icon={Clock}
+          accent="amber"
+          hint="Dans les 7 jours"
+        />
+        <StatTile
+          label="Offre expirée"
+          value={c?.offer_expired ?? "—"}
+          icon={CalendarX}
+          accent="red"
+          hint="Essai ou licence terminés"
+        />
       </KpiGrid>
 
       {/* Search + Filter */}
       <Card>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom, email, téléphone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input input--primary w-full pl-10 pr-3"
-            />
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {STATUS_FILTERS.map((f: { value: string; label: string }) => (
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted" />
+          <input
+            type="text"
+            placeholder="Rechercher par nom, email, téléphone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input input--primary w-full pl-10 pr-3"
+          />
+        </div>
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <span className="text-xs font-semibold text-muted whitespace-nowrap w-28 shrink-0">
+              Statut du client
+            </span>
+            {CLIENT_FILTERS.map((f: { value: string; label: string }) => (
               <button
                 key={f.value}
-                onClick={() => setStatusFilter(f.value)}
+                onClick={() => setClientFilter(f.value)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap ${
-                  statusFilter === f.value
-                    ? 'bg-accent text-accent-foreground font-medium'
-                    : 'bg-default text-muted hover:bg-default-hover hover:text-foreground'
+                  clientFilter === f.value
+                    ? "bg-accent text-accent-foreground font-medium"
+                    : "bg-default text-muted hover:bg-default-hover hover:text-foreground"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <span className="text-xs font-semibold text-muted whitespace-nowrap w-28 shrink-0">
+              Statut de l&apos;offre
+            </span>
+            {OFFER_FILTERS.map((f: { value: string; label: string }) => (
+              <button
+                key={f.value}
+                onClick={() => setOfferFilter(f.value)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap ${
+                  offerFilter === f.value
+                    ? "bg-accent text-accent-foreground font-medium"
+                    : "bg-default text-muted hover:bg-default-hover hover:text-foreground"
                 }`}
               >
                 {f.label}
@@ -269,132 +390,218 @@ function PlatformClientsContent() {
       ) : clients.length === 0 ? (
         <Card className="text-center space-y-3 py-8">
           <Building2 className="w-12 h-12 text-muted mx-auto" />
-          <h3 className="text-base font-semibold text-foreground">Aucun client trouvé</h3>
+          <h3 className="text-base font-semibold text-foreground">
+            Aucun client trouvé
+          </h3>
           <p className="text-xs text-muted max-w-sm mx-auto">
-            {search || statusFilter !== 'all'
-              ? 'Aucun résultat pour cette recherche.'
-              : 'La plateforme ne comporte pas encore de clients.'}
+            {search || clientFilter !== "all" || offerFilter !== "all"
+              ? "Aucun résultat pour cette recherche."
+              : "La plateforme ne comporte pas encore de clients."}
           </p>
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <ResponsiveTable>
-            <table className="w-full text-left text-xs">
+            {/* Largeur fixe pour les colonnes courtes ; client, email, responsable et offre se
+                partagent le reste et sont coupés (« … », texte complet au survol) :
+                tout tient dans la largeur de l'écran, une ligne par cellule. */}
+            <table className="w-full min-w-[920px] table-fixed text-left text-xs whitespace-nowrap">
+              <colgroup>
+                <col />
+                <col className="w-[134px]" />
+                <col />
+                <col />
+                <col />
+                <col className="w-[100px]" />
+                <col className="w-[124px]" />
+                <col className="w-[80px]" />
+                <col className="w-[84px]" />
+                <col className="w-[108px]" />
+              </colgroup>
               <thead className="bg-default text-muted font-semibold">
                 <tr>
-                  <th className="px-4 py-3">Client</th>
-                  <th className="px-4 py-3">Téléphone</th>
-                  <th className="px-4 py-3">Responsable</th>
-                  <th className="px-4 py-3">Offre</th>
-                  <th className="px-4 py-3">Statut</th>
-                  <th className="px-4 py-3">Création</th>
-                  <th className="px-4 py-3">Expiration</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-2.5 py-3 truncate">Client</th>
+                  <th className="px-2.5 py-3 truncate">Téléphone</th>
+                  <th className="px-2.5 py-3 truncate">Email</th>
+                  <th className="px-2.5 py-3 truncate">Responsable</th>
+                  <th className="px-2.5 py-3 truncate">Offre</th>
+                  <th className="px-2.5 py-3 truncate">Statut</th>
+                  <th className="px-2.5 py-3 truncate">Statut de l&apos;offre</th>
+                  <th className="px-2.5 py-3 truncate">Création</th>
+                  <th className="px-2.5 py-3 truncate">Expiration</th>
+                  <th className="px-2.5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-separator font-medium">
                 {clients.map((client: ClientOrg) => {
-                  const Icon = STATUS_ICONS[client.status as OrganizationStatus] || Building2;
                   const isActionDisabled = actionLoading === client.id;
                   return (
-                    <tr key={client.id} className="hover:bg-surface-secondary transition">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">{client.name}</p>
-                            {client.email && <p className="text-xs text-muted">{client.email}</p>}
-                          </div>
-                        </div>
+                    <tr
+                      key={client.id}
+                      className="hover:bg-surface-secondary transition"
+                    >
+                      <td className="px-2.5 py-3">
+                        <p className="font-semibold text-foreground truncate" title={client.name}>
+                          {client.name}
+                        </p>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-2.5 py-3">
                         {client.phone ? (
                           <a
-                            href={`tel:${client.phone.replace(/\s/g, '')}`}
+                            href={`tel:${client.phone.replace(/\s/g, "")}`}
                             className="font-semibold text-foreground hover:text-accent tabular-nums"
                             title="Appeler"
-              >
+                          >
                             {client.phone}
                           </a>
                         ) : (
                           <span className="text-muted">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-muted">
-                        {client.contact_name || '—'}
+                      <td className="px-2.5 py-3">
+                        {client.email ? (
+                          <a
+                            href={`mailto:${client.email}`}
+                            className="block truncate text-foreground hover:text-accent"
+                            title={client.email}
+                          >
+                            {client.email}
+                          </a>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
                       </td>
-                      <td className="px-4 py-3">
-                        <Badge variant="info" className="text-xs">
-                          {client.plan_name || 'Aucune offre'}
+                      <td className="px-2.5 py-3 text-muted">
+                        <p className="truncate" title={client.contact_name || undefined}>
+                          {client.contact_name || "—"}
+                        </p>
+                      </td>
+                      <td className="px-2.5 py-3" title={client.plan_name || "Aucune offre"}>
+                        <Badge variant="info" className="text-xs max-w-full truncate">
+                          {client.plan_name || "Aucune offre"}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3">
-                        {/* Statut de l'espace et de la licence côte à côte */}
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          {getStatusBadge(client.status)}
-                          {getSubStatusBadge(client.subscription_status)}
-                        </div>
+                      <td className="px-2.5 py-3">
+                        {clientBadge(client.client_status)}
                       </td>
-                      <td className="px-4 py-3 text-muted">
-                        {formatDateFR(client.created_at)}
+                      <td className="px-2.5 py-3">
+                        {offerBadge(client.offer_status)}
                       </td>
-                      <td className="px-4 py-3 text-muted">
-                        {client.subscription_end_date ? formatDateFR(client.subscription_end_date) : '—'}
+                      <td className="px-2.5 py-3 text-muted tabular-nums">
+                        {shortDate(client.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2.5 py-3 text-muted tabular-nums">
+                        {client.offer_end_date ? shortDate(client.offer_end_date) : "—"}
+                      </td>
+                      <td className="px-2.5 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {client.status === 'pending_approval' && (
+                          {client.status === "pending_approval" && (
                             <Button
                               variant="primary"
                               size="sm"
                               className="bg-success hover:bg-success-hover text-success-foreground flex items-center shadow-xs"
-                              onClick={() => handleStatusAction(client.id, 'approve', client.name)}
+                              onClick={() =>
+                                handleStatusAction(
+                                  client.id,
+                                  "approve",
+                                  client.name,
+                                )
+                              }
                               disabled={!!isActionDisabled}
                               title="Valider et approuver ce client"
-              >
-                              {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                            >
+                              {isActionDisabled ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-3.5 h-3.5" />
+                              )}
                               <span>Valider</span>
                             </Button>
                           )}
-                          {(client.status === 'suspended' || client.status === 'cancelled' || client.status === 'archived') && (
-                            <Button isIconOnly
+                          {(client.status === "suspended" ||
+                            client.status === "cancelled" ||
+                            client.status === "archived") && (
+                            <Button
+                              isIconOnly
                               variant="ghost"
                               size="sm"
                               className="text-success-soft-foreground hover:text-success-soft-foreground"
-                              onClick={() => handleStatusAction(client.id, 'reactivate', client.name)}
+                              onClick={() =>
+                                handleStatusAction(
+                                  client.id,
+                                  "reactivate",
+                                  client.name,
+                                )
+                              }
                               disabled={!!isActionDisabled}
                               title="Réactiver l'espace"
-              >
-                              {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                            >
+                              {isActionDisabled ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-3.5 h-3.5" />
+                              )}
                             </Button>
                           )}
-                          {client.status !== 'suspended' && client.status !== 'cancelled' && client.status !== 'archived' && client.status !== 'pending_approval' && (
-                            <Button isIconOnly
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleStatusAction(client.id, 'suspend', client.name)}
-                              disabled={!!isActionDisabled}
-                              title="Suspendre l'espace"
-              >
-                              {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <PauseCircle className="w-3.5 h-3.5" />}
-                            </Button>
-                          )}
-                          {client.status !== 'archived' && client.status !== 'pending_approval' && (
-                            <Button isIconOnly
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleStatusAction(client.id, 'archive', client.name)}
-                              disabled={!!isActionDisabled}
-                              title="Supprimer l'organisation"
-              >
-                              {isActionDisabled ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                            </Button>
-                          )}
-                          <Link href={`/platform/clients/${client.id}`} className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'text-muted hover:text-foreground', isIconOnly: true})}>
-                              <MoreHorizontal className="w-3.5 h-3.5" />
-                            </Link>
+                          {client.status !== "suspended" &&
+                            client.status !== "cancelled" &&
+                            client.status !== "archived" &&
+                            client.status !== "pending_approval" && (
+                              <Button
+                                isIconOnly
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleStatusAction(
+                                    client.id,
+                                    "suspend",
+                                    client.name,
+                                  )
+                                }
+                                disabled={!!isActionDisabled}
+                                title="Suspendre l'espace"
+                              >
+                                {isActionDisabled ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <PauseCircle className="w-3.5 h-3.5" />
+                                )}
+                              </Button>
+                            )}
+                          {client.status !== "archived" &&
+                            client.status !== "pending_approval" && (
+                              <Button
+                                isIconOnly
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleStatusAction(
+                                    client.id,
+                                    "archive",
+                                    client.name,
+                                  )
+                                }
+                                disabled={!!isActionDisabled}
+                                title="Supprimer l'organisation"
+                              >
+                                {isActionDisabled ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                              </Button>
+                            )}
+                          <Link
+                            href={`/platform/clients/${client.id}`}
+                            className={buttonClassName({
+                              variant: "ghost",
+                              size: "sm",
+                              className: "text-muted hover:text-foreground",
+                              isIconOnly: true,
+                            })}
+                          >
+                            <MoreHorizontal className="w-3.5 h-3.5" />
+                          </Link>
                         </div>
                       </td>
                     </tr>
@@ -405,6 +612,30 @@ function PlatformClientsContent() {
           </ResponsiveTable>
         </Card>
       )}
+
+      <ExportClientsModal
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        initialClient={clientFilter}
+        initialOffer={offerFilter}
+        search={search}
+      />
     </div>
   );
+}
+
+/** Date courte sur une ligne : 10/11/26. */
+function shortDate(d: string): string {
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit", timeZone: "Africa/Abidjan" });
+}
+
+/** Statut du client correspondant au statut du compte renvoyé après une action. */
+function toClientStatus(orgStatus: string): ClientStatus {
+  if (orgStatus === "pending_approval") return "pending";
+  if (orgStatus === "suspended") return "suspended";
+  if (orgStatus === "cancelled") return "refused";
+  if (orgStatus === "archived") return "deleted";
+  return "active";
 }

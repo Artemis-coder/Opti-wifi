@@ -280,7 +280,7 @@ export default function SpaceDashboardPage() {
   }
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {/* En-tête de page */}
       <div className="space-y-3">
         <Link href="/spaces" className={buttonClassName({ variant: 'ghost', size: 'sm', className: '-ml-3'})}>

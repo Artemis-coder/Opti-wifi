@@ -5,6 +5,7 @@ import "./globals.css";
 import { ConnectionStatus } from "@/components/offline/ConnectionStatus";
 import { OfflineSupport } from "@/components/offline/OfflineSupport";
 import { ConfirmHost } from "@/components/ui/ConfirmDialog";
+import { TableFitter } from "@/components/ui/TableFitter";
 import { ErrorReporter } from "@/components/ErrorReporter";
 import { AnalyticsIdentity } from "@/components/AnalyticsIdentity";
 
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <OfflineSupport />
         <AnalyticsIdentity />
         <ConfirmHost />
+        <TableFitter />
         <Toaster closeButton position="top-center" offset={72} />
       </body>
     </html>

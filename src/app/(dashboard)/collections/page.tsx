@@ -89,7 +89,7 @@ export default function CollectionsPage() {
   }, [collections, searchQuery]);
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -175,7 +175,7 @@ export default function CollectionsPage() {
       ) : (
         <Card className="p-0 overflow-hidden border-border">
           {/* Desktop Table View (hidden on mobile, visible from md upwards) */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto" data-fit-table>
             <table className="w-full text-left text-xs">
               <thead className="bg-default text-muted font-semibold">
                 <tr>

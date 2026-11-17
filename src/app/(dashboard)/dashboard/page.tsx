@@ -143,7 +143,7 @@ function AdminDashboard() {
   const gapAlert = !!t && t.gap < 0;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {/* Guide de démarrage d'un nouvel espace */}
       <OnboardingCard />
 

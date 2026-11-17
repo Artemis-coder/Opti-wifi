@@ -205,7 +205,7 @@ function StatsChartCard({
           ))}
         </ul>
       )}
-      {showTable ? <div className="max-h-72 overflow-auto md-scroll">{table}</div> : children}
+      {showTable ? <div className="max-h-72 overflow-auto md-scroll" data-fit-table>{table}</div> : children}
     </Card>
   );
 }

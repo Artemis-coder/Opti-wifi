@@ -229,7 +229,7 @@ export default function SystemStatusPage() {
   const Overall = health ? STATUS[health.overall].icon : Activity;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">État du système</h1>

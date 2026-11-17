@@ -9,6 +9,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { usePlatformAuthStore } from '@/lib/stores/platformAuthStore';
 import { createClient } from '@/lib/supabase/client';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { confirmLogout } from '@/components/ui/ConfirmDialog';
 
 function initials(name: string): string {
   const parts = name.trim().split(/[\s@._-]+/).filter(Boolean);
@@ -52,6 +53,7 @@ export function PlatformHeader() {
   const roleLabel = platformUser?.role === 'super_admin' ? 'Super administrateur' : 'Support';
 
   const handleLogout = async () => {
+    if (!(await confirmLogout())) return;
     await supabase.auth.signOut();
     logout();
     router.push('/login');

@@ -479,7 +479,7 @@ export default function NewCollectionWizard() {
   };
 
   return (
-    <div className="space-y-5 max-w-3xl mx-auto">
+    <div className="space-y-5">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Check, X, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { confirmLogout } from '@/components/ui/ConfirmDialog';
 
 const RULES = [
   { label: 'Au moins 8 caractères', test: (p: string) => p.length >= 8 },
@@ -63,6 +64,7 @@ export default function ChangePasswordPage() {
   }
 
   async function handleLogout() {
+    if (!(await confirmLogout())) return;
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     router.replace('/login');
   }
