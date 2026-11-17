@@ -10,7 +10,7 @@ import { sendTelegramMessageDetailed } from '@/lib/telegram';
 import { isVoiceReplyConfigured, sendVoiceReply, splitSpokenSummary, VOICE_INSTRUCTION } from '@/lib/bot/voice-reply';
 import { collectionAnomalies, morningReport, riskClients, weeklyReport } from '@/lib/business-reports';
 import { paymentStatusView } from '@/lib/telegram-payment';
-import { miniAppUrl } from '@/lib/telegram-webapp';
+import { miniAppSectionUrl, miniAppUrl } from '@/lib/telegram-webapp';
 import { INCIDENT_STATUS_LABEL, listIncidents, securitySummary, SECURITY_EVENTS, SEVERITY_LABEL } from '@/lib/security-events';
 import {
   activateLicense,
@@ -64,25 +64,36 @@ function getClient(): Anthropic {
 
 export const BUSINESS_BUTTON = '📊 Business OptiSpace';
 
-export const MINI_APP_BUTTON = '📱 Ouvrir OptiSpace';
+export const MINI_APP_BUTTON = BUSINESS_BUTTON;
 const APP_URL = miniAppUrl();
 
+/** Les 4 Mini Apps (back-office dans Telegram) : n'existent qu'en HTTPS. */
+const MINI_APPS = {
+  business: miniAppSectionUrl(''),
+  ia: miniAppSectionUrl('ia'),
+  paiements: miniAppSectionUrl('paiements'),
+  systeme: miniAppSectionUrl('systeme'),
+};
+
 /**
- * Accueil : la Mini App (back-office dans Telegram), puis trois univers — IA de développement
- * (Claude Code), business, paiement en ligne. Le bouton Mini App n'existe qu'en HTTPS.
+ * Accueil : 4 Mini Apps — Business OptiSpace, IA — Claude Code, Paiement en ligne et Système —
+ * plus l'aide. Hors HTTPS (développement local), les mêmes univers en boutons de texte.
  */
 export const HOME_MENU = {
   reply_markup: {
-    keyboard: [
-      ...(APP_URL ? [[{ text: MINI_APP_BUTTON, web_app: { url: APP_URL } }]] : []),
-      [{ text: '🤖 IA — Claude Code' }],
-      [{ text: BUSINESS_BUTTON }],
-      [{ text: '💳 Paiement en ligne' }],
-      [{ text: '❓ Aide' }],
-    ],
+    keyboard: APP_URL
+      ? [
+          [{ text: BUSINESS_BUTTON, web_app: { url: MINI_APPS.business } }],
+          [
+            { text: '🤖 IA — Claude Code', web_app: { url: MINI_APPS.ia } },
+            { text: '💳 Paiement en ligne', web_app: { url: MINI_APPS.paiements } },
+          ],
+          [{ text: '🛡️ Système', web_app: { url: MINI_APPS.systeme } }, { text: '❓ Aide' }],
+        ]
+      : [[{ text: '🤖 IA — Claude Code' }], [{ text: BUSINESS_BUTTON }], [{ text: '💳 Paiement en ligne' }], [{ text: '❓ Aide' }]],
     resize_keyboard: true,
     is_persistent: true,
-    input_field_placeholder: 'Choisissez un menu ou posez une question…',
+    input_field_placeholder: 'Ouvrez une application ou posez une question…',
   },
 };
 
@@ -109,7 +120,7 @@ export const MENU_PROMPTS: Record<string, string> = {
   '🧾 Demandes en attente': 'Quelles sont les demandes de licence en attente ? Détaille chacune.',
   '🏢 Clients': 'Liste les clients avec leur forfait, la fin de licence et leur activité.',
   '⏳ Licences à renouveler': 'Quelles licences expirent dans les 30 prochains jours, et lesquelles sont déjà expirées ?',
-  '💰 Encaissements du mois': 'Donne le détail des encaissements de ce mois, par client et par point de vente.',
+  '💰 Encaissements du mois': "Donne le chiffre d'affaires de licences encaissé ce mois (comme le tableau de bord), puis le détail des collectes des clients de ce mois par client et par point de vente.",
   '🖥️ Statut technique': 'Quel est le statut technique du projet (déploiements, base de données) ?',
   '📊 Statut Projet': 'Quel est le statut technique du projet (déploiements, base de données) ?',
 };
@@ -144,7 +155,7 @@ function chunks(text: string, size = 3800): string[] {
   return parts.filter((p) => p.trim());
 }
 
-export async function sendBotMessage(chatId: string, html: string, replyMarkup: Record<string, unknown> = ADMIN_MENU.reply_markup) {
+export async function sendBotMessage(chatId: string, html: string, replyMarkup: Record<string, unknown> = APP_URL ? HOME_MENU.reply_markup : ADMIN_MENU.reply_markup) {
   const parts = chunks(html);
   for (let i = 0; i < parts.length; i++) {
     const markup = i === parts.length - 1 ? replyMarkup : undefined;
@@ -281,7 +292,7 @@ const STATUS_LABELS: Record<string, string> = {
 const TOOLS: Anthropic.Tool[] = [
   {
     name: 'platform_overview',
-    description: "Vue d'ensemble de la plateforme : organisations par statut, licences actives et à renouveler, demandes de licence, encaissements du mois et du mois dernier, activité, dernières inscriptions.",
+    description: "Vue d'ensemble de la plateforme, avec les mêmes chiffres que le tableau de bord super admin : chiffre d'affaires d'OptiSpace (licences payées aujourd'hui, 7 jours, ce mois, cette année), clients, espaces actifs, licences actives et à renouveler, demandes, activité, dernières inscriptions. Distingue les collectes des clients (argent de leurs points de vente WiFi), qui ne sont pas le chiffre d'affaires d'OptiSpace.",
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -320,7 +331,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'revenue_report',
-    description: 'Encaissements (montants collectés, attendus, commissions) sur une période, au total, par organisation et par point de vente. Optionnellement pour une seule organisation.',
+    description: "Collectes des clients (argent collecté dans leurs points de vente WiFi : montants collectés, attendus, commissions) sur une période, par organisation et par point de vente. Ce n'est PAS le chiffre d'affaires d'OptiSpace : pour les licences payées, utiliser platform_overview.",
     input_schema: {
       type: 'object',
       properties: {
@@ -961,8 +972,6 @@ async function answer(
 
 export const HELP_TEXT = `🤖 <b>Assistant OptiSpace</b>
 
-<b>📱 Ouvrir OptiSpace</b> : le back-office dans Telegram (chiffres clés, demandes à approuver, clients, licences à renouveler).
-
 Écrivez ou dictez (message vocal) ce que vous voulez savoir ou faire, par exemple :
 • « Quelles demandes de licence sont en attente ? »
 • « Donne-moi la fiche de Boris Wifi »
@@ -974,10 +983,10 @@ export const HELP_TEXT = `🤖 <b>Assistant OptiSpace</b>
 
 Les actions (approuver, refuser, activer, suspendre…) demandent toujours votre confirmation par un bouton.
 
-<b>🤖 IA — Claude Code</b> : confiez une fonctionnalité ou une correction à Claude. Il propose un plan, développe après votre accord et vous soumet le résultat ; vous validez l'intégration et la mise en production.
-
-<b>📊 Business OptiSpace</b> : clients, licences, encaissements, « 🛡️ Sécurité » et « 🩺 Santé de l'application ».
-
-<b>💳 Paiement en ligne</b> : statut de SasPay (connexion, dernier paiement, 24 h) et bascule en un bouton entre paiement en ligne et paiement manuel.
+<b>Les 4 applications</b> (boutons sous la zone de saisie) :
+• <b>📊 Business OptiSpace</b> : tableau de bord, statistiques en graphiques, demandes de licence à approuver, clients, licences à renouveler.
+• <b>🤖 IA — Claude Code</b> : confiez une fonctionnalité ou une correction à Claude, validez le plan, l'intégration et la mise en production.
+• <b>💳 Paiement en ligne</b> : SasPay ou paiement manuel en un bouton, paiements en graphiques, transactions.
+• <b>🛡️ Système</b> : santé de l'application, tentatives d'intrusion, incidents de sécurité.
 
 Commandes : /menu · /ia · /paiement · /securite · /sante · /effacer (oublier la conversation) · /aide`;

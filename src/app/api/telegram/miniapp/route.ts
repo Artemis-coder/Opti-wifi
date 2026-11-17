@@ -5,26 +5,17 @@
  */
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/neon/db';
-import { verifyMiniAppRequest } from '@/lib/telegram-webapp';
-import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
-import { reportSecurityEvent } from '@/lib/security-events';
-import { getPlatformOverview, listExpiringLicences, listLicenseRequests, listOrganizations } from '@/lib/bot/admin-data';
+import { authorizeMiniApp } from '@/lib/telegram-webapp';
+import { listExpiringLicences, listLicenseRequests, listOrganizations } from '@/lib/bot/admin-data';
+import { getDashboardKpis } from '@/lib/platform-dashboard';
+import { getPlatformStats, parseStatsRange } from '@/lib/platform-stats';
 import { activateLicense, rejectLicenseRequest, UUID_RE } from '@/lib/platform-actions';
 import { getBotPlatformUserId } from '@/lib/bot/assistant';
 
 export const dynamic = 'force-dynamic';
 
 async function authorize(request: Request) {
-  const wait = rateLimit(`miniapp:${clientIp(request)}`, 120, 60_000);
-  if (wait) return { response: tooManyRequests(wait) };
-  const auth = await verifyMiniAppRequest(request);
-  if (!auth.ok) {
-    if (auth.status === 403) {
-      reportSecurityEvent({ type: 'bot_stranger', request, detail: 'Ouverture de la Mini App Telegram par un autre compte' });
-    }
-    return { response: NextResponse.json({ error: auth.error }, { status: auth.status }) };
-  }
-  return { response: null };
+  return { response: await authorizeMiniApp(request) };
 }
 
 export async function GET(request: Request) {
@@ -36,12 +27,31 @@ export async function GET(request: Request) {
   try {
     switch (view) {
       case 'overview': {
-        const [overview, requests, expiring] = await Promise.all([
-          getPlatformOverview(),
-          listLicenseRequests({ status: 'pending' }),
-          listExpiringLicences({ days: 30 }),
+        // Mêmes chiffres que le tableau de bord super admin (lib/platform-dashboard)
+        const { kpis, todo } = await getDashboardKpis();
+        return NextResponse.json({ kpis, todo });
+      }
+      case 'stats':
+        // Mêmes statistiques et graphiques que le tableau de bord (inscriptions, licences, revenus)
+        return NextResponse.json(await getPlatformStats(parseStatsRange(url.searchParams.get('range'))));
+      case 'activity': {
+        // Activité des clients : collectes de leurs points de vente (30 derniers jours)
+        const [daily, top] = await Promise.all([
+          query(
+            `SELECT to_char(d, 'YYYY-MM-DD') AS day,
+                    COALESCE(SUM(c.montant_collecte), 0)::float AS amount, COUNT(c.id)::int AS count
+               FROM generate_series(date_trunc('day', NOW()) - interval '29 days', date_trunc('day', NOW()), interval '1 day') d
+               LEFT JOIN collections c ON date_trunc('day', COALESCE(c.date_collecte, c.created_at)) = d
+              GROUP BY d ORDER BY d`
+          ),
+          query(
+            `SELECT o.name, COALESCE(SUM(c.montant_collecte), 0)::float AS amount
+               FROM collections c JOIN organizations o ON o.id = COALESCE(c.organization_id, c.organisation_id)
+              WHERE COALESCE(c.date_collecte, c.created_at) > NOW() - interval '30 days'
+              GROUP BY o.name ORDER BY amount DESC LIMIT 5`
+          ),
         ]);
-        return NextResponse.json({ overview, pendingRequests: requests.total, expiring: expiring.expirent_bientot.length });
+        return NextResponse.json({ daily: daily.rows, top: top.rows });
       }
       case 'requests':
         return NextResponse.json(await listLicenseRequests({ status: url.searchParams.get('status') || 'pending' }));

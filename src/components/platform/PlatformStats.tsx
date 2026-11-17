@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useId, useState, useSyncExternalStore } from 'react';
+import React, { useId, useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, Minus, Table2, BarChart3, UserPlus, KeyRound, Banknote, Repeat, TrendingUp } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card, Chip, Label, Meter, Skeleton, Table, ToggleButton, ToggleButtonGroup } from '@heroui/react';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils/cn';
 import { formatCurrencyFCFA, formatNumber } from '@/lib/utils/format';
 import type { PlatformStats, StatsBucket } from '@/lib/platform-stats';
 import { amountsHidden } from '@/lib/privacy';
+import { CHART_PALETTE, useDarkMode } from '@/components/charts/theme';
 
 export type StatsRange = PlatformStats['range'];
 
@@ -21,26 +22,8 @@ export const STATS_RANGES: { value: StatsRange; label: string }[] = [
   { value: '1y', label: '12 mois' },
 ];
 
-// Palette catégorielle validée (ordre fixe, contrôle daltonisme OK en clair et en sombre)
-const PALETTE = {
-  light: { s1: '#2a78d6', s2: '#eb6834', s3: '#1baf7a', s4: '#eda100', surface: '#ffffff', grid: '#e4e4e7', text: '#71717a', track: '#f4f4f5' },
-  dark: { s1: '#3987e5', s2: '#d95926', s3: '#199e70', s4: '#c98500', surface: '#18181b', grid: '#27272a', text: '#a1a1aa', track: '#232327' },
-};
-
-const darkQuery = '(prefers-color-scheme: dark)';
-function subscribeDark(cb: () => void) {
-  const mq = window.matchMedia(darkQuery);
-  mq.addEventListener('change', cb);
-  return () => mq.removeEventListener('change', cb);
-}
-/** L'application suit le thème du système (data-theme posé par le layout racine) */
-function useDarkMode() {
-  return useSyncExternalStore(
-    subscribeDark,
-    () => window.matchMedia(darkQuery).matches,
-    () => false,
-  );
-}
+// Palette et mode sombre partagés avec les graphiques des Mini Apps Telegram
+const PALETTE = CHART_PALETTE;
 
 const LICENSE_SERIES = [
   { key: 'new', label: 'Nouvelles', color: 's1' },

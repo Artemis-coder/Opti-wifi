@@ -7,6 +7,8 @@
  */
 import { createHmac, timingSafeEqual } from 'crypto';
 import { hydrateTelegramEnv } from '@/lib/integration-secrets';
+import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { reportSecurityEvent } from '@/lib/security-events';
 
 /** Durée de validité d'une ouverture de la Mini App. */
 const MAX_AGE_SECONDS = 12 * 60 * 60;
@@ -54,4 +56,25 @@ export async function verifyMiniAppRequest(request: Request): Promise<MiniAppAut
 export function miniAppUrl(): string | null {
   const site = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.optiwifi.site').replace(/\/$/, '');
   return site.startsWith('https://') ? `${site}${MINI_APP_PATH}` : null;
+}
+
+/**
+ * Contrôle commun des API des Mini Apps : limite de débit, signature Telegram, compte du super admin.
+ * Renvoie une réponse d'erreur à retourner telle quelle, ou null si l'appel est autorisé.
+ */
+export async function authorizeMiniApp(request: Request): Promise<Response | null> {
+  const wait = rateLimit(`miniapp:${clientIp(request)}`, 120, 60_000);
+  if (wait) return tooManyRequests(wait);
+  const auth = await verifyMiniAppRequest(request);
+  if (auth.ok) return null;
+  if (auth.status === 403) {
+    reportSecurityEvent({ type: 'bot_stranger', request, detail: 'Ouverture d’une Mini App Telegram par un autre compte' });
+  }
+  return Response.json({ error: auth.error }, { status: auth.status });
+}
+
+/** Adresse d'une Mini App précise (Business, IA, Paiement, Système), ou null hors HTTPS. */
+export function miniAppSectionUrl(section: '' | 'ia' | 'paiements' | 'systeme'): string | null {
+  const base = miniAppUrl();
+  return base ? `${base}${section ? `/${section}` : ''}` : null;
 }

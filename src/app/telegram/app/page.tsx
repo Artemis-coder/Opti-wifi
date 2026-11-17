@@ -1,24 +1,26 @@
 'use client';
 
 /**
- * Mini App Telegram : le back-office du super admin dans Telegram, avec le design system du projet
- * (HeroUI, StatTile, Badge, Button). Ouverte depuis le bouton « Ouvrir OptiSpace » du bot.
- * Chaque appel API envoie la signature Telegram (initData), vérifiée côté serveur.
+ * Mini App « Business OptiSpace » : le tableau de bord du super admin dans Telegram.
+ * Mêmes chiffres et graphiques que /platform/dashboard (lib/platform-dashboard, lib/platform-stats).
  */
-import React, { useCallback, useEffect, useState } from 'react';
-import Script from 'next/script';
-import { Card, Spinner } from '@heroui/react';
+import React, { useCallback, useState } from 'react';
+import { Card, Chip } from '@heroui/react';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
+  BarChart3,
   Building2,
   CalendarClock,
   CheckCircle,
-  ExternalLink,
+  Clock,
   Inbox,
+  KeyRound,
   LayoutDashboard,
-  RefreshCw,
+  PauseCircle,
   Search,
+  UserCheck,
+  UserPlus,
   Users,
   Wallet,
   XCircle,
@@ -28,74 +30,28 @@ import { KpiGrid } from '@/components/ui/KpiGrid';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
-import { cn } from '@/lib/utils/cn';
-import { formatCurrencyFCFA, formatDateOnlyFR } from '@/lib/utils/format';
+import { PlatformStatsSection, type StatsRange } from '@/components/platform/PlatformStats';
+import { ChartPanel, MiniAreaChart, MiniBarChart, dayLabel } from '@/components/charts/MiniCharts';
+import {
+  Empty,
+  ErrorCard,
+  ExternalLinkButton,
+  ListCard,
+  ListRow,
+  Loading,
+  MiniAppShell,
+  SectionTitle,
+  haptic,
+  miniApi,
+  openExternal,
+  useMiniAppData,
+  type MiniAppTab,
+} from '@/components/telegram/MiniAppShell';
+import type { DashboardKpiValues, DashboardTodo } from '@/lib/platform-dashboard';
+import type { PlatformStats } from '@/lib/platform-stats';
+import { formatAmountShort, formatCurrencyFCFA, formatDateOnlyFR } from '@/lib/utils/format';
 
-// ── Telegram WebApp ──────────────────────────────────────────────────────────
-
-interface TelegramWebApp {
-  initData: string;
-  colorScheme: 'light' | 'dark';
-  ready: () => void;
-  expand: () => void;
-  openLink: (url: string) => void;
-  onEvent: (event: 'themeChanged', cb: () => void) => void;
-  HapticFeedback?: { notificationOccurred: (type: 'success' | 'error' | 'warning') => void };
-}
-
-function telegram(): TelegramWebApp | null {
-  return (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp ?? null;
-}
-
-/** Applique le thème clair/sombre de Telegram aux variables HeroUI. */
-function applyTheme(tg: TelegramWebApp) {
-  const dark = tg.colorScheme === 'dark';
-  const root = document.documentElement;
-  root.dataset.theme = dark ? 'dark' : 'light';
-  root.classList.toggle('dark', dark);
-  root.classList.toggle('light', !dark);
-}
-
-class ApiError extends Error {
-  constructor(message: string, public status: number) {
-    super(message);
-  }
-}
-
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api/telegram/miniapp${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': telegram()?.initData || '', ...init?.headers },
-    cache: 'no-store',
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(data.error || 'Erreur inattendue.', res.status);
-  return data as T;
-}
-
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.optiwifi.site').replace(/\/$/, '');
-function openBackOffice(path: string) {
-  const url = `${SITE}${path}`;
-  const tg = telegram();
-  if (tg) tg.openLink(url);
-  else window.open(url, '_blank', 'noopener');
-}
-
-// ── Données ──────────────────────────────────────────────────────────────────
-
-type Tab = 'home' | 'requests' | 'clients' | 'expiring';
-
-interface Overview {
-  overview: {
-    organisations_par_statut: { status: string; n: number }[];
-    licences: { organisations_avec_licence_active: number; expirent_sous_7_jours: number; expirent_sous_30_jours: number };
-    encaissements: { encaisse_ce_mois: number; encaisse_mois_dernier: number; collectes_ce_mois: number };
-    activite: { utilisateurs_actifs: number; points_de_vente: number; espaces_wifi: number; connectes_7_derniers_jours: number };
-    dernieres_inscriptions: { name: string; status: string; created_at: string }[];
-  };
-  pendingRequests: number;
-  expiring: number;
-}
+type Tab = 'home' | 'stats' | 'requests' | 'clients' | 'expiring';
 
 interface LicenseRequest {
   request_id: string;
@@ -108,7 +64,6 @@ interface LicenseRequest {
   phone: string | null;
   forfait_demande: string | null;
   prix: string | number | null;
-  devise: string | null;
   demande_par: string | null;
   forfait_actuel: string | null;
   fin_licence_actuelle: string | null;
@@ -118,24 +73,28 @@ interface Organization {
   id: string;
   name: string;
   status: string;
-  contact_name: string | null;
   forfait: string | null;
   fin_licence: string | null;
-  licence_active: boolean | null;
   utilisateurs: number;
   points_de_vente: number;
-  derniere_collecte: string | null;
 }
 
 interface Expiring {
-  expirent_bientot: { organisation: string; contact_name: string | null; phone: string | null; forfait: string | null; fin: string; jours_restants: number }[];
-  deja_expirees_sans_renouvellement: { organisation: string; contact_name: string | null; phone: string | null; dernier_forfait: string | null; expiree_le: string }[];
+  expirent_bientot: { organisation: string; phone: string | null; forfait: string | null; fin: string; jours_restants: number }[];
+  deja_expirees_sans_renouvellement: { organisation: string; phone: string | null; dernier_forfait: string | null; expiree_le: string }[];
+}
+
+interface Activity {
+  daily: { day: string; amount: number; count: number }[];
+  top: { name: string; amount: number }[];
 }
 
 const ORG_STATUS: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   active: { label: 'Actif', variant: 'success' },
+  pending_approval: { label: 'À valider', variant: 'warning' },
   pending: { label: 'En attente', variant: 'warning' },
   trial: { label: 'Essai', variant: 'info' },
+  expiring: { label: 'Expire bientôt', variant: 'warning' },
   suspended: { label: 'Suspendu', variant: 'danger' },
   cancelled: { label: 'Refusé', variant: 'neutral' },
   archived: { label: 'Supprimé', variant: 'neutral' },
@@ -148,80 +107,179 @@ function OrgStatus({ status }: { status: string }) {
   return <Badge variant={s.variant}>{s.label}</Badge>;
 }
 
-// ── Écrans ───────────────────────────────────────────────────────────────────
-
-function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-2 px-1">
-      <h2 className="text-sm font-semibold text-foreground">{children}</h2>
-      {action}
-    </div>
-  );
+function whenLabel(days: number): string {
+  return days <= 0 ? "aujourd'hui" : days === 1 ? 'demain' : `dans ${days} jours`;
 }
 
-function Empty({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
-  return (
-    <Card>
-      <Card.Content className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted">
-        <Icon className="size-8 opacity-60" aria-hidden />
-        {text}
-      </Card.Content>
-    </Card>
-  );
-}
+// ── Accueil : KPI du tableau de bord ─────────────────────────────────────────
 
-function BackOfficeLink({ path, label = 'Back-office' }: { path: string; label?: string }) {
-  return (
-    <button type="button" onClick={() => openBackOffice(path)} className="flex items-center gap-1 text-xs font-medium text-accent">
-      {label}
-      <ExternalLink className="size-3.5" aria-hidden />
-    </button>
-  );
-}
+const loadOverview = () => miniApi<{ kpis: DashboardKpiValues; todo: DashboardTodo }>('business', '?view=overview');
 
-function HomeView({ data, goTo }: { data: Overview; goTo: (t: Tab) => void }) {
-  const o = data.overview;
-  const orgs = Object.fromEntries(o.organisations_par_statut.map((r) => [r.status, r.n]));
-  const month = Number(o.encaissements.encaisse_ce_mois) || 0;
-  const last = Number(o.encaissements.encaisse_mois_dernier) || 0;
+function HomeView({ goTo }: { goTo: (t: Tab) => void }) {
+  const [data, error, reload] = useMiniAppData(loadOverview, 'overview');
+  if (error) return <ErrorCard message={error} onRetry={reload} />;
+  if (!data) return <Loading />;
+  const { kpis, todo } = data;
+  const pendingTotal = kpis.pending_registrations + kpis.pending_license_requests + kpis.expiring_7d;
+
+  const todoColumns: {
+    title: string;
+    icon: React.ElementType;
+    count: number;
+    empty: string;
+    open: () => void;
+    items: { key: string; title: string; sub: string; urgent: boolean }[];
+  }[] = [
+    {
+      title: 'Inscriptions à valider',
+      icon: UserPlus,
+      count: kpis.pending_registrations,
+      empty: 'Aucune inscription en attente.',
+      open: () => openExternal('/platform/registrations'),
+      items: todo.pending_registrations.map((r) => ({ key: r.id, title: r.name, sub: `${r.contact_name ?? '—'} · ${formatDateOnlyFR(r.created_at)}`, urgent: false })),
+    },
+    {
+      title: 'Demandes de licence',
+      icon: Inbox,
+      count: kpis.pending_license_requests,
+      empty: 'Aucune demande en attente.',
+      open: () => goTo('requests'),
+      items: todo.pending_license_requests.map((r) => ({
+        key: r.id,
+        title: r.organization_name,
+        sub: `${REQUEST_TYPE[r.type] ?? r.type} · ${r.plan_name ?? '—'} · ${r.duration_months} mois`,
+        urgent: false,
+      })),
+    },
+    {
+      title: 'Licences à renouveler',
+      icon: Clock,
+      count: kpis.expiring_7d,
+      empty: 'Aucune licence n’expire sous 7 jours.',
+      open: () => goTo('expiring'),
+      items: todo.upcoming_expirations.map((r) => ({
+        key: r.id,
+        title: r.organization_name,
+        sub: `${r.plan_name ?? '—'}${r.is_trial ? ' (essai)' : ''} · expire ${whenLabel(r.days_left)}`,
+        urgent: r.days_left <= 2,
+      })),
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
+      <p className="px-1 text-sm text-muted">
+        {pendingTotal > 0 ? `${pendingTotal} élément${pendingTotal > 1 ? 's' : ''} à traiter sur la plateforme.` : 'Rien à traiter pour le moment : tout est à jour.'}
+      </p>
+
+      {/* Chiffre d'affaires : paiements de licences réussis (comme « Revenus encaissés ») */}
       <KpiGrid cols={{ base: 2 }}>
-        <StatTile label="Encaissé ce mois" value={formatCurrencyFCFA(month)} icon={Wallet} accent="emerald" hint={`Mois dernier : ${formatCurrencyFCFA(last)}`} />
-        <StatTile label="Clients actifs" value={orgs.active ?? 0} icon={Building2} accent="indigo" hint={`${o.licences.organisations_avec_licence_active} avec licence active`} />
-        <button type="button" className="text-left" onClick={() => goTo('requests')}>
-          <StatTile label="Demandes" value={data.pendingRequests} icon={Inbox} accent={data.pendingRequests ? 'amber' : 'slate'} alert={data.pendingRequests > 0} hint="en attente de validation" />
-        </button>
-        <button type="button" className="text-left" onClick={() => goTo('expiring')}>
-          <StatTile label="À renouveler" value={data.expiring} icon={CalendarClock} accent={o.licences.expirent_sous_7_jours ? 'red' : 'slate'} hint={`${o.licences.expirent_sous_7_jours} sous 7 jours`} />
-        </button>
+        <StatTile
+          label="Encaissé ce mois"
+          value={formatCurrencyFCFA(kpis.revenue_this_month)}
+          icon={Wallet}
+          accent="emerald"
+          hint={`Licences payées · 7 j : ${formatCurrencyFCFA(kpis.revenue_this_week)}`}
+        />
+        <StatTile label="Encaissé cette année" value={formatCurrencyFCFA(kpis.revenue_this_year)} icon={BarChart3} accent="indigo" hint={`Aujourd'hui : ${formatCurrencyFCFA(kpis.revenue_today)}`} />
       </KpiGrid>
 
-      <KpiGrid cols={{ base: 3 }}>
-        <StatTile label="Utilisateurs" value={o.activite.utilisateurs_actifs} />
-        <StatTile label="Points de vente" value={o.activite.points_de_vente} />
-        <StatTile label="Collectes (mois)" value={o.encaissements.collectes_ce_mois} />
+      {/* Les 6 indicateurs du tableau de bord super admin */}
+      <SectionTitle action={<ExternalLinkButton path="/platform/dashboard" />}>Indicateurs clés</SectionTitle>
+      <KpiGrid cols={{ base: 2 }}>
+        <StatTile label="Clients" value={kpis.total_clients} icon={Building2} accent="indigo" hint={`+${kpis.new_clients_this_month} sur 30 jours`} />
+        <StatTile label="Espaces actifs" value={kpis.active_clients} icon={UserCheck} accent="emerald" />
+        <StatTile label="Espaces désactivés" value={kpis.suspended_clients} icon={PauseCircle} accent="red" />
+        <StatTile label="Licences actives" value={kpis.active_subscriptions} icon={KeyRound} accent="emerald" />
+        <StatTile label="Expirent sous 7 j" value={kpis.expiring_7d} icon={Clock} accent="amber" alert={kpis.expiring_7d > 0} />
+        <StatTile label="Sans licence active" value={kpis.clients_without_license} icon={AlertTriangle} accent="amber" />
       </KpiGrid>
 
-      <SectionTitle action={<BackOfficeLink path="/platform/registrations" />}>Dernières inscriptions</SectionTitle>
-      <Card>
-        <Card.Content className="divide-y divide-separator p-0">
-          {o.dernieres_inscriptions.map((r) => (
-            <div key={`${r.name}-${r.created_at}`} className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">{r.name}</p>
-                <p className="text-xs text-muted">{formatDateOnlyFR(r.created_at)}</p>
+      <SectionTitle>À traiter</SectionTitle>
+      {todoColumns.map((col) => {
+        const Icon = col.icon;
+        return (
+          <Card key={col.title}>
+            <Card.Header className="flex-row items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <Icon className="size-4 shrink-0 text-muted" aria-hidden />
+                <Card.Title className="truncate">{col.title}</Card.Title>
               </div>
-              <OrgStatus status={r.status} />
-            </div>
-          ))}
-        </Card.Content>
-      </Card>
+              <Chip size="sm" variant="soft" color={col.count > 0 ? 'warning' : 'success'}>
+                {col.count}
+              </Chip>
+            </Card.Header>
+            <Card.Content className="gap-0">
+              {col.items.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted">{col.empty}</p>
+              ) : (
+                <ul className="-mx-2 flex flex-col">
+                  {col.items.map((it) => (
+                    <li key={it.key}>
+                      <button type="button" onClick={col.open} className="block w-full rounded-xl px-2 py-2 text-left transition-colors hover:bg-default">
+                        <p className="truncate text-sm font-medium text-foreground">{it.title}</p>
+                        <p className={it.urgent ? 'truncate text-xs font-medium text-danger' : 'truncate text-xs text-muted'}>{it.sub}</p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card.Content>
+          </Card>
+        );
+      })}
     </div>
   );
 }
 
-function RequestsView({ rows, onDone }: { rows: LicenseRequest[]; onDone: () => void }) {
+// ── Statistiques : graphiques du tableau de bord + activité des clients ─────
+
+const loadActivity = () => miniApi<Activity>('business', '?view=activity');
+
+function StatsView() {
+  const [range, setRange] = useState<StatsRange>('30d');
+  const loadStats = useCallback(() => miniApi<PlatformStats>('business', `?view=stats&range=${range}`), [range]);
+  const [stats, error, reload] = useMiniAppData(loadStats, `stats-${range}`);
+  const [activity] = useMiniAppData(loadActivity, 'activity');
+
+  if (error) return <ErrorCard message={error} onRetry={reload} />;
+  const daily = (activity?.daily ?? []).map((d) => ({ ...d, label: dayLabel(d.day) }));
+  const total30 = daily.reduce((a, d) => a + d.amount, 0);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PlatformStatsSection stats={stats} range={range} onRangeChange={setRange} loading={!stats} />
+
+      <SectionTitle>Activité des clients</SectionTitle>
+      <ChartPanel
+        title="Collectes des points de vente (30 jours)"
+        headline={formatCurrencyFCFA(total30)}
+        subtitle="Argent collecté par les clients dans leurs espaces WiFi (ce n'est pas le chiffre d'affaires d'OptiSpace)."
+      >
+        {activity ? <MiniAreaChart data={daily} xKey="label" series={[{ key: 'amount', label: 'Collecté', color: 's3' }]} format={formatAmountShort} /> : <Loading />}
+      </ChartPanel>
+      {activity && activity.top.length > 0 && (
+        <ChartPanel title="Clients les plus actifs (30 jours)">
+          <MiniBarChart
+            data={activity.top}
+            xKey="name"
+            layout="horizontal"
+            height={Math.max(120, activity.top.length * 36)}
+            series={[{ key: 'amount', label: 'Collecté', color: 's1' }]}
+            format={formatAmountShort}
+          />
+        </ChartPanel>
+      )}
+    </div>
+  );
+}
+
+// ── Demandes de licence ──────────────────────────────────────────────────────
+
+const loadRequests = () => miniApi<{ demandes: LicenseRequest[] }>('business', '?view=requests');
+
+function RequestsView() {
+  const [data, error, reload] = useMiniAppData(loadRequests, 'requests');
   const [busy, setBusy] = useState<string | null>(null);
 
   const act = async (r: LicenseRequest, action: 'approve' | 'reject') => {
@@ -235,22 +293,27 @@ function RequestsView({ rows, onDone }: { rows: LicenseRequest[]; onDone: () => 
     if (!ok) return;
     setBusy(r.request_id);
     try {
-      const res = await api<{ message: string }>('', { method: 'POST', body: JSON.stringify({ action, requestId: r.request_id }) });
-      telegram()?.HapticFeedback?.notificationOccurred('success');
+      const res = await miniApi<{ message: string }>('business', '', { method: 'POST', body: JSON.stringify({ action, requestId: r.request_id }) });
+      haptic('success');
       toast.success(res.message);
-      onDone();
+      await reload();
     } catch (err) {
-      telegram()?.HapticFeedback?.notificationOccurred('error');
+      haptic('error');
       toast.error(err instanceof Error ? err.message : 'Action impossible.');
     } finally {
       setBusy(null);
     }
   };
 
+  if (error) return <ErrorCard message={error} onRetry={reload} />;
+  if (!data) return <Loading />;
+  const rows = data.demandes;
   if (!rows.length) return <Empty icon={CheckCircle} text="Aucune demande en attente." />;
   return (
     <div className="flex flex-col gap-3">
-      <SectionTitle action={<BackOfficeLink path="/platform/license-requests" />}>{rows.length} demande{rows.length > 1 ? 's' : ''} en attente</SectionTitle>
+      <SectionTitle action={<ExternalLinkButton path="/platform/license-requests" />}>
+        {rows.length} demande{rows.length > 1 ? 's' : ''} en attente
+      </SectionTitle>
       {rows.map((r) => (
         <Card key={r.request_id}>
           <Card.Header>
@@ -264,11 +327,20 @@ function RequestsView({ rows, onDone }: { rows: LicenseRequest[]; onDone: () => 
             </Card.Description>
           </Card.Header>
           <Card.Content className="flex flex-col gap-1 text-sm text-muted">
-            {r.contact_name && <p>Contact : {r.contact_name}{r.phone ? ` · ${r.phone}` : ''}</p>}
+            {r.contact_name && (
+              <p>
+                Contact : {r.contact_name}
+                {r.phone ? ` · ${r.phone}` : ''}
+              </p>
+            )}
             <p>
-              Licence actuelle : {r.forfait_actuel ? `${r.forfait_actuel}${r.fin_licence_actuelle ? `, jusqu'au ${formatDateOnlyFR(r.fin_licence_actuelle)}` : ''}` : 'aucune'}
+              Licence actuelle :{' '}
+              {r.forfait_actuel ? `${r.forfait_actuel}${r.fin_licence_actuelle ? `, jusqu'au ${formatDateOnlyFR(r.fin_licence_actuelle)}` : ''}` : 'aucune'}
             </p>
-            <p>Demandée le {formatDateOnlyFR(r.created_at)}{r.demande_par ? ` par ${r.demande_par}` : ''}</p>
+            <p>
+              Demandée le {formatDateOnlyFR(r.created_at)}
+              {r.demande_par ? ` par ${r.demande_par}` : ''}
+            </p>
             {r.message && <p className="rounded-xl bg-default px-3 py-2 text-foreground">« {r.message} »</p>}
           </Card.Content>
           <Card.Footer className="flex gap-2">
@@ -285,106 +357,95 @@ function RequestsView({ rows, onDone }: { rows: LicenseRequest[]; onDone: () => 
   );
 }
 
+// ── Clients ──────────────────────────────────────────────────────────────────
+
 function ClientsView() {
   const [q, setQ] = useState('');
-  const [rows, setRows] = useState<Organization[] | null>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      api<{ organisations: Organization[] }>(`?view=clients&q=${encodeURIComponent(q)}`)
-        .then((d) => setRows(d.organisations))
-        .catch((err) => toast.error(err.message));
-    }, q ? 300 : 0);
-    return () => clearTimeout(t);
-  }, [q]);
+  const [search, setSearch] = useState('');
+  const load = useCallback(() => miniApi<{ organisations: Organization[] }>('business', `?view=clients&q=${encodeURIComponent(search)}`), [search]);
+  const [data, error, reload] = useMiniAppData(load, `clients-${search}`);
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-surface">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setSearch(q.trim());
+        }}
+        className="flex items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-surface"
+      >
         <Search className="size-4 text-muted" aria-hidden />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          onBlur={() => setSearch(q.trim())}
           placeholder="Rechercher un client"
           aria-label="Rechercher un client"
+          enterKeyHint="search"
           className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
         />
-      </label>
-      {rows === null ? (
+      </form>
+      {error ? (
+        <ErrorCard message={error} onRetry={reload} />
+      ) : !data ? (
         <Loading />
-      ) : !rows.length ? (
+      ) : !data.organisations.length ? (
         <Empty icon={Building2} text="Aucun client trouvé." />
       ) : (
-        <Card>
-          <Card.Content className="divide-y divide-separator p-0">
-            {rows.map((o) => (
-              <button
-                type="button"
-                key={o.id}
-                onClick={() => openBackOffice(`/platform/clients/${o.id}`)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{o.name}</p>
-                  <p className="truncate text-xs text-muted">
-                    {o.forfait ? `${o.forfait}${o.fin_licence ? ` · jusqu'au ${formatDateOnlyFR(o.fin_licence)}` : ''}` : 'Sans licence'}
-                    {' · '}
-                    {o.utilisateurs} util. · {o.points_de_vente} PDV
-                  </p>
-                </div>
-                <OrgStatus status={o.status} />
-              </button>
-            ))}
-          </Card.Content>
-        </Card>
+        <ListCard>
+          {data.organisations.map((o) => (
+            <ListRow
+              key={o.id}
+              onPress={() => openExternal(`/platform/clients/${o.id}`)}
+              title={o.name}
+              subtitle={`${o.forfait ? `${o.forfait}${o.fin_licence ? ` · jusqu'au ${formatDateOnlyFR(o.fin_licence)}` : ''}` : 'Sans licence'} · ${o.utilisateurs} util. · ${o.points_de_vente} PDV`}
+              end={<OrgStatus status={o.status} />}
+            />
+          ))}
+        </ListCard>
       )}
     </div>
   );
 }
 
-function ExpiringView({ data }: { data: Expiring }) {
+// ── Licences à renouveler ────────────────────────────────────────────────────
+
+const loadExpiring = () => miniApi<Expiring>('business', '?view=expiring');
+
+function ExpiringView() {
+  const [data, error, reload] = useMiniAppData(loadExpiring, 'expiring');
+  if (error) return <ErrorCard message={error} onRetry={reload} />;
+  if (!data) return <Loading />;
   return (
     <div className="flex flex-col gap-3">
-      <SectionTitle action={<BackOfficeLink path="/platform/subscriptions/expiring" />}>Expirent sous 30 jours</SectionTitle>
+      <SectionTitle action={<ExternalLinkButton path="/platform/subscriptions/expiring" />}>Expirent sous 30 jours</SectionTitle>
       {data.expirent_bientot.length ? (
-        <Card>
-          <Card.Content className="divide-y divide-separator p-0">
-            {data.expirent_bientot.map((r) => (
-              <div key={`${r.organisation}-${r.fin}`} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{r.organisation}</p>
-                  <p className="truncate text-xs text-muted">
-                    {r.forfait ?? '—'} · {formatDateOnlyFR(r.fin)}{r.phone ? ` · ${r.phone}` : ''}
-                  </p>
-                </div>
-                <Badge variant={r.jours_restants <= 7 ? 'danger' : 'warning'}>
-                  {r.jours_restants <= 0 ? "Aujourd'hui" : `J-${r.jours_restants}`}
-                </Badge>
-              </div>
-            ))}
-          </Card.Content>
-        </Card>
+        <ListCard>
+          {data.expirent_bientot.map((r) => (
+            <ListRow
+              key={`${r.organisation}-${r.fin}`}
+              title={r.organisation}
+              subtitle={`${r.forfait ?? '—'} · ${formatDateOnlyFR(r.fin)}${r.phone ? ` · ${r.phone}` : ''}`}
+              end={<Badge variant={r.jours_restants <= 7 ? 'danger' : 'warning'}>{r.jours_restants <= 0 ? "Aujourd'hui" : `J-${r.jours_restants}`}</Badge>}
+            />
+          ))}
+        </ListCard>
       ) : (
         <Empty icon={CheckCircle} text="Aucune licence n'expire dans les 30 jours." />
       )}
 
       <SectionTitle>Expirées sans renouvellement</SectionTitle>
       {data.deja_expirees_sans_renouvellement.length ? (
-        <Card>
-          <Card.Content className="divide-y divide-separator p-0">
-            {data.deja_expirees_sans_renouvellement.map((r) => (
-              <div key={`${r.organisation}-${r.expiree_le}`} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{r.organisation}</p>
-                  <p className="truncate text-xs text-muted">
-                    {r.dernier_forfait ?? '—'}{r.phone ? ` · ${r.phone}` : ''}
-                  </p>
-                </div>
-                <Badge variant="neutral">{formatDateOnlyFR(r.expiree_le)}</Badge>
-              </div>
-            ))}
-          </Card.Content>
-        </Card>
+        <ListCard>
+          {data.deja_expirees_sans_renouvellement.map((r) => (
+            <ListRow
+              key={`${r.organisation}-${r.expiree_le}`}
+              title={r.organisation}
+              subtitle={`${r.dernier_forfait ?? '—'}${r.phone ? ` · ${r.phone}` : ''}`}
+              end={<Badge variant="neutral">{formatDateOnlyFR(r.expiree_le)}</Badge>}
+            />
+          ))}
+        </ListCard>
       ) : (
         <Empty icon={CheckCircle} text="Aucun client expiré." />
       )}
@@ -392,159 +453,28 @@ function ExpiringView({ data }: { data: Expiring }) {
   );
 }
 
-function Loading() {
-  return (
-    <div className="flex justify-center py-16">
-      <Spinner />
-    </div>
-  );
-}
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+const TABS: MiniAppTab<Tab>[] = [
   { id: 'home', label: 'Accueil', icon: LayoutDashboard },
+  { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'requests', label: 'Demandes', icon: Inbox },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'expiring', label: 'Licences', icon: CalendarClock },
 ];
 
-export default function TelegramMiniApp() {
-  const [ready, setReady] = useState(false);
+export default function BusinessMiniApp() {
   const [tab, setTab] = useState<Tab>('home');
-  const [overview, setOverview] = useState<Overview | null>(null);
-  const [requests, setRequests] = useState<LicenseRequest[] | null>(null);
-  const [expiring, setExpiring] = useState<Expiring | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const init = useCallback(() => {
-    const tg = telegram();
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      applyTheme(tg);
-      tg.onEvent('themeChanged', () => applyTheme(tg));
-    }
-    setReady(true);
-  }, []);
-
-  /** Lit les données d'un onglet ; renvoie la mise à jour à appliquer (ou l'erreur). */
-  const fetchTab = useCallback(async (which: Tab): Promise<() => void> => {
-    try {
-      if (which === 'home') {
-        const d = await api<Overview>('?view=overview');
-        return () => { setOverview(d); setError(null); };
-      }
-      if (which === 'requests') {
-        const d = await api<{ demandes: LicenseRequest[] }>('?view=requests');
-        return () => { setRequests(d.demandes); setError(null); };
-      }
-      if (which === 'expiring') {
-        const d = await api<Expiring>('?view=expiring');
-        return () => { setExpiring(d); setError(null); };
-      }
-      return () => setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erreur inattendue.';
-      return () => setError(message);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-    let cancelled = false;
-    fetchTab(tab).then((apply) => {
-      if (!cancelled) apply();
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, tab, fetchTab]);
-
-  const refresh = async () => {
-    setRefreshing(true);
-    (await fetchTab(tab))();
-    setRefreshing(false);
-  };
-
-  const title = TABS.find((t) => t.id === tab)?.label ?? 'OptiSpace';
+  const [refreshKey, setRefreshKey] = useState(0);
+  const view = `${tab}-${refreshKey}`;
 
   return (
-    <>
-      <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" onReady={init} onError={() => setReady(true)} />
-      <div className="min-h-dvh bg-background pb-24">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-separator bg-surface/95 px-4 py-3 backdrop-blur-md">
-          <div className="flex min-w-0 items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/logo.jpg" alt="" className="size-9 rounded-xl object-cover" />
-            <div className="min-w-0">
-              <p className="text-xs text-muted">OptiSpace · Super admin</p>
-              <h1 className="truncate text-base font-semibold text-foreground">{title}</h1>
-            </div>
-          </div>
-          {tab !== 'clients' && (
-            <Button variant="ghost" size="sm" isIconOnly icon={RefreshCw} aria-label="Actualiser" isLoading={refreshing} onClick={refresh} />
-          )}
-        </header>
-
-        <main className="mx-auto flex max-w-xl flex-col gap-4 p-4">
-          {error ? (
-            <Card>
-              <Card.Content className="flex flex-col items-center gap-3 py-8 text-center">
-                <AlertTriangle className="size-8 text-warning" aria-hidden />
-                <p className="text-sm text-foreground">{error}</p>
-                <Button variant="secondary" size="sm" icon={RefreshCw} onClick={refresh}>
-                  Réessayer
-                </Button>
-              </Card.Content>
-            </Card>
-          ) : !ready ? (
-            <Loading />
-          ) : tab === 'home' ? (
-            overview ? <HomeView data={overview} goTo={setTab} /> : <Loading />
-          ) : tab === 'requests' ? (
-            requests ? <RequestsView rows={requests} onDone={() => void fetchTab('requests').then((apply) => apply())} /> : <Loading />
-          ) : tab === 'clients' ? (
-            <ClientsView />
-          ) : expiring ? (
-            <ExpiringView data={expiring} />
-          ) : (
-            <Loading />
-          )}
-        </main>
-
-        <nav aria-label="Navigation de la Mini App" className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-separator bg-surface/95 backdrop-blur-md">
-          <div className="mx-auto flex h-16 max-w-xl items-stretch gap-1 px-2">
-            {TABS.map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  aria-current={active ? 'page' : undefined}
-                  onClick={() => setTab(t.id)}
-                  className={cn(
-                    'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus',
-                    active ? 'font-medium text-accent' : 'text-muted'
-                  )}
-                >
-                  <span className={cn('relative flex h-7 w-12 items-center justify-center rounded-full transition-colors', active && 'bg-accent-soft')}>
-                    <Icon className="size-5" strokeWidth={active ? 2.2 : 1.8} />
-                    {t.id === 'requests' && !!overview?.pendingRequests && (
-                      <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-danger px-1 text-[10px] font-semibold leading-4 text-danger-foreground">
-                        {overview.pendingRequests}
-                      </span>
-                    )}
-                  </span>
-                  <span className="truncate">{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-      </div>
-    </>
+    <MiniAppShell app="business" tabs={TABS} tab={tab} onTab={setTab} onRefresh={() => setRefreshKey((k) => k + 1)}>
+      {tab === 'home' && <HomeView key={view} goTo={setTab} />}
+      {tab === 'stats' && <StatsView key={view} />}
+      {tab === 'requests' && <RequestsView key={view} />}
+      {tab === 'clients' && <ClientsView key={view} />}
+      {tab === 'expiring' && <ExpiringView key={view} />}
+    </MiniAppShell>
   );
 }
