@@ -37,10 +37,10 @@ Les actions passent par les mêmes fonctions que les boutons du chat et que le b
 ## 🗄️ Base de données
 - Aucune migration.
 - Sauvegarde : `backup-prod-neon-2026-11-17T21-35-29-211Z.json` (41 tables, 650 lignes, aucune table en baisse), prise avant la fusion (21:35:29, fusion à 21:36:04).
-- Branche Neon de sauvegarde **non créée** : limite de 10 branches du projet Neon atteinte. Voir « Points connus ».
+- Branche Neon `backup-prod-20261117-2135` (jusqu'au 17/12/2026), créée après coup à partir de la production telle qu'elle était à 21:34:22, avant la fusion (la limite de 10 branches du projet avait bloqué sa création ; `backup-prod-20261117-1933` a été supprimée pour faire de la place).
 
 ## ⚠️ Points connus
-- Projet Neon à 10 branches sur 10 : il faut supprimer une ancienne branche de sauvegarde pour que `npm run backup:prod` puisse de nouveau créer sa branche.
+- Projet Neon à 10 branches sur 10 : la prochaine `npm run backup:prod` devra libérer une place (supprimer une ancienne `backup-prod-*`).
 - Ancien deploy hook Vercel (`xsZK…`) à désactiver ; mise à jour de sécurité de Next.js à planifier.
 
 ## ✅ Vérifications
