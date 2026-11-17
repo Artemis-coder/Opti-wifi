@@ -197,7 +197,7 @@ export default function PlatformDashboardPage() {
   const pendingTotal = todoColumns.reduce((n, c) => n + c.count, 0);
 
   return (
-    <div className="space-y-5 mx-auto max-w-7xl">
+    <div className="space-y-5">
       {/* En-tête de page */}
       <div className="flex flex-col gap-1">
         <p className="text-sm capitalize text-muted">{today}</p>

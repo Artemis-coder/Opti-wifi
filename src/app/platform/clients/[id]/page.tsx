@@ -226,7 +226,7 @@ export default function ClientDetailPage() {
   const subAction = getSubAction();
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {/* Header */}
       <div className="space-y-3">
         <Link href="/platform/clients" className={buttonClassName({ variant: 'ghost', size: 'sm', className: '-ml-3'})}>

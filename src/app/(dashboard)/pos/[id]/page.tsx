@@ -276,7 +276,7 @@ function PosDetailContent() {
   }
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -490,7 +490,7 @@ function PosDetailContent() {
         ) : (
           <>
             {/* Desktop Table View (>= md) */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto" data-fit-table>
               <table className="w-full text-left text-xs">
                 <thead className="bg-default text-muted font-semibold">
                   <tr>
@@ -677,7 +677,7 @@ function PosDetailContent() {
         ) : (
           <>
             {/* Desktop Table View (>= md) */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto" data-fit-table>
               <table className="w-full text-left text-xs">
                 <thead className="bg-default text-muted font-semibold">
                   <tr>
@@ -836,7 +836,7 @@ function PosDetailContent() {
         ) : (
           <>
             {/* Desktop Table View (>= md) */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto" data-fit-table>
               <table className="w-full text-left text-xs">
                 <thead className="bg-default text-muted font-semibold">
                   <tr>

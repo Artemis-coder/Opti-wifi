@@ -308,7 +308,7 @@ export default function ExchangePage() {
   }
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/allocations" className={buttonClassName({ variant: 'ghost', size: 'sm'})}>

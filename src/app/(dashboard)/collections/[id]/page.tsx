@@ -306,7 +306,7 @@ export default function CollectionDetailPage() {
         ) : (
           <Card className="p-0 overflow-hidden border-border">
             {/* Desktop */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden sm:block overflow-x-auto" data-fit-table>
               <table className="w-full text-left text-xs">
                 <thead className="bg-default text-muted font-semibold">
                   <tr>

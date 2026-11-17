@@ -110,7 +110,7 @@ export default function DeletionRequestsPage() {
   const nameOk = !!approving && confirmName.trim().toLowerCase() === approving.organization_name.trim().toLowerCase();
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto">
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Suppressions de compte</h1>

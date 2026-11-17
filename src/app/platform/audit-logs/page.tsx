@@ -56,7 +56,7 @@ export default function PlatformAuditLogsPage() {
   }, [category, startDate, endDate, filtersKey]);
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Journal d&apos;audit</h1>
         <p className="text-xs text-muted">Historique des actions du back-office. Touchez une ligne pour voir le détail.</p>
