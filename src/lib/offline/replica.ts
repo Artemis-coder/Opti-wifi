@@ -25,6 +25,9 @@ export const REPLICA_TABLES = [
   'license_requests',
 ] as const;
 
+/** Tables que le compte d'un point de vente n'a pas le droit de lire (refus signalé comme incident) */
+const POS_ACCOUNT_SKIPPED_TABLES = new Set<string>(['license_requests']);
+
 /** Tables modifiables hors ligne (mêmes droits qu'en ligne, vérifiés à l'envoi) */
 export const OFFLINE_WRITABLE = new Set([
   'wifi_spaces',
@@ -88,8 +91,10 @@ export function refreshReplica(): Promise<boolean> {
   if (refreshing) return refreshing;
   refreshing = (async () => {
     try {
+      const role = cachedSessionUser<{ role?: string }>()?.role;
+      const tables = REPLICA_TABLES.filter((t) => role !== 'point_de_vente' || !POS_ACCOUNT_SKIPPED_TABLES.has(t));
       const results = await Promise.all(
-        REPLICA_TABLES.map(async (table) => {
+        tables.map(async (table) => {
           const res = await fetch('/api/db', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
