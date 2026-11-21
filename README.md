@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <strong>Version actuelle : v1.26.1</strong> — <a href="./RELEASE_NOTES_v1.26.1.md">notes de version</a>
+  <strong>Version actuelle : v1.26.2</strong> — <a href="./RELEASE_NOTES_v1.26.2.md">notes de version</a>
 </p>
 
 ---
@@ -331,6 +331,7 @@ Schéma et migrations : `supabase/neon_schema.sql` puis `supabase/migrations/*.s
 
 | Version | Contenu |
 |---|---|
+| [**v1.26.2**](./RELEASE_NOTES_v1.26.2.md) | Qualité du code : 0 erreur ESLint, sans changement de comportement |
 | [**v1.26.1**](./RELEASE_NOTES_v1.26.1.md) | Correctif de sécurité Next.js 16.4.6, rotation automatique des sauvegardes Neon |
 | [**v1.26.0**](./RELEASE_NOTES_v1.26.0.md) | 4 Mini Apps Telegram (Business, IA, Paiement, Système) avec KPI et graphiques ; chiffres alignés sur le tableau de bord |
 | [**v1.25.0**](./RELEASE_NOTES_v1.25.0.md) | Mini App Telegram : le back-office dans Telegram (chiffres clés, demandes à approuver, clients, licences) |
